@@ -1,0 +1,39 @@
+FILE(REMOVE_RECURSE
+  "../src/cob_people_detection/msg"
+  "../msg_gen"
+  "../msg_gen"
+  "CMakeFiles/ROSBUILD_genmsg_lisp"
+  "../msg_gen/lisp/FaceDetectorAction.lisp"
+  "../msg_gen/lisp/_package.lisp"
+  "../msg_gen/lisp/_package_FaceDetectorAction.lisp"
+  "../msg_gen/lisp/FaceDetectorGoal.lisp"
+  "../msg_gen/lisp/_package.lisp"
+  "../msg_gen/lisp/_package_FaceDetectorGoal.lisp"
+  "../msg_gen/lisp/FaceDetectorActionGoal.lisp"
+  "../msg_gen/lisp/_package.lisp"
+  "../msg_gen/lisp/_package_FaceDetectorActionGoal.lisp"
+  "../msg_gen/lisp/FaceDetectorResult.lisp"
+  "../msg_gen/lisp/_package.lisp"
+  "../msg_gen/lisp/_package_FaceDetectorResult.lisp"
+  "../msg_gen/lisp/FaceDetectorActionResult.lisp"
+  "../msg_gen/lisp/_package.lisp"
+  "../msg_gen/lisp/_package_FaceDetectorActionResult.lisp"
+  "../msg_gen/lisp/FaceDetectorFeedback.lisp"
+  "../msg_gen/lisp/_package.lisp"
+  "../msg_gen/lisp/_package_FaceDetectorFeedback.lisp"
+  "../msg_gen/lisp/FaceDetectorActionFeedback.lisp"
+  "../msg_gen/lisp/_package.lisp"
+  "../msg_gen/lisp/_package_FaceDetectorActionFeedback.lisp"
+  "../msg/FaceDetectorAction.msg"
+  "../msg/FaceDetectorGoal.msg"
+  "../msg/FaceDetectorActionGoal.msg"
+  "../msg/FaceDetectorResult.msg"
+  "../msg/FaceDetectorActionResult.msg"
+  "../msg/FaceDetectorFeedback.msg"
+  "../msg/FaceDetectorActionFeedback.msg"
+)
+
+# Per-language clean rules from dependency scanning.
+FOREACH(lang)
+  INCLUDE(CMakeFiles/ROSBUILD_genmsg_lisp.dir/cmake_clean_${lang}.cmake OPTIONAL)
+ENDFOREACH(lang)

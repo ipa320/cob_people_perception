@@ -1,0 +1,16 @@
+<launch>
+  <node pkg="face_detector" type="face_detector" name="face_detector_action" args="stereo:=wide_stereo image:=image_rect" output="screen">
+	 <remap from="/wide_stereo/disparity" to="/camera/depth/disparity"/>
+	 <remap from="/wide_stereo/left/camera_info" to="/camera/rgb/camera_info"/>
+	 <remap from="/wide_stereo/left/image_rect" to="/camera/rgb/image_color"/>
+	 <remap from="/wide_stereo/right/camera_info" to="/camera/rgb/camera_info"/>
+  	 <param name="classifier_name" type="string" value="frontalface" />
+	 <param name="classifier_filename" type="string" value="$(find opencv2)/opencv/share/opencv/haarcascades/haarcascade_frontalface_alt.xml" />
+	 <param name="classifier_reliability" type="double" value="0.9"/>
+  	 <param name="do_continuous" type="bool" value="false" />
+  	 <param name="do_publish_faces_of_unknown_size" type="bool" value="false" />	
+	 <param name="do_display" type="string" value="local" />
+  	 <param name="output" type="string" value="screen" />
+  </node>
+
+</launch>

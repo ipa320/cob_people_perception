@@ -1,0 +1,9 @@
+<library path="lib/libface_detector">
+  <class name="people/FaceDetector"
+         type="people::FaceDetector"
+         base_class_type="nodelet::Nodelet">
+    <description> 
+      The Nodelet for the face detector in the people class.
+    </description>
+  </class>
+</library>

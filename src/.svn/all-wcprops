@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/wg-ros-pkg/!svn/ver/48943/stacks/people/trunk/face_detector/src
+END
+faces.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/wg-ros-pkg/!svn/ver/48124/stacks/people/trunk/face_detector/src/faces.cpp
+END
+face_detection.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/wg-ros-pkg/!svn/ver/48943/stacks/people/trunk/face_detector/src/face_detection.cpp
+END
