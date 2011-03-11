@@ -38,7 +38,7 @@
 
 /* Author: Caroline Pantofaru */
 
-#include "face_detector/faces.h"
+#include "cob_people_detection/faces.h"
 #include <cfloat>
 #include <cctype>
 
@@ -81,8 +81,9 @@ void Faces::initFaceDetection(uint num_cascades, string haar_classifier_filename
   face_sep_dist_m_ = face_sep_dist_m;
 
   face_go_mutex_ = new boost::mutex();
-  bool cascade_ok = cascade_.load(haar_classifier_filename);
   
+  bool cascade_ok = cascade_.load(haar_classifier_filename);
+
   if (!cascade_ok) {
     ROS_ERROR_STREAM("Cascade file " << haar_classifier_filename << " doesn't exist.");
     return;
@@ -223,15 +224,17 @@ void Faces::faceDetectionThread(uint i) {
           else {
             radiusX = fabs(b-a);
             if (radiusY != 0.0) one_face.radius3d = (radiusX+radiusY)*0.5;
+            else one_face.radius3d = radiusX;
           }
 
           pcl::PointXYZ pxyz = (*depth_cloud_)(one_face.center2d.x, one_face.center2d.y);
-          if (isnan(pxyz.z)) one_face.center3d.z = avg_depth;
-          else one_face.center3d.z = pxyz.z;
+          one_face.center3d = cv::Point3d(0.0,0.0,0.0);
+          if (!isnan(pxyz.z)) one_face.center3d.z = pxyz.z;
 
           std::cout << "radiusX: " << radiusX << "  radiusY: " << radiusY << "\n";
           std::cout << "avg_depth: " << avg_depth << " > max_face_z_m_: " << max_face_z_m_ << " ?  2*radius3d: " << 2.0*one_face.radius3d << " < face_size_min_m_: " << face_size_min_m_ << " ?  2radius3d: " << 2.0*one_face.radius3d << " > face_size_max_m_:" << face_size_max_m_ << "?\n";
-          if (avg_depth > max_face_z_m_ || 2.0*one_face.radius3d < face_size_min_m_ || 2.0*one_face.radius3d > face_size_max_m_) {
+          if (one_face.radius3d == 0.0) one_face.status = "unknown";
+          else if (avg_depth > max_face_z_m_ || 2.0*one_face.radius3d < face_size_min_m_ || 2.0*one_face.radius3d > face_size_max_m_) {
             one_face.status = "bad";
           }
         }

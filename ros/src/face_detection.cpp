@@ -69,12 +69,12 @@
 #include "opencv/cv.hpp"
 #include "opencv/highgui.h"
 
-#include "face_detector/faces.h"
+#include "cob_people_detection/faces.h"
 
 #include "image_geometry/stereo_camera_model.h"
 
 #include <actionlib/server/simple_action_server.h>
-#include <face_detector/FaceDetectorAction.h>
+#include <cob_people_detection/FaceDetectorAction.h>
 
 
 using namespace std;
@@ -110,9 +110,9 @@ public:
   
 
   // Action
-  actionlib::SimpleActionServer<face_detector::FaceDetectorAction>* as_;
-  face_detector::FaceDetectorFeedback feedback_;
-  face_detector::FaceDetectorResult result_;
+  actionlib::SimpleActionServer<cob_people_detection::FaceDetectorAction>* as_;
+  cob_people_detection::FaceDetectorFeedback feedback_;
+  cob_people_detection::FaceDetectorResult result_;
 
   // If running the face detector as a component in part of a larger person tracker, this subscribes to the tracker's position measurements and whether it was initialized by some other node. 
   // Todo: resurrect the person tracker.
@@ -168,8 +168,8 @@ public:
     node_name_ = ros::this_node::getName();
 
     it_ = image_transport::ImageTransport(nh_);
-    as_ = new actionlib::SimpleActionServer<face_detector::FaceDetectorAction>(nh_, node_name_,false);
-    actionlib::SimpleActionServer<face_detector::FaceDetectorAction> as(nh_, node_name_,false);
+    as_ = new actionlib::SimpleActionServer<cob_people_detection::FaceDetectorAction>(nh_, node_name_,false);
+    actionlib::SimpleActionServer<cob_people_detection::FaceDetectorAction> as(nh_, node_name_,false);
 
     ROS_INFO_STREAM_NAMED("face_detector","Constructing FaceDetector.");
     

@@ -1,11 +1,11 @@
 <package>
-  <description brief="face_detector">
+  <description brief="cob_people_detection">
     Face detection in images.
   </description>
-  <author>Caroline Pantofaru</author>
-  <license>BSD</license>
+  <author>Richard Bormann</author>
+  <license>Fraunhofer IPA</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/face_detector</url>
+  <url>http://ros.org/wiki/cob_people_detection</url>
 
 <depend package="roscpp"/>
 <depend package="std_msgs"/>

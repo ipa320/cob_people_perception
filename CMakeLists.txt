@@ -16,9 +16,9 @@ genaction()
 rosbuild_init()
 
 #set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/ros/bin)
 #set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/ros/lib)
 
 #uncomment if you have defined messages
 rosbuild_genmsg()
@@ -33,12 +33,14 @@ rosbuild_genmsg()
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 #rosbuild_add_executable(face_detector
-rosbuild_add_library(face_detector
-                       src/face_detection.cpp 
-                       src/faces.cpp)
-rosbuild_link_boost(face_detector thread)
+rosbuild_add_library(cob_people_detection
+                       ros/src/face_detection.cpp 
+                       ros/src/faces.cpp)
+rosbuild_link_boost(cob_people_detection thread)
+
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ros/include)
 
 rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_noface_test_diamondback.bag face_detector_noface_test.bag 37f043be780a4511c853379defdd9855)
 rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_withface_test_diamondback.bag face_detector_withface_test.bag 59126117e049e69d577b7ee27251a6f8)
-rosbuild_add_rostest(test/face_detector_true_rtest.xml)
-rosbuild_add_rostest(test/face_detector_false_rtest.xml)
+rosbuild_add_rostest(ros/test/face_detector_true_rtest.xml)
+rosbuild_add_rostest(ros/test/face_detector_false_rtest.xml)

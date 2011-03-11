@@ -1,4 +1,4 @@
-<library path="lib/libface_detector">
+<library path="ros/lib/libcob_people_detection">
   <class name="people/FaceDetector"
          type="people::FaceDetector"
          base_class_type="nodelet::Nodelet">
