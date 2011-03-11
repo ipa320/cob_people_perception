@@ -444,8 +444,8 @@ public:
           tf::Stamped<tf::Point> loc(pt, (*it).second.pos.header.stamp, (*it).second.pos.header.frame_id);
           try {
                 tf_.transformPoint(limage->header.frame_id, limage->header.stamp, loc, "odom_combined", loc);
-            (*it).second.pos.header.stamp = limage->header.stamp;
-            (*it).second.pos.pos.x = loc[0];
+                (*it).second.pos.header.stamp = limage->header.stamp;
+                (*it).second.pos.pos.x = loc[0];
                 (*it).second.pos.pos.y = loc[1];
                 (*it).second.pos.pos.z = loc[2];
           }
@@ -458,7 +458,7 @@ public:
       // Associate the found faces with previously seen faces, and publish all good face centers.
       Box2D3D *one_face;
       people_msgs::PositionMeasurement pos;
-      
+
       for (uint iface = 0; iface < faces_vector.size(); iface++) {
         one_face = &faces_vector[iface];
 
@@ -479,6 +479,8 @@ public:
           pos.covariance[3] = 0.0;  pos.covariance[4] = 0.04; pos.covariance[5] = 0.0;
           pos.covariance[6] = 0.0;  pos.covariance[7] = 0.0;  pos.covariance[8] = 0.04;
 
+          std::cout << "Tracking\n";
+          
           // Check if this person's face is close enough to one of the previously known faces and associate it with the closest one.
           // Otherwise publish it with an empty id.
           // Note that multiple face positions can be published with the same id, but ids in the pos_list_ are unique. The position of a face in the list is updated with the closest found face.
@@ -491,6 +493,7 @@ public:
               close_it = it;
             }
           }
+          std::cout << "poselist size: " << pos_list_.size() << "\n";
           if (close_it != pos_list_.end()) {
             if (mindist < (*close_it).second.dist) {
               (*close_it).second.restamp = limage->header.stamp;
@@ -498,6 +501,7 @@ public:
               (*close_it).second.pos = pos;
             }
             pos.object_id = (*close_it).second.pos.object_id;
+            std::cout << "Object ID: " << pos.object_id << "\n";
             ROS_INFO_STREAM_NAMED("face_detector","Found face " << pos.object_id);
           }
           else {
