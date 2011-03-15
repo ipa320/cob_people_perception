@@ -25,6 +25,10 @@ rosbuild_genmsg()
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
+# Check for sse support
+rosbuild_check_for_sse()
+#set(SSE_FLAGS "-msse2 -mfpmath=sse")
+
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
 #target_link_libraries(${PROJECT_NAME} another_library)
@@ -38,7 +42,17 @@ rosbuild_add_library(cob_people_detection
                        ros/src/faces.cpp)
 rosbuild_link_boost(cob_people_detection thread)
 
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ros/include)
+rosbuild_add_executable(face_detector
+			common/src/CuiPeopleDetector.cpp
+			common/src/PeopleDetector.cpp
+			common/src/PeopleDetectorControlFlow.cpp
+			common/src/PeopleDetectorMain.cpp)
+
+# add include search paths
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ros/include
+		    ${PROJECT_SOURCE_DIR}/common/include)
+
+rosbuild_add_compile_flags(face_detector -D__LINUX__)
 
 rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_noface_test_diamondback.bag face_detector_noface_test.bag 37f043be780a4511c853379defdd9855)
 rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_withface_test_diamondback.bag face_detector_withface_test.bag 59126117e049e69d577b7ee27251a6f8)
