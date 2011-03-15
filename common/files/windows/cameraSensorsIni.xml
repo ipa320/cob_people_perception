@@ -1,0 +1,86 @@
+<!-- Camera sensors initialization file -->
+<LibCameraSensors>
+
+<!-- Virtual range imaging sensors -->
+<VirtualRangeCam_0>
+  <!-- Location of the image data on your hard disk -->
+  <!-- The location is expressed relative to the link 'ConfigurationFiles' -->
+  <CameraDataDirectory relativePath="CameraData_Seitz"/>	
+
+	
+  <!-- Specifies the prefered calibration method -->
+  <!-- Possible values are: JBK, MATLAB or SWISSRANGER -->
+  <CalibrationMethod name="MATLAB_NO_Z" />
+
+
+  <IntrinsicParameters>
+    <VirtualRangeCam_0>
+      <IntrinsicMatrix fx="286.89911" fy="286.08559" cx="99.04968" cy="104.54436" />
+      <DistortionCoeffs k1="-0.45229" k2="0.32005" p1="0.00025" p2="-0.00114" />
+    </VirtualRangeCam_0>
+  </IntrinsicParameters>
+
+
+  <!-- Extrinsic parameters -->
+  <!-- The translation and rotation is specified relative to this camera -->
+  <!-- and describes the transformation to the specified cameras within the XML tags -->
+  <!-- X_This = R * X_Other + T -->
+  <ExtrinsicParameters>
+  </ExtrinsicParameters>
+</VirtualRangeCam_0>
+
+
+<!-- Virtual color sensors -->
+<VirtualColorCam_0> 
+  <!-- Location of the image data on your hard disk -->
+  <!-- The location is expressed relative to the link 'ConfigurationFiles' -->
+  <CameraDataDirectory relativePath="CameraData_Seitz"/>	
+
+  <!-- Resolution of images on disk -->
+  <Resolution width="1388" height="1038" /> 
+
+  <IntrinsicParameters>
+    <VirtualRangeCam_0>
+      <IntrinsicMatrix fx="1262.37361" fy="1257.98042" cx="685.50999" cy="512.44623" />
+      <DistortionCoeffs k1="-0.21406" k2="0.12368" p1="-0.00055" p2="-0.00094" />
+    </VirtualRangeCam_0>
+  </IntrinsicParameters>
+
+  <!-- Extrinsic parameters -->
+  <!-- The translation and rotation is specified relative to this camera -->
+  <!-- and describes the transformation to the specified cameras within the XML tags -->
+  <!-- X_This = R * X_Other + T -->
+  <ExtrinsicParameters>
+    <VirtualRangeCam_0>
+      <Translation x="0.61399" y="58.43158" z="0.43381" />
+      <Rotation x11="1" x12="0.0083" x13="0.0010" x21="-0.0083" x22="1.0000" x23="-0.0041" x31="-0.0011" x32="0.0041" x33="1.0000" />
+    </VirtualRangeCam_0>
+  </ExtrinsicParameters>
+</VirtualColorCam_0>
+
+<!-- Virtual color sensors -->
+<VirtualColorCam_1> 
+  <!-- Location of the image data on your hard disk -->
+  <!-- The location is expressed relative to the link 'ConfigurationFiles' -->
+  <CameraDataDirectory relativePath="CameraData_Seitz"/>	
+
+  <!-- Resolution of images on disk -->
+  <Resolution width="1388" height="1038" /> 
+
+  <IntrinsicParameters>
+    <VirtualColorCam_1> 
+      <IntrinsicMatrix fx="1268.33987" fy="1263.74617" cx="680.01569" cy="513.67565" />
+      <DistortionCoeffs k1="-0.20294" k2="0.09684" p1="0.00023" p2="-0.00114" />
+    </VirtualColorCam_1> 
+  </IntrinsicParameters>
+
+  <!-- Extrinsic parameters -->
+  <!-- The translation and rotation is specified relative to this camera -->
+  <!-- and describes the transformation to the specified cameras within the XML tags -->
+  <!-- X_This = R * X_Other + T -->
+  <ExtrinsicParameters>
+  </ExtrinsicParameters>
+</VirtualColorCam_1>
+
+
+</LibCameraSensors>

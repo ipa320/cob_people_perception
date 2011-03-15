@@ -149,7 +149,7 @@ unsigned long PeopleDetectorControlFlow::RecognizeFace(ipa_SensorFusion::Colored
 
 unsigned long PeopleDetectorControlFlow::SaveTrainingData()
 {
-	std::string path = "common/files/ConfigurationFiles/TrainingData/";
+	std::string path = "common/files/windows/TrainingData/";
 	std::string filename = "data.xml";
 	std::string img_ext = ".bmp";
 
@@ -158,8 +158,8 @@ unsigned long PeopleDetectorControlFlow::SaveTrainingData()
 
 	try
 	{
-		fs::remove_all(path.c_str());
-		fs::create_directory(path.c_str());
+		//fs::remove_all(path.c_str());
+		//fs::create_directory(path.c_str());
 	}
 	catch (const std::exception &ex)
 	{
@@ -207,7 +207,7 @@ unsigned long PeopleDetectorControlFlow::SaveTrainingData()
 
 unsigned long PeopleDetectorControlFlow::LoadTrainingData()
 {
-	std::string path = "common/files/ConfigurationFiles/TrainingData/";
+	std::string path = "common/files/windows/TrainingData/";
 	std::string filename = "data.xml";
 	
 	std::ostringstream complete;

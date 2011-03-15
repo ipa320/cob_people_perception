@@ -17,8 +17,8 @@ PeopleDetector::PeopleDetector(void)
 unsigned long PeopleDetector::Init()
 {	
 	// Load Haar-Classifier for frontal face-, eyes- and body-detection
-	m_face_cascade = (CvHaarClassifierCascade*)cvLoad("common/files/ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
-	m_range_cascade = (CvHaarClassifierCascade*)cvLoad("common/files/ConfigurationFiles/haarcascades/haarcascade_range.xml", 0, 0, 0 );
+	m_face_cascade = (CvHaarClassifierCascade*)cvLoad("common/files/windows/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
+	m_range_cascade = (CvHaarClassifierCascade*)cvLoad("common/files/windows/haarcascades/haarcascade_range.xml", 0, 0, 0 );
 
 	// Create Memory
 	m_storage = cvCreateMemStorage(0);
