@@ -106,6 +106,10 @@ public:
 	/// @return Return code.
 	unsigned long LoadParameters(const char* iniFileName);
 
+	/// Returns the point cloud mode which was loaded from the .xml file
+	/// @return point cloud mode
+	ColoredPointCloudToolbox::t_PointCloudMode GetPCMode() { return m_PCMode; };
+
 	ipa_SensorFusion::ColoredPointCloudToolbox* m_pcToolbox;
 
 	std::vector<cv::Mat> m_faceImages;			///< Trained face images

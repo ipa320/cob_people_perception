@@ -17,8 +17,8 @@ PeopleDetector::PeopleDetector(void)
 unsigned long PeopleDetector::Init()
 {	
 	// Load Haar-Classifier for frontal face-, eyes- and body-detection
-	m_face_cascade = (CvHaarClassifierCascade*)cvLoad("common/files/windows/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
-	m_range_cascade = (CvHaarClassifierCascade*)cvLoad("common/files/windows/haarcascades/haarcascade_range.xml", 0, 0, 0 );
+	m_face_cascade = (CvHaarClassifierCascade*)cvLoad("ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
+	m_range_cascade = (CvHaarClassifierCascade*)cvLoad("ConfigurationFiles/haarcascades/haarcascade_range.xml", 0, 0, 0 );
 
 	// Create Memory
 	m_storage = cvCreateMemStorage(0);
@@ -61,10 +61,44 @@ unsigned long PeopleDetector::DetectColorFaces(cv::Mat& img, std::vector<cv::Rec
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates)
+unsigned long PeopleDetector::InterpolateUnassignedPixels(cv::Mat& img)
+{
+	CV_Assert( img.type() == CV_8UC3 );
+
+	uchar* data = img.data;
+	int stride = img.step;
+	for (int repetitions=0; repetitions<10; repetitions++)
+	{
+		// each pixel with a value can propagate its value to black pixels in the 4 pixel neighborhoud
+		for (int v=1; v<img.rows-1; v++)
+		{
+			for (int u=1; u<img.cols-1; u++)
+			{
+				// only pixels with a value can propagate their value
+				int index = v*stride + 3*u;
+				if (data[index] != 0)
+				{
+					uchar val = data[index];
+					if (data[index-3] == 0) for (int i=-3; i<0; i++) data[index+i] = val;	// left
+					if (data[index+3] == 0) for (int i=1; i<4; i++) data[index+i] = val;	// right
+					if (data[index-stride] == 0) for (int i=-stride; i<-stride+3; i++) data[index+i] = val;	// up
+					if (data[index+stride] == 0) for (int i=stride; i<stride+3; i++) data[index+i] = val;	// down
+				}
+			}
+		}
+	}
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long PeopleDetector::DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor)
 {
 	rangeFaceCoordinates.clear();
 
+	if (fromKinectSensor) InterpolateUnassignedPixels(img);
+cv::namedWindow("depth image");
+cv::imshow("depth image", img);
+cv::waitKey(10);
+	//cv::resize(img, img, cv::Size(204,204));
 	IplImage imgPtr = (IplImage)img;
 	CvSeq* rangeFaces = cvHaarDetectObjects
 	(
@@ -86,17 +120,17 @@ unsigned long PeopleDetector::DetectRangeFace(cv::Mat& img, std::vector<cv::Rect
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates)
+unsigned long PeopleDetector::DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor)
 {
 	colorFaceCoordinates.clear();
 
 	//######################################## Option1 ########################################
-	DetectRangeFace(rangeImg, rangeFaceCoordinates);
+	DetectRangeFace(rangeImg, rangeFaceCoordinates, fromKinectSensor);
 	for(int i=0; i<(int)rangeFaceCoordinates.size(); i++)
 	{
 		cv::Rect rangeFace = rangeFaceCoordinates[i];
 		
-		rangeFace.y += rangeFace.height*0.1;
+		rangeFace.y += (int)(rangeFace.height*0.1);
 
 		cv::Mat areaImg = img(rangeFace);
 // 		IplImage* areaImg = cvCloneImage(img);
@@ -201,7 +235,7 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	for(int j=0; j<(int)faceImages.size(); j++)
 	{
 		IplImage temp = (IplImage)faceImages[j];
-		faceImgArr[j] = &temp;
+		faceImgArr[j] = cvCloneImage(&temp);
 	}
 
 	// Convert vector to array
@@ -209,12 +243,12 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	for(int j=0; j<(int)eigenVectors.size(); j++)
 	{
 		IplImage temp = (IplImage)eigenVectors[j];
-		eigenVectArr[j] = &temp;
+		eigenVectArr[j] = cvCloneImage(&temp);
 	}
 
 	// Compute average image, eigenvalues, and eigenvectors
 	IplImage avgImageIpl = (IplImage)avgImage;
-	cvCalcEigenObjects(faceImages.size(), (void*)faceImgArr, (void*)eigenVectArr, CV_EIGOBJ_NO_CALLBACK, 0, 0, &calcLimit, &avgImageIpl, (float*)(eigenValMat.data));
+	cvCalcEigenObjects((int)faceImages.size(), (void*)faceImgArr, (void*)eigenVectArr, CV_EIGOBJ_NO_CALLBACK, 0, 0, &calcLimit, &avgImageIpl, (float*)(eigenValMat.data));
 
 	cv::normalize(eigenValMat,eigenValMat, 1, 0, CV_L1);	//, 0);		0=bug?
 
@@ -226,6 +260,14 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 		cvEigenDecomposite(&temp, *nEigens, eigenVectArr, 0, 0, &avgImageIpl, (float*)projectedTrainFaceMat.data + i* *nEigens);
 	};
 
+	// Copy back
+	int eigenVectorsCount = (int)eigenVectors.size();
+	eigenVectors.clear();
+	for (int i=0; i<(int)eigenVectorsCount; i++) eigenVectors.push_back(cv::Mat(eigenVectArr[i], true));
+
+	// Clean
+	for (int i=0; i<(int)faceImages.size(); i++) cvReleaseImage(&(faceImgArr[i]));
+	for (int i=0; i<(int)eigenVectors.size(); i++) cvReleaseImage(&(eigenVectArr[i]));
 	cvFree(&faceImgArr);
 	cvFree(&eigenVectArr);
 
@@ -246,7 +288,7 @@ unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudP
 	for(int j=0; j<(int)eigenVectors.size(); j++)
 	{
 		IplImage temp = (IplImage)eigenVectors[j];
-		eigenVectArr[j] = &temp;
+		eigenVectArr[j] = cvCloneImage(&temp);
 	}
 	
 	for(int i=0; i<(int)colorFaceCoordinates.size(); i++)
@@ -259,8 +301,6 @@ unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudP
 		// Project the test image onto the PCA subspace
 		IplImage resized_8U1Ipl = (IplImage)resized_8U1;
 		cvEigenDecomposite(&resized_8U1Ipl, *nEigens, eigenVectArr, 0, 0, &avgImageIpl, eigenVectorWeights);
-
-		cvFree(&eigenVectArr);
 
 		// Calculate FaceSpace Distance
 		cv::Mat srcReconstruction = cv::Mat::zeros(eigenVectors[0].size(), eigenVectors[0].type());
@@ -283,23 +323,16 @@ unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudP
 		else
 		{
 			int nearest;
-
 			ClassifyFace(eigenVectorWeights, &nearest, nEigens, projectedTrainFaceMat, threshold, eigenValMat);
-			if(nearest < 0)
-			{
-				// Face Unknown
-				index.push_back(-1);
-			}
-			else
-			{
-				// Face known, it's number nearest
-				index.push_back(nearest);
-			}
+			if(nearest < 0) index.push_back(-1);	// Face Unknown
+			else index.push_back(nearest);	// Face known, it's number nearest
 		}
 	}
 
 	// Clear
+	for (int i=0; i<(int)eigenVectors.size(); i++) cvReleaseImage(&(eigenVectArr[i]));
 	cvFree(&eigenVectorWeights);
+	cvFree(&eigenVectArr);
 	return ipa_Utils::RET_OK;
 }
 
@@ -327,14 +360,8 @@ unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *neare
 		if(distance < leastDistSq)
 		{
 			leastDistSq = distance;
-			if(leastDistSq > *threshold)
-			{
-				*nearest = -1;
-			}
-			else
-			{
-				*nearest = i;
-			}
+			if(leastDistSq > *threshold) *nearest = -1;
+			else *nearest = i;
 		}
 	}
 

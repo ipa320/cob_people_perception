@@ -26,7 +26,7 @@ CuiPeopleDetector::~CuiPeopleDetector()
 
 unsigned long CuiPeopleDetector::Init()
 {
-	if (m_DetectorControlFlow->Init("common/files/windows/") & ipa_Utils::RET_FAILED)
+	if (m_DetectorControlFlow->Init("ConfigurationFiles/") & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - CuiPeopleDetector::Init:" << std::endl;
 		std::cerr << "\t ... Error while initializing control flow\n";
@@ -108,7 +108,7 @@ unsigned long CuiPeopleDetector::Train()
 		// acquire next image
 		if(cmd == 'n')
 		{
-			if (m_DetectorControlFlow->GetColoredPointCloud(pc, ColoredPointCloudToolbox::MODE_SHARED, 1) & ipa_Utils::RET_FAILED)
+			if (m_DetectorControlFlow->GetColoredPointCloud(pc, m_DetectorControlFlow->GetPCMode(), 1) & ipa_Utils::RET_FAILED)
 			{
 				std::cerr << "ERROR - CuiPeopleDetector::Train:" << std::endl;
 				std::cerr << "\t ... Could not get Colored Point Cloud" << std::endl;
@@ -196,7 +196,7 @@ unsigned long CuiPeopleDetector::Recognize()
 		{
 			ipa_SensorFusion::ColoredPointCloudPtr pc;
 
-			if (m_DetectorControlFlow->GetColoredPointCloud(pc, ColoredPointCloudToolbox::MODE_SHARED, 1) & ipa_Utils::RET_FAILED)
+			if (m_DetectorControlFlow->GetColoredPointCloud(pc, m_DetectorControlFlow->GetPCMode(), 1) & ipa_Utils::RET_FAILED)
 			{
 				std::cerr << "ERROR - CuiPeopleDetector::Recognize:" << std::endl;
 				std::cerr << "\t ... Could not get Colored Point Cloud" << std::endl;
@@ -210,8 +210,9 @@ unsigned long CuiPeopleDetector::Recognize()
 			(pc->GetColorImage()).copyTo(colorImage_8U3);
 
 			std::vector<int> index;
-			m_DetectorControlFlow->RecognizeFace(pc, index);
-			std::cout << "INFO - CuiPeopleDetector::Recognize:" << std::endl;
+			//m_DetectorControlFlow->RecognizeFace(pc, index);
+			//std::cout << "INFO - CuiPeopleDetector::Recognize:" << std::endl;
+			for (int i=0; i<(int)m_DetectorControlFlow->m_colorFaces.size(); i++) index.push_back(-1);
 			//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
 
 			for(int i=0; i<(int)m_DetectorControlFlow->m_colorFaces.size(); i++)

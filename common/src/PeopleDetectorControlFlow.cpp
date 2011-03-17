@@ -4,7 +4,7 @@
 #ifdef __LINUX__
 	#include "cob_people_detection/PeopleDetectorControlFlow.h"
 #else
-	#include "cob_vision/cob_people_detector/common/include/cob_people_detection/PeopleDetectorControlFlow.h"
+	#include "cob_vision/cob_people_detection/common/include/cob_people_detection/PeopleDetectorControlFlow.h"
 #endif
 
 
@@ -61,7 +61,7 @@ unsigned long PeopleDetectorControlFlow::DetectFaces(ipa_SensorFusion::ColoredPo
 	cv::Mat xyzImage_8U3;
 	ipa_Utils::ConvertToShowImage(pc->GetXYZImage(), xyzImage_8U3, 3);
 
-	if (m_PeopleDetector->DetectFaces(pc->GetColorImage(), xyzImage_8U3, m_colorFaces, m_rangeFaces) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->DetectFaces(pc->GetColorImage(), xyzImage_8U3, m_colorFaces, m_rangeFaces, (m_RangeImagingCameraType==ipa_CameraSensors::CAM_KINECT)) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::DetectFaces" << std::endl;
 		std::cerr << "\t ... Could not detect faces.\n";
@@ -149,7 +149,7 @@ unsigned long PeopleDetectorControlFlow::RecognizeFace(ipa_SensorFusion::Colored
 
 unsigned long PeopleDetectorControlFlow::SaveTrainingData()
 {
-	std::string path = "common/files/windows/TrainingData/";
+	std::string path = "ConfigurationFiles/TrainingData/";
 	std::string filename = "data.xml";
 	std::string img_ext = ".bmp";
 
@@ -207,7 +207,7 @@ unsigned long PeopleDetectorControlFlow::SaveTrainingData()
 
 unsigned long PeopleDetectorControlFlow::LoadTrainingData()
 {
-	std::string path = "common/files/windows/TrainingData/";
+	std::string path = "ConfigurationFiles/TrainingData/";
 	std::string filename = "data.xml";
 	
 	std::ostringstream complete;
@@ -359,8 +359,8 @@ unsigned long PeopleDetectorControlFlow::SaveRangeTrainImages(ipa_SensorFusion::
 
 		double scale = 1.6;
 		cv::Rect rangeFace;
-		rangeFace.height = m_colorFaces[i].height*scale;
-		rangeFace.width = m_colorFaces[i].width*scale;
+		rangeFace.height = (int)(m_colorFaces[i].height*scale);
+		rangeFace.width = (int)(m_colorFaces[i].width*scale);
 		rangeFace.x = m_colorFaces[i].x - ((rangeFace.width - m_colorFaces[i].width)/2);
 		rangeFace.y = m_colorFaces[i].y - ((rangeFace.height - m_colorFaces[i].height)/2)-10;
 

@@ -43,8 +43,9 @@ public:
 	/// The function detects the face in an given range image
 	/// @param img Image
 	/// @param rangeFaceCoordinates Vector with the coordinates of detected heads in range image
+	/// @param this parameter should be true if the kinect sensor is used (activates a filling method for black pixels)
 	/// @return Return code
-	virtual unsigned long DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates);
+	virtual unsigned long DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor=false);
 
 	/// Function to detect faces
 	/// The function calls internally the functions DetectRangeFace() and DetectColorFaces()
@@ -53,8 +54,9 @@ public:
 	/// @param faceCoordinates Vector with the coordinates of detected faces on complete color image
 	/// @param rangeFaceCoordinates Vector with the coordinates of heads on range image
 	/// @param vFaceCoordinates Vector with the coordinates of correct detected faces
+	/// @param this parameter should be true if the kinect sensor is used (activates a filling method for black pixels)
 	/// @return Return code
-	virtual unsigned long DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates);
+	virtual unsigned long DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor=false);
 
 	/// Function to add a new face
 	/// The function adds a new face to the trained images
@@ -130,6 +132,11 @@ public:
 	int m_range_min_search_scale_y;				///< Minimum serach scale y
 
 private:
+	/// interpolates unassigned pixels in the depth image when using the kinect
+	/// @param img depth image
+	/// @return Return code
+	unsigned long InterpolateUnassignedPixels(cv::Mat& img);
+
 	CvMemStorage* m_storage;					///< Storage for face and eye detection
 	CvHaarClassifierCascade* m_face_cascade;	///< Haar-Classifier for face-detection
 	CvHaarClassifierCascade* m_range_cascade;	///< Haar-Classifier for range-detection
