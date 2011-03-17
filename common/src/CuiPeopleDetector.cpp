@@ -210,10 +210,17 @@ unsigned long CuiPeopleDetector::Recognize()
 			(pc->GetColorImage()).copyTo(colorImage_8U3);
 
 			std::vector<int> index;
-			//m_DetectorControlFlow->RecognizeFace(pc, index);
-			//std::cout << "INFO - CuiPeopleDetector::Recognize:" << std::endl;
-			for (int i=0; i<(int)m_DetectorControlFlow->m_colorFaces.size(); i++) index.push_back(-1);
+			m_DetectorControlFlow->RecognizeFace(pc, index);
+			std::cout << "INFO - CuiPeopleDetector::Recognize:" << std::endl;
+			//for (int i=0; i<(int)m_DetectorControlFlow->m_colorFaces.size(); i++) index.push_back(-1);
 			//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
+
+			for(int i=0; i<(int)m_DetectorControlFlow->m_rangeFaces.size(); i++)
+			{
+				cv::Rect face = m_DetectorControlFlow->m_rangeFaces[i];
+
+				cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 0, 255), 2, 8, 0);
+			}
 
 			for(int i=0; i<(int)m_DetectorControlFlow->m_colorFaces.size(); i++)
 			{

@@ -65,7 +65,10 @@ unsigned long PeopleDetector::InterpolateUnassignedPixels(cv::Mat& img)
 {
 	CV_Assert( img.type() == CV_8UC3 );
 
+	cv::Mat temp = img.clone();
+
 	uchar* data = img.data;
+	uchar* data2 = temp.data;
 	int stride = img.step;
 	for (int repetitions=0; repetitions<10; repetitions++)
 	{
@@ -79,13 +82,15 @@ unsigned long PeopleDetector::InterpolateUnassignedPixels(cv::Mat& img)
 				if (data[index] != 0)
 				{
 					uchar val = data[index];
-					if (data[index-3] == 0) for (int i=-3; i<0; i++) data[index+i] = val;	// left
-					if (data[index+3] == 0) for (int i=1; i<4; i++) data[index+i] = val;	// right
-					if (data[index-stride] == 0) for (int i=-stride; i<-stride+3; i++) data[index+i] = val;	// up
-					if (data[index+stride] == 0) for (int i=stride; i<stride+3; i++) data[index+i] = val;	// down
+					if (data2[index-3] == 0) for (int i=-3; i<0; i++) data2[index+i] = val;	// left
+					if (data2[index+3] == 0) for (int i=3; i<6; i++) data2[index+i] = val;	// right
+					if (data2[index-stride] == 0) for (int i=-stride; i<-stride+3; i++) data2[index+i] = val;	// up
+					if (data2[index+stride] == 0) for (int i=stride; i<stride+3; i++) data2[index+i] = val;	// down
 				}
 			}
 		}
+		// copy back new data
+		for (int i=0; i<img.rows*stride; i++) data[i] = data2[i];
 	}
 	return ipa_Utils::RET_OK;
 }
@@ -98,7 +103,6 @@ unsigned long PeopleDetector::DetectRangeFace(cv::Mat& img, std::vector<cv::Rect
 cv::namedWindow("depth image");
 cv::imshow("depth image", img);
 cv::waitKey(10);
-	//cv::resize(img, img, cv::Size(204,204));
 	IplImage imgPtr = (IplImage)img;
 	CvSeq* rangeFaces = cvHaarDetectObjects
 	(
@@ -305,7 +309,9 @@ unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudP
 		// Calculate FaceSpace Distance
 		cv::Mat srcReconstruction = cv::Mat::zeros(eigenVectors[0].size(), eigenVectors[0].type());
 		for(int i=0; i<(int)eigenVectors.size(); i++) srcReconstruction += eigenVectorWeights[i]*eigenVectors[i];
-		double distance = cv::norm((resized_8U1-avgImage), srcReconstruction, cv::NORM_L2);
+		cv::Mat temp;
+		resized_8U1.convertTo(temp, CV_32FC1, 1.0/255.0);
+		double distance = cv::norm((temp-avgImage), srcReconstruction, cv::NORM_L2);
 
 		//######################################## Only for debugging and development ########################################
 		/*std::cout.precision( 10 );

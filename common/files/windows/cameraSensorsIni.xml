@@ -63,16 +63,16 @@
 	<IntrinsicParameters>
 	<Kinect_0>
 	  <!-- SXGA -->
-	  <IntrinsicMatrix fx="1050" fy="1050" cx="639.5" cy="511.5" />
+	  <!-- <IntrinsicMatrix fx="1050" fy="1050" cx="639.5" cy="511.5" /> -->
 	  <!-- VGA -->
-	  <!--IntrinsicMatrix fx="525" fy="525" cx="319" cy="239.5" /-->
+	  <IntrinsicMatrix fx="525" fy="525" cx="319" cy="239.5" />
 	  <DistortionCoeffs k1="0" k2="0" p1="0" p2="0" />
 	</Kinect_0>
 	<Kinect_1>
 	  <!-- SXGA -->
-	  <IntrinsicMatrix fx="1050" fy="1050" cx="639.5" cy="511.5" />
+	  <!-- <IntrinsicMatrix fx="1050" fy="1050" cx="639.5" cy="511.5" /> -->
 	  <!-- VGA -->
-	  <!--IntrinsicMatrix fx="525" fy="525" cx="319" cy="239.5" /-->
+	  <IntrinsicMatrix fx="525" fy="525" cx="319" cy="239.5" />
 	  <DistortionCoeffs k1="0" k2="0" p1="0" p2="0" />
 	</Kinect_1>
 	</IntrinsicParameters>
