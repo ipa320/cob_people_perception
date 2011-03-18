@@ -9,7 +9,7 @@
  *
  * Project name: care-o-bot
  * ROS stack name: cob_vision
- * ROS package name: cob_object_detection
+ * ROS package name: cob_people_detection
  * Description:
  *								
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -52,148 +52,91 @@
  *
  ****************************************************************/
 
-//##################
-//#### includes ####
 
-// standard includes
-//--
+#include "cob_people_detection/people_detection.h"
 
-// ROS includes
-#include <ros/ros.h>
-#include <tf/transform_listener.h>		//?
-#include <tf/transform_broadcaster.h>	//?
-
-#include <actionlib/server/simple_action_server.h>
-
-// ROS message includes
-#include <std_msgs/String.h>		//-
-#include <cob_msgs/ReprojectionMatrix.h>		//?
-#include <sensor_msgs/PointCloud2.h>
-
-#include <cob_srvs/GetPointCloud2.h>	//-
-#include <cob_srvs/AcquireObjectImage.h>	//-
-#include <cob_srvs/TrainObject.h>		//-
-#include <cob_srvs/DetectObjects.h>		//-
-
-#include <cob_object_detection/DetectObjectsAction.h>	//wo, wozu
-#include <cob_object_detection/AcquireObjectImageAction.h>
-#include <cob_object_detection/TrainObjectAction.h>
-
-// topics
-#include <message_filters/subscriber.h>
-#include <message_filters/sync_policies/approximate_time.h>
-#include <image_transport/subscriber_filter.h>
-
-// opencv
-#include <opencv/cv.h>
-
-// point cloud
-#include <point_cloud.h>
-
-// external includes
-#include "cob_vision_ipa_utils/MathUtils.h"
-
-#include "cob_sensor_fusion/ColoredPointCloudSequence.h"
-
-#include "cob_people_detection/PeopleDetector.h"
-
-#include <sstream>
+using namespace ipa_PeopleDetector;
 
 // Prevent deleting memory twice, when using smart pointer
 void voidDeleter(sensor_msgs::PointCloud2* const) {}
 
 //####################
 //#### node class ####
-class cobPeopleDetectionNode
-{
-protected:
-	message_filters::Subscriber<sensor_msgs::PointCloud2> shared_image_sub_;	///< Shared xyz image and color image topic
-	image_transport::ImageTransport it_;
-	image_transport::SubscriberFilter color_camera_image_sub_;	///< Color camera image topic
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> > sync_pointcloud; /**< Pointcloud synchronizer without disparity display. */
-
-	ros::NodeHandle node_handle_;				 ///< ROS node handle
-
-	bool m_runPCA;
-
-	PeopleDetector* m_PeopleDetector;			///< People detector core code
-	int m_threshold;							///< Threshold to detect unknown faces
-	int m_threshold_FS;							///< Threshold to facespace
-	std::vector<cv::Rect> m_colorFaces;			///< Vector with detected faces
-	std::vector<cv::Rect> m_rangeFaces;			///< Vector with detected rangeFaces
-
-public:
-	
-	cobPeopleDetectionNode(const ros::NodeHandle& node_handle)
+cobPeopleDetectionNode::cobPeopleDetectionNode(const ros::NodeHandle& node_handle)
 		: node_handle_(node_handle),
-		it_(node_handle)
+		it_(node_handle),
+		sync_pointcloud(2)
+{
+	m_PeopleDetector = 0;
+}
+
+cobPeopleDetectionNode::~cobPeopleDetectionNode()
+{
+	cvDestroyAllWindows();
+	delete m_PeopleDetector;
+	m_PeopleDetector = 0;
+}
+
+unsigned long cobPeopleDetectionNode::init()
+{
+	shared_image_sub_.subscribe(node_handle_, "/camera/depth/points", 1);
+	color_camera_image_sub_.subscribe(it_, "/camera/rgb/image_color", 1);
+	sync_pointcloud.connectInput(shared_image_sub_, color_camera_image_sub_);
+	sync_pointcloud.registerCallback(boost::bind(&cobPeopleDetectionNode::recognizeCallback, this, _1, _2));
+
+	colored_pc_ = ipa_SensorFusion::CreateColoredPointCloud();
+
+	cv::namedWindow("Face Detector");
+
+	std::string directory = "ConfigurationFiles/";
+	std::string iniFileNameAndPath = directory + "peopleDetectorIni.xml";
+
+	//if (CameraSensorsControlFlow::Init(directory, "peopleDetectorIni.xml", colorCamera0, colorCamera1, rangeImagingSensor) & ipa_Utils::RET_FAILED)
+	//{
+	//	std::cerr << "ERROR - CameraDataViewerControlFlow::Init:" << std::endl;
+	//	std::cerr << "\t ... Could not initialize 'CameraSensorsControlFlow'" << std::endl;
+	//	return ipa_Utils::RET_FAILED;
+	//}
+
+	m_PeopleDetector = new ipa_PeopleDetector::PeopleDetector();
+
+	if (m_PeopleDetector->Init() & ipa_Utils::RET_FAILED)
 	{
-		m_PeopleDetector = 0;
+		std::cerr << "ERROR - PeopleDetector::Init:" << std::endl;
+		std::cerr << "\t ... Could not initialize people detector library.\n";
+		return ipa_Utils::RET_FAILED;
 	}
 
-	~cobPeopleDetectionNode()
+	if(loadParameters(iniFileNameAndPath.c_str()) & ipa_Utils::RET_FAILED)
 	{
-		cvDestroyAllWindows();
-		delete m_PeopleDetector;
-		m_PeopleDetector = 0;
+		std::cerr << "ERROR - PeopleDetector::Init:" << std::endl;
+		std::cerr << "\t ... Error while loading configuration file '" << std::endl;
+		std::cerr << "\t ... " << iniFileNameAndPath << "'.\n";
+		return ipa_Utils::RET_FAILED;
 	}
 
-	bool init()
+	m_runPCA = false;
+
+	return ipa_Utils::RET_OK;
+}
+
+
+unsigned long cobPeopleDetectionNode::detectFaces(cv::Mat& xyz_image, cv::Mat& color_image)
+{
+	cv::Mat xyz_image_8U3;
+	ipa_Utils::ConvertToShowImage(xyz_image, xyz_image_8U3, 3);
+//todo: read parameter whether a kinect sensor is used
+	if (m_PeopleDetector->DetectFaces(color_image, xyz_image_8U3, m_colorFaces, m_rangeFaces, true/*(m_RangeImagingCameraType==ipa_CameraSensors::CAM_KINECT)*/) & ipa_Utils::RET_FAILED)
 	{
-		shared_image_sub_.subscribe(node_handle_, "/camera/depth/points", 1);
-		color_camera_image_sub_.subscribe(it_, "/camera/rgb/image_color", 1);
-		sync_pointcloud.connectInput(shared_image_sub_, color_camera_image_sub_);
-        sync_pointcloud.registerCallback(boost::bind(&cobPeopleDetectionNode::recognizeCallback, this, _1, _2));
-
-		cv::namedWindow("Face Detector");
-
-		std::string directory = "ConfigurationFiles/";
-		std::string iniFileNameAndPath = directory + "peopleDetectorIni.xml";
-	
-		//if (CameraSensorsControlFlow::Init(directory, "peopleDetectorIni.xml", colorCamera0, colorCamera1, rangeImagingSensor) & ipa_Utils::RET_FAILED)
-		//{
-		//	std::cerr << "ERROR - CameraDataViewerControlFlow::Init:" << std::endl;
-		//	std::cerr << "\t ... Could not initialize 'CameraSensorsControlFlow'" << std::endl;
-		//	return ipa_Utils::RET_FAILED;	
-		//}
-
-		m_PeopleDetector = new ipa_PeopleDetector::PeopleDetector();
-
-		if (m_PeopleDetector->Init() & ipa_Utils::RET_FAILED)
-		{	
-			std::cerr << "ERROR - PeopleDetector::Init:" << std::endl;
-			std::cerr << "\t ... Could not initialize people detector library.\n";
-			return ipa_Utils::RET_FAILED;
-		}
-
-		if(LoadParameters(iniFileNameAndPath.c_str()) & ipa_CameraSensors::RET_FAILED)
-		{
-			std::cerr << "ERROR - PeopleDetector::Init:" << std::endl;
-			std::cerr << "\t ... Error while loading configuration file '" << std::endl;
-			std::cerr << "\t ... " << iniFileNameAndPath << "'.\n";
-			return ipa_Utils::RET_FAILED;	
-		}
-
-		m_runPCA = false;
+		std::cerr << "ERROR - PeopleDetection::detectFaces" << std::endl;
+		std::cerr << "\t ... Could not detect faces.\n";
+		return ipa_Utils::RET_FAILED;
 	}
 
+	return ipa_Utils::RET_OK;
+}
 
-	unsigned long detectFaces(cv::Mat& xyz_image, cv::Mat& color_image)
-	{
-		cv::Mat xyz_image_8U3;
-		ipa_Utils::ConvertToShowImage(xyz_image, xyzImage_8U3, 3);
-
-		if (m_PeopleDetector->DetectFaces(color_image, xyzImage_8U3, m_colorFaces, m_rangeFaces, (m_RangeImagingCameraType==ipa_CameraSensors::CAM_KINECT)) & ipa_Utils::RET_FAILED)
-		{
-			std::cerr << "ERROR - PeopleDetection::detectFaces" << std::endl;
-			std::cerr << "\t ... Could not detect faces.\n";
-			return ipa_Utils::RET_FAILED;
-		}
-
-		return ipa_Utils::RET_OK;
-	}
-
-	unsigned long recognizeFace(cv::Mat& color_image, std::vector<int>& index)
+/*	unsigned long cobPeopleDetectionNode::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
 	{
 		if (m_PeopleDetector->RecognizeFace(color_image, m_colorFaces, &m_nEigens, m_eigenVectArr, m_avgImage, m_projectedTrainFaceMat, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
 		{
@@ -203,412 +146,475 @@ public:
 		}
 
 		return ipa_Utils::RET_OK;
-	}
+	}*/
 
-	void recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+unsigned long cobPeopleDetectionNode::getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+{
+	cv::Mat color_image_8U3(shared_image_msg->height, shared_image_msg->width, CV_8UC3);
+	cv::Mat xyz_image_32F3(shared_image_msg->height, shared_image_msg->width, CV_32FC3);
+	float* f_ptr = 0;
+	const uint8_t* data_ptr = 0;
+	unsigned char* uc_ptr = 0;
+	unsigned int xyz_offset = shared_image_msg->fields[0].offset;
+	unsigned int rgb_offset = shared_image_msg->fields[3].offset;
+	size_t b_offset = 2*sizeof(unsigned char);
+	size_t g_offset = sizeof(unsigned char);
+	size_t r_offset = 0;
+	unsigned int col_times_3 = 0;
+	for (unsigned int row = 0; row < shared_image_msg->height; row++)
 	{
-		// covert input to cv::Mat images
-		// color
-		sensor_msgs::CvBridge bridge;
-		cv::Mat color_image = bridge.imgMsgToCv(color_image_msg);
-		// point cloud
-		cv::Mat depth_image(depth_cloud.width, depth_cloud.height, CV_32FC3);
-		pcl::PointCloud<pcl::PointXYZ> depth_cloud; // point cloud
-		pcl::fromROSMsg(*shared_image_msg, depth_cloud);
-		for (int v=0; v<depth_cloud.height; v++)
+		uc_ptr = color_image_8U3.ptr<unsigned char>(row);
+		f_ptr = xyz_image_32F3.ptr<float>(row);
+
+		data_ptr = &shared_image_msg->data[row * shared_image_msg->width * shared_image_msg->point_step];
+
+		for (unsigned int col = 0; col < shared_image_msg->width; col++)
 		{
-			int baseIndex = depth_image.step*v;
-			for (int u=0; u<depth_cloud.width; u++)
-			{
-				int index = baseIndex + 3*u;
-				depth_image.data[index]   = depth_cloud(u,v).x;
-				depth_image.data[index+1] = depth_cloud(u,v).y;
-				depth_image.data[index+2] = depth_cloud(u,v).z;
-			}
+			col_times_3 = 3*col;
+			// Reorder incoming image channels
+			memcpy(&uc_ptr[col_times_3], &data_ptr[col * shared_image_msg->point_step + rgb_offset + b_offset], sizeof(unsigned char));
+			memcpy(&uc_ptr[col_times_3 + 1], &data_ptr[col * shared_image_msg->point_step + rgb_offset + g_offset], sizeof(unsigned char));
+			memcpy(&uc_ptr[col_times_3 + 2], &data_ptr[col * shared_image_msg->point_step + rgb_offset + r_offset], sizeof(unsigned char));
+
+			memcpy(&f_ptr[col_times_3], &data_ptr[col * shared_image_msg->point_step + xyz_offset], 3*sizeof(float));
 		}
-
-		//m_DetectorControlFlow->PCA();		
-
-		//if(m_DetectorControlFlow->m_faceImages.size() < 2)
-		//{
-		//	std::cout << "WARNING - PeopleDetector::ConsoleGUI:" << std::endl;
-		//	std::cout << "\t ... Less than two images are trained.\n";
-		//	return ipa_Utils::RET_OK;
-		//}
-
-		//ipa_SensorFusion::ColoredPointCloudPtr pc;
-
-		//DWORD start = timeGetTime();
-				
-		detectFaces(depth_image, color_image);
-				
-		cv::Mat colorImage_8U3;
-		color_image.copyTo(colorImage_8U3);
-
-		std::vector<int> index;
-		//recognizeFace(color_image, index);
-		std::cout << "INFO - PeopleDetector::Recognize:" << std::endl;
-		for (int i=0; i<(int)m_DetectorControlFlow->m_colorFaces.size(); i++) index.push_back(-1);
-		//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
-
-		for(int i=0; i<(int)m_rangeFaces.size(); i++)
-		{
-			cv::Rect face = m_rangeFaces[i];
-			cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 0, 255), 2, 8, 0);
-		}
-
-		for(int i=0; i<(int)m_colorFaces.size(); i++)
-		{
-			cv::Rect face = m_colorFaces[i];
-
-			cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 255, 0), 2, 8, 0);
-					
-			std::stringstream tmp;
-			switch(index[i])
-			{
-			case -1:
-				// Distance to face class is too high
-				tmp << "Unknown";
-				cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
-				break;
-			case -2:
-				// Distance to face space is too high
-				tmp << "No face";
-				cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
-				break;
-			default:
-				// Face classified
-				tmp << m_DetectorControlFlow->m_id[index[i]].c_str();
-				cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
-			}
-		}
-
-		cv::imshow("Face Detector", colorImage_8U3);
 	}
 
-	
-	unsigned long loadParameters(const char* iniFileName)
-	{
-		/// Load parameters from file
-		TiXmlDocument* p_configXmlDocument = new TiXmlDocument( iniFileName );
-		if (!p_configXmlDocument->LoadFile())
-		{
-			std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-			std::cerr << "\t ... Error while loading xml configuration file" << std::endl;
-			std::cerr << "\t ... (Check filename and syntax of the file):" << std::endl;
-			std::cerr << "\t ... '" << iniFileName << "'" << std::endl;
-			return ipa_Utils::RET_FAILED;
-		}
-		std::cout << "INFO - PeopleDetector::LoadParameters:" << std::endl;
-		std::cout << "\t ... Parsing xml configuration file:" << std::endl;
-		std::cout << "\t ... '" << iniFileName << "'" << std::endl;
+	// Images are cloned within setter functions
+	colored_pc_->SetColorImage(color_image_8U3);
+	colored_pc_->SetXYZImage(xyz_image_32F3);
 
-		if ( p_configXmlDocument )
-		{
+//    		cv::Mat xyz_image_8U3;
+//			ipa_Utils::ConvertToShowImage(colored_pc_->GetXYZImage(), xyz_image_8U3, 3);
+//	    	cv::imshow("xyz data", xyz_image_8U3);
+//	    	cv::imshow("color data", colored_pc_->GetColorImage());
+//	    	cv::waitKey();
 
-	//************************************************************************************
-	//	BEGIN PeopleDetector
-	//************************************************************************************
-			// Tag element "PeopleDetector" of Xml Inifile
-			TiXmlElement *p_xmlElement_Root = NULL;
-			p_xmlElement_Root = p_configXmlDocument->FirstChildElement( "PeopleDetector" );
-
-			if ( p_xmlElement_Root )
-			{
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->adaBoost
-	//************************************************************************************
-				// Tag element "adaBoost" of Xml Inifile
-				TiXmlElement *p_xmlElement_Root_OD = NULL;
-				p_xmlElement_Root_OD = p_xmlElement_Root->FirstChildElement( "adaBoost" );
-
-				if ( p_xmlElement_Root_OD )
-				{
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->adaBoost->Faces_increase_search_scale
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					TiXmlElement *p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Faces_increase_search_scale" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_increase_search_scale) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_increase_search_scale'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Faces_increase_search_scale'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->adaBoost->Faces_drop_groups
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Faces_drop_groups" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_drop_groups) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_drop_groups'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Faces_drop_groups'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->adaBoost->Faces_min_search_scale_x
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Faces_min_search_scale_x" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_min_search_scale_x) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_min_search_scale_x'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Faces_min_search_scale_x'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->adaBoost->Faces_min_search_scale_y
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Faces_min_search_scale_y" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_min_search_scale_y) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_min_search_scale_y'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Faces_min_search_scale_y'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->adaBoost->Range_increase_search_scale
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Range_increase_search_scale" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_increase_search_scale) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_increase_search_scale'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Range_increase_search_scale'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->adaBoost->Range_drop_groups
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Range_drop_groups" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_drop_groups) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_drop_groups'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Range_drop_groups'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->adaBoost->Range_min_search_scale_x
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Range_min_search_scale_x" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_min_search_scale_x) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_min_search_scale_x'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Range_min_search_scale_x'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->adaBoost->Range_min_search_scale_y
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Range_min_search_scale_y" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_min_search_scale_y) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_min_search_scale_y'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Range_min_search_scale_y'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-				}
-	//************************************************************************************
-	//	END CameraDataViewerControlFlow->adaBoost
-	//************************************************************************************
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->eigenfaces
-	//************************************************************************************
-				// Tag element "adaBoost" of Xml Inifile
-				p_xmlElement_Root_OD = NULL;
-				p_xmlElement_Root_OD = p_xmlElement_Root->FirstChildElement( "eigenfaces" );
-
-				if ( p_xmlElement_Root_OD )
-				{
-
-	//************************************************************************************
-	//	BEGIN PeopleDetector->eigenfaces->Threshold_Face_Class
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					TiXmlElement *p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Threshold_Face_Class" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_threshold) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Threshold_Face_Class'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Threshold_Face_Class'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-	//************************************************************************************
-	//	BEGIN PeopleDetector->eigenfaces->Threshold_Facespace
-	//************************************************************************************
-					// Subtag element "adaBoost" of Xml Inifile
-					p_xmlElement_Child = NULL;
-					p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Threshold_Facespace" );
-
-					if ( p_xmlElement_Child )
-					{
-						// read and save value of attribute
-						if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_threshold_FS) != TIXML_SUCCESS)
-						{
-							std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-							std::cerr << "\t ... Can't find attribute 'value' of tag 'Threshold_Facespace'" << std::endl;
-							return ipa_Utils::RET_FAILED;
-						}
-					}
-					else
-					{
-						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
-						std::cerr << "\t ... Can't find tag 'Threshold_Facespace'" << std::endl;
-						return ipa_Utils::RET_FAILED;
-					}
-	//************************************************************************************
-	//	END CameraDataViewerControlFlow->eigenfaces
-	//************************************************************************************
-
-				}
-				else
-				{
-					std::cerr << "ERROR - CameraDataViewerControlFlow::LoadParameters:" << std::endl;
-					std::cerr << "\t ... Can't find tag 'ObjectDetectorParameters'" << std::endl;
-					return ipa_Utils::RET_FAILED;
-				}
-
-			}
-
-
-	//************************************************************************************
-	//	END ObjectDetector
-	//************************************************************************************
-			else
-			{
-				std::cerr << "ERROR - CameraDataViewerControlFlow::LoadParameters:" << std::endl;
-				std::cerr << "\t ... Can't find tag 'ObjectDetector'" << std::endl;
-				return ipa_Utils::RET_FAILED;
-			}
-		}
-		return ipa_Utils::RET_OK;
-	}
+	return ipa_Utils::RET_OK;
 }
 
 
-/*
+void cobPeopleDetectionNode::recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+{
+	// convert input to cv::Mat images
+	// color
+	cv_bridge::CvImagePtr color_image_ptr;
+	try
+	{
+	  color_image_ptr = cv_bridge::toCvCopy(color_image_msg);
+	}
+	catch (cv_bridge::Exception& e)
+	{
+	  ROS_ERROR("PeopleDetection: cv_bridge exception: %s", e.what());
+	  return;
+	}
+	cv::Mat color_image = color_image_ptr->image;
+	// point cloud
+	pcl::PointCloud<pcl::PointXYZ> depth_cloud; // point cloud
+	pcl::fromROSMsg(*shared_image_msg, depth_cloud);
+	cv::Mat depth_image(depth_cloud.height, depth_cloud.width, CV_32FC3);
+	uchar* depth_image_ptr = (uchar*) depth_image.data;
+	for (int v=0; v<(int)depth_cloud.height; v++)
+	{
+		int baseIndex = depth_image.step*v;
+		for (int u=0; u<(int)depth_cloud.width; u++)
+		{
+			int index = baseIndex + 3*u*sizeof(float);
+			float* data_ptr = (float*)(depth_image_ptr+index);
+			data_ptr[0] = depth_cloud(u,v).x;
+			data_ptr[1] = depth_cloud(u,v).y;
+			data_ptr[2] = (isnan(depth_cloud(u,v).z)) ? 0.f : depth_cloud(u,v).z;
+			if (u%100 == 0) std::cout << "u" << u << " v" << v << " z" << data_ptr[2] << "\n";
+		}
+	}
+	colored_pc_->SetColorImage(color_image);
+	colored_pc_->SetXYZImage(depth_image);
+
+	// convert point cloud and color image to colored point cloud
+	//getMeasurement(shared_image_msg, color_image_msg);
+
+	//m_DetectorControlFlow->PCA();
+
+	//if(m_DetectorControlFlow->m_faceImages.size() < 2)
+	//{
+	//	std::cout << "WARNING - PeopleDetector::ConsoleGUI:" << std::endl;
+	//	std::cout << "\t ... Less than two images are trained.\n";
+	//	return ipa_Utils::RET_OK;
+	//}
+
+	//ipa_SensorFusion::ColoredPointCloudPtr pc;
+
+	//DWORD start = timeGetTime();
+
+	detectFaces(colored_pc_->GetXYZImage(), colored_pc_->GetColorImage());
+
+	cv::Mat colorImage_8U3;
+	colored_pc_->GetColorImage().copyTo(colorImage_8U3);
+
+	std::vector<int> index;
+	//recognizeFace(color_image, index);
+	std::cout << "INFO - PeopleDetector::Recognize:" << std::endl;
+	for (int i=0; i<(int)m_colorFaces.size(); i++) index.push_back(-1);
+	//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
+
+	for(int i=0; i<(int)m_rangeFaces.size(); i++)
+	{
+		cv::Rect face = m_rangeFaces[i];
+		cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 0, 255), 2, 8, 0);
+	}
+
+	for(int i=0; i<(int)m_colorFaces.size(); i++)
+	{
+		cv::Rect face = m_colorFaces[i];
+
+		cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 255, 0), 2, 8, 0);
+
+		std::stringstream tmp;
+		switch(index[i])
+		{
+		case -1:
+			// Distance to face class is too high
+			tmp << "Unknown";
+			cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
+			break;
+		case -2:
+			// Distance to face space is too high
+			tmp << "No face";
+			cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
+			break;
+		default:
+			// Face classified
+			tmp << m_id[index[i]].c_str();
+			cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
+		}
+	}
+
+	cv::imshow("Face Detector", colorImage_8U3);
+}
+
+
+unsigned long cobPeopleDetectionNode::loadParameters(const char* iniFileName)
+{
+	/// Load parameters from file
+	TiXmlDocument* p_configXmlDocument = new TiXmlDocument( iniFileName );
+	if (!p_configXmlDocument->LoadFile())
+	{
+		std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+		std::cerr << "\t ... Error while loading xml configuration file" << std::endl;
+		std::cerr << "\t ... (Check filename and syntax of the file):" << std::endl;
+		std::cerr << "\t ... '" << iniFileName << "'" << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
+	std::cout << "INFO - PeopleDetector::LoadParameters:" << std::endl;
+	std::cout << "\t ... Parsing xml configuration file:" << std::endl;
+	std::cout << "\t ... '" << iniFileName << "'" << std::endl;
+
+	if ( p_configXmlDocument )
+	{
+
+//************************************************************************************
+//	BEGIN PeopleDetector
+//************************************************************************************
+		// Tag element "PeopleDetector" of Xml Inifile
+		TiXmlElement *p_xmlElement_Root = NULL;
+		p_xmlElement_Root = p_configXmlDocument->FirstChildElement( "PeopleDetector" );
+
+		if ( p_xmlElement_Root )
+		{
+
+//************************************************************************************
+//	BEGIN PeopleDetector->adaBoost
+//************************************************************************************
+			// Tag element "adaBoost" of Xml Inifile
+			TiXmlElement *p_xmlElement_Root_OD = NULL;
+			p_xmlElement_Root_OD = p_xmlElement_Root->FirstChildElement( "adaBoost" );
+
+			if ( p_xmlElement_Root_OD )
+			{
+
+//************************************************************************************
+//	BEGIN PeopleDetector->adaBoost->Faces_increase_search_scale
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				TiXmlElement *p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Faces_increase_search_scale" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_increase_search_scale) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_increase_search_scale'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Faces_increase_search_scale'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+
+//************************************************************************************
+//	BEGIN PeopleDetector->adaBoost->Faces_drop_groups
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Faces_drop_groups" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_drop_groups) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_drop_groups'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Faces_drop_groups'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+
+//************************************************************************************
+//	BEGIN PeopleDetector->adaBoost->Faces_min_search_scale_x
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Faces_min_search_scale_x" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_min_search_scale_x) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_min_search_scale_x'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Faces_min_search_scale_x'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+
+//************************************************************************************
+//	BEGIN PeopleDetector->adaBoost->Faces_min_search_scale_y
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Faces_min_search_scale_y" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_min_search_scale_y) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_min_search_scale_y'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Faces_min_search_scale_y'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+
+//************************************************************************************
+//	BEGIN PeopleDetector->adaBoost->Range_increase_search_scale
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Range_increase_search_scale" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_increase_search_scale) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_increase_search_scale'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Range_increase_search_scale'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+
+//************************************************************************************
+//	BEGIN PeopleDetector->adaBoost->Range_drop_groups
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Range_drop_groups" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_drop_groups) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_drop_groups'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Range_drop_groups'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+
+//************************************************************************************
+//	BEGIN PeopleDetector->adaBoost->Range_min_search_scale_x
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Range_min_search_scale_x" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_min_search_scale_x) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_min_search_scale_x'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Range_min_search_scale_x'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+
+//************************************************************************************
+//	BEGIN PeopleDetector->adaBoost->Range_min_search_scale_y
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Range_min_search_scale_y" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_min_search_scale_y) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_min_search_scale_y'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Range_min_search_scale_y'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+			}
+//************************************************************************************
+//	END CameraDataViewerControlFlow->adaBoost
+//************************************************************************************
+
+//************************************************************************************
+//	BEGIN PeopleDetector->eigenfaces
+//************************************************************************************
+			// Tag element "adaBoost" of Xml Inifile
+			p_xmlElement_Root_OD = NULL;
+			p_xmlElement_Root_OD = p_xmlElement_Root->FirstChildElement( "eigenfaces" );
+
+			if ( p_xmlElement_Root_OD )
+			{
+
+//************************************************************************************
+//	BEGIN PeopleDetector->eigenfaces->Threshold_Face_Class
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				TiXmlElement *p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Threshold_Face_Class" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_threshold) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Threshold_Face_Class'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Threshold_Face_Class'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+//************************************************************************************
+//	BEGIN PeopleDetector->eigenfaces->Threshold_Facespace
+//************************************************************************************
+				// Subtag element "adaBoost" of Xml Inifile
+				p_xmlElement_Child = NULL;
+				p_xmlElement_Child = p_xmlElement_Root_OD->FirstChildElement( "Threshold_Facespace" );
+
+				if ( p_xmlElement_Child )
+				{
+					// read and save value of attribute
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_threshold_FS) != TIXML_SUCCESS)
+					{
+						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+						std::cerr << "\t ... Can't find attribute 'value' of tag 'Threshold_Facespace'" << std::endl;
+						return ipa_Utils::RET_FAILED;
+					}
+				}
+				else
+				{
+					std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
+					std::cerr << "\t ... Can't find tag 'Threshold_Facespace'" << std::endl;
+					return ipa_Utils::RET_FAILED;
+				}
+//************************************************************************************
+//	END CameraDataViewerControlFlow->eigenfaces
+//************************************************************************************
+
+			}
+			else
+			{
+				std::cerr << "ERROR - CameraDataViewerControlFlow::LoadParameters:" << std::endl;
+				std::cerr << "\t ... Can't find tag 'ObjectDetectorParameters'" << std::endl;
+				return ipa_Utils::RET_FAILED;
+			}
+
+		}
+
+
+//************************************************************************************
+//	END ObjectDetector
+//************************************************************************************
+		else
+		{
+			std::cerr << "ERROR - CameraDataViewerControlFlow::LoadParameters:" << std::endl;
+			std::cerr << "\t ... Can't find tag 'ObjectDetector'" << std::endl;
+			return ipa_Utils::RET_FAILED;
+		}
+	}
+	return ipa_Utils::RET_OK;
+}
+
+
+
+
 //#######################
 //#### main programm ####
 int main(int argc, char** argv)
@@ -620,10 +626,10 @@ int main(int argc, char** argv)
 	ros::NodeHandle nh;
 	
 	// Create people detection node class instance   
-	CobPeopleDetectionNode people_detection_node(nh);
+	cobPeopleDetectionNode people_detection_node(nh);
 
 	// Initialize people detection node
-	if (!people_detection_node.init()) 
+	if (people_detection_node.init() != ipa_Utils::RET_OK)
 		return 0;
 
 	// Create action nodes
@@ -650,7 +656,7 @@ int main(int argc, char** argv)
 
 
 
-
+/*
 class CobObjectDetectionNode
 {
 public:
