@@ -137,7 +137,7 @@ unsigned long PeopleDetectorControlFlow::PCA()
 
 unsigned long PeopleDetectorControlFlow::RecognizeFace(ipa_SensorFusion::ColoredPointCloudPtr pc, std::vector<int>& index)
 {
-	if (m_PeopleDetector->RecognizeFace(pc, m_colorFaces, &m_nEigens, m_eigenVectArr, m_avgImage, m_projectedTrainFaceMat, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->RecognizeFace(pc->GetColorImage(), m_colorFaces, &m_nEigens, m_eigenVectArr, m_avgImage, m_projectedTrainFaceMat, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::RecognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";

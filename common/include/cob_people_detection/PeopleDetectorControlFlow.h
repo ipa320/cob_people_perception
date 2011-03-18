@@ -17,8 +17,6 @@
 	#include "cob_vision/cob_people_detection/common/include/cob_people_detection/PeopleDetector.h"
 #endif
 
-//#include "Vision/Utilities/OpenCVUtils.h"
-
 #include <iostream>
 #include <cv.h>
 #include <string>
@@ -117,10 +115,10 @@ public:
 	std::vector<std::string> m_faceClasses_id;	///< Id of face Classes
 
 	int m_nEigens;								///< Number of eigenvalues
-	std::vector<cv::Mat> m_eigenVectArr;					///< Eigenvectors
+	std::vector<cv::Mat> m_eigenVectArr;		///< Eigenvectors
 	cv::Mat m_eigenValMat;						///< Eigenvalues
-	cv::Mat m_avgImage;						///< Trained average Image
-	cv::Mat m_projectedTrainFaceMat;				///< Projected training faces
+	cv::Mat m_avgImage;							///< Trained average Image
+	cv::Mat m_projectedTrainFaceMat;			///< Projected training faces
 
 	PeopleDetector* m_PeopleDetector;
 	int m_threshold;							///< Threshold to detect unknown faces

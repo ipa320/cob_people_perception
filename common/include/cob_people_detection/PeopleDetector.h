@@ -88,7 +88,7 @@ public:
 
 	/// Function to Recognize faces
 	/// The function recognize the faces
-	/// @param pc ColoredPointClowed with images
+	/// @param colorImage source color image
 	/// @param faceCoordinates Detected faces
 	/// @param nEigens Number of eigenvalues
 	/// @param eigenVectArr Eigenvectors
@@ -99,7 +99,7 @@ public:
 	/// @param threshold_FS The threshold to the face space
 	/// @param eigenValMat Eigenvalues
 	/// @return Return code
-	virtual unsigned long RecognizeFace(ipa_SensorFusion::ColoredPointCloudPtr pc, std::vector<cv::Rect>& colorFaces, int* nEigens, std::vector<cv::Mat>& eigenVectArr, cv::Mat& avgImage, cv::Mat& projectedTrainFaceMat,
+	virtual unsigned long RecognizeFace(cv::Mat& colorImage, std::vector<cv::Rect>& colorFaces, int* nEigens, std::vector<cv::Mat>& eigenVectArr, cv::Mat& avgImage, cv::Mat& projectedTrainFaceMat,
 																			std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat);
 
 	/// Function to find the closest face class

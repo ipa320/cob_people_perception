@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\common\src\CuiPeopleDetector.cpp" />
+    <ClCompile Include="..\common\src\PeopleDetector.cpp" />
+    <ClCompile Include="..\common\src\PeopleDetectorControlFlow.cpp" />
+    <ClCompile Include="..\common\src\PeopleDetectorMain.cpp" />
+    <ClCompile Include="..\..\cob_sensor_fusion\common\src\CameraSensorsControlFlow.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\care-o-bot\cob_common\cob_vision_utils\common\src\VisionUtils.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\src\extern\TinyXml\tinystr.cpp">
+      <Filter>TinyXML</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\src\extern\TinyXml\tinyxml.cpp">
+      <Filter>TinyXML</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\src\extern\TinyXml\tinyxmlerror.cpp">
+      <Filter>TinyXML</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\src\extern\TinyXml\tinyxmlparser.cpp">
+      <Filter>TinyXML</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\include\cob_people_detection\CuiPeopleDetector.h" />
+    <ClInclude Include="..\common\include\cob_people_detection\PeopleDetector.h" />
+    <ClInclude Include="..\common\include\cob_people_detection\PeopleDetectorControlFlow.h" />
+    <ClInclude Include="..\..\windows\src\extern\TinyXml\tinystr.h">
+      <Filter>TinyXML</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\windows\src\extern\TinyXml\tinyxml.h">
+      <Filter>TinyXML</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Utilities">
+      <UniqueIdentifier>{d3d1eb20-73cf-4841-a66f-991138348e18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TinyXML">
+      <UniqueIdentifier>{94297019-7c77-4467-a0e6-354106baede5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

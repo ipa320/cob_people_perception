@@ -278,7 +278,7 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudPtr pc, std::vector<cv::Rect>& colorFaceCoordinates, int* nEigens, std::vector<cv::Mat>& eigenVectors, cv::Mat& avgImage, cv::Mat& projectedTrainFaceMat,
+unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv::Rect>& colorFaceCoordinates, int* nEigens, std::vector<cv::Mat>& eigenVectors, cv::Mat& avgImage, cv::Mat& projectedTrainFaceMat,
 										std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat)
 {
 	float* eigenVectorWeights = 0;
@@ -298,7 +298,7 @@ unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudP
 	for(int i=0; i<(int)colorFaceCoordinates.size(); i++)
 	{
 		cv::Rect face = colorFaceCoordinates[i];
-		ConvertAndResize(pc->GetColorImage(), resized_8U1, face);
+		ConvertAndResize(colorImage, resized_8U1, face);
 
 		IplImage avgImageIpl = (IplImage)avgImage;
 		
