@@ -95,7 +95,7 @@ public:
 	unsigned long ShowAVGImage(cv::Mat& avgImage);
 
 	/// Function to extract images for training range classifier
-	/// @param pc ColoredPointClowed with images
+	/// @param pc ColoredPointCloud with images
 	/// @return Return code.
 	unsigned long SaveRangeTrainImages(ipa_SensorFusion::ColoredPointCloudPtr pc);
 
@@ -112,7 +112,6 @@ public:
 
 	std::vector<cv::Mat> m_faceImages;			///< Trained face images
 	std::vector<std::string> m_id;				///< Id of learned faces
-	std::vector<std::string> m_faceClasses_id;	///< Id of face Classes
 
 	int m_nEigens;								///< Number of eigenvalues
 	std::vector<cv::Mat> m_eigenVectArr;		///< Eigenvectors

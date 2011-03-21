@@ -33,7 +33,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Caroline Pantofaru */
+/* Author: Caroline Pantofaru
+ * Modified for Kinect/Point Cloud support: Richard Bormann */
 
 
 

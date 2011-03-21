@@ -86,6 +86,9 @@ unsigned long cobPeopleDetectionNode::init()
 
 	colored_pc_ = ipa_SensorFusion::CreateColoredPointCloud();
 
+	// load data for face recognition
+	loadTrainingData();
+
 	cv::namedWindow("Face Detector");
 
 	std::string directory = "ConfigurationFiles/";
@@ -98,7 +101,10 @@ unsigned long cobPeopleDetectionNode::init()
 	//	return ipa_Utils::RET_FAILED;
 	//}
 
+	if (m_PeopleDetector != 0) delete m_PeopleDetector;
 	m_PeopleDetector = new ipa_PeopleDetector::PeopleDetector();
+
+	m_filename = 0;
 
 	if (m_PeopleDetector->Init() & ipa_Utils::RET_FAILED)
 	{
@@ -136,17 +142,287 @@ unsigned long cobPeopleDetectionNode::detectFaces(cv::Mat& xyz_image, cv::Mat& c
 	return ipa_Utils::RET_OK;
 }
 
-/*	unsigned long cobPeopleDetectionNode::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
+unsigned long cobPeopleDetectionNode::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
+{
+	if (m_PeopleDetector->RecognizeFace(color_image, m_colorFaces, &m_nEigens, m_eigenVectors, m_avgImage, m_projectedTrainFaceMat, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
 	{
-		if (m_PeopleDetector->RecognizeFace(color_image, m_colorFaces, &m_nEigens, m_eigenVectArr, m_avgImage, m_projectedTrainFaceMat, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
+		std::cerr << "ERROR - PeopleDetector::recognizeFace:" << std::endl;
+		std::cerr << "\t ... Error while recognizing faces.\n";
+		return ipa_Utils::RET_FAILED;
+	}
+
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long cobPeopleDetectionNode::addFace(cv::Mat& image, std::string id)
+{
+	// addFace should only be called if there is exactly one face found --> so we access it with m_colorFaces[0]
+	if (m_PeopleDetector->AddFace(image, m_colorFaces[0], id, m_faceImages, m_id) & ipa_Utils::RET_FAILED)
+	{
+		std::cerr << "ERROR - PeopleDetectorControlFlow::AddFace:" << std::endl;
+		std::cerr << "\t ... Could not save face.\n";
+		return ipa_Utils::RET_FAILED;
+	}
+	m_runPCA = true;
+
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long cobPeopleDetectionNode::PCA()
+{
+	// only run PCA if new data has arrived after last computation
+	if(!m_runPCA)
+	{
+		std::cout << "INFO - PeopleDetector::PCA:" << std::endl;
+		std::cout << "\t ... PCA algorithm skipped.\n";
+		return ipa_Utils::RET_OK;
+	}
+
+	if(m_faceImages.size() < 2)
+	{
+		std::cout << "WARNING - PeopleDetector::ConsoleGUI:" << std::endl;
+		std::cout << "\t ... Less than two images are trained.\n";
+		return ipa_Utils::RET_OK;
+	}
+
+	// Delete memory
+	m_eigenVectors.clear();
+
+	// Do PCA
+	if (m_PeopleDetector->PCA(&m_nEigens, m_eigenVectors, m_eigenValMat, m_avgImage, m_faceImages, m_projectedTrainFaceMat) & ipa_Utils::RET_FAILED)
+	{
+		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
+		std::cerr << "\t ... Error while PCA.\n";
+		return ipa_Utils::RET_FAILED;
+	}
+
+	// Calculate FaceClasses
+	if (m_PeopleDetector->CalculateFaceClasses(m_projectedTrainFaceMat, m_id, &m_nEigens) & ipa_Utils::RET_FAILED)
+	{
+		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
+		std::cerr << "\t ... Error while calculating FaceClasses.\n";
+		return ipa_Utils::RET_FAILED;
+	}
+
+	m_runPCA = false;
+
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long cobPeopleDetectionNode::saveTrainingData()
+{
+	std::string path = "ConfigurationFiles/TrainingData/";
+	std::string filename = "data.xml";
+	std::string img_ext = ".bmp";
+
+	std::ostringstream complete;
+	complete << path << filename;
+
+//	try
+//	{
+//		fs::remove_all(path.c_str());
+//		fs::create_directory(path.c_str());
+//	}
+//	catch (const std::exception &ex)
+//	{
+//		std::cerr << "ERROR - PeopleDetectorControlFlow::SaveTrainingData():" << std::endl;
+//		std::cerr << "\t ... Exception catch of '" << ex.what() << "'" << std::endl;
+//	}
+
+	cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::WRITE);
+	if(!fileStorage.isOpened())
+	{
+		std::cout << "WARNING - PeopleDetector::SaveTrainingData:" << std::endl;
+		std::cout << "\t ... Can't save training data.\n";
+		return ipa_Utils::RET_OK;
+	}
+
+	// Ids
+	fileStorage << "id_num" << (int)m_id.size();
+	for(int i=0; i<(int)m_id.size(); i++)
+	{
+		std::ostringstream tag;
+		tag << "id_" << i;
+		fileStorage << tag.str().c_str() << m_id[i].c_str();
+	}
+
+	// Face images
+	fileStorage << "faces_num" << (int)m_faceImages.size();
+	for(int i=0; i<(int)m_faceImages.size(); i++)
+	{
+		std::ostringstream img;
+		img << path << i << img_ext;
+		std::ostringstream tag;
+		tag << "img_" << i;
+		fileStorage << tag.str().c_str() << img.str().c_str();
+		//cvSaveImage(img.str().c_str(), &m_faceImages[i]);
+		cv::imwrite(img.str().c_str(), m_faceImages[i]);
+	}
+
+	// Number eigenvalues/eigenvectors
+	fileStorage << "eigens_num" << m_nEigens;
+
+	// Eigenvectors
+	for (int i=0; i<m_nEigens; i++)
+	{
+		std::ostringstream tag;
+		tag << "ev_" << i;
+		fileStorage << tag.str().c_str() << m_eigenVectors[i];
+	}
+
+	// Eigenvalue matrix
+	fileStorage << "eigen_val_mat" << m_eigenValMat;
+
+	// Average image
+	fileStorage << "avg_image" << m_avgImage;
+
+	// Projections of the training faces
+	fileStorage << "projected_train_face_mat" << m_projectedTrainFaceMat;
+
+	fileStorage.release();
+
+	std::cout << "INFO - PeopleDetector::SaveTrainingData:" << std::endl;
+	std::cout << "\t ... " << m_faceImages.size() << " images saved.\n";
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long cobPeopleDetectionNode::loadTrainingData()
+{
+	std::string path = "ConfigurationFiles/TrainingData/";
+	std::string filename = "data.xml";
+
+	std::ostringstream complete;
+	complete << path << filename;
+
+	if(fs::is_directory(path.c_str()))
+	{
+		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::READ);
+		if(!fileStorage.isOpened())
 		{
-			std::cerr << "ERROR - PeopleDetector::recognizeFace:" << std::endl;
-			std::cerr << "\t ... Error while recognizing faces.\n";
-			return ipa_Utils::RET_FAILED;
+			std::cout << "WARNING - PeopleDetector::loadTrainingData:" << std::endl;
+			std::cout << "\t ... Cant open " << complete.str() << ".\n";
+			return ipa_Utils::RET_OK;
 		}
 
-		return ipa_Utils::RET_OK;
-	}*/
+		// Ids
+		m_id.clear();
+		int id_num = (int)fileStorage["id_num"];
+		for(int i=0; i<id_num; i++)
+		{
+			std::ostringstream tag;
+			tag << "id_" << i;
+			m_id.push_back((std::string)fileStorage[tag.str().c_str()]);
+		}
+
+		// Images
+		m_faceImages.clear();
+		int faces_num = (int)fileStorage["faces_num"];
+		for(int i=0; i<faces_num; i++)
+		{
+			std::ostringstream tag;
+			tag << "img_" << i;
+			std::string path = (std::string)fileStorage[tag.str().c_str()];
+			//IplImage *tmp = cvLoadImage(path.c_str(),0);
+			cv::Mat temp = cv::imread(path.c_str(),0);
+			m_faceImages.push_back(temp);
+		}
+
+		// Number eigenvalues/eigenvectors
+		m_nEigens = (int)fileStorage["eigens_num"];
+
+		// Eigenvectors
+		m_eigenVectors.clear();
+		m_eigenVectors.resize(m_nEigens, cv::Mat());
+		for (int i=0; i<m_nEigens; i++)
+		{
+			std::ostringstream tag;
+			tag << "ev_" << i;
+			fileStorage[tag.str().c_str()] >> m_eigenVectors[i];
+		}
+
+		// Eigenvalue matrix
+		m_eigenValMat = cv::Mat();
+		fileStorage["eigen_val_mat"] >> m_eigenValMat;
+
+		// Average image
+		m_avgImage = cv::Mat();
+		fileStorage["avg_image"] >> m_avgImage;
+
+		// Projections of the training faces
+		m_projectedTrainFaceMat = cv::Mat();
+		fileStorage["projected_train_face_mat"] >> m_projectedTrainFaceMat;
+
+		fileStorage.release();
+
+		// Run PCA
+//		m_runPCA = true;
+//		PCA();
+
+		std::cout << "INFO - PeopleDetector::loadTrainingData:" << std::endl;
+		std::cout << "\t ... " << faces_num << " images loaded.\n";
+	}
+	else
+	{
+		std::cerr << "ERROR - PeopleDetector::loadTrainingData():" << std::endl;
+		std::cerr << "\t .... Path '" << path << "' is not a directory." << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
+
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long cobPeopleDetectionNode::getEigenface(cv::Mat& eigenface, int index)
+{
+	cv::normalize(m_eigenVectors[index], eigenface, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long cobPeopleDetectionNode::showAVGImage(cv::Mat& avgImage)
+{
+	if(!m_runPCA && m_faceImages.size()<2)
+	{
+		std::cerr << "PeopleDetector::showAvgImage()" << std::endl;
+		std::cerr << "No AVG image calculated" << std::endl;
+		return 0;
+	}
+
+	cv::normalize(m_avgImage, avgImage, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long cobPeopleDetectionNode::saveRangeTrainImages(ipa_SensorFusion::ColoredPointCloudPtr pc)
+{
+	std::string path = "ConfigurationFiles/haartraining/";
+	std::string img_ext = ".jpg";
+	cv::Mat xyzImage_8U3(pc->GetXYZImage().size(), CV_8UC3);	//IplImage* xyzImage_8U3 = cvCreateImage(cvGetSize(pc->GetXYZImage()), 8, 3);
+	ipa_Utils::ConvertToShowImage(pc->GetXYZImage(), xyzImage_8U3, 3);
+
+	for(int i=0; i<(int)m_colorFaces.size(); i++)
+	{
+		cv::Mat xyzImage_8U3_resized(100, 100, CV_8UC3);    //cvCreateImage(cvSize(100,100), 8, 3); 8=IPL_DEPTH_8U
+
+		double scale = 1.6;
+		cv::Rect rangeFace;
+		rangeFace.height = (int)(m_colorFaces[i].height*scale);
+		rangeFace.width = (int)(m_colorFaces[i].width*scale);
+		rangeFace.x = m_colorFaces[i].x - ((rangeFace.width - m_colorFaces[i].width)/2);
+		rangeFace.y = m_colorFaces[i].y - ((rangeFace.height - m_colorFaces[i].height)/2)-10;
+
+		cv::Mat xyzImage_8U3_roi = xyzImage_8U3(rangeFace);
+		//cvSetImageROI(xyzImage_8U3, rangeFace);
+		cv::resize(xyzImage_8U3_roi, xyzImage_8U3_resized, xyzImage_8U3_resized.size());
+
+		std::ostringstream file;
+		file << path << m_filename << img_ext;
+
+		cv::imwrite(file.str().c_str(), xyzImage_8U3_resized);//cvSaveImage(file.str().c_str(), xyzImage_8U3_resized);
+		m_filename++;
+	}
+
+	return ipa_Utils::RET_OK;
+}
 
 unsigned long cobPeopleDetectionNode::getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
@@ -198,10 +474,10 @@ void cobPeopleDetectionNode::recognizeCallback(const sensor_msgs::PointCloud2::C
 {
 	// convert input to cv::Mat images
 	// color
-	cv_bridge::CvImagePtr color_image_ptr;
+	cv_bridge::CvImageConstPtr color_image_ptr;
 	try
 	{
-	  color_image_ptr = cv_bridge::toCvCopy(color_image_msg);
+	  color_image_ptr = cv_bridge::toCvShare(color_image_msg, sensor_msgs::image_encodings::BGR8);
 	}
 	catch (cv_bridge::Exception& e)
 	{
@@ -209,6 +485,7 @@ void cobPeopleDetectionNode::recognizeCallback(const sensor_msgs::PointCloud2::C
 	  return;
 	}
 	cv::Mat color_image = color_image_ptr->image;
+
 	// point cloud
 	pcl::PointCloud<pcl::PointXYZ> depth_cloud; // point cloud
 	pcl::fromROSMsg(*shared_image_msg, depth_cloud);
@@ -221,38 +498,37 @@ void cobPeopleDetectionNode::recognizeCallback(const sensor_msgs::PointCloud2::C
 		{
 			int index = baseIndex + 3*u*sizeof(float);
 			float* data_ptr = (float*)(depth_image_ptr+index);
-			data_ptr[0] = depth_cloud(u,v).x;
-			data_ptr[1] = depth_cloud(u,v).y;
-			data_ptr[2] = (isnan(depth_cloud(u,v).z)) ? 0.f : depth_cloud(u,v).z;
+			pcl::PointXYZ point_xyz = depth_cloud(u,v);
+			data_ptr[0] = point_xyz.x;
+			data_ptr[1] = point_xyz.y;
+			data_ptr[2] = (isnan(point_xyz.z)) ? 0.f : point_xyz.z;
 			if (u%100 == 0) std::cout << "u" << u << " v" << v << " z" << data_ptr[2] << "\n";
 		}
 	}
-	colored_pc_->SetColorImage(color_image);
-	colored_pc_->SetXYZImage(depth_image);
 
 	// convert point cloud and color image to colored point cloud
+	colored_pc_->SetColorImage(color_image);
+	colored_pc_->SetXYZImage(depth_image);
 	//getMeasurement(shared_image_msg, color_image_msg);
 
-	//m_DetectorControlFlow->PCA();
 
-	//if(m_DetectorControlFlow->m_faceImages.size() < 2)
-	//{
-	//	std::cout << "WARNING - PeopleDetector::ConsoleGUI:" << std::endl;
-	//	std::cout << "\t ... Less than two images are trained.\n";
-	//	return ipa_Utils::RET_OK;
-	//}
+	PCA();
 
-	//ipa_SensorFusion::ColoredPointCloudPtr pc;
+	if(m_faceImages.size() < 2)
+	{
+		std::cout << "WARNING - PeopleDetector::ConsoleGUI:" << std::endl;
+		std::cout << "\t ... Less than two images are trained.\n";
+		return;
+	}
 
 	//DWORD start = timeGetTime();
-
 	detectFaces(colored_pc_->GetXYZImage(), colored_pc_->GetColorImage());
 
 	cv::Mat colorImage_8U3;
 	colored_pc_->GetColorImage().copyTo(colorImage_8U3);
 
 	std::vector<int> index;
-	//recognizeFace(color_image, index);
+	recognizeFace(color_image, index);
 	std::cout << "INFO - PeopleDetector::Recognize:" << std::endl;
 	for (int i=0; i<(int)m_colorFaces.size(); i++) index.push_back(-1);
 	//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
@@ -641,889 +917,3 @@ int main(int argc, char** argv)
     
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-class CobObjectDetectionNode
-{
-public:
-	bool visualization_; ///< Use 3-D OpenGL based visualization
-	ipa_ObjectModel::AbstractMultiObjectModelPtr object_model_; ///< Map of object models 
-
-protected:
-	cob_srvs::GetPointCloud2 service_colored_pc_;
-	
-	ros::Subscriber reprojection_sub_; ///< Listens for the reprojection matrix
-	ros::ServiceServer service_server_detect_object_; ///< Service server to request object detection
-	ros::ServiceServer service_server_train_object_; ///< Service server to train object from previously acquired images
-	ros::ServiceServer service_server_acquire_object_image_; ///< Service server to acquire object image
-	ros::ServiceClient service_client_colored_pc_; ///< Service client to get colored point cloud
-	ros::NodeHandle node_handle_; ///< ROS node handle
-
-	cv::Scalar xyzr_learning_coordinates_; ///< xyz [m] learning center and learning radius 
-	ipa_ObjectModel::t_ModelType object_model_type_; ///< Object model type
-	
-	std::string directory_; ///< Working directory, from which models are loaded and saved
-	std::string images_directory_;
-	std::string segmented_images_directory_;
-	std::string features_directory_;
-	std::string model_directory_;
-	std::string model_name_suffix_;
-	ipa_ObjectModel::t_DetectionResultSequence detection_results_; ///< Variable to hold the detected objects and their pose
-	cv::Mat output_image_8U3_; ///< Visualizes detection results
-
-	unsigned int image_counter_;	///< 3D image counter used for saving training images
-	ipa_SensorFusion::ColoredPointCloudPtr colored_pc_; ///< Storage for acquired colored point cloud
-	ipa_SensorFusion::ColoredPointCloudToolboxPtr colored_pc_toolbox_; ///< Toolbox for creating a colored point cloud
-	ColoredPointCloudToolbox::t_PointCloudMode pc_mode_; 	///< Point cloud creation mode (MODE_SHARED, MODE_STEREO or MODE_AUTO)
-
-	cv::Mat reprojection_matrix_; ///< 3x3 reprojection matrix to convert 3-D points to 2-D image coordinates
-	tf::TransformBroadcaster tf_broadcaster; ///< Broadcast transforms of detected objects
-
-public:
-		
-	/// Constructor
-	CobObjectDetectionNode();
-	
-	/// Destructor
-	~CobObjectDetectionNode()
-	{
-		// Void
-	}
-
-	CobObjectDetectionNode(const ros::NodeHandle& node_handle)
-	: node_handle_(node_handle),
-	  image_counter_(0)
-	{
-	}
-
-	bool init()
-	{
-		if (loadParameters() == false) 
-			return false;
-
-		reprojection_sub_ = node_handle_.subscribe("reprojection_matrix", 1, &CobObjectDetectionNode::reprojectionCallback, this);
-
-		service_client_colored_pc_ = node_handle_.serviceClient<cob_srvs::GetPointCloud2>("get_colored_pc");
-		service_server_detect_object_ = node_handle_.advertiseService("detect_object", &CobObjectDetectionNode::detectObjectCallback, this);
-		service_server_acquire_object_image_ = node_handle_.advertiseService("acquire_object_image", &CobObjectDetectionNode::acquireImageCallback, this);
-		service_server_train_object_ = node_handle_.advertiseService("train_object", &CobObjectDetectionNode::trainObjectCallback, this);
-		images_directory_ = directory_ + "TrainingImages/";
-		segmented_images_directory_ = directory_ + "SegmentedTrainingImages/";
-		features_directory_ = directory_ + "BlobFeatures/";
-		model_directory_ = directory_ + "ObjectModels/";
-		model_name_suffix_ = "model";
-		
-		colored_pc_toolbox_ = ipa_SensorFusion::CreateColoredPointCloudToolbox();
-		colored_pc_ = ipa_SensorFusion::CreateColoredPointCloud();
-		pc_mode_ = ColoredPointCloudToolbox::MODE_STEREO;
-		switch (object_model_type_)
-		{
-#ifdef __BUILD_WITH_MODEL_BAYES__
-		case ipa_ObjectModel::MODEL_BAYES:
-			object_model_ = ipa_ObjectModel::CreateMultiObjectModel_Bayes(TYPE_SURF);
-			break;
-#endif
-#ifdef __BUILD_WITH_MODEL_SLAM_6D__
-		case ipa_ObjectModel::MODEL_SLAM_6D:
-			object_model_ = ipa_ObjectModel::CreateMultiObjectModel_SLAM6D(TYPE_SURF);
-			break;
-#endif
-#ifdef __BUILD_WITH_MODEL_SIFT__
-		case ipa_ObjectModel::MODEL_SIFT:
-			object_model_ = ipa_ObjectModel::CreateMultiObjectModel_Sift(TYPE_SURF);
-			break;
-#endif
-		default:
-			ROS_ERROR("[object_detection] Init [FAILED]");
-			ROS_ERROR("[object_detection] ... 1. Check launch file, if you selected the correct object model");
-			ROS_ERROR("[object_detection] ... 2. Check if you compiled the corresponding 'ObjectModel*.cpp' file");
-			ROS_ERROR("[object_detection] ... 3. Check if you defined the corresponding '__BUILD_WITH_MODEL_*__'");
-			ROS_ERROR("[object_detection] ...    preprocessor directive in the CMake file");
-			return false;
-		}
-
-		ROS_INFO("[object_detection] Loading object models [IN PROCESS]");
-		if (object_model_->Load(model_directory_) & ipa_Utils::RET_FAILED)
-		{
-			ROS_WARN("[object_detection] Loading of object models [FAILED]");
-		}
-
-		ROS_INFO("[object_detection] Loading object models [DONE]");
-		return true;	
-	}
-
-	void reprojectionCallback(const cob_msgs::ReprojectionMatrixPtr &data)
-	{
-		if (reprojection_matrix_.empty())
-		{
-			ROS_INFO("[object_detection] Received reprojection matrix");
-			reprojection_matrix_.create( 3, 3, CV_64FC1);
-			double* f_ptr = reprojection_matrix_.ptr<double>(0);
-			for (int i = 0; i < 9; i++)
-				f_ptr[i] = data->reprojection_matrix[i];
-
-			std::cout << "\t... / " << std::setw(8) <<  reprojection_matrix_.at<double>(0, 0) << " ";
-		        std::cout << std::setw(8) << reprojection_matrix_.at<double>(0, 1) << " ";
-		        std::cout << std::setw(8) << reprojection_matrix_.at<double>(0, 2) << " \\ " << std::endl;
-		        std::cout << "\t... | " << std::setw(8) << reprojection_matrix_.at<double>(1, 0) << " ";
-		        std::cout << std::setw(8) << reprojection_matrix_.at<double>(1, 1) << " ";
-		        std::cout << std::setw(8) << reprojection_matrix_.at<double>(1, 2) << " | "<< std::endl;;
-		        std::cout << "\t... \\ " << std::setw(8) << reprojection_matrix_.at<double>(2, 0) << " ";
-		        std::cout << std::setw(8) << reprojection_matrix_.at<double>(2, 1) << " ";
-		        std::cout << std::setw(8) << reprojection_matrix_.at<double>(2, 2) << " / "<< std::endl << std::endl;
-		}
-	}
-
-	bool detectObjectCallback(cob_srvs::DetectObjects::Request &req, cob_srvs::DetectObjects::Response &res)
-	{
-		std::string object_name = req.object_name.data;
-		if (object_name == "")
-			object_name = "ALL_OBJECTS";
-	
-		// Request colored point cloud
-		if (getMeasurement() == false)
-		{
-			ROS_ERROR("[object_detection] Colored point cloud service call [FAILED].");				
-			return false;
-		}
-
-		// Detect objects
-		if (detectObjects(object_name) == false)
-		{
-			ROS_ERROR("[object_detection] Object detection [FAILED].");				
-			return false;
-		}
-
-		// Return detection results
-		assignDetectionResults(res.object_list);
-
-		// Render detection results
-		if (visualization_) 
-			reprojectTransformationResults();
-		
-		return true;
-	}
-
-	bool assignDetectionResults(cob_msgs::DetectionArray& res)
-	{
-		for (unsigned int i = 0; i < detection_results_.size(); i++)
- 		{
-			cob_msgs::Detection object_instance;
-			object_instance.label = detection_results_[i].m_ObjectName;
-			object_instance.detector = "IPA_3D_object_recognition";
-			object_instance.score = detection_results_[i].m_DetectionQuality;
-
-			// TODO: Set Mask
-
-			object_instance.pose.pose.position.x =  detection_results_[i].m_tx;
-			object_instance.pose.pose.position.y =  detection_results_[i].m_ty;
-			object_instance.pose.pose.position.z =  detection_results_[i].m_tz;
-
-			double w = detection_results_[i].m_q1;
-			double q1 = detection_results_[i].m_q2;
-			double q2 = detection_results_[i].m_q3;
-			double q3 = detection_results_[i].m_q4;
-			
-			object_instance.pose.pose.orientation.x =  q1;
-			object_instance.pose.pose.orientation.y =  q2;
-			object_instance.pose.pose.orientation.z =  q3;
-			object_instance.pose.pose.orientation.w =  w;
-			
-			object_instance.pose.header.stamp = ros::Time::now();
-			object_instance.pose.header.frame_id = "/head_color_camera_l_link";
-
-			// Rotation about x-axis
-//			object_instance.roll = Wm4::Mathd::ATan2(2*q0*q1+2*q2*q3, 1-2*q1*q1-2*q2*q2);
-			// Rotation about y-axis
-//			object_instance.pitch = Wm4::Mathd::ASin(2*q0*q2-2*q3*q1);
-			// Rotation about z-axis
-//			object_instance.yaw = Wm4::Mathd::ATan2(2*q0*q3+2*q1*q2, 1-2*q2*q2*-2*q3*q3);  
-			res.detections.push_back(object_instance);
-			ROS_INFO("Detected object '%s' at ( %f, %f, %f, %f, %f, %f, %f ) ",
-				object_instance.label.c_str(), object_instance.pose.pose.position.x, 
-				object_instance.pose.pose.position.y, object_instance.pose.pose.position.z,
-				w, q1, q2, q3);
-
-			// Broadcast transform of object
-			tf::Transform transform;
-			std::stringstream tf_name;
-			tf_name << "object_" << i; 
-			transform.setOrigin(tf::Vector3(detection_results_[i].m_tx, detection_results_[i].m_ty, detection_results_[i].m_tz));
-			transform.setRotation(tf::Quaternion(q1, q2, q3, w));
-			tf_broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/head_color_camera_l_link", tf_name.str()));
-		}
-		
-		return true;
-	}
-		
-	bool getMeasurement()
-	{
-		ROS_INFO("[object_detection] Colored point cloud service call.");
-	
-		if(service_client_colored_pc_.call(service_colored_pc_))
-		{
-			ROS_INFO("[object_detection] Colored point cloud service call [OK].");
-		}
-		else
-		{
-			ROS_ERROR("[object_detection] Colored point cloud service call [FAILED].");
-			return false;
-		}
-
-		sensor_msgs::PointCloud2ConstPtr pc(&(service_colored_pc_.response.pointCloud2), voidDeleter);
-
-		cv::Mat color_image_8U3(pc->height, pc->width, CV_8UC3);
-		cv::Mat xyz_image_32F3(pc->height, pc->width, CV_32FC3);
-		float* f_ptr = 0;
-		const uint8_t* data_ptr = 0;
-		unsigned char* uc_ptr = 0;
-		unsigned int xyz_offset = pc->fields[0].offset;
-		unsigned int rgb_offset = pc->fields[3].offset;
-		size_t b_offset = 2*sizeof(unsigned char);
-		size_t g_offset = sizeof(unsigned char);
-		size_t r_offset = 0;
-		unsigned int col_times_3 = 0;
-		for (unsigned int row = 0; row < pc->height; row++)	
-		{
-			uc_ptr = color_image_8U3.ptr<unsigned char>(row);
-			f_ptr = xyz_image_32F3.ptr<float>(row);
-
-			data_ptr = &pc->data[row * pc->width * pc->point_step];
-			
-			for (unsigned int col = 0; col < pc->width; col++)	
-			{
-				col_times_3 = 3*col;
-				// Reorder incoming image channels
-				memcpy(&uc_ptr[col_times_3], &data_ptr[col * pc->point_step + rgb_offset + b_offset], sizeof(unsigned char));
-				memcpy(&uc_ptr[col_times_3 + 1], &data_ptr[col * pc->point_step + rgb_offset + g_offset], sizeof(unsigned char));
-				memcpy(&uc_ptr[col_times_3 + 2], &data_ptr[col * pc->point_step + rgb_offset + r_offset], sizeof(unsigned char));
-
-				memcpy(&f_ptr[col_times_3], &data_ptr[col * pc->point_step + xyz_offset], 3*sizeof(float));
-			}
-		}
-
-		// Images are cloned within setter functions
-		colored_pc_->SetColorImage(color_image_8U3);
-		colored_pc_->SetXYZImage(xyz_image_32F3);
-
-//    		cv::Mat xyz_image_8U3;
-//		ipa_Utils::ConvertToShowImage(colored_pc_->GetXYZImage(), xyz_image_8U3, 3);
-//	    	cv::imshow("xyz data", xyz_image_8U3);
-//	    	cv::imshow("color data", colored_pc_->GetColorImage());
-//	    	cv::waitKey();
-
-		return true;
-	}
-
-	bool detectObjects(std::string object_name)
-	{
-		// Check if any object models have been loaded
-		if(object_model_->IsEmpty())
-		{
-			ROS_ERROR("[object_detection] No object models available for detection");
-			ROS_ERROR("[object_detection] Model map has not been initialized");
-			return false;
-		}
-
-		
-		// Call the detection function
-		if(object_model_->DetectModel(object_name, *colored_pc_) & ipa_Utils::RET_FAILED)
-		{
-			return false;
-		}
-		
-		// Retrieve the detection results
-		detection_results_ = object_model_->GetDetectionResults();
-		return true;
-	}
-
-	bool reprojectTransformationResults()
-	{
-		cv::Mat image_8U3 = colored_pc_->GetColorImage();
-		
-		if (output_image_8U3_.empty())
-		{
-			cvNamedWindow("XYZRGB image");
-			cvStartWindowThread();
-		}
-
-		// Check if user manually closed the window and abort
-		// drawing if so
-		if (!cvGetWindowHandle("XYZRGB image"))
-			return true;
-
-		std::vector<int> u_vec;
-		std::vector<int> v_vec;
-		std::vector<ipa_Utils::Vector3d> pVec;
-	
-		ipa_Utils::Vector3d p;
-		int u=0;
-		int v=0;
-		
-		ipa_Utils::Vector3d translation;
-		ipa_Utils::Quaterniond q;
-
-		// Render 2-D detection results
-		for(unsigned int j=0; j<detection_results_.size(); j++)
-		{
-			/// Render detection results if object has been detected
-			if (detection_results_[j].m_DetectionQuality > 1.8)
-			{
-				cv::Point pUp = cv::Point(detection_results_[j].m_u, detection_results_[j].m_v-20);
-				cv::Point pDown = cv::Point(detection_results_[j].m_u, detection_results_[j].m_v+20);
-				cv::Point pLeft = cv::Point(detection_results_[j].m_u-20, detection_results_[j].m_v);
-				cv::Point pRight = cv::Point(detection_results_[j].m_u+20, detection_results_[j].m_v);
-	
-				cv::line(image_8U3, pLeft, pRight, cv::Scalar(255, 255, 255), 6);
-				cv::line(image_8U3, pUp, pDown, cv::Scalar(255, 255, 255), 6);
-				cv::circle(image_8U3, cv::Point(detection_results_[j].m_u, detection_results_[j].m_v), 6, cv::Scalar(255, 255, 255), 1);
-	
-				cv::line(image_8U3, pLeft, pRight, cv::Scalar(0, 255, 0), 1);
-				cv::line(image_8U3, pUp, pDown, cv::Scalar(0, 255, 0), 1);
-				cv::circle(image_8U3, cv::Point(detection_results_[j].m_u, detection_results_[j].m_v), 3, cv::Scalar(0, 255, 0), 1);
-			}
-		}
-	
-		// Render 3-D detection results
-		// Reproject bounding box of the object on the image
-		if (pc_mode_ == ColoredPointCloudToolbox::MODE_STEREO)
-		{
-			for (unsigned int i=0; i<detection_results_.size(); i++)
-			{
-				pVec.clear();
-				u_vec.clear();
-				v_vec.clear();
-		
-				/// Get transformation
-				translation[0] = detection_results_[i].m_tx;
-				translation[1] = detection_results_[i].m_ty;
-				translation[2] = detection_results_[i].m_tz;
-				q[0] = detection_results_[i].m_q1;
-				q[1] = detection_results_[i].m_q2;
-				q[2] = detection_results_[i].m_q3;
-				q[3] = detection_results_[i].m_q4;
-		
-				/// Express bounding box in xyz coordinates
-				double y = detection_results_[i].m_MinY;
-				for (int j=0; j<2; j++)
-				{
-					p[0] = detection_results_[i].m_MaxX;
-					p[1] = y;
-					p[2] = detection_results_[i].m_MinZ;
-					pVec.push_back(p);
-	
-					p[0] = detection_results_[i].m_MinX;
-					p[1] = y;
-					p[2] = detection_results_[i].m_MinZ;
-					pVec.push_back(p);
-		
-					p[0] = detection_results_[i].m_MinX;
-					p[1] = y;
-					p[2] = detection_results_[i].m_MaxZ;
-					pVec.push_back(p);
-		
-					p[0] = detection_results_[i].m_MaxX;
-					p[1] = y;
-					p[2] = detection_results_[i].m_MaxZ;
-					pVec.push_back(p);
-		
-					y = detection_results_[i].m_MaxY;
-				}
-		
-				/// Reproject xyz coordinates to image coordinates
-				for (unsigned int j=0; j<pVec.size(); j++)
-				{
-					ipa_Utils::RotateTranslate(pVec[j], translation, q);
-					colored_pc_toolbox_->ReprojectXYZ(pVec[j][0], pVec[j][1], pVec[j][2], u , v, &reprojection_matrix_);
-					u_vec.push_back(u);
-					v_vec.push_back(v);
-				}
-		
-				/// Draw lower rectangle of bounding box
-				for (unsigned int j=0; j<3; j++)
-				{
-					cv::line(image_8U3, cv::Point(u_vec[j], v_vec[j]), cv::Point(u_vec[j+1], v_vec[j+1]), detection_results_[i].m_rgb, 3);
-				}
-				cv::line(image_8U3, cv::Point(u_vec[3], v_vec[3]), cv::Point(u_vec[0], v_vec[0]), detection_results_[i].m_rgb);
-		
-				/// Draw upper rectangle of bounding box
-				for (unsigned int j=4; j<pVec.size()-1; j++)
-				{
-					cv::line(image_8U3, cv::Point(u_vec[j], v_vec[j]), cv::Point(u_vec[j+1], v_vec[j+1]), detection_results_[i].m_rgb, 3);
-				}
-				cv::line(image_8U3, cv::Point(u_vec[7], v_vec[7]), cv::Point(u_vec[4], v_vec[4]), detection_results_[i].m_rgb);
-		
-				/// Draw side lines of bounding box
-				for (unsigned int j=0; j<4; j++)
-				{
-					cv::line(image_8U3, cv::Point(u_vec[j], v_vec[j]), cv::Point(u_vec[j+4], v_vec[j+4]), detection_results_[i].m_rgb, 3);
-				}
-			}
-		}
-			
-		cv::resize(image_8U3, output_image_8U3_, cv::Size(), 0.5, 0.5);
-		cv::imshow("XYZRGB image", output_image_8U3_);
-			
-		return true;
-	}
-
-	bool resetImageCounter()
-	{
-		image_counter_ = 0;
-		return true;
-	}
-		
-	bool acquireImageCallback(cob_srvs::AcquireObjectImage::Request &req, cob_srvs::AcquireObjectImage::Response &res)
-	{
-		ROS_INFO("[object_detection] AcquireObjectImage service call");				
-
-		// Request colored point cloud
-		if (getMeasurement() == false)
-		{
-			ROS_ERROR("[object_detection] Colored point cloud service call [FAILED].");				
-			return false;
-		}
-		
-		segmentAndSaveTrainingImage(req.object_name, req.reset_image_counter);
-			
-		return true;
-	}
-
-	bool segmentAndSaveTrainingImage(std::string object_name, bool reset_image_counter)
-	{
-			
-		// Segment colored point cloud
-		cv::Scalar uv_boundaries(0, 424242, 0, 424242);
-		// Reproject bounding box of the object on the image and calculate extremal
-		// image coordinates of segmentation area
-		if (pc_mode_ == ColoredPointCloudToolbox::MODE_STEREO)
-		{
-			double z0 = xyzr_learning_coordinates_.val[2] - xyzr_learning_coordinates_.val[3];
-			double z1 = xyzr_learning_coordinates_.val[2] + xyzr_learning_coordinates_.val[3];
-			double minZ = std::min(z0, z1);
-	
-			double x0 = xyzr_learning_coordinates_.val[0] - xyzr_learning_coordinates_.val[3];
-			double x1 = xyzr_learning_coordinates_.val[0] + xyzr_learning_coordinates_.val[3];
-			double maxX = std::max(x0, x1);
-			double minX = std::min(x0, x1);
-	
-			double y0 = xyzr_learning_coordinates_.val[1] - xyzr_learning_coordinates_.val[3];
-			double y1 = xyzr_learning_coordinates_.val[1] + xyzr_learning_coordinates_.val[3];
-			double maxY = std::max(y0, y1);
-			double minY = std::min(y0, y1);
-	
-			int minU = 0;
-			int maxU = 0;
-			int minV = 0;
-			int maxV = 0;
-
-			std::cout << minX << " " << maxX << " " << minY << " " << maxY << " " << minZ << " " << std::endl; 
-
-			colored_pc_toolbox_->ReprojectXYZ(minX, minY, minZ, minU, minV, &reprojection_matrix_);
-			colored_pc_toolbox_->ReprojectXYZ(maxX, maxY, minZ, maxU, maxV, &reprojection_matrix_);
-	
-			uv_boundaries = cv::Scalar(minU, maxU, minV, maxV);
-		}
-	
-		ROS_INFO("[object detection] Segmentation boundaries");
-		ROS_INFO("[object detection] %f <= u <= %f, %f <= v <= %f", 
-			uv_boundaries.val[0], uv_boundaries.val[1], uv_boundaries.val[2], uv_boundaries.val[3]);
-		
-		colored_pc_toolbox_->DoRangeSegmentation(colored_pc_, &xyzr_learning_coordinates_, &uv_boundaries, pc_mode_);
-		colored_pc_toolbox_->CutImageBorder(colored_pc_, 200);
-
-		if (reset_image_counter) 
-			image_counter_ = 0;
-				
-		saveTrainingImage(object_name, image_counter_);
-
-		if (visualization_)
-		{
-			if (output_image_8U3_.empty()) 
-			{
-				cvNamedWindow("XYZRGB image");
-				cvStartWindowThread();
-			}
-
-			if (cvGetWindowHandle("XYZRGB image"))
-			{
-				cv::resize(colored_pc_->GetColorImage(), output_image_8U3_, cv::Size(), 0.5, 0.5);
-				cv::imshow("XYZRGB image", output_image_8U3_);
-			}
-		}
-
-		image_counter_++;
-		return true;
-	}
-	
-	bool saveTrainingImage(std::string objectName, int index)
-	{
-		std::stringstream file_name_stream;
-		file_name_stream << segmented_images_directory_ << objectName << "_info.txt";
-		/// Delete old info header
-		remove((file_name_stream.str()).c_str());
-	
-		/// Delete old images with same filename
-		std::stringstream file_name_stream2;
-		file_name_stream2 << segmented_images_directory_ << objectName << "_" << index;
-		colored_pc_->DeleteColoredPointCloud(file_name_stream2.str());
-		
-		/// Create and save new info header
-		std::ofstream f((file_name_stream.str()).c_str());
-		if(!f.is_open()) 
-		{
-			ROS_ERROR("[object_detection] Could not open file '%s'", file_name_stream.str().c_str());				
-			return false;
-		}
-		f << index+1 << std::endl;
-		
-		/// Save image
-		colored_pc_->SaveColoredPointCloud(file_name_stream2.str());
-		
-		return true;
-	}
-		
-		
-	bool trainObjectCallback(cob_srvs::TrainObject::Request &req, cob_srvs::TrainObject::Response &res)
-	{
-		if (!trainObjectModel(req.object_name))
-		{
-			ROS_ERROR("[object_detection] object model training failed");				
-			return false;
-		}
-		return true;
-	}
-
-	bool trainObjectModel(std::string object_name)
-	{
-
-		ColoredPointCloudSequencePtr pc_seq = ipa_SensorFusion::CreateColoredPointCloudSequence();
-		
-		if(pc_seq->LoadColoredPointCloudSequence(segmented_images_directory_+object_name, 500) & ipa_Utils::RET_FAILED)
-		{	
-			ROS_ERROR("[object_detection] Loading shared image sequence failed");
-			return false;
-		}
-		
-		/// Train object
-		ROS_INFO("[object_detection] Training object '%s'", object_name.c_str());
-		object_model_->SetLearningCenter(xyzr_learning_coordinates_);
-
-		ipa_ObjectModel::AbstractObjectModelParametersPtr params = ipa_ObjectModel::AbstractObjectModelParametersPtr(new ipa_ObjectModel::AbstractObjectModelParameters());
-		params->objectName = object_name;
-		if(object_model_->BuildAndAddModel(params, (*pc_seq)) & ipa_Utils::RET_FAILED)
-		{
-			ROS_ERROR("[object_detection] Model creation failed");
-			return false;
-		}
-		
-		if(object_model_->Save(model_directory_) & ipa_Utils::RET_FAILED)
-		{
-			ROS_ERROR("[object_detection] Saving object model failed");
-			return false;
-		}
-		
-		return true;
-	}
-
-	bool loadParameters()
-	{
-		std::string tmp_string;
-		double learning_pos_x; ///< x-val of object position for learning
-		double learning_pos_y; ///< y-val of object position for learning
-		double learning_pos_z; ///< z-val of object position for learning
-		double learning_radius; ///< radius of object model for learning
-	
-		/// Parameters are set within the launch file
-		if (node_handle_.getParam("object_detection/model_directory", directory_) == false)
-		{
-			ROS_ERROR("[object_detection] Path to model files not specified");
-			return false;
-		}
-
-		ROS_INFO("Working directory: %s", directory_.c_str());
-
-		/// Parameters are set within the launch file
-		if (node_handle_.getParam("object_detection/object_model_type", tmp_string) == false)
-		{
-			ROS_ERROR("[object_detection] object model type");
-			return false;
-		}
-		if (tmp_string == "MODEL_BAYES")
-		{	
-			object_model_type_ = ipa_ObjectModel::MODEL_BAYES;
-		}
-		else if (tmp_string == "MODEL_SLAM_6D")
-		{	
-			object_model_type_ = ipa_ObjectModel::MODEL_SLAM_6D;
-		}
-		else if (tmp_string == "MODEL_SIFT")
-		{	
-			object_model_type_ = ipa_ObjectModel::MODEL_SIFT;
-		}
-		else 
-		{
-			std::string str = "[object_detection] Object model type '" + tmp_string + "' unknown, try 'MODEL_6D_CLASSIFIER' or 'MODEL_SIFT'";	
-			ROS_ERROR("%s", str.c_str());
-			return false;
-		}
-
-		ROS_INFO("Object model type: %s", tmp_string.c_str());
-
-		/// Parameters are set within the launch file
-		if (node_handle_.getParam("object_detection/visualization", visualization_) == false)
-		{
-			ROS_ERROR("[object_detection] shared working size factor not specified");
-			return false;
-		}
-
-		if (visualization_) ROS_INFO("Visualization of detection results: TRUE");
-		else ROS_INFO("Visualization of detection results: FALSE");
-	
-		/// Parameters are set within the launch file
-		if (node_handle_.getParam("object_detection/learning_pos_x", learning_pos_x) == false)
-		{
-			ROS_ERROR("[object_detection] X value of learning position not specified");
-			return false;
-		}
-
-		/// Parameters are set within the launch file
-		if (node_handle_.getParam("object_detection/learning_pos_y", learning_pos_y) == false)
-		{
-			ROS_ERROR("[object_detection] Y value of learning position not specified");
-			return false;
-		}
-
-		/// Parameters are set within the launch file
-		if (node_handle_.getParam("object_detection/learning_pos_z", learning_pos_z) == false)
-		{
-			ROS_ERROR("[object_detection] Z value of learning position not specified");
-			return false;
-		}
-
-		ROS_INFO("Learning coordinates (x - y - z): %f - %f - %f", learning_pos_x, learning_pos_y, learning_pos_z);
-
-		/// Parameters are set within the launch file
-		if (node_handle_.getParam("object_detection/learning_radius", learning_radius) == false)
-		{
-			ROS_ERROR("[object_detection] Radius of learning position not specified");
-			return false;
-		}
-
-		ROS_INFO("Learning radius: %f", learning_radius);
-		xyzr_learning_coordinates_ = cvScalar(learning_pos_x, learning_pos_y, learning_pos_z, learning_radius);
-
-		return true;
-	}
-};
-
-
-// Action class for object detection
-class DetectObjectsAction
-{
-protected:
-	actionlib::SimpleActionServer<cob_object_detection::DetectObjectsAction> as_detect_;	///< The action server for object detection
-	cob_object_detection::DetectObjectsFeedback as_detect_feedback_;	///< The feedback message
-	cob_object_detection::DetectObjectsResult as_detect_result_;	///< the result message
-
-	CobObjectDetectionNode& object_detection_node_;
-	ros::NodeHandle node_handle_; ///< ROS node handle
-public:
-	DetectObjectsAction(CobObjectDetectionNode& object_detection_node, const ros::NodeHandle& node_handle)
-	: as_detect_(node_handle, "detect_object", boost::bind(&DetectObjectsAction::detectObjectActionCallback, this, _1), false),
-	object_detection_node_(object_detection_node),
-	node_handle_(node_handle)
-	{
-		as_detect_.start();
-	}
-	
-	void detectObjectActionCallback(const cob_object_detection::DetectObjectsGoalConstPtr &goal)
-	{
-		std::string object_name = goal->object_name.data;
-		if (object_name == "")
-			object_name = "ALL_OBJECTS";
-	
-		// Request colored point cloud
-		if (object_detection_node_.getMeasurement() == false)
-		{
-			ROS_ERROR("[object_detection] Colored point cloud service call [FAILED].");				
-			return;
-		}
-
-		as_detect_feedback_.percent_complete = 0.2;
-		as_detect_.publishFeedback(as_detect_feedback_);
-		if (as_detect_.isPreemptRequested() || !ros::ok())
-		{		
-			ROS_INFO("[object_detection] object detection preempted");
-			// set the action state to preempted
-			as_detect_.setPreempted();
-			return;
-		}
-
-
-		// Detect objects
-		if (object_detection_node_.detectObjects(object_name) == false)
-		{
-			ROS_ERROR("[object_detection] Object detection [FAILED].");				
-			return;
-		}
-
-		as_detect_feedback_.percent_complete = 0.9;
-		as_detect_.publishFeedback(as_detect_feedback_);
-		if (as_detect_.isPreemptRequested() || !ros::ok())
-		{		
-			ROS_INFO("[object_detection] object detection preempted");
-			// set the action state to preempted
-			as_detect_.setPreempted();
-			return;
-		}
-
-		// Assign detection results
-		object_detection_node_.assignDetectionResults(as_detect_result_.object_list);
-
-		as_detect_feedback_.percent_complete = 0.95;
-		as_detect_.publishFeedback(as_detect_feedback_);
-		if (as_detect_.isPreemptRequested() || !ros::ok())
-		{		
-			ROS_INFO("[object_detection] object detection preempted");
-			// set the action state to preempted
-			as_detect_.setPreempted();
-			return;
-		}
-
-		// Render detection results
-		if (object_detection_node_.visualization_) 
-			object_detection_node_.reprojectTransformationResults();
-
-		as_detect_feedback_.percent_complete = 1.0;
-		as_detect_.publishFeedback(as_detect_feedback_);
-		as_detect_.setSucceeded();
-	}
-};
-
-// Action class for image acquisition
-class AcquireObjectImageAction
-{
-protected:
-	actionlib::SimpleActionServer<cob_object_detection::AcquireObjectImageAction> as_acquire_;	///< The action server for object detection
-	cob_object_detection::AcquireObjectImageFeedback as_acquire_feedback_;	///< The feedback message
-	cob_object_detection::AcquireObjectImageResult as_acquire_result_;	///< the result message
-
-	CobObjectDetectionNode& object_detection_node_;
-	ros::NodeHandle node_handle_; ///< ROS node handle
-public:
-	AcquireObjectImageAction(CobObjectDetectionNode& object_detection_node, const ros::NodeHandle& node_handle)
-	: as_acquire_(node_handle, "acquire_object_image", boost::bind(&AcquireObjectImageAction::acquireImageActionCallback, this, _1), false),
-	object_detection_node_(object_detection_node),
-	node_handle_(node_handle)
-	{
-		as_acquire_.start();
-	}
-
-	void acquireImageActionCallback(const cob_object_detection::AcquireObjectImageGoalConstPtr &goal)
-	{
-		ROS_INFO("[object_detection] AcquireObjectActionImage action call");				
-
-		// Request colored point cloud
-		if (object_detection_node_.getMeasurement() == false)
-		{
-			ROS_ERROR("[object_detection] Colored point cloud service call [FAILED].");				
-			return;
-		}
-		
-		as_acquire_feedback_.percent_complete = 0.5;
-		as_acquire_.publishFeedback(as_acquire_feedback_);
-		if (as_acquire_.isPreemptRequested() || !ros::ok())
-		{		
-			ROS_INFO("[object_detection] image acquisition preempted");
-			// set the action state to preempted
-			as_acquire_.setPreempted();
-			return;
-		}
-
-		object_detection_node_.segmentAndSaveTrainingImage(goal->object_name, goal->reset_image_counter);
-	
-		as_acquire_feedback_.percent_complete = 1.0;
-		as_acquire_.publishFeedback(as_acquire_feedback_);
-		as_acquire_.setSucceeded();
-
-		return;
-	}
-};
-
-// Action class for object training
-class TrainObjectAction
-{
-protected:
-	actionlib::SimpleActionServer<cob_object_detection::TrainObjectAction> as_train_;	///< The action server for object training
-	cob_object_detection::TrainObjectFeedback as_train_feedback_;	///< The feedback message
-	cob_object_detection::TrainObjectResult as_train_result_;	///< the result message
-
-	CobObjectDetectionNode& object_detection_node_;
-	ros::NodeHandle node_handle_; ///< ROS node handle
-public:
-	TrainObjectAction(CobObjectDetectionNode& object_detection_node, const ros::NodeHandle& node_handle)
-	: as_train_(node_handle, "train_object", boost::bind(&TrainObjectAction::trainObjectActionCallback, this, _1), false),
-	object_detection_node_(object_detection_node),
-	node_handle_(node_handle)
-	{
-		as_train_.start();
-	}
-
-	void trainObjectActionCallback(const cob_object_detection::TrainObjectGoalConstPtr &goal)
-	{
-		if (!object_detection_node_.trainObjectModel(goal->object_name))
-		{
-			ROS_ERROR("[object_detection] object model training failed");				
-			return;
-		}
-	
-		as_train_feedback_.percent_complete = 1.0;
-		as_train_.publishFeedback(as_train_feedback_);
-		as_train_.setSucceeded();
-		
-		return;
-	}
-};
-
-//#######################
-//#### main programm ####
-int main(int argc, char** argv)
-{
-	// Initialize ROS, spezify name of node
-	ros::init(argc, argv, "object_detection");
-
-	// Create a handle for this node, initialize node
-	ros::NodeHandle nh;
-	
-	// Create object detection  node class instance   
-	CobObjectDetectionNode object_detection_node(nh);
-
-	// Initialize object detection node
-	if (!object_detection_node.init()) 
-		return 0;
-
-	// Create action nodes
-	DetectObjectsAction detect_action_node(object_detection_node, nh);
-	AcquireObjectImageAction acquire_image_node(object_detection_node, nh);
-	TrainObjectAction train_object_node(object_detection_node, nh);
-	
-	ros::spin();
-    
-	return 0;
-}
-*/

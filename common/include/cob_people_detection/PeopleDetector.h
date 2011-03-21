@@ -82,7 +82,7 @@ public:
 	/// @param eigenValMat Eigenvalues
 	/// @param avgImage Average image
 	/// @param images Trained faces
-	/// @param projectedTrainFaceMat Projected training faces
+	/// @param projectedTrainFaceMat Projected training faces (coefficients for the eigenvectors of the face subspace)
 	/// @return Return code
 	virtual unsigned long PCA(int* nEigens, std::vector<cv::Mat>& eigenVectors, cv::Mat& eigenValMat, cv::Mat& avgImage, std::vector<cv::Mat>& images, cv::Mat& projectedTrainFaceMat);
 

@@ -36,7 +36,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Caroline Pantofaru */
+/* Author: Caroline Pantofaru
+ * Modified for Kinect/Point Cloud support: Richard Bormann */
 
 #include "cob_people_detection/faces.h"
 #include <cfloat>
@@ -246,6 +247,7 @@ void Faces::faceDetectionThread(uint i) {
       }
       else
       {
+        // access stereo camera data
         cv::Point3d p3_1(0,0,max_face_z_m_);
         cv::Point3d p3_2(face_size_min_m_,0,max_face_z_m_);
         cv::Point2d p2_1, p2_2;

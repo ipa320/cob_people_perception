@@ -231,6 +231,12 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	// Set the number of eigenvalues to use
 	(*nEigens) = faceImages.size()-1;
 	
+	// Allocate memory
+	cv::Size faceImgSize(faceImages[0].cols, faceImages[0].rows);
+	eigenVectors.resize(*nEigens, cv::Mat(faceImgSize, CV_32FC1));
+	eigenValMat.create(1, *nEigens, CV_32FC1);
+	avgImage.create(faceImgSize, CV_32FC1);
+
 	// Set the PCA termination criterion
 	calcLimit = cvTermCriteria(CV_TERMCRIT_ITER, (*nEigens), 1);
 
@@ -261,7 +267,7 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	for(int i=0; i<(int)faceImages.size(); i++)
 	{
 		IplImage temp = (IplImage)faceImages[i];
-		cvEigenDecomposite(&temp, *nEigens, eigenVectArr, 0, 0, &avgImageIpl, (float*)projectedTrainFaceMat.data + i* *nEigens);
+		cvEigenDecomposite(&temp, *nEigens, eigenVectArr, 0, 0, &avgImageIpl, (float*)projectedTrainFaceMat.data + i* *nEigens);	//attention: if image step of projectedTrainFaceMat is not *nEigens * sizeof(float) then reading functions which access with (x,y) coordinates might fail
 	};
 
 	// Copy back
