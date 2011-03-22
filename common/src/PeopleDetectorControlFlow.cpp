@@ -36,7 +36,7 @@ unsigned long PeopleDetectorControlFlow::Init(std::string directory,
 
 	m_PeopleDetector = new ipa_PeopleDetector::PeopleDetector();
 
-	if (m_PeopleDetector->Init() & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->Init(directory) & ipa_Utils::RET_FAILED)
 	{	
 		std::cerr << "ERROR - PeopleDetectorControlFlow::Init:" << std::endl;
 		std::cerr << "\t ... Could not initialize people detector library.\n";
@@ -114,7 +114,7 @@ unsigned long PeopleDetectorControlFlow::PCA()
 	}
 
 	// Calculate FaceClasses
-	if (m_PeopleDetector->CalculateFaceClasses(m_projectedTrainFaceMat, m_id, &m_nEigens) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->CalculateFaceClasses(m_projectedTrainFaceMat, m_id, &m_nEigens, m_faceClassAvgProjections, m_idUnique) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while calculating FaceClasses.\n";
@@ -128,7 +128,7 @@ unsigned long PeopleDetectorControlFlow::PCA()
 
 unsigned long PeopleDetectorControlFlow::RecognizeFace(ipa_SensorFusion::ColoredPointCloudPtr pc, std::vector<int>& index)
 {
-	if (m_PeopleDetector->RecognizeFace(pc->GetColorImage(), m_colorFaces, &m_nEigens, m_eigenVectArr, m_avgImage, m_projectedTrainFaceMat, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->RecognizeFace(pc->GetColorImage(), m_colorFaces, &m_nEigens, m_eigenVectArr, m_avgImage, m_faceClassAvgProjections, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::RecognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";
@@ -208,6 +208,18 @@ unsigned long PeopleDetectorControlFlow::SaveTrainingData()
 	// Projections of the training faces
 	fileStorage << "projected_train_face_mat" << m_projectedTrainFaceMat;
 
+	// Unique Ids (m_idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in m_faceClassAvgProjections.row(i))
+	fileStorage << "id_unique_num" << (int)m_idUnique.size();
+	for(int i=0; i<(int)m_idUnique.size(); i++)
+	{
+		std::ostringstream tag;
+		tag << "id_unique_" << i;
+		fileStorage << tag.str().c_str() << m_idUnique[i].c_str();
+	}
+
+	// The average factors of the eigenvector decomposition from each face class
+	fileStorage << "face_class_avg_projections" << m_faceClassAvgProjections;
+
 	fileStorage.release();
 
 	std::cout << "INFO - PeopleDetectorControlFlow::SaveTrainingData:" << std::endl;
@@ -280,6 +292,20 @@ unsigned long PeopleDetectorControlFlow::LoadTrainingData()
 		// Projections of the training faces
 		m_projectedTrainFaceMat = cv::Mat();
 		fileStorage["projected_train_face_mat"] >> m_projectedTrainFaceMat;
+
+		// Unique Ids (m_idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in m_faceClassAvgProjections.row(i))
+		m_idUnique.clear();
+		int idUniqueNum = (int)fileStorage["id_unique_num"];
+		for(int i=0; i<idUniqueNum; i++)
+		{
+			std::ostringstream tag;
+			tag << "id_unique_" << i;
+			m_idUnique.push_back((std::string)fileStorage[tag.str().c_str()]);
+		}
+
+		// The average factors of the eigenvector decomposition from each face class
+		m_faceClassAvgProjections = cv::Mat();
+		fileStorage["face_class_avg_projections"] >> m_faceClassAvgProjections;
 
 		fileStorage.release();
 

@@ -28,9 +28,10 @@ public:
 	~PeopleDetector(void); ///< Destructor
 
 	/// Initialization function.
-	/// Creates an instance of a range imaging sensor (i.e. SwissRanger SR-3000) and an instance of 
+	/// Creates an instance of a range imaging sensor (i.e. SwissRanger SR-3000) and an instance of
+	/// @param directory The directory for data files
 	/// @return Return code
-	virtual unsigned long Init();
+	virtual unsigned long Init(std::string directory);
 
 	/// Function to detect the faces on color image
 	/// The function detects the faces in an given image
@@ -105,31 +106,33 @@ public:
 	/// Function to find the closest face class
 	/// The function calculates the distance of each sample image to the trained face class
 	/// @param projectedTestFace The projected test face
-	/// @param nearest Index of neares face, or -1 if the face is unknown
+	/// @param nearest Index of nearest face, or -1 if the face is unknown
 	/// @param nEigens Number of eigenvalues
-	/// @param projectedTrainFaceMat The average eigenvalues from each face class
+	/// @param projectedTrainFaceMat The average factors from each face class originating from the eigenvector decomposition
 	/// @param threshold The threshold to recognize unkown faces
 	/// @param eigenValMat Eigenvalues
 	/// @return Return code
 	virtual unsigned long ClassifyFace(float *projectedTestFace, int *nearest, int *nEigens, cv::Mat& projectedTrainFaceMat, int *threshold, cv::Mat& eigenValMat);
 
 	/// Function to calculate the FaceClasses
-	/// The function calculates the face classes.
+	/// The function calculates the average eigenvector decomposition factors for each face classes.
 	/// @param projectedTrainFaceMat The projected training faces
 	/// @param id The ids of the training faces
 	/// @param nEigens Number of eigenvalues
+	/// @param faceClassAvgProjections The average factors of the eigenvector decomposition from each face class
+	/// @param idUnique A vector containing all different Ids from the training session exactly once (idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in faceClassAvgProjections.row(i))
 	/// @return Return code
-	virtual unsigned long CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens);
+	virtual unsigned long CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections, std::vector<std::string>& idUnique);
 
 	double m_faces_increase_search_scale;		///< The factor by which the search window is scaled between the subsequent scans
 	int m_faces_drop_groups;					///< Minimum number (minus 1) of neighbor rectangles that makes up an object.
-	int m_faces_min_search_scale_x;				///< Minimum serach scale x
-	int m_faces_min_search_scale_y;				///< Minimum serach scale y
+	int m_faces_min_search_scale_x;				///< Minimum search scale x
+	int m_faces_min_search_scale_y;				///< Minimum search scale y
 
 	double m_range_increase_search_scale;		///< The factor by which the search window is scaled between the subsequent scans
 	int m_range_drop_groups;					///< Minimum number (minus 1) of neighbor rectangles that makes up an object.
-	int m_range_min_search_scale_x;				///< Minimum serach scale x
-	int m_range_min_search_scale_y;				///< Minimum serach scale y
+	int m_range_min_search_scale_x;				///< Minimum search scale x
+	int m_range_min_search_scale_y;				///< Minimum search scale y
 
 private:
 	/// interpolates unassigned pixels in the depth image when using the kinect

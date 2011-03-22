@@ -54,6 +54,10 @@
 
 
 #include "cob_people_detection/people_detection.h"
+#include <pluginlib/class_list_macros.h>
+
+PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, cobPeopleDetectionNodelet, ipa_PeopleDetector::cobPeopleDetectionNodelet, nodelet::Nodelet);
+
 
 using namespace ipa_PeopleDetector;
 
@@ -62,37 +66,57 @@ void voidDeleter(sensor_msgs::PointCloud2* const) {}
 
 //####################
 //#### node class ####
-cobPeopleDetectionNode::cobPeopleDetectionNode(const ros::NodeHandle& node_handle)
-		: node_handle_(node_handle),
-		it_(node_handle),
-		sync_pointcloud(2)
+cobPeopleDetectionNodelet::cobPeopleDetectionNodelet()
+		//: it_(node_handle_)		// node_handle_ not initialized yet at this place, but already needed. Fixed in onInit().
+		//sync_pointcloud(2)
 {
+	it_ = 0;
+	sync_pointcloud = 0;
 	m_PeopleDetector = 0;
+	m_directory = ros::package::getPath("cob_people_detection") + "/common/files/windows/";	// todo: make it a parameter
 }
 
-cobPeopleDetectionNode::~cobPeopleDetectionNode()
+cobPeopleDetectionNodelet::~cobPeopleDetectionNodelet()
 {
 	cvDestroyAllWindows();
 	delete m_PeopleDetector;
 	m_PeopleDetector = 0;
+	if (it_ != 0) delete it_;
+	if (sync_pointcloud != 0) delete sync_pointcloud;
 }
 
-unsigned long cobPeopleDetectionNode::init()
+void cobPeopleDetectionNodelet::onInit()
+{
+	sync_pointcloud = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
+	node_handle_ = getNodeHandle();
+	it_ = new image_transport::ImageTransport(node_handle_);
+
+	// initializations
+	init();
+
+    ros::spin();
+}
+
+unsigned long cobPeopleDetectionNodelet::init()
 {
 	shared_image_sub_.subscribe(node_handle_, "/camera/depth/points", 1);
-	color_camera_image_sub_.subscribe(it_, "/camera/rgb/image_color", 1);
-	sync_pointcloud.connectInput(shared_image_sub_, color_camera_image_sub_);
-	sync_pointcloud.registerCallback(boost::bind(&cobPeopleDetectionNode::recognizeCallback, this, _1, _2));
+	color_camera_image_sub_.subscribe(*it_, "/camera/rgb/image_color", 1);
+	sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
+	sync_pointcloud->registerCallback(boost::bind(&cobPeopleDetectionNodelet::recognizeCallback, this, _1, _2));
 
 	colored_pc_ = ipa_SensorFusion::CreateColoredPointCloud();
+
+	if (m_PeopleDetector != 0) delete m_PeopleDetector;
+	m_PeopleDetector = new ipa_PeopleDetector::PeopleDetector();
+
+	m_filename = 0;
 
 	// load data for face recognition
 	loadTrainingData();
 
 	cv::namedWindow("Face Detector");
 
-	std::string directory = "ConfigurationFiles/";
-	std::string iniFileNameAndPath = directory + "peopleDetectorIni.xml";
+	std::string iniFileNameAndPath = m_directory + "peopleDetectorIni.xml";
 
 	//if (CameraSensorsControlFlow::Init(directory, "peopleDetectorIni.xml", colorCamera0, colorCamera1, rangeImagingSensor) & ipa_Utils::RET_FAILED)
 	//{
@@ -101,12 +125,7 @@ unsigned long cobPeopleDetectionNode::init()
 	//	return ipa_Utils::RET_FAILED;
 	//}
 
-	if (m_PeopleDetector != 0) delete m_PeopleDetector;
-	m_PeopleDetector = new ipa_PeopleDetector::PeopleDetector();
-
-	m_filename = 0;
-
-	if (m_PeopleDetector->Init() & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->Init(m_directory) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetector::Init:" << std::endl;
 		std::cerr << "\t ... Could not initialize people detector library.\n";
@@ -127,7 +146,7 @@ unsigned long cobPeopleDetectionNode::init()
 }
 
 
-unsigned long cobPeopleDetectionNode::detectFaces(cv::Mat& xyz_image, cv::Mat& color_image)
+unsigned long cobPeopleDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& color_image)
 {
 	cv::Mat xyz_image_8U3;
 	ipa_Utils::ConvertToShowImage(xyz_image, xyz_image_8U3, 3);
@@ -142,9 +161,9 @@ unsigned long cobPeopleDetectionNode::detectFaces(cv::Mat& xyz_image, cv::Mat& c
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNode::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
+unsigned long cobPeopleDetectionNodelet::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
 {
-	if (m_PeopleDetector->RecognizeFace(color_image, m_colorFaces, &m_nEigens, m_eigenVectors, m_avgImage, m_projectedTrainFaceMat, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->RecognizeFace(color_image, m_colorFaces, &m_nEigens, m_eigenVectors, m_avgImage, m_faceClassAvgProjections, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetector::recognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";
@@ -154,7 +173,7 @@ unsigned long cobPeopleDetectionNode::recognizeFace(cv::Mat& color_image, std::v
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNode::addFace(cv::Mat& image, std::string id)
+unsigned long cobPeopleDetectionNodelet::addFace(cv::Mat& image, std::string id)
 {
 	// addFace should only be called if there is exactly one face found --> so we access it with m_colorFaces[0]
 	if (m_PeopleDetector->AddFace(image, m_colorFaces[0], id, m_faceImages, m_id) & ipa_Utils::RET_FAILED)
@@ -168,7 +187,7 @@ unsigned long cobPeopleDetectionNode::addFace(cv::Mat& image, std::string id)
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNode::PCA()
+unsigned long cobPeopleDetectionNodelet::PCA()
 {
 	// only run PCA if new data has arrived after last computation
 	if(!m_runPCA)
@@ -197,7 +216,7 @@ unsigned long cobPeopleDetectionNode::PCA()
 	}
 
 	// Calculate FaceClasses
-	if (m_PeopleDetector->CalculateFaceClasses(m_projectedTrainFaceMat, m_id, &m_nEigens) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->CalculateFaceClasses(m_projectedTrainFaceMat, m_id, &m_nEigens, m_faceClassAvgProjections, m_idUnique) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while calculating FaceClasses.\n";
@@ -209,14 +228,15 @@ unsigned long cobPeopleDetectionNode::PCA()
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNode::saveTrainingData()
+unsigned long cobPeopleDetectionNodelet::saveTrainingData()
 {
-	std::string path = "ConfigurationFiles/TrainingData/";
+	std::string path = m_directory + "TrainingData/";
 	std::string filename = "data.xml";
 	std::string img_ext = ".bmp";
 
 	std::ostringstream complete;
 	complete << path << filename;
+	path = "TrainingData/";
 
 //	try
 //	{
@@ -276,8 +296,20 @@ unsigned long cobPeopleDetectionNode::saveTrainingData()
 	// Average image
 	fileStorage << "avg_image" << m_avgImage;
 
-	// Projections of the training faces
+	// Projection coefficients of the training faces
 	fileStorage << "projected_train_face_mat" << m_projectedTrainFaceMat;
+
+	// Unique Ids (m_idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in m_faceClassAvgProjections.row(i))
+	fileStorage << "id_unique_num" << (int)m_idUnique.size();
+	for(int i=0; i<(int)m_idUnique.size(); i++)
+	{
+		std::ostringstream tag;
+		tag << "id_unique_" << i;
+		fileStorage << tag.str().c_str() << m_idUnique[i].c_str();
+	}
+
+	// The average factors of the eigenvector decomposition from each face class
+	fileStorage << "face_class_avg_projections" << m_faceClassAvgProjections;
 
 	fileStorage.release();
 
@@ -286,9 +318,9 @@ unsigned long cobPeopleDetectionNode::saveTrainingData()
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNode::loadTrainingData()
+unsigned long cobPeopleDetectionNodelet::loadTrainingData()
 {
-	std::string path = "ConfigurationFiles/TrainingData/";
+	std::string path = m_directory + "TrainingData/";
 	std::string filename = "data.xml";
 
 	std::ostringstream complete;
@@ -321,7 +353,7 @@ unsigned long cobPeopleDetectionNode::loadTrainingData()
 		{
 			std::ostringstream tag;
 			tag << "img_" << i;
-			std::string path = (std::string)fileStorage[tag.str().c_str()];
+			std::string path = m_directory + (std::string)fileStorage[tag.str().c_str()];
 			//IplImage *tmp = cvLoadImage(path.c_str(),0);
 			cv::Mat temp = cv::imread(path.c_str(),0);
 			m_faceImages.push_back(temp);
@@ -352,11 +384,25 @@ unsigned long cobPeopleDetectionNode::loadTrainingData()
 		m_projectedTrainFaceMat = cv::Mat();
 		fileStorage["projected_train_face_mat"] >> m_projectedTrainFaceMat;
 
+		// Unique Ids (m_idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in m_faceClassAvgProjections.row(i))
+		m_idUnique.clear();
+		int idUniqueNum = (int)fileStorage["id_unique_num"];
+		for(int i=0; i<idUniqueNum; i++)
+		{
+			std::ostringstream tag;
+			tag << "id_unique_" << i;
+			m_idUnique.push_back((std::string)fileStorage[tag.str().c_str()]);
+		}
+
+		// The average factors of the eigenvector decomposition from each face class
+		m_faceClassAvgProjections = cv::Mat();
+		fileStorage["face_class_avg_projections"] >> m_faceClassAvgProjections;
+
 		fileStorage.release();
 
 		// Run PCA
-//		m_runPCA = true;
-//		PCA();
+		m_runPCA = true;		// todo: split image acquisition and PCA computation, in load/save functions as well
+		PCA();
 
 		std::cout << "INFO - PeopleDetector::loadTrainingData:" << std::endl;
 		std::cout << "\t ... " << faces_num << " images loaded.\n";
@@ -371,14 +417,14 @@ unsigned long cobPeopleDetectionNode::loadTrainingData()
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNode::getEigenface(cv::Mat& eigenface, int index)
+unsigned long cobPeopleDetectionNodelet::getEigenface(cv::Mat& eigenface, int index)
 {
 	cv::normalize(m_eigenVectors[index], eigenface, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNode::showAVGImage(cv::Mat& avgImage)
+unsigned long cobPeopleDetectionNodelet::showAVGImage(cv::Mat& avgImage)
 {
 	if(!m_runPCA && m_faceImages.size()<2)
 	{
@@ -392,9 +438,9 @@ unsigned long cobPeopleDetectionNode::showAVGImage(cv::Mat& avgImage)
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNode::saveRangeTrainImages(ipa_SensorFusion::ColoredPointCloudPtr pc)
+unsigned long cobPeopleDetectionNodelet::saveRangeTrainImages(ipa_SensorFusion::ColoredPointCloudPtr pc)
 {
-	std::string path = "ConfigurationFiles/haartraining/";
+	std::string path = m_directory + "haarcascades/";
 	std::string img_ext = ".jpg";
 	cv::Mat xyzImage_8U3(pc->GetXYZImage().size(), CV_8UC3);	//IplImage* xyzImage_8U3 = cvCreateImage(cvGetSize(pc->GetXYZImage()), 8, 3);
 	ipa_Utils::ConvertToShowImage(pc->GetXYZImage(), xyzImage_8U3, 3);
@@ -424,7 +470,7 @@ unsigned long cobPeopleDetectionNode::saveRangeTrainImages(ipa_SensorFusion::Col
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNode::getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+unsigned long cobPeopleDetectionNodelet::getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
 	cv::Mat color_image_8U3(shared_image_msg->height, shared_image_msg->width, CV_8UC3);
 	cv::Mat xyz_image_32F3(shared_image_msg->height, shared_image_msg->width, CV_32FC3);
@@ -470,7 +516,7 @@ unsigned long cobPeopleDetectionNode::getMeasurement(const sensor_msgs::PointClo
 }
 
 
-void cobPeopleDetectionNode::recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+void cobPeopleDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
 	// convert input to cv::Mat images
 	// color
@@ -502,7 +548,7 @@ void cobPeopleDetectionNode::recognizeCallback(const sensor_msgs::PointCloud2::C
 			data_ptr[0] = point_xyz.x;
 			data_ptr[1] = point_xyz.y;
 			data_ptr[2] = (isnan(point_xyz.z)) ? 0.f : point_xyz.z;
-			if (u%100 == 0) std::cout << "u" << u << " v" << v << " z" << data_ptr[2] << "\n";
+			//if (u%100 == 0) std::cout << "u" << u << " v" << v << " z" << data_ptr[2] << "\n";
 		}
 	}
 
@@ -569,7 +615,7 @@ void cobPeopleDetectionNode::recognizeCallback(const sensor_msgs::PointCloud2::C
 }
 
 
-unsigned long cobPeopleDetectionNode::loadParameters(const char* iniFileName)
+unsigned long cobPeopleDetectionNodelet::loadParameters(const char* iniFileName)
 {
 	/// Load parameters from file
 	TiXmlDocument* p_configXmlDocument = new TiXmlDocument( iniFileName );
@@ -893,27 +939,27 @@ unsigned long cobPeopleDetectionNode::loadParameters(const char* iniFileName)
 
 //#######################
 //#### main programm ####
-int main(int argc, char** argv)
-{
-	// Initialize ROS, spezify name of node
-	ros::init(argc, argv, "people_detection");
-
-	// Create a handle for this node, initialize node
-	ros::NodeHandle nh;
-	
-	// Create people detection node class instance   
-	cobPeopleDetectionNode people_detection_node(nh);
-
-	// Initialize people detection node
-	if (people_detection_node.init() != ipa_Utils::RET_OK)
-		return 0;
-
-	// Create action nodes
-	//DetectObjectsAction detect_action_node(object_detection_node, nh);
-	//AcquireObjectImageAction acquire_image_node(object_detection_node, nh);
-	//TrainObjectAction train_object_node(object_detection_node, nh);
-	
-	ros::spin();
-    
-	return 0;
-}
+//int main(int argc, char** argv)
+//{
+//	// Initialize ROS, spezify name of node
+//	ros::init(argc, argv, "people_detection");
+//
+//	// Create a handle for this node, initialize node
+//	ros::NodeHandle nh;
+//
+//	// Create people detection node class instance
+//	cobPeopleDetectionNodelet people_detection_node(nh);
+//
+//	// Initialize people detection node
+//	if (people_detection_node.init() != ipa_Utils::RET_OK)
+//		return 0;
+//
+//	// Create action nodes
+//	//DetectObjectsAction detect_action_node(object_detection_node, nh);
+//	//AcquireObjectImageAction acquire_image_node(object_detection_node, nh);
+//	//TrainObjectAction train_object_node(object_detection_node, nh);
+//
+//	ros::spin();
+//
+//	return 0;
+//}

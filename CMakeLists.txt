@@ -42,9 +42,13 @@ rosbuild_add_library(cob_people_detection
                        ros/src/faces.cpp)
 rosbuild_link_boost(cob_people_detection thread)
 
-rosbuild_add_executable(face_detector
+#rosbuild_add_executable(face_detector
+			#common/src/PeopleDetector.cpp
+			#ros/src/people_detection.cpp)
+rosbuild_add_library(face_detector
 			common/src/PeopleDetector.cpp
 			ros/src/people_detection.cpp)
+
 			
 #rosbuild_add_executable(face_detector
 			#common/src/CuiPeopleDetector.cpp

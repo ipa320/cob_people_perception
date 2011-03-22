@@ -112,12 +112,14 @@ public:
 
 	std::vector<cv::Mat> m_faceImages;			///< Trained face images
 	std::vector<std::string> m_id;				///< Id of learned faces
+	std::vector<std::string> m_idUnique;		///< A vector containing all different Ids from the training session exactly once (m_idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in m_faceClassAvgProjections.row(i))
 
 	int m_nEigens;								///< Number of eigenvalues
 	std::vector<cv::Mat> m_eigenVectArr;		///< Eigenvectors
 	cv::Mat m_eigenValMat;						///< Eigenvalues
 	cv::Mat m_avgImage;							///< Trained average Image
-	cv::Mat m_projectedTrainFaceMat;			///< Projected training faces
+	cv::Mat m_projectedTrainFaceMat;			///< Projected training faces (coefficients for the eigenvectors of the face subspace)
+	cv::Mat m_faceClassAvgProjections;			///< The average factors of the eigenvector decomposition from each face class
 
 	PeopleDetector* m_PeopleDetector;
 	int m_threshold;							///< Threshold to detect unknown faces
