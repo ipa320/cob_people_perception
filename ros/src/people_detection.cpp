@@ -53,7 +53,7 @@
  ****************************************************************/
 
 
-#include "cob_people_detection/people_detection.h"
+#include "cob_people_detection/PeopleDetector.h"
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, cobPeopleDetectionNodelet, ipa_PeopleDetector::cobPeopleDetectionNodelet, nodelet::Nodelet);
