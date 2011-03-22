@@ -14,11 +14,13 @@ PeopleDetector::PeopleDetector(void)
 	m_range_cascade = 0;
 }
 
-unsigned long PeopleDetector::Init()
+unsigned long PeopleDetector::Init(std::string directory)
 {	
 	// Load Haar-Classifier for frontal face-, eyes- and body-detection
-	m_face_cascade = (CvHaarClassifierCascade*)cvLoad("common/files/windows/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
-	m_range_cascade = (CvHaarClassifierCascade*)cvLoad("common/files/windows/haarcascades/haarcascade_range.xml", 0, 0, 0 );
+	std::string faceCascadePath = directory + "haarcascades/haarcascade_frontalface_alt2.xml";
+	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range.xml";
+	m_face_cascade = (CvHaarClassifierCascade*)cvLoad(faceCascadePath.c_str(), 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
+	m_range_cascade = (CvHaarClassifierCascade*)cvLoad(rangeCascadePath.c_str(), 0, 0, 0 );
 
 	// Create Memory
 	m_storage = cvCreateMemStorage(0);
@@ -61,10 +63,48 @@ unsigned long PeopleDetector::DetectColorFaces(cv::Mat& img, std::vector<cv::Rec
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates)
+unsigned long PeopleDetector::InterpolateUnassignedPixels(cv::Mat& img)
+{
+	CV_Assert( img.type() == CV_8UC3 );
+
+	cv::Mat temp = img.clone();
+
+	uchar* data = img.data;
+	uchar* data2 = temp.data;
+	int stride = img.step;
+	for (int repetitions=0; repetitions<10; repetitions++)
+	{
+		// each pixel with a value can propagate its value to black pixels in the 4 pixel neighborhoud
+		for (int v=1; v<img.rows-1; v++)
+		{
+			for (int u=1; u<img.cols-1; u++)
+			{
+				// only pixels with a value can propagate their value
+				int index = v*stride + 3*u;
+				if (data[index] != 0)
+				{
+					uchar val = data[index];
+					if (data2[index-3] == 0) for (int i=-3; i<0; i++) data2[index+i] = val;	// left
+					if (data2[index+3] == 0) for (int i=3; i<6; i++) data2[index+i] = val;	// right
+					if (data2[index-stride] == 0) for (int i=-stride; i<-stride+3; i++) data2[index+i] = val;	// up
+					if (data2[index+stride] == 0) for (int i=stride; i<stride+3; i++) data2[index+i] = val;	// down
+				}
+			}
+		}
+		// copy back new data
+		for (int i=0; i<img.rows*stride; i++) data[i] = data2[i];
+	}
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long PeopleDetector::DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor)
 {
 	rangeFaceCoordinates.clear();
 
+	if (fromKinectSensor) InterpolateUnassignedPixels(img);
+cv::namedWindow("depth image");
+cv::imshow("depth image", img);
+cv::waitKey(10);
 	IplImage imgPtr = (IplImage)img;
 	CvSeq* rangeFaces = cvHaarDetectObjects
 	(
@@ -86,17 +126,17 @@ unsigned long PeopleDetector::DetectRangeFace(cv::Mat& img, std::vector<cv::Rect
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates)
+unsigned long PeopleDetector::DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor)
 {
 	colorFaceCoordinates.clear();
 
 	//######################################## Option1 ########################################
-	DetectRangeFace(rangeImg, rangeFaceCoordinates);
+	DetectRangeFace(rangeImg, rangeFaceCoordinates, fromKinectSensor);
 	for(int i=0; i<(int)rangeFaceCoordinates.size(); i++)
 	{
 		cv::Rect rangeFace = rangeFaceCoordinates[i];
 		
-		rangeFace.y += rangeFace.height*0.1;
+		rangeFace.y += (int)(rangeFace.height*0.1);
 
 		cv::Mat areaImg = img(rangeFace);
 // 		IplImage* areaImg = cvCloneImage(img);
@@ -193,6 +233,12 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	// Set the number of eigenvalues to use
 	(*nEigens) = faceImages.size()-1;
 	
+	// Allocate memory
+	cv::Size faceImgSize(faceImages[0].cols, faceImages[0].rows);
+	eigenVectors.resize(*nEigens, cv::Mat(faceImgSize, CV_32FC1));
+	eigenValMat.create(1, *nEigens, CV_32FC1);
+	avgImage.create(faceImgSize, CV_32FC1);
+
 	// Set the PCA termination criterion
 	calcLimit = cvTermCriteria(CV_TERMCRIT_ITER, (*nEigens), 1);
 
@@ -201,7 +247,7 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	for(int j=0; j<(int)faceImages.size(); j++)
 	{
 		IplImage temp = (IplImage)faceImages[j];
-		faceImgArr[j] = &temp;
+		faceImgArr[j] = cvCloneImage(&temp);
 	}
 
 	// Convert vector to array
@@ -209,12 +255,12 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	for(int j=0; j<(int)eigenVectors.size(); j++)
 	{
 		IplImage temp = (IplImage)eigenVectors[j];
-		eigenVectArr[j] = &temp;
+		eigenVectArr[j] = cvCloneImage(&temp);
 	}
 
 	// Compute average image, eigenvalues, and eigenvectors
 	IplImage avgImageIpl = (IplImage)avgImage;
-	cvCalcEigenObjects(faceImages.size(), (void*)faceImgArr, (void*)eigenVectArr, CV_EIGOBJ_NO_CALLBACK, 0, 0, &calcLimit, &avgImageIpl, (float*)(eigenValMat.data));
+	cvCalcEigenObjects((int)faceImages.size(), (void*)faceImgArr, (void*)eigenVectArr, CV_EIGOBJ_NO_CALLBACK, 0, 0, &calcLimit, &avgImageIpl, (float*)(eigenValMat.data));
 
 	cv::normalize(eigenValMat,eigenValMat, 1, 0, CV_L1);	//, 0);		0=bug?
 
@@ -223,16 +269,24 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	for(int i=0; i<(int)faceImages.size(); i++)
 	{
 		IplImage temp = (IplImage)faceImages[i];
-		cvEigenDecomposite(&temp, *nEigens, eigenVectArr, 0, 0, &avgImageIpl, (float*)projectedTrainFaceMat.data + i* *nEigens);
+		cvEigenDecomposite(&temp, *nEigens, eigenVectArr, 0, 0, &avgImageIpl, (float*)projectedTrainFaceMat.data + i* *nEigens);	//attention: if image step of projectedTrainFaceMat is not *nEigens * sizeof(float) then reading functions which access with (x,y) coordinates might fail
 	};
 
+	// Copy back
+	int eigenVectorsCount = (int)eigenVectors.size();
+	eigenVectors.clear();
+	for (int i=0; i<(int)eigenVectorsCount; i++) eigenVectors.push_back(cv::Mat(eigenVectArr[i], true));
+
+	// Clean
+	for (int i=0; i<(int)faceImages.size(); i++) cvReleaseImage(&(faceImgArr[i]));
+	for (int i=0; i<(int)eigenVectors.size(); i++) cvReleaseImage(&(eigenVectArr[i]));
 	cvFree(&faceImgArr);
 	cvFree(&eigenVectArr);
 
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudPtr pc, std::vector<cv::Rect>& colorFaceCoordinates, int* nEigens, std::vector<cv::Mat>& eigenVectors, cv::Mat& avgImage, cv::Mat& projectedTrainFaceMat,
+unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv::Rect>& colorFaceCoordinates, int* nEigens, std::vector<cv::Mat>& eigenVectors, cv::Mat& avgImage, cv::Mat& faceClassAvgProjections,
 										std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat)
 {
 	float* eigenVectorWeights = 0;
@@ -246,13 +300,13 @@ unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudP
 	for(int j=0; j<(int)eigenVectors.size(); j++)
 	{
 		IplImage temp = (IplImage)eigenVectors[j];
-		eigenVectArr[j] = &temp;
+		eigenVectArr[j] = cvCloneImage(&temp);
 	}
 	
 	for(int i=0; i<(int)colorFaceCoordinates.size(); i++)
 	{
 		cv::Rect face = colorFaceCoordinates[i];
-		ConvertAndResize(pc->GetColorImage(), resized_8U1, face);
+		ConvertAndResize(colorImage, resized_8U1, face);
 
 		IplImage avgImageIpl = (IplImage)avgImage;
 		
@@ -260,12 +314,12 @@ unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudP
 		IplImage resized_8U1Ipl = (IplImage)resized_8U1;
 		cvEigenDecomposite(&resized_8U1Ipl, *nEigens, eigenVectArr, 0, 0, &avgImageIpl, eigenVectorWeights);
 
-		cvFree(&eigenVectArr);
-
 		// Calculate FaceSpace Distance
 		cv::Mat srcReconstruction = cv::Mat::zeros(eigenVectors[0].size(), eigenVectors[0].type());
 		for(int i=0; i<(int)eigenVectors.size(); i++) srcReconstruction += eigenVectorWeights[i]*eigenVectors[i];
-		double distance = cv::norm((resized_8U1-avgImage), srcReconstruction, cv::NORM_L2);
+		cv::Mat temp;
+		resized_8U1.convertTo(temp, CV_32FC1, 1.0/255.0);
+		double distance = cv::norm((temp-avgImage), srcReconstruction, cv::NORM_L2);
 
 		//######################################## Only for debugging and development ########################################
 		/*std::cout.precision( 10 );
@@ -283,37 +337,30 @@ unsigned long PeopleDetector::RecognizeFace(ipa_SensorFusion::ColoredPointCloudP
 		else
 		{
 			int nearest;
-
-			ClassifyFace(eigenVectorWeights, &nearest, nEigens, projectedTrainFaceMat, threshold, eigenValMat);
-			if(nearest < 0)
-			{
-				// Face Unknown
-				index.push_back(-1);
-			}
-			else
-			{
-				// Face known, it's number nearest
-				index.push_back(nearest);
-			}
+			ClassifyFace(eigenVectorWeights, &nearest, nEigens, faceClassAvgProjections, threshold, eigenValMat);
+			if(nearest < 0) index.push_back(-1);	// Face Unknown
+			else index.push_back(nearest);	// Face known, it's number nearest
 		}
 	}
 
 	// Clear
+	for (int i=0; i<(int)eigenVectors.size(); i++) cvReleaseImage(&(eigenVectArr[i]));
 	cvFree(&eigenVectorWeights);
+	cvFree(&eigenVectArr);
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *nearest, int *nEigens, cv::Mat& projectedTrainFaceMat, int *threshold, cv::Mat& eigenValMat)
+unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *nearest, int *nEigens, cv::Mat& faceClassAvgProjections, int *threshold, cv::Mat& eigenValMat)
 {
 	double leastDistSq = DBL_MAX;
 
-	for(int i=0; i<projectedTrainFaceMat.rows; i++)
+	for(int i=0; i<faceClassAvgProjections.rows; i++)
 	{
 		double distance=0;
 		
 		for(int e=0; e<*nEigens; e++)
 		{			
-			float d = eigenVectorWeights[e] - ((float*)(projectedTrainFaceMat.data))[i * *nEigens + e];
+			float d = eigenVectorWeights[e] - ((float*)(faceClassAvgProjections.data))[i * *nEigens + e];
 			//distance += d*d;							//Euklid
 			distance += d*d / ((float*)(eigenValMat.data))[e];	//Mahalanobis
 		}
@@ -327,40 +374,26 @@ unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *neare
 		if(distance < leastDistSq)
 		{
 			leastDistSq = distance;
-			if(leastDistSq > *threshold)
-			{
-				*nearest = -1;
-			}
-			else
-			{
-				*nearest = i;
-			}
+			if(leastDistSq > *threshold) *nearest = -1;
+			else *nearest = i;
 		}
 	}
 
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens)
+unsigned long PeopleDetector::CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections, std::vector<std::string>& idUnique)
 {
-	// Clone
-	std::vector<std::string> id_tmp = id;
-	id.clear();
-	cv::Mat faces_tmp = projectedTrainFaceMat.clone();
-	for (int i=0; i<((int)id_tmp.size() * *nEigens); i++)
+	// Look for face classes
+	idUnique.clear();
+	for(int i=0; i<(int)id.size(); i++)
 	{
-		((float*)(projectedTrainFaceMat.data))[i] = 0;
-	}
-
-	// Look for FaceClasses
-	for(int i=0; i<(int)id_tmp.size(); i++)
-	{
-		std::string face_class = id_tmp[i];
+		std::string face_class = id[i];
 		bool class_exists = false;
 		
-		for(int j=0; j<(int)id.size(); j++)
+		for(int j=0; j<(int)idUnique.size(); j++)
 		{
-			if(!id[j].compare(face_class))
+			if(!idUnique[j].compare(face_class))
 			{
 				class_exists = true;
 			}
@@ -368,30 +401,60 @@ unsigned long PeopleDetector::CalculateFaceClasses(cv::Mat& projectedTrainFaceMa
 
 		if(!class_exists)
 		{
-			id.push_back(face_class);
+			idUnique.push_back(face_class);
 		}
 	}
 
-	cv::Size newSize(id.size(), *nEigens);
-	projectedTrainFaceMat.create(newSize, faces_tmp.type());
+	//id.clear();
+	//cv::Mat faces_tmp = projectedTrainFaceMat.clone();
+	cv::Mat temp = cv::Mat::zeros((int)idUnique.size(), *nEigens, projectedTrainFaceMat.type());
+	temp.convertTo(faceClassAvgProjections, projectedTrainFaceMat.type());
+	//for (int i=0; i<((int)idUnique.size() * *nEigens); i++)
+//	for (int i=0; i<((int)id.size() * *nEigens); i++)
+//	{
+//		((float*)(projectedTrainFaceMat.data))[i] = 0;
+//	}
+
+	// Look for FaceClasses
+//	for(int i=0; i<(int)idUnique.size(); i++)
+//	{
+//		std::string face_class = idUnique[i];
+//		bool class_exists = false;
+//
+//		for(int j=0; j<(int)id.size(); j++)
+//		{
+//			if(!id[j].compare(face_class))
+//			{
+//				class_exists = true;
+//			}
+//		}
+//
+//		if(!class_exists)
+//		{
+//			id.push_back(face_class);
+//		}
+//	}
+
+//	cv::Size newSize(id.size(), *nEigens);
+//	projectedTrainFaceMat.create(newSize, faces_tmp.type());
 
 	// Calculate FaceClasses
-	for(int i=0; i<(int)id.size(); i++)
+	for(int i=0; i<(int)idUnique.size(); i++)
 	{
-		std::string face_class = id[i];
+		std::string face_class = idUnique[i];
 		
 		for(int e=0; e<*nEigens; e++)
 		{
 			int count=0;
-			for(int j=0;j<(int)id_tmp.size(); j++)
+			for(int j=0;j<(int)id.size(); j++)
 			{
-				if(!(id_tmp[j].compare(face_class)))
+				if(!(id[j].compare(face_class)))
 				{
-					((float*)(projectedTrainFaceMat.data))[i * *nEigens + e] += ((float*)(faces_tmp.data))[j * *nEigens + e];
+					((float*)(faceClassAvgProjections.data))[i * *nEigens + e] += ((float*)(projectedTrainFaceMat.data))[j * *nEigens + e];
 					count++;
 				}
 			}
-			((float*)(projectedTrainFaceMat.data))[i * *nEigens + e] /= (float)count;
+			((float*)(faceClassAvgProjections.data))[i * *nEigens + e] /= (float)count;
 		}
 	}
 

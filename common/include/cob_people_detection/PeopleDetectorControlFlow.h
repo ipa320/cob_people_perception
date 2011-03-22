@@ -17,8 +17,6 @@
 	#include "cob_vision/cob_people_detection/common/include/cob_people_detection/PeopleDetector.h"
 #endif
 
-//#include "Vision/Utilities/OpenCVUtils.h"
-
 #include <iostream>
 #include <cv.h>
 #include <string>
@@ -97,7 +95,7 @@ public:
 	unsigned long ShowAVGImage(cv::Mat& avgImage);
 
 	/// Function to extract images for training range classifier
-	/// @param pc ColoredPointClowed with images
+	/// @param pc ColoredPointCloud with images
 	/// @return Return code.
 	unsigned long SaveRangeTrainImages(ipa_SensorFusion::ColoredPointCloudPtr pc);
 
@@ -106,17 +104,22 @@ public:
 	/// @return Return code.
 	unsigned long LoadParameters(const char* iniFileName);
 
+	/// Returns the point cloud mode which was loaded from the .xml file
+	/// @return point cloud mode
+	ColoredPointCloudToolbox::t_PointCloudMode GetPCMode() { return m_PCMode; };
+
 	ipa_SensorFusion::ColoredPointCloudToolbox* m_pcToolbox;
 
 	std::vector<cv::Mat> m_faceImages;			///< Trained face images
 	std::vector<std::string> m_id;				///< Id of learned faces
-	std::vector<std::string> m_faceClasses_id;	///< Id of face Classes
+	std::vector<std::string> m_idUnique;		///< A vector containing all different Ids from the training session exactly once (m_idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in m_faceClassAvgProjections.row(i))
 
 	int m_nEigens;								///< Number of eigenvalues
-	std::vector<cv::Mat> m_eigenVectArr;					///< Eigenvectors
+	std::vector<cv::Mat> m_eigenVectArr;		///< Eigenvectors
 	cv::Mat m_eigenValMat;						///< Eigenvalues
-	cv::Mat m_avgImage;						///< Trained average Image
-	cv::Mat m_projectedTrainFaceMat;				///< Projected training faces
+	cv::Mat m_avgImage;							///< Trained average Image
+	cv::Mat m_projectedTrainFaceMat;			///< Projected training faces (coefficients for the eigenvectors of the face subspace)
+	cv::Mat m_faceClassAvgProjections;			///< The average factors of the eigenvector decomposition from each face class
 
 	PeopleDetector* m_PeopleDetector;
 	int m_threshold;							///< Threshold to detect unknown faces

@@ -3,7 +3,18 @@
          type="people::FaceDetector"
          base_class_type="nodelet::Nodelet">
     <description> 
-      The Nodelet for the face detector in the people class.
+      The Nodelet for the face detector in the people package.
     </description>
   </class>
 </library>
+
+<library path="ros/lib/libface_detector">
+  <class name="ipa_PeopleDetector/cobPeopleDetectionNodelet"
+         type="ipa_PeopleDetector::cobPeopleDetectionNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description> 
+      The Nodelet for the face detector in the ipa_PeopleDetector namespace.
+    </description>
+  </class>
+</library>
+

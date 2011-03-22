@@ -42,11 +42,19 @@ rosbuild_add_library(cob_people_detection
                        ros/src/faces.cpp)
 rosbuild_link_boost(cob_people_detection thread)
 
-rosbuild_add_executable(face_detector
-			common/src/CuiPeopleDetector.cpp
+#rosbuild_add_executable(face_detector
+			#common/src/PeopleDetector.cpp
+			#ros/src/people_detection.cpp)
+rosbuild_add_library(face_detector
 			common/src/PeopleDetector.cpp
-			common/src/PeopleDetectorControlFlow.cpp
-			common/src/PeopleDetectorMain.cpp)
+			ros/src/people_detection.cpp)
+
+			
+#rosbuild_add_executable(face_detector
+			#common/src/CuiPeopleDetector.cpp
+			#common/src/PeopleDetector.cpp
+			#common/src/PeopleDetectorControlFlow.cpp
+			#common/src/PeopleDetectorMain.cpp)
 
 # add include search paths
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ros/include

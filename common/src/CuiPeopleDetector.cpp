@@ -26,7 +26,7 @@ CuiPeopleDetector::~CuiPeopleDetector()
 
 unsigned long CuiPeopleDetector::Init()
 {
-	if (m_DetectorControlFlow->Init("common/files/windows/") & ipa_Utils::RET_FAILED)
+	if (m_DetectorControlFlow->Init("ConfigurationFiles/") & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - CuiPeopleDetector::Init:" << std::endl;
 		std::cerr << "\t ... Error while initializing control flow\n";
@@ -108,7 +108,7 @@ unsigned long CuiPeopleDetector::Train()
 		// acquire next image
 		if(cmd == 'n')
 		{
-			if (m_DetectorControlFlow->GetColoredPointCloud(pc, ColoredPointCloudToolbox::MODE_SHARED, 1) & ipa_Utils::RET_FAILED)
+			if (m_DetectorControlFlow->GetColoredPointCloud(pc, m_DetectorControlFlow->GetPCMode(), 1) & ipa_Utils::RET_FAILED)
 			{
 				std::cerr << "ERROR - CuiPeopleDetector::Train:" << std::endl;
 				std::cerr << "\t ... Could not get Colored Point Cloud" << std::endl;
@@ -196,7 +196,7 @@ unsigned long CuiPeopleDetector::Recognize()
 		{
 			ipa_SensorFusion::ColoredPointCloudPtr pc;
 
-			if (m_DetectorControlFlow->GetColoredPointCloud(pc, ColoredPointCloudToolbox::MODE_SHARED, 1) & ipa_Utils::RET_FAILED)
+			if (m_DetectorControlFlow->GetColoredPointCloud(pc, m_DetectorControlFlow->GetPCMode(), 1) & ipa_Utils::RET_FAILED)
 			{
 				std::cerr << "ERROR - CuiPeopleDetector::Recognize:" << std::endl;
 				std::cerr << "\t ... Could not get Colored Point Cloud" << std::endl;
@@ -212,7 +212,15 @@ unsigned long CuiPeopleDetector::Recognize()
 			std::vector<int> index;
 			m_DetectorControlFlow->RecognizeFace(pc, index);
 			std::cout << "INFO - CuiPeopleDetector::Recognize:" << std::endl;
+			//for (int i=0; i<(int)m_DetectorControlFlow->m_colorFaces.size(); i++) index.push_back(-1);
 			//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
+
+			for(int i=0; i<(int)m_DetectorControlFlow->m_rangeFaces.size(); i++)
+			{
+				cv::Rect face = m_DetectorControlFlow->m_rangeFaces[i];
+
+				cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 0, 255), 2, 8, 0);
+			}
 
 			for(int i=0; i<(int)m_DetectorControlFlow->m_colorFaces.size(); i++)
 			{
@@ -235,7 +243,7 @@ unsigned long CuiPeopleDetector::Recognize()
 					break;
 				default:
 					// Face classified
-					tmp << m_DetectorControlFlow->m_id[index[i]].c_str();
+					tmp << m_DetectorControlFlow->m_idUnique[index[i]].c_str();
 					cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
 				}
 			}
