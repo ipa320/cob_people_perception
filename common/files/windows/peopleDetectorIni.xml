@@ -3,20 +3,19 @@
 <CameraSensors>
 	<!-- Specifies the color camera -->
 	<!-- Possible values are: -->
-	<!-- CAM_IC, CAM_AVTPIKE, CAM_AXIS2100, CAM_KINECT, CAM_VIRTUAL -->
-	<ColorCamera name="CAM_KINECT" />
+	<!-- CAM_IC, CAM_AVTPIKE, CAM_AXIS2100, CAM_VIRTUAL -->
+	<ColorCamera name="CAM_VIRTUAL" />
 
 	<!-- Specifies the range imaging camera -->
 	<!-- Possible values are: -->
-	<!-- CAM_SR3000, CAM_VIRTUAL, CAM_KINECT, CAM_PMDCAMCUBE -->
-	<RangeImagingCamera name="CAM_KINECT" />
+	<!-- CAM_SR3000, CAM_VIRTUAL, CAM_PMDCAMCUBE -->
+	<RangeImagingCamera name="CAM_VIRTUAL" />
 
 	<!-- Determines the method, used to calculate the colored point cloud -->
 	<!-- Valid values: MODE_SHARED - Use range and color camera -->
 	<!--               MODE_STEREO - Use two color cameras -->
-	<!--               MODE_PASSTHROUGH - Use with Kinect -->
 	<!--               MODE_AUTO - Not implemented, defaults to MODE_SHARED -->
-	<PointCloudMode value="MODE_PASSTHROUGH" />
+	<PointCloudMode value="MODE_SHARED" />
 
 	<!-- Determines the size of the shared image relative to the size of the swissranger image -->
 	<!-- SharedImageSize = SwissrangerImageSize * SharedWorkingSizeFactor -->
@@ -29,26 +28,20 @@
 		<!-- The factor by which the search window is scaled between the subsequent scans --> 
 		<Faces_increase_search_scale value="1.1" />
 		<!-- Minimum number (minus 1) of neighbor rectangles that makes up an object --> 
-		<!-- <Faces_drop_groups value="120" /> -->
-		<Faces_drop_groups value="5" />
-		<!-- Minimum search scale x --> 
-		<!-- <Faces_min_search_scale_x value="20" /> -->
-		<Faces_min_search_scale_x value="10" />
-		<!-- Minimum search scale y --> 
-		<!-- <Faces_min_search_scale_y value="20" /> -->
-		<Faces_min_search_scale_y value="10" />
+		<Faces_drop_groups value="120" />
+		<!-- Minimum serach scale x --> 
+		<Faces_min_search_scale_x value="20" />
+		<!-- Minimum serach scale y --> 
+		<Faces_min_search_scale_y value="20" />
 
 		<!-- The factor by which the search window is scaled between the subsequent scans --> 
 		<Range_increase_search_scale value="1.1" />
 		<!-- Minimum number (minus 1) of neighbor rectangles that makes up an object --> 
-		<!-- <Range_drop_groups value="70" /> -->
-		<Range_drop_groups value="15" />
-		<!-- Minimum search scale x --> 
-		<!-- <Range_min_search_scale_x value="20" /> -->
-		<Range_min_search_scale_x value="1" />
-		<!-- Minimum search scale y --> 
-		<!-- <Range_min_search_scale_y value="20" /> -->
-		<Range_min_search_scale_y value="1" />
+		<Range_drop_groups value="70" />
+		<!-- Minimum serach scale x --> 
+		<Range_min_search_scale_x value="20" />
+		<!-- Minimum serach scale y --> 
+		<Range_min_search_scale_y value="20" />
 	</adaBoost>
 	<eigenfaces>
 		<!-- Threshold to each face class --> 
