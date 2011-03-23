@@ -72,15 +72,26 @@ cobPeopleDetectionNodelet::cobPeopleDetectionNodelet()
 {
 	it_ = 0;
 	sync_pointcloud = 0;
-	m_PeopleDetector = 0;
+	m_peopleDetector = 0;
+	m_trainContinuousServer = 0;
+	m_trainCaptureSampleServer = 0;
+	m_recognizeServer = 0;
+	m_loadServer = 0;
+	m_saveServer = 0;
+	m_occupiedByAction = false;
 	m_directory = ros::package::getPath("cob_people_detection") + "/common/files/windows/";	// todo: make it a parameter
 }
 
 cobPeopleDetectionNodelet::~cobPeopleDetectionNodelet()
 {
 	cvDestroyAllWindows();
-	delete m_PeopleDetector;
-	m_PeopleDetector = 0;
+	delete m_peopleDetector;
+	m_peopleDetector = 0;
+	if (m_trainContinuousServer != 0) delete m_trainContinuousServer;
+	if (m_trainCaptureSampleServer != 0) delete m_trainCaptureSampleServer;
+	if (m_recognizeServer != 0) delete m_recognizeServer;
+	if (m_loadServer != 0) delete m_loadServer;
+	if (m_saveServer != 0) delete m_saveServer;
 	if (it_ != 0) delete it_;
 	if (sync_pointcloud != 0) delete sync_pointcloud;
 }
@@ -90,6 +101,8 @@ void cobPeopleDetectionNodelet::onInit()
 	sync_pointcloud = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
+
+	m_recognizeServer = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&cobPeopleDetectionNodelet::recognizeServerCallback, this, _1), false);
 
 	// initializations
 	init();
@@ -101,18 +114,18 @@ unsigned long cobPeopleDetectionNodelet::init()
 {
 	shared_image_sub_.subscribe(node_handle_, "/camera/depth/points", 1);
 	color_camera_image_sub_.subscribe(*it_, "/camera/rgb/image_color", 1);
-	sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
-	sync_pointcloud->registerCallback(boost::bind(&cobPeopleDetectionNodelet::recognizeCallback, this, _1, _2));
+//	sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
+//	sync_pointcloud->registerCallback(boost::bind(&cobPeopleDetectionNodelet::recognizeCallback, this, _1, _2));
 
 	colored_pc_ = ipa_SensorFusion::CreateColoredPointCloud();
 
-	if (m_PeopleDetector != 0) delete m_PeopleDetector;
-	m_PeopleDetector = new ipa_PeopleDetector::PeopleDetector();
+	if (m_peopleDetector != 0) delete m_peopleDetector;
+	m_peopleDetector = new ipa_PeopleDetector::PeopleDetector();
 
 	m_filename = 0;
 
 	// load data for face recognition
-	loadTrainingData();
+	loadRecognizerData();
 
 	cv::namedWindow("Face Detector");
 
@@ -125,7 +138,7 @@ unsigned long cobPeopleDetectionNodelet::init()
 	//	return ipa_Utils::RET_FAILED;
 	//}
 
-	if (m_PeopleDetector->Init(m_directory) & ipa_Utils::RET_FAILED)
+	if (m_peopleDetector->Init(m_directory) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetector::Init:" << std::endl;
 		std::cerr << "\t ... Could not initialize people detector library.\n";
@@ -145,13 +158,54 @@ unsigned long cobPeopleDetectionNodelet::init()
 	return ipa_Utils::RET_OK;
 }
 
+void cobPeopleDetectionNodelet::recognizeServerCallback(const cob_people_detection::RecognizeGoalConstPtr& goal)
+{
+	cob_people_detection::RecognizeResult result;
+	if (m_occupiedByAction == true && m_recognizeServerRunning == false)
+	{
+		// another action is running at the moment, first the other action has to finish or to be stopped before this action can run
+		std::cerr << "ERROR - PeopleDetector::recognizeServerCallback:" << std::endl;
+		std::cerr << "\t ... Another action is running at the moment. The other action has to finish or to be stopped before this action can run.\n";
+		result.success = ipa_Utils::RET_FAILED;
+		m_recognizeServer->setSucceeded(result, "Some other action is handled at the moment.");
+		return;
+	}
+
+	m_occupiedByAction = true;		// todo: guard it with a mutex
+	m_recognizeServerRunning = true;
+	// read out goal message
+	// set up the recognition callback linkage
+	if (goal->running == true)
+	{
+		// enable recognition
+		//m_doRecognition = goal->doRecognition;
+		//m_display = goal->display;
+		sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
+		m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobPeopleDetectionNodelet::recognizeCallback, this, _1, _2, goal->doRecognition, goal->display));
+	}
+	else
+	{
+		// disable recognition
+		m_syncPointcloudCallbackConnection.disconnect();
+	}
+
+	result.success = ipa_Utils::RET_OK;
+	m_recognizeServer->setSucceeded(result);
+
+	if (goal->running == false)
+	{
+		m_occupiedByAction = false;   // todo: guard it with a mutex
+		m_recognizeServerRunning = false;
+	}
+}
+
 
 unsigned long cobPeopleDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& color_image)
 {
 	cv::Mat xyz_image_8U3;
 	ipa_Utils::ConvertToShowImage(xyz_image, xyz_image_8U3, 3);
 //todo: read parameter whether a kinect sensor is used
-	if (m_PeopleDetector->DetectFaces(color_image, xyz_image_8U3, m_colorFaces, m_rangeFaces, true/*(m_RangeImagingCameraType==ipa_CameraSensors::CAM_KINECT)*/) & ipa_Utils::RET_FAILED)
+	if (m_peopleDetector->DetectFaces(color_image, xyz_image_8U3, m_colorFaces, m_rangeFaces, true/*(m_RangeImagingCameraType==ipa_CameraSensors::CAM_KINECT)*/) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetection::detectFaces" << std::endl;
 		std::cerr << "\t ... Could not detect faces.\n";
@@ -163,7 +217,7 @@ unsigned long cobPeopleDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat
 
 unsigned long cobPeopleDetectionNodelet::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
 {
-	if (m_PeopleDetector->RecognizeFace(color_image, m_colorFaces, &m_nEigens, m_eigenVectors, m_avgImage, m_faceClassAvgProjections, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
+	if (m_peopleDetector->RecognizeFace(color_image, m_colorFaces, &m_nEigens, m_eigenVectors, m_avgImage, m_faceClassAvgProjections, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetector::recognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";
@@ -176,7 +230,7 @@ unsigned long cobPeopleDetectionNodelet::recognizeFace(cv::Mat& color_image, std
 unsigned long cobPeopleDetectionNodelet::addFace(cv::Mat& image, std::string id)
 {
 	// addFace should only be called if there is exactly one face found --> so we access it with m_colorFaces[0]
-	if (m_PeopleDetector->AddFace(image, m_colorFaces[0], id, m_faceImages, m_id) & ipa_Utils::RET_FAILED)
+	if (m_peopleDetector->AddFace(image, m_colorFaces[0], id, m_faceImages, m_id) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::AddFace:" << std::endl;
 		std::cerr << "\t ... Could not save face.\n";
@@ -208,7 +262,7 @@ unsigned long cobPeopleDetectionNodelet::PCA()
 	m_eigenVectors.clear();
 
 	// Do PCA
-	if (m_PeopleDetector->PCA(&m_nEigens, m_eigenVectors, m_eigenValMat, m_avgImage, m_faceImages, m_projectedTrainFaceMat) & ipa_Utils::RET_FAILED)
+	if (m_peopleDetector->PCA(&m_nEigens, m_eigenVectors, m_eigenValMat, m_avgImage, m_faceImages, m_projectedTrainFaceMat) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while PCA.\n";
@@ -216,7 +270,7 @@ unsigned long cobPeopleDetectionNodelet::PCA()
 	}
 
 	// Calculate FaceClasses
-	if (m_PeopleDetector->CalculateFaceClasses(m_projectedTrainFaceMat, m_id, &m_nEigens, m_faceClassAvgProjections, m_idUnique) & ipa_Utils::RET_FAILED)
+	if (m_peopleDetector->CalculateFaceClasses(m_projectedTrainFaceMat, m_id, &m_nEigens, m_faceClassAvgProjections, m_idUnique) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while calculating FaceClasses.\n";
@@ -245,7 +299,7 @@ unsigned long cobPeopleDetectionNodelet::saveTrainingData()
 //	}
 //	catch (const std::exception &ex)
 //	{
-//		std::cerr << "ERROR - PeopleDetectorControlFlow::SaveTrainingData():" << std::endl;
+//		std::cerr << "ERROR - PeopleDetector::SaveTrainingData():" << std::endl;
 //		std::cerr << "\t ... Exception catch of '" << ex.what() << "'" << std::endl;
 //	}
 
@@ -318,7 +372,15 @@ unsigned long cobPeopleDetectionNodelet::saveTrainingData()
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long cobPeopleDetectionNodelet::loadTrainingData()
+unsigned long cobPeopleDetectionNodelet::loadAllData()
+{
+	if (loadTrainingData(false) != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
+	if (loadRecognizerData() != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
+
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long cobPeopleDetectionNodelet::loadTrainingData(bool runPCA)
 {
 	std::string path = m_directory + "TrainingData/";
 	std::string filename = "data.xml";
@@ -354,9 +416,43 @@ unsigned long cobPeopleDetectionNodelet::loadTrainingData()
 			std::ostringstream tag;
 			tag << "img_" << i;
 			std::string path = m_directory + (std::string)fileStorage[tag.str().c_str()];
-			//IplImage *tmp = cvLoadImage(path.c_str(),0);
 			cv::Mat temp = cv::imread(path.c_str(),0);
 			m_faceImages.push_back(temp);
+		}
+
+		fileStorage.release();
+
+		// Run PCA - now or later
+		m_runPCA = true;
+		if (runPCA) PCA();
+
+		std::cout << "INFO - PeopleDetector::loadRecognizerData:" << std::endl;
+		std::cout << "\t ... " << faces_num << " images loaded.\n";
+	}
+	else
+	{
+		std::cerr << "ERROR - PeopleDetector::loadTrainingData():" << std::endl;
+		std::cerr << "\t .... Path '" << path << "' is not a directory." << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
+}
+
+unsigned long cobPeopleDetectionNodelet::loadRecognizerData()
+{
+	std::string path = m_directory + "TrainingData/";
+	std::string filename = "data.xml";
+
+	std::ostringstream complete;
+	complete << path << filename;
+
+	if(fs::is_directory(path.c_str()))
+	{
+		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::READ);
+		if(!fileStorage.isOpened())
+		{
+			std::cout << "WARNING - PeopleDetector::loadRecognizerData:" << std::endl;
+			std::cout << "\t ... Cant open " << complete.str() << ".\n";
+			return ipa_Utils::RET_OK;
 		}
 
 		// Number eigenvalues/eigenvectors
@@ -400,16 +496,15 @@ unsigned long cobPeopleDetectionNodelet::loadTrainingData()
 
 		fileStorage.release();
 
-		// Run PCA
-		m_runPCA = true;		// todo: split image acquisition and PCA computation, in load/save functions as well
-		PCA();
+		// do not run PCA
+		m_runPCA = false;
 
-		std::cout << "INFO - PeopleDetector::loadTrainingData:" << std::endl;
-		std::cout << "\t ... " << faces_num << " images loaded.\n";
+		std::cout << "INFO - PeopleDetector::loadRecognizerData:" << std::endl;
+		std::cout << "\t ... recognizer data loaded.\n";
 	}
 	else
 	{
-		std::cerr << "ERROR - PeopleDetector::loadTrainingData():" << std::endl;
+		std::cerr << "ERROR - PeopleDetector::loadRecognizerData():" << std::endl;
 		std::cerr << "\t .... Path '" << path << "' is not a directory." << std::endl;
 		return ipa_Utils::RET_FAILED;
 	}
@@ -516,7 +611,7 @@ unsigned long cobPeopleDetectionNodelet::getMeasurement(const sensor_msgs::Point
 }
 
 
-void cobPeopleDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+void cobPeopleDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg, bool doRecognition, bool display)
 {
 	// convert input to cv::Mat images
 	// color
@@ -560,7 +655,7 @@ void cobPeopleDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2
 
 	PCA();
 
-	if(m_faceImages.size() < 2)
+	if(m_eigenVectors.size() < 1)
 	{
 		std::cout << "WARNING - PeopleDetector::ConsoleGUI:" << std::endl;
 		std::cout << "\t ... Less than two images are trained.\n";
@@ -574,44 +669,50 @@ void cobPeopleDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2
 	colored_pc_->GetColorImage().copyTo(colorImage_8U3);
 
 	std::vector<int> index;
-	recognizeFace(color_image, index);
-	std::cout << "INFO - PeopleDetector::Recognize:" << std::endl;
-	for (int i=0; i<(int)m_colorFaces.size(); i++) index.push_back(-1);
+	if (doRecognition==true)
+	{
+		recognizeFace(color_image, index);
+		std::cout << "INFO - PeopleDetector::Recognize:" << std::endl;
+	}
+	else for (int i=0; i<(int)m_colorFaces.size(); i++) index.push_back(-1);
 	//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
 
-	for(int i=0; i<(int)m_rangeFaces.size(); i++)
+	// display results
+	if (display==true)
 	{
-		cv::Rect face = m_rangeFaces[i];
-		cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 0, 255), 2, 8, 0);
-	}
-
-	for(int i=0; i<(int)m_colorFaces.size(); i++)
-	{
-		cv::Rect face = m_colorFaces[i];
-
-		cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 255, 0), 2, 8, 0);
-
-		std::stringstream tmp;
-		switch(index[i])
+		for(int i=0; i<(int)m_rangeFaces.size(); i++)
 		{
-		case -1:
-			// Distance to face class is too high
-			tmp << "Unknown";
-			cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
-			break;
-		case -2:
-			// Distance to face space is too high
-			tmp << "No face";
-			cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
-			break;
-		default:
-			// Face classified
-			tmp << m_id[index[i]].c_str();
-			cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
+			cv::Rect face = m_rangeFaces[i];
+			cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 0, 255), 2, 8, 0);
 		}
-	}
 
-	cv::imshow("Face Detector", colorImage_8U3);
+		for(int i=0; i<(int)m_colorFaces.size(); i++)
+		{
+			cv::Rect face = m_colorFaces[i];
+
+			cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 255, 0), 2, 8, 0);
+
+			std::stringstream tmp;
+			switch(index[i])
+			{
+			case -1:
+				// Distance to face class is too high
+				tmp << "Unknown";
+				cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
+				break;
+			case -2:
+				// Distance to face space is too high
+				tmp << "No face";
+				cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
+				break;
+			default:
+				// Face classified
+				tmp << m_idUnique[index[i]].c_str();
+				cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
+			}
+		}
+		cv::imshow("Face Detector", colorImage_8U3);
+	}
 }
 
 
@@ -664,7 +765,7 @@ unsigned long cobPeopleDetectionNodelet::loadParameters(const char* iniFileName)
 				if ( p_xmlElement_Child )
 				{
 					// read and save value of attribute
-					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_increase_search_scale) != TIXML_SUCCESS)
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_peopleDetector->m_faces_increase_search_scale) != TIXML_SUCCESS)
 					{
 						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
 						std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_increase_search_scale'" << std::endl;
@@ -688,7 +789,7 @@ unsigned long cobPeopleDetectionNodelet::loadParameters(const char* iniFileName)
 				if ( p_xmlElement_Child )
 				{
 					// read and save value of attribute
-					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_drop_groups) != TIXML_SUCCESS)
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_peopleDetector->m_faces_drop_groups) != TIXML_SUCCESS)
 					{
 						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
 						std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_drop_groups'" << std::endl;
@@ -712,7 +813,7 @@ unsigned long cobPeopleDetectionNodelet::loadParameters(const char* iniFileName)
 				if ( p_xmlElement_Child )
 				{
 					// read and save value of attribute
-					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_min_search_scale_x) != TIXML_SUCCESS)
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_peopleDetector->m_faces_min_search_scale_x) != TIXML_SUCCESS)
 					{
 						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
 						std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_min_search_scale_x'" << std::endl;
@@ -736,7 +837,7 @@ unsigned long cobPeopleDetectionNodelet::loadParameters(const char* iniFileName)
 				if ( p_xmlElement_Child )
 				{
 					// read and save value of attribute
-					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_faces_min_search_scale_y) != TIXML_SUCCESS)
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_peopleDetector->m_faces_min_search_scale_y) != TIXML_SUCCESS)
 					{
 						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
 						std::cerr << "\t ... Can't find attribute 'value' of tag 'Faces_min_search_scale_y'" << std::endl;
@@ -760,7 +861,7 @@ unsigned long cobPeopleDetectionNodelet::loadParameters(const char* iniFileName)
 				if ( p_xmlElement_Child )
 				{
 					// read and save value of attribute
-					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_increase_search_scale) != TIXML_SUCCESS)
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_peopleDetector->m_range_increase_search_scale) != TIXML_SUCCESS)
 					{
 						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
 						std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_increase_search_scale'" << std::endl;
@@ -784,7 +885,7 @@ unsigned long cobPeopleDetectionNodelet::loadParameters(const char* iniFileName)
 				if ( p_xmlElement_Child )
 				{
 					// read and save value of attribute
-					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_drop_groups) != TIXML_SUCCESS)
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_peopleDetector->m_range_drop_groups) != TIXML_SUCCESS)
 					{
 						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
 						std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_drop_groups'" << std::endl;
@@ -808,7 +909,7 @@ unsigned long cobPeopleDetectionNodelet::loadParameters(const char* iniFileName)
 				if ( p_xmlElement_Child )
 				{
 					// read and save value of attribute
-					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_min_search_scale_x) != TIXML_SUCCESS)
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_peopleDetector->m_range_min_search_scale_x) != TIXML_SUCCESS)
 					{
 						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
 						std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_min_search_scale_x'" << std::endl;
@@ -832,7 +933,7 @@ unsigned long cobPeopleDetectionNodelet::loadParameters(const char* iniFileName)
 				if ( p_xmlElement_Child )
 				{
 					// read and save value of attribute
-					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_PeopleDetector->m_range_min_search_scale_y) != TIXML_SUCCESS)
+					if ( p_xmlElement_Child->QueryValueAttribute( "value", &m_peopleDetector->m_range_min_search_scale_y) != TIXML_SUCCESS)
 					{
 						std::cerr << "ERROR - PeopleDetector::LoadParameters:" << std::endl;
 						std::cerr << "\t ... Can't find attribute 'value' of tag 'Range_min_search_scale_y'" << std::endl;

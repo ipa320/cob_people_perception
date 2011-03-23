@@ -170,7 +170,7 @@ public:
 
     it_ = image_transport::ImageTransport(nh_);
     as_ = new actionlib::SimpleActionServer<cob_people_detection::FaceDetectorAction>(nh_, node_name_,false);
-    actionlib::SimpleActionServer<cob_people_detection::FaceDetectorAction> as(nh_, node_name_,false);
+    //actionlib::SimpleActionServer<cob_people_detection::FaceDetectorAction> as(nh_, node_name_,false);
 
     ROS_INFO_STREAM_NAMED("face_detector","Constructing FaceDetector.");
     
