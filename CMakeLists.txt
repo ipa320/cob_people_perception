@@ -49,6 +49,9 @@ rosbuild_add_library(face_detector
 			common/src/PeopleDetector.cpp
 			ros/src/people_detection.cpp)
 
+rosbuild_add_executable(people_detection_client
+			ros/src/people_detection_action_client.cpp)
+
 			
 #rosbuild_add_executable(face_detector
 			#common/src/CuiPeopleDetector.cpp

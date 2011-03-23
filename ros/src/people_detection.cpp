@@ -79,6 +79,7 @@ cobPeopleDetectionNodelet::cobPeopleDetectionNodelet()
 	m_loadServer = 0;
 	m_saveServer = 0;
 	m_occupiedByAction = false;
+	m_recognizeServerRunning = false;
 	m_directory = ros::package::getPath("cob_people_detection") + "/common/files/windows/";	// todo: make it a parameter
 }
 
@@ -103,6 +104,7 @@ void cobPeopleDetectionNodelet::onInit()
 	it_ = new image_transport::ImageTransport(node_handle_);
 
 	m_recognizeServer = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&cobPeopleDetectionNodelet::recognizeServerCallback, this, _1), false);
+	m_recognizeServer->start();
 
 	// initializations
 	init();
@@ -126,8 +128,6 @@ unsigned long cobPeopleDetectionNodelet::init()
 
 	// load data for face recognition
 	loadRecognizerData();
-
-	cv::namedWindow("Face Detector");
 
 	std::string iniFileNameAndPath = m_directory + "peopleDetectorIni.xml";
 
@@ -178,6 +178,7 @@ void cobPeopleDetectionNodelet::recognizeServerCallback(const cob_people_detecti
 	if (goal->running == true)
 	{
 		// enable recognition
+		cv::namedWindow("Face Detector");
 		sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
 		m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobPeopleDetectionNodelet::recognizeCallback, this, _1, _2, goal->doRecognition, goal->display));
 	}
@@ -185,6 +186,7 @@ void cobPeopleDetectionNodelet::recognizeServerCallback(const cob_people_detecti
 	{
 		// disable recognition
 		m_syncPointcloudCallbackConnection.disconnect();
+		cvDestroyAllWindows();
 	}
 
 	result.success = ipa_Utils::RET_OK;
