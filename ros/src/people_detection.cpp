@@ -53,7 +53,7 @@
  ****************************************************************/
 
 
-#include "cob_people_detection/PeopleDetector.h"
+#include "cob_people_detection/people_detection.h"
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, cobPeopleDetectionNodelet, ipa_PeopleDetector::cobPeopleDetectionNodelet, nodelet::Nodelet);
@@ -178,8 +178,6 @@ void cobPeopleDetectionNodelet::recognizeServerCallback(const cob_people_detecti
 	if (goal->running == true)
 	{
 		// enable recognition
-		//m_doRecognition = goal->doRecognition;
-		//m_display = goal->display;
 		sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
 		m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobPeopleDetectionNodelet::recognizeCallback, this, _1, _2, goal->doRecognition, goal->display));
 	}

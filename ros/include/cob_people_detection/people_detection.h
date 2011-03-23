@@ -176,8 +176,6 @@ protected:
 	SaveServer* m_saveServer;
 	bool m_occupiedByAction;					///< must be set true as long as an action callback is running or while the continuous recognition or training mode is running
 	bool m_recognizeServerRunning;				///< is true while the recognition module is running
-	//bool m_doRecognition;						///< does the face recognition step as well besides the detection
-	//bool m_display;								///< displays results
 
 public:
 
