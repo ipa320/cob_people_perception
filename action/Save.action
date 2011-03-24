@@ -1,0 +1,9 @@
+# Stores the results of the training (eigenvectors, eigenvalues, average image, etc.) to disc
+#
+# goal message
+uint32 saveMode        # the value determines the save method: 0 = everything, 1 = training data, 2 = recognizer data
+---
+# result message
+uint64 success        # is ipa_Utils::RET_OK if everything went well
+---
+# feedback message
