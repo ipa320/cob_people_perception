@@ -51,8 +51,10 @@
 	</adaBoost>
 	<eigenfaces>
 		<!-- Threshold to each face class --> 
-		<Threshold_Face_Class value="1200000000" />
+		<!-- <Threshold_Face_Class value="1200000000" /> -->
+		<Threshold_Face_Class value="2500000000" />
 		<!-- Threshold to face space --> 
+		<!-- <Threshold_Facespace value="450000000" /> -->
 		<Threshold_Facespace value="450000000" />
 	</eigenfaces>
 </PeopleDetector>

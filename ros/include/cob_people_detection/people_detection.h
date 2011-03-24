@@ -91,6 +91,7 @@
 #include <cob_people_detection/RecognizeAction.h>
 #include <cob_people_detection/LoadAction.h>
 #include <cob_people_detection/SaveAction.h>
+#include <cob_people_detection/ShowAction.h>
 
 // opencv
 #include <opencv/cv.h>
@@ -130,6 +131,7 @@ typedef actionlib::SimpleActionServer<cob_people_detection::TrainCaptureSampleAc
 typedef actionlib::SimpleActionServer<cob_people_detection::RecognizeAction> RecognizeServer;
 typedef actionlib::SimpleActionServer<cob_people_detection::LoadAction> LoadServer;
 typedef actionlib::SimpleActionServer<cob_people_detection::SaveAction> SaveServer;
+typedef actionlib::SimpleActionServer<cob_people_detection::ShowAction> ShowServer;
 
 
 //####################
@@ -174,8 +176,14 @@ protected:
 	RecognizeServer* m_recognizeServer;
 	LoadServer* m_loadServer;
 	SaveServer* m_saveServer;
+	ShowServer* m_showServer;
 	bool m_occupiedByAction;					///< must be set true as long as an action callback is running or while the continuous recognition or training mode is running
 	bool m_recognizeServerRunning;				///< is true while the recognition module is running
+	bool m_trainContinuousServerRunning;		///< is true while the continuous training display is running
+	bool m_captureTrainingFace;					///< can be set true by an action while in training mode. then an image is captured.
+
+	std::string m_currentTrainingID;				///< the ID of the current person who is trained
+	boost::timed_mutex m_actionMutex;			///< secures write and read operations to varibales m_occupiedByAction, etc.
 
 public:
 
@@ -213,9 +221,13 @@ public:
 	/// @return Return code
 	unsigned long PCA();
 
+	unsigned long saveAllData();
+
 	/// Function to save the training data
 	/// @return Return code.
 	unsigned long saveTrainingData();
+
+	unsigned long saveRecognizerData();
 
 	/// Loads the training data as well as the recognizer data.
 	/// @return Return code.
@@ -248,11 +260,28 @@ public:
 
 	unsigned long getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
 
+	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& color_image_msg, cv_bridge::CvImageConstPtr& color_image_ptr, cv::Mat& color_image);
+
+	unsigned long convertPclMessageToMat(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, cv::Mat& depth_image);
+
 	/// Topic callback managing the treatment of incoming data.
 	void recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg, bool doRecognition, bool display);
 
 	/// Action server callback which manages the execution of the recognition functionality
 	void recognizeServerCallback(const cob_people_detection::RecognizeGoalConstPtr& goal);
+
+
+	void trainContinuousCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
+
+	void trainContinuousServerCallback(const cob_people_detection::TrainContinuousGoalConstPtr& goal);
+
+	void trainCaptureSampleServerCallback(const cob_people_detection::TrainCaptureSampleGoalConstPtr& goal);
+
+	void loadServerCallback(const cob_people_detection::LoadGoalConstPtr& goal);
+
+	void saveServerCallback(const cob_people_detection::SaveGoalConstPtr& goal);
+
+	void showServerCallback(const cob_people_detection::ShowGoalConstPtr& goal);
 
 	unsigned long loadParameters(const char* iniFileName);
 };
