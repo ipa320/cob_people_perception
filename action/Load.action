@@ -1,0 +1,10 @@
+# Loads the training data or the results of the training (recognition data: eigenvectors, eigenvalues, average image, etc.) or both from disc
+#
+# goal message
+uint32 loadMode       # load function depends on this value: 0 = load training data and recognition data,  1 = load training data only,  2 = load recognition data only
+bool doPCA            # if the recognition data is not loaded (mode=1), the loaded data needs to be analyzed for and before the recognition step via PCA, if this is true, the PCA is computed immediately after loading
+---
+# result message
+uint64 success        # is ipa_Utils::RET_OK if everything went well
+---
+# feedback message
