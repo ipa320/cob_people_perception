@@ -37,10 +37,10 @@ rosbuild_check_for_sse()
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 #rosbuild_add_executable(face_detector
-rosbuild_add_library(cob_people_detection
+rosbuild_add_library(color_face_detector
                        ros/src/face_detection.cpp 
                        ros/src/faces.cpp)
-rosbuild_link_boost(cob_people_detection thread)
+rosbuild_link_boost(color_face_detector thread)
 
 #rosbuild_add_executable(face_detector
 			#common/src/PeopleDetector.cpp
@@ -48,6 +48,9 @@ rosbuild_link_boost(cob_people_detection thread)
 rosbuild_add_library(face_detector
 			common/src/PeopleDetector.cpp
 			ros/src/people_detection.cpp)
+
+#rosbuild_add_library(people_detector
+#			ros/src/)
 
 rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)

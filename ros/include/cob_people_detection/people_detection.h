@@ -72,6 +72,7 @@
 // ROS message includes
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/Float32MultiArray.h>
 
 //#include <cob_object_detection/DetectObjectsAction.h>	//wo, wozu
 //#include <cob_object_detection/AcquireObjectImageAction.h>
@@ -144,6 +145,8 @@ protected:
 	image_transport::SubscriberFilter color_camera_image_sub_;	///< Color camera image topic
 	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >* sync_pointcloud; /**< Pointcloud synchronizer without disparity display. */
 	message_filters::Connection m_syncPointcloudCallbackConnection;
+	ros::Publisher* m_facePositionPublisher;		///< publisher for the positions of the detected faces
+
 
 	ros::NodeHandle node_handle_;				 ///< ROS node handle
 

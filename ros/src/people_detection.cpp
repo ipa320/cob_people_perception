@@ -53,7 +53,7 @@
  ****************************************************************/
 
 
-#include "cob_people_detection/people_detection.h"
+#include "cob_people_detection/face_detection.h"
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, cobPeopleDetectionNodelet, ipa_PeopleDetector::cobPeopleDetectionNodelet, nodelet::Nodelet);
@@ -72,6 +72,7 @@ cobPeopleDetectionNodelet::cobPeopleDetectionNodelet()
 {
 	it_ = 0;
 	sync_pointcloud = 0;
+	m_facePositionPublisher = 0;
 	m_peopleDetector = 0;
 	m_trainContinuousServer = 0;
 	m_trainCaptureSampleServer = 0;
@@ -88,8 +89,8 @@ cobPeopleDetectionNodelet::cobPeopleDetectionNodelet()
 cobPeopleDetectionNodelet::~cobPeopleDetectionNodelet()
 {
 	cvDestroyAllWindows();
-	delete m_peopleDetector;
-	m_peopleDetector = 0;
+	if (m_facePositionPublisher != 0) delete m_facePositionPublisher;
+	if (m_peopleDetector != 0) delete m_peopleDetector;
 	if (m_trainContinuousServer != 0) delete m_trainContinuousServer;
 	if (m_trainCaptureSampleServer != 0) delete m_trainCaptureSampleServer;
 	if (m_recognizeServer != 0) delete m_recognizeServer;
@@ -105,6 +106,8 @@ void cobPeopleDetectionNodelet::onInit()
 	sync_pointcloud = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
+	ros::Publisher facePositionPublisher = node_handle_.advertise<std_msgs::Float32MultiArray>("face_position_array", 1);
+	m_facePositionPublisher = &facePositionPublisher;
 
 	m_recognizeServer = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&cobPeopleDetectionNodelet::recognizeServerCallback, this, _1), false);
 	m_recognizeServer->start();
@@ -934,6 +937,37 @@ void cobPeopleDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2
 	}
 	else for (int i=0; i<(int)m_colorFaces.size(); i++) index.push_back(-1);
 	//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
+
+	// publish face positions
+	std_msgs::Float32MultiArrayPtr facePositionMsg(new std_msgs::Float32MultiArray);
+	const int dataBlockSize = 8;
+	std::vector<float> data(dataBlockSize*m_colorFaces.size());
+	for(int i=0; i<(int)m_colorFaces.size(); i++)
+	{
+		cv::Rect face = m_colorFaces[i];
+		int baseIndex = i*dataBlockSize;
+
+		// 2D image coordinates
+		data[baseIndex]=face.x; data[baseIndex+1]=face.y; data[baseIndex+2]=face.width; data[baseIndex+3]=face.height;
+		float center2Dx = face.x + face.width*0.5f;
+		float center2Dy = face.y + face.height*0.5f;
+
+		// 3D world coordinates
+		cv::Point3f p = depth_image.at<cv::Point3f>(center2Dy, center2Dx);
+		data[baseIndex+4]=p.x; data[baseIndex+5]=p.y; data[baseIndex+6]=p.z;
+
+		// person ID
+		data[baseIndex+7]=index[i];
+	}
+	facePositionMsg->data = data;
+	std::vector<std_msgs::MultiArrayDimension> dim(2, std_msgs::MultiArrayDimension());
+	dim[0].label = "faces";       dim[0].size = m_colorFaces.size();  	dim[0].stride = data.size();
+	dim[1].label = "coordinates"; dim[1].size = dataBlockSize;          dim[1].stride = dataBlockSize;
+	std_msgs::MultiArrayLayout layout;
+	layout.dim = dim;
+	layout.data_offset = 0;
+	facePositionMsg->layout = layout;
+	m_facePositionPublisher->publish(facePositionMsg);
 
 	// display results
 	if (display==true)
