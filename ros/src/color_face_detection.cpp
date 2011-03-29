@@ -84,7 +84,7 @@ namespace people {
 
 /** FaceDetector - A wrapper around OpenCV's face detection, plus some usage of depth from stereo to restrict the results based on plausible face size.
  */
-class FaceDetector : public nodelet::Nodelet {
+class FaceDetectorColor : public nodelet::Nodelet {
 public:
   // Constants
   const double BIGDIST_M;// = 1000000.0;
@@ -165,6 +165,8 @@ public:
 
   void onInit()
   {
+    std::cout << "IPA version\n\n";
+
     nh_ = getNodeHandle();
     node_name_ = ros::this_node::getName();
 
@@ -180,8 +182,8 @@ public:
     }
     
     // Action stuff
-    as_->registerGoalCallback(boost::bind(&FaceDetector::goalCB, this));
-    as_->registerPreemptCallback(boost::bind(&FaceDetector::preemptCB, this));
+    as_->registerGoalCallback(boost::bind(&FaceDetectorColor::goalCB, this));
+    as_->registerPreemptCallback(boost::bind(&FaceDetectorColor::preemptCB, this));
     
     faces_ = new Faces();
     double face_size_min_m, face_size_max_m, max_face_z_m, face_sep_dist_m;
@@ -224,7 +226,7 @@ public:
       lcinfo_sub_.subscribe(nh_,left_camera_info_topic,3);
       rcinfo_sub_.subscribe(nh_,right_camera_info_topic,3);
       sync_stereo_.connectInput(limage_sub_, dimage_sub_, lcinfo_sub_, rcinfo_sub_);
-      sync_stereo_.registerCallback(boost::bind(&FaceDetector::imageCBAll, this, _1, _2, _3, _4, nullPointCloud));
+      sync_stereo_.registerCallback(boost::bind(&FaceDetectorColor::imageCBAll, this, _1, _2, _3, _4, nullPointCloud));
     }
     else if (data_source_mode_=="pointcloud")
     {
@@ -233,12 +235,12 @@ public:
       if (do_display_disparity_or_depth_==true)
       {
         sync_pointcloud_showdisp.connectInput(limage_sub_, dimage_sub_, depth_cloud_sub_);
-        sync_pointcloud_showdisp.registerCallback(boost::bind(&FaceDetector::imageCBAll, this, _1, _2, nullCameraInfo, nullCameraInfo, _3));
+        sync_pointcloud_showdisp.registerCallback(boost::bind(&FaceDetectorColor::imageCBAll, this, _1, _2, nullCameraInfo, nullCameraInfo, _3));
       }
       else
       {
         sync_pointcloud_nodisp.connectInput(limage_sub_, depth_cloud_sub_);
-        sync_pointcloud_nodisp.registerCallback(boost::bind(&FaceDetector::imageCBAll, this, _1, nullDisparity, nullCameraInfo, nullCameraInfo, _2));
+        sync_pointcloud_nodisp.registerCallback(boost::bind(&FaceDetectorColor::imageCBAll, this, _1, nullDisparity, nullCameraInfo, nullCameraInfo, _2));
       }
     }
     else
@@ -248,7 +250,7 @@ public:
     }
     //sensor_msgs::Image::ConstPtr nullImage = 0;
     //sync_.connectInput(limage_sub_, dimage_sub_, lcinfo_sub_, rcinfo_sub_, mdimage_sub_, depth_cloud_sub_);
-    //sync_.registerCallback(boost::bind(&FaceDetector::imageCBAll, this, _1, _2, _3, _4, /*_5*/nullImage, _6));
+    //sync_.registerCallback(boost::bind(&FaceDetectorColor::imageCBAll, this, _1, _2, _3, _4, /*_5*/nullImage, _6));
     
     // Advertise a position measure message.
     pos_pub_ = nh_.advertise<people_msgs::PositionMeasurement>("face_detector/people_tracker_measurements",1);
@@ -257,7 +259,7 @@ public:
     
     // Subscribe to filter measurements.
     if (external_init_) {
-      pos_sub_ = nh_.subscribe("people_tracker_filter",1,&FaceDetector::posCallback,this);
+      pos_sub_ = nh_.subscribe("people_tracker_filter",1,&FaceDetectorColor::posCallback,this);
       ROS_INFO_STREAM_NAMED("face_detector","Subscribed to the person filter messages.");
     }
     
@@ -268,7 +270,7 @@ public:
     ros::spin(s);
   }
   
-  FaceDetector() :
+  FaceDetectorColor() :
     BIGDIST_M(1000000.0),
     it_(nh_),
     sync_stereo_(4),
@@ -280,7 +282,7 @@ public:
     // all code in onInit() because we are using a nodelet
   }
 
-  ~FaceDetector()
+  ~FaceDetectorColor()
   {
 
     cv_image_out_.release();
@@ -313,6 +315,8 @@ public:
    * from the filter with a person id and 3D position and adjust the person's face position accordingly.
    */ 
   void posCallback(const people_msgs::PositionMeasurementConstPtr& pos_ptr) {
+
+    std::cout << "Tracking callback\n";
 
     // Put the incoming position into the position queue. It'll be processed in the next image callback.
     boost::mutex::scoped_lock lock(pos_mutex_);
@@ -479,8 +483,6 @@ public:
           pos.covariance[0] = 0.04; pos.covariance[1] = 0.0;  pos.covariance[2] = 0.0;
           pos.covariance[3] = 0.0;  pos.covariance[4] = 0.04; pos.covariance[5] = 0.0;
           pos.covariance[6] = 0.0;  pos.covariance[7] = 0.0;  pos.covariance[8] = 0.04;
-
-          std::cout << "Tracking\n";
           
           // Check if this person's face is close enough to one of the previously known faces and associate it with the closest one.
           // Otherwise publish it with an empty id.
@@ -597,7 +599,7 @@ public:
  
 }; // end namespace people
 
-PLUGINLIB_DECLARE_CLASS(people, FaceDetector, people::FaceDetector, nodelet::Nodelet);
+PLUGINLIB_DECLARE_CLASS(people, FaceDetectorColor, people::FaceDetectorColor, nodelet::Nodelet);
 
 // Main
 // int main(int argc, char **argv)

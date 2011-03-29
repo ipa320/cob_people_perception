@@ -52,8 +52,8 @@
  *
  ****************************************************************/
 
-#ifndef _PEOPLE_DETECTION_
-#define _PEOPLE_DETECTION_
+#ifndef _FACE_DETECTION_
+#define _FACE_DETECTION_
 
 
 //##################
@@ -72,11 +72,8 @@
 // ROS message includes
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <std_msgs/Float32MultiArray.h>
-
-//#include <cob_object_detection/DetectObjectsAction.h>	//wo, wozu
-//#include <cob_object_detection/AcquireObjectImageAction.h>
-//#include <cob_object_detection/TrainObjectAction.h>
+//#include <std_msgs/Float32MultiArray.h>
+#include <cob_msgs/DetectionArray.h>
 
 // topics
 #include <message_filters/subscriber.h>
@@ -124,6 +121,7 @@ namespace fs = boost::filesystem;
 #include <sstream>
 #include <string>
 #include <vector>
+#include <set>
 
 namespace ipa_PeopleDetector {
 
@@ -137,18 +135,17 @@ typedef actionlib::SimpleActionServer<cob_people_detection::ShowAction> ShowServ
 
 //####################
 //#### node class ####
-class cobPeopleDetectionNodelet : public nodelet::Nodelet
+class cobFaceDetectionNodelet : public nodelet::Nodelet
 {
 protected:
 	message_filters::Subscriber<sensor_msgs::PointCloud2> shared_image_sub_;	///< Shared xyz image and color image topic
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter color_camera_image_sub_;	///< Color camera image topic
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >* sync_pointcloud; /**< Pointcloud synchronizer without disparity display. */
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >* sync_pointcloud;
 	message_filters::Connection m_syncPointcloudCallbackConnection;
-	ros::Publisher* m_facePositionPublisher;		///< publisher for the positions of the detected faces
+	ros::Publisher m_facePositionPublisher;		///< publisher for the positions of the detected faces
 
-
-	ros::NodeHandle node_handle_;				 ///< ROS node handle
+	ros::NodeHandle node_handle_;				///< ROS node handle
 
 	ipa_SensorFusion::ColoredPointCloudPtr colored_pc_; ///< Storage for acquired colored point cloud
 
@@ -172,6 +169,7 @@ protected:
 	int m_threshold_FS;							///< Threshold to facespace
 	std::vector<cv::Rect> m_colorFaces;			///< Vector with detected faces
 	std::vector<cv::Rect> m_rangeFaces;			///< Vector with detected rangeFaces
+	std::set<size_t> m_rangeFaceIndicesWithColorFaceDetection;	///< this set stores which range faces also had a face detection in the color image
 
 	// Actions
 	TrainContinuousServer* m_trainContinuousServer;
@@ -184,15 +182,16 @@ protected:
 	bool m_recognizeServerRunning;				///< is true while the recognition module is running
 	bool m_trainContinuousServerRunning;		///< is true while the continuous training display is running
 	bool m_captureTrainingFace;					///< can be set true by an action while in training mode. then an image is captured.
+	bool m_turnOffRecognition;					///< is set true on quit request during recognition mode
 
 	std::string m_currentTrainingID;				///< the ID of the current person who is trained
 	boost::timed_mutex m_actionMutex;			///< secures write and read operations to varibales m_occupiedByAction, etc.
 
 public:
 
-	cobPeopleDetectionNodelet();
+	cobFaceDetectionNodelet();
 
-	~cobPeopleDetectionNodelet();
+	~cobFaceDetectionNodelet();
 
 	/// Nodelet init function
 	void onInit();
@@ -267,6 +266,9 @@ public:
 
 	unsigned long convertPclMessageToMat(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, cv::Mat& depth_image);
 
+	/// returns the ID string corresponding to index index
+	std::string getLabel(int index);
+
 	/// Topic callback managing the treatment of incoming data.
 	void recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg, bool doRecognition, bool display);
 
@@ -291,4 +293,4 @@ public:
 
 };
 
-#endif // _PEOPLE_DETECTION_
+#endif // _FACE_DETECTION_

@@ -97,14 +97,14 @@ unsigned long PeopleDetector::InterpolateUnassignedPixels(cv::Mat& img)
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor)
+unsigned long PeopleDetector::DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates, bool fillUnassignedDepthValues)
 {
 	rangeFaceCoordinates.clear();
 
-	if (fromKinectSensor) InterpolateUnassignedPixels(img);
-cv::namedWindow("depth image");
-cv::imshow("depth image", img);
-cv::waitKey(10);
+	if (fillUnassignedDepthValues) InterpolateUnassignedPixels(img);
+//cv::namedWindow("depth image");
+//cv::imshow("depth image", img);
+//cv::waitKey(10);
 	IplImage imgPtr = (IplImage)img;
 	CvSeq* rangeFaces = cvHaarDetectObjects
 	(
@@ -126,12 +126,13 @@ cv::waitKey(10);
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor)
+unsigned long PeopleDetector::DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates, std::set<size_t>& colorToRangeFaceDependency, bool fillUnassignedDepthValues)
 {
 	colorFaceCoordinates.clear();
+	colorToRangeFaceDependency.clear();
 
 	//######################################## Option1 ########################################
-	DetectRangeFace(rangeImg, rangeFaceCoordinates, fromKinectSensor);
+	DetectRangeFace(rangeImg, rangeFaceCoordinates, fillUnassignedDepthValues);
 	for(int i=0; i<(int)rangeFaceCoordinates.size(); i++)
 	{
 		cv::Rect rangeFace = rangeFaceCoordinates[i];
@@ -139,24 +140,11 @@ unsigned long PeopleDetector::DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::
 		rangeFace.y += (int)(rangeFace.height*0.1);
 
 		cv::Mat areaImg = img(rangeFace);
-// 		IplImage* areaImg = cvCloneImage(img);
-// 		char* rowPtr = 0;
-// 		for (int row=0; row<areaImg->height; row++ )
-// 		{
-// 			rowPtr = (char*)(areaImg->imageData + row*areaImg->widthStep);
-// 			for (int col=0; col<areaImg->width; col++ )
-// 			{
-// 				if((col < rangeFace.x || col > (rangeFace.x + rangeFace.width)) || (row < rangeFace.y || row > (rangeFace.y + rangeFace.height)))
-// 				{
-// 					rowPtr[col*3] = 0;
-// 					rowPtr[col*3+1] = 0;
-// 					rowPtr[col*3+2] = 0;
-// 				}		
-// 			}
-// 		}
 
-		// Detect color Faces
+		// Detect color Faces and store the corresponding range face index if images were found
+		size_t numberColorFacesBefore = colorFaceCoordinates.size();
 		DetectColorFaces(areaImg, colorFaceCoordinates);
+		if ((colorFaceCoordinates.size()-numberColorFacesBefore) != 0) colorToRangeFaceDependency.insert(i);
 	}
 	//######################################## /Option1 ########################################
 
