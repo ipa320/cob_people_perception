@@ -75,6 +75,9 @@
 //#include <std_msgs/Float32MultiArray.h>
 #include <cob_msgs/DetectionArray.h>
 
+// services
+#include <cob_people_detection/DetectPeople.h>
+
 // topics
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
@@ -94,7 +97,7 @@
 
 // boost
 #include <boost/bind.hpp>
-//#include <boost/thread/mutex.hpp>
+#include <boost/thread/mutex.hpp>
 //#include "boost/filesystem/operations.hpp"
 //#include "boost/filesystem/convenience.hpp"
 //#include "boost/filesystem/path.hpp"
@@ -122,18 +125,18 @@ protected:
 	image_transport::ImageTransport* m_it;
 	image_transport::SubscriberFilter m_peopleSegmentationImageSub;	///< Color camera image topic
 	image_transport::SubscriberFilter m_colorImageSub;	///< Color camera image topic
-	//message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >* sync_pointcloud;
 	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image> >* m_syncInput2;
 	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image, sensor_msgs::Image> >* m_syncInput3;
-	//message_filters::Connection m_syncInputCallbackConnection;
 	message_filters::Subscriber<cob_msgs::DetectionArray> m_facePositionSubscriber;		///< receives the face messages from the face detector
 	ros::Publisher m_facePositionPublisher;		///< publisher for the positions of the detected faces
+	ros::ServiceServer m_serviceServerDetectPeople; ///< Service server to request people detection
 
 	bool m_display;								///< f on, several debug outputs are activated  (todo: set as parameter)
 
 	ros::NodeHandle m_nodeHandle;				///< ROS node handle
 
 	std::vector<cob_msgs::Detection> m_facePositionAccumulator;	///< accumulates face positions over time
+	boost::timed_mutex m_facePositionAccumulatorMutex;			///< secures write and read operations to m_facePositionAccumulator
 
 public:
 
@@ -175,6 +178,8 @@ public:
 			m_syncInput3->connectInput(m_facePositionSubscriber, m_peopleSegmentationImageSub, m_colorImageSub);
 			m_syncInput3->registerCallback(boost::bind(&cobPeopleDetectionNodelet::inputCallback, this, _1, _2, _3));
 		}
+
+		m_serviceServerDetectPeople = m_nodeHandle.advertiseService("detect_people", &cobPeopleDetectionNodelet::detectPeopleCallback, this);
 
 		m_facePositionPublisher = m_nodeHandle.advertise<cob_msgs::DetectionArray>("people_detector/face_position_array", 1);
 
@@ -301,6 +306,14 @@ public:
 			if ((ros::Time::now()-m_facePositionAccumulator[i].header.stamp) > timeSpan) m_facePositionAccumulator.erase(m_facePositionAccumulator.begin()+i);
 		}
 
+		// secure this section with a mutex
+		boost::timed_mutex::scoped_timed_lock lock(m_facePositionAccumulatorMutex, boost::posix_time::milliseconds(2000));
+		if (lock.owns_lock() == false)
+		{
+			ROS_ERROR("cob_people_detection::cobPeopleDetectionNodelet: Mutex was not freed during response time.");
+			return;
+		}
+
 		// publish face positions
 		cob_msgs::DetectionArray facePositionMsg;
 		for(int i=0; i<(int)face_position_msg->detections.size(); i++)
@@ -392,6 +405,19 @@ public:
 		}
 	}
 
+	bool detectPeopleCallback(cob_people_detection::DetectPeople::Request &req, cob_people_detection::DetectPeople::Response &res)
+	{
+		// secure this section with a mutex
+		boost::timed_mutex::scoped_timed_lock lock(m_facePositionAccumulatorMutex, boost::posix_time::milliseconds(2000));
+		if (lock.owns_lock() == false)
+		{
+			ROS_ERROR("cob_people_detection::cobPeopleDetectionNodelet: Mutex was not freed during response time.");
+			return false;
+		}
+		res.people_list.detections = m_facePositionAccumulator;
+		res.people_list.header.stamp = ros::Time::now();
+		return true;
+	}
 };
 
 };

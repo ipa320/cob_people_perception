@@ -111,7 +111,7 @@ void train(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClien
 
 	goal.running = false;
 	trainContinuousClient.sendGoal(goal);
-	trainContinuousClient.waitForResult(ros::Duration::Duration(2.0));
+	trainContinuousClient.waitForResult(ros::Duration::Duration(10.0));
 	if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 		printf("Training off!\n");
 	printf("Current State: %s\n", trainContinuousClient.getState().toString().c_str());

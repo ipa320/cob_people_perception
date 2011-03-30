@@ -82,7 +82,9 @@ cobFaceDetectionNodelet::cobFaceDetectionNodelet()
 	m_occupiedByAction = false;
 	m_recognizeServerRunning = false;
 	m_trainContinuousServerRunning = false;
-	m_turnOffRecognition = false;
+//	m_turnOffRecognition = false;
+	m_doRecognition = true;
+	m_display = false;
 	m_directory = ros::package::getPath("cob_people_detection") + "/common/files/windows/";	// todo: make it a parameter
 }
 
@@ -136,6 +138,9 @@ unsigned long cobFaceDetectionNodelet::init()
 	color_camera_image_sub_.subscribe(*it_, "/camera/rgb/image_color", 1);
 //	sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
 //	sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
+
+	sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
+	m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
 
 	colored_pc_ = ipa_SensorFusion::CreateColoredPointCloud();
 
@@ -199,14 +204,18 @@ void cobFaceDetectionNodelet::recognizeServerCallback(const cob_people_detection
 		// enable recognition
 		m_occupiedByAction = true;
 		m_recognizeServerRunning = true;
-		cv::namedWindow("Face Detector");
-		sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
-		m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2, goal->doRecognition, goal->display));
+		m_doRecognition = goal->doRecognition;
+		m_display = goal->display;
+		//cv::namedWindow("Face Detector");
+		//cv::waitKey(1);
+		//sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
+		//m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2, goal->doRecognition, goal->display));
 	}
 	else
 	{
 		// disable recognition
-		m_turnOffRecognition = true;
+		m_occupiedByAction = false;
+		m_recognizeServerRunning = false;
 	}
 
 	result.success = ipa_Utils::RET_OK;
@@ -256,20 +265,21 @@ void cobFaceDetectionNodelet::trainContinuousServerCallback(const cob_people_det
 		}
 		m_occupiedByAction = true;
 		m_trainContinuousServerRunning = true;
-		cv::namedWindow("Face Recognizer Training");
-		sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
-		m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::trainContinuousCallback, this, _1, _2));
+		//cv::namedWindow("Face Recognizer Training");
+		//cv::waitKey(10);
+		//sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
+		//m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::trainContinuousCallback, this, _1, _2));
 		std::cout << "train run...\n";
 	}
 	else
 	{
 		std::cout << "train off...\n";
 		// disable training
-		m_syncPointcloudCallbackConnection.disconnect();
+		//m_syncPointcloudCallbackConnection.disconnect();
 		m_occupiedByAction = false;
-		m_recognizeServerRunning = false;
-		cv::destroyWindow("Face Recognizer Training");
-		cv::waitKey(10);
+		m_trainContinuousServerRunning = false;
+		//cv::destroyWindow("Face Recognizer Training");
+		//cv::waitKey(10);
 
 		// save images
 		saveTrainingData();
@@ -383,7 +393,7 @@ void cobFaceDetectionNodelet::showServerCallback(const cob_people_detection::Sho
 		showAVGImage(avgImage);
 
 		cv::namedWindow("AVGImage");
-		imshow("AVGImage", avgImage);
+		cv::imshow("AVGImage", avgImage);
 		cv::waitKey(3000);
 
 		cv::destroyWindow("AVGImage");
@@ -910,17 +920,34 @@ inline std::string cobFaceDetectionNodelet::getLabel(int index)
 	}
 }
 
-void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg, bool doRecognition, bool display)
+void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
-	// check for disabled recognition
-	if (m_turnOffRecognition == true)
+	// check if this is a training call
+	if (m_trainContinuousServerRunning == true)
 	{
-		m_syncPointcloudCallbackConnection.disconnect();
-		m_occupiedByAction = false;
-		m_recognizeServerRunning = false;
-		m_turnOffRecognition = false;
-		cv::destroyWindow("Face Detector");
+		trainContinuousCallback(shared_image_msg, color_image_msg);
+		return;
 	}
+
+	// check for disabled recognition
+	if (m_recognizeServerRunning == false) return;
+
+//	if (m_turnOffRecognition == true)
+//	{
+//		m_syncPointcloudCallbackConnection.disconnect();
+//		m_occupiedByAction = false;
+//		m_recognizeServerRunning = false;
+//		m_turnOffRecognition = false;
+//		std::cout << "closing\n";
+//		cv::namedWindow("Face Detector");
+//		cv::waitKey(10);
+//		cv::Mat temp;
+//		temp.create(640,480,CV_8UC3);
+//		cv::imshow("Face Detector", temp);
+//		cv::waitKey(10);
+//		cv::waitKey(10000);
+//		cv::destroyWindow("Face Detector");
+//	}
 
 	// convert input to cv::Mat images
 	// color
@@ -954,7 +981,7 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	colored_pc_->GetColorImage().copyTo(colorImage_8U3);
 
 	std::vector<int> index;
-	if (doRecognition==true)
+	if (m_doRecognition==true)
 	{
 		recognizeFace(color_image, index);
 		//std::cout << "INFO - PeopleDetector::Recognize:" << std::endl;
@@ -1055,7 +1082,7 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 //	m_facePositionPublisher->publish(facePositionMsg);
 
 	// display results
-	if (display==true)
+	if (m_display==true)
 	{
 		for(int i=0; i<(int)m_rangeFaces.size(); i++)
 		{
@@ -1089,11 +1116,25 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 			}
 		}
 		cv::imshow("Face Detector", colorImage_8U3);
+		cv::waitKey(10);
+//		if (m_turnOffRecognition == true)
+//		{
+//			cv::waitKey(10000);
+//			cv::destroyWindow("Face Detector");
+//			cv::waitKey(10);
+//			m_occupiedByAction = false;
+//			m_recognizeServerRunning = false;
+//			m_turnOffRecognition = false;
+//			std::cout << "closing\n";
+//			m_syncPointcloudCallbackConnection.disconnect();
+//		}
 	}
 }
 
 void cobFaceDetectionNodelet::trainContinuousCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
+	if (m_trainContinuousServerRunning == false) return;
+
 	// convert input to cv::Mat images
 	// color
 	cv_bridge::CvImageConstPtr color_image_ptr;
@@ -1122,7 +1163,7 @@ void cobFaceDetectionNodelet::trainContinuousCallback(const sensor_msgs::PointCl
 	}
 
 	cv::imshow("Face Recognizer Training", colorImage_8U3);
-	cv::waitKey(1);
+	cv::waitKey(10);
 
 
 	// capture image if triggered by an action

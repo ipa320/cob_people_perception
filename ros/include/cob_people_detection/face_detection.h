@@ -182,9 +182,11 @@ protected:
 	bool m_recognizeServerRunning;				///< is true while the recognition module is running
 	bool m_trainContinuousServerRunning;		///< is true while the continuous training display is running
 	bool m_captureTrainingFace;					///< can be set true by an action while in training mode. then an image is captured.
-	bool m_turnOffRecognition;					///< is set true on quit request during recognition mode
+//	bool m_turnOffRecognition;					///< is set true on quit request during recognition mode
+	bool m_doRecognition;						///< does people identification if true, else it's just people detection
+	bool m_display;								///< enables debug output
 
-	std::string m_currentTrainingID;				///< the ID of the current person who is trained
+	std::string m_currentTrainingID;			///< the ID of the current person who is trained
 	boost::timed_mutex m_actionMutex;			///< secures write and read operations to varibales m_occupiedByAction, etc.
 
 public:
@@ -270,7 +272,7 @@ public:
 	std::string getLabel(int index);
 
 	/// Topic callback managing the treatment of incoming data.
-	void recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg, bool doRecognition, bool display);
+	void recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
 
 	/// Action server callback which manages the execution of the recognition functionality
 	void recognizeServerCallback(const cob_people_detection::RecognizeGoalConstPtr& goal);
