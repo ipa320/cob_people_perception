@@ -179,7 +179,7 @@ public:
 			m_syncInput3->registerCallback(boost::bind(&cobPeopleDetectionNodelet::inputCallback, this, _1, _2, _3));
 		}
 
-		m_serviceServerDetectPeople = m_nodeHandle.advertiseService("detect_people", &cobPeopleDetectionNodelet::detectPeopleCallback, this);
+		m_serviceServerDetectPeople = m_nodeHandle.advertiseService("cob_people_detection/detect_people", &cobPeopleDetectionNodelet::detectPeopleCallback, this);
 
 		m_facePositionPublisher = m_nodeHandle.advertise<cob_msgs::DetectionArray>("people_detector/face_position_array", 1);
 
