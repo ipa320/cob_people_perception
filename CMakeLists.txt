@@ -37,6 +37,7 @@ rosbuild_check_for_sse()
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 #rosbuild_add_executable(face_detector
+
 rosbuild_add_library(color_face_detector
                        ros/src/color_face_detection.cpp 
                        ros/src/faces.cpp)
