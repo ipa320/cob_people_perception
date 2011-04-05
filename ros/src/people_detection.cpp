@@ -131,7 +131,7 @@ protected:
 	ros::Publisher m_facePositionPublisher;		///< publisher for the positions of the detected faces
 	ros::ServiceServer m_serviceServerDetectPeople; ///< Service server to request people detection
 
-	bool m_display;								///< f on, several debug outputs are activated  (todo: set as parameter)
+	bool m_display;								///< if on, several debug outputs are activated  (todo: set as parameter)
 
 	ros::NodeHandle m_nodeHandle;				///< ROS node handle
 
