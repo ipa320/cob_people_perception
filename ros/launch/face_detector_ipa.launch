@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node pkg="cob_people_detection" type="openni_tracker" name="openniTrackerNode" output="screen"/>
+
+  <node pkg="nodelet" type="nodelet" name="face_detection_ipa_manager"  args="manager" output="screen"/>
+
+  <node pkg="nodelet" type="nodelet" name="cobFaceDetectionNodelet" args="load ipa_PeopleDetector/cobFaceDetectionNodelet face_detection_ipa_manager" output="screen">
+	<param name="data_directory" value="$(find cob_people_detection)/common/files/windows/"/>
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="people_detection_ipa_manager"  args="manager" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="cobPeopleDetectionNodelet" args="load ipa_PeopleDetector/cobPeopleDetectionNodelet people_detection_ipa_manager" output="screen">
+  </node>                 
+</launch>
