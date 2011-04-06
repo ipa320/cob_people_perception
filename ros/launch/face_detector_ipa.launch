@@ -6,10 +6,26 @@
   <node pkg="nodelet" type="nodelet" name="face_detection_ipa_manager"  args="manager" output="screen"/>
 
   <node pkg="nodelet" type="nodelet" name="cobFaceDetectionNodelet" args="load ipa_PeopleDetector/cobFaceDetectionNodelet face_detection_ipa_manager" output="screen">
-	<param name="data_directory" value="$(find cob_people_detection)/common/files/windows/"/>
+	<param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/windows/"/>
+	<param name="face_size_max_m" type="double" value="0.35" />
+	<param name="face_size_min_m" type="double" value="0.12" />
+	<param name="m_MaxFaceZM" type="double" value="8.0" />
+	<param name="fill_unassigned_depth_values" type="bool" value="true" />	<!-- enable if a kinect sensor is used! -->
   </node>
 
   <node pkg="nodelet" type="nodelet" name="people_detection_ipa_manager"  args="manager" output="screen"/>
   <node pkg="nodelet" type="nodelet" name="cobPeopleDetectionNodelet" args="load ipa_PeopleDetector/cobPeopleDetectionNodelet people_detection_ipa_manager" output="screen">
-  </node>                 
+	<!-- displays the results -->
+	<param name="display" type="bool" value="true" />
+	<!-- timespan during which a face is preserved in the list of tracked faces although it is currently not visible -->
+	<param name="face_redetection_time" type="double" value="2.0" />
+	<!-- the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker) -->
+	<param name="min_segmented_people_ratio_color" type="double" value="0.7" />
+	<!-- the minimum area inside the face rectangle found in the range image that has to be covered with positive people segmentation results (from openni_tracker) -->
+	<param name="min_segmented_people_ratio_range" type="double" value="0.2" />
+	<!-- enables the combination of face detections with the openni people segmentation -->
+	<param name="use_people_segmentation" type="bool" value="true" />
+	<!-- maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked -->
+	<param name="tracking_range_m" type="double" value="0.3" />
+  </node>
 </launch>

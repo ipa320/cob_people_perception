@@ -189,6 +189,17 @@ protected:
 	std::string m_currentTrainingID;			///< the ID of the current person who is trained
 	boost::timed_mutex m_actionMutex;			///< secures write and read operations to varibales m_occupiedByAction, etc.
 
+	// constants
+	static const double FACE_SIZE_MIN_M = 0.12;
+	static const double FACE_SIZE_MAX_M = 0.35;
+	static const double MAX_FACE_Z_M = 8.0;
+
+	// parameters
+	double m_faceSizeMinM;		///< in meters
+	double m_faceSizeMaxM;		///< in meters
+	double m_maxFaceZM;			///< in meters
+	bool m_fillUnassignedDepthValues;	///< fills the unassigned depth values in the depth image, must be true for a kinect sensor
+
 public:
 
 	cobFaceDetectionNodelet();

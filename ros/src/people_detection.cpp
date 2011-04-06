@@ -131,12 +131,19 @@ protected:
 	ros::Publisher m_facePositionPublisher;		///< publisher for the positions of the detected faces
 	ros::ServiceServer m_serviceServerDetectPeople; ///< Service server to request people detection
 
-	bool m_display;								///< if on, several debug outputs are activated  (todo: set as parameter)
 
 	ros::NodeHandle m_nodeHandle;				///< ROS node handle
 
 	std::vector<cob_msgs::Detection> m_facePositionAccumulator;	///< accumulates face positions over time
 	boost::timed_mutex m_facePositionAccumulatorMutex;			///< secures write and read operations to m_facePositionAccumulator
+
+	// parameters
+	bool m_display;								///< if on, several debug outputs are activated
+	bool m_usePeopleSegmentation;				///< enables the combination of face detections with the openni people segmentation
+	double m_faceRedetectionTime;				///< timespan during which a face is preserved in the list of tracked faces although it is currently not visible
+	double m_minSegmentedPeopleRatioColor;		///< the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker)
+	double m_minSegmentedPeopleRatioRange;		///< the minimum area inside the face rectangle found in the range image that has to be covered with positive people segmentation results (from openni_tracker)
+	double m_trackingRangeM;					///< maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked
 
 public:
 
@@ -158,25 +165,49 @@ public:
 	void onInit()
 	{
 		m_nodeHandle = getNodeHandle();
+		ros::NodeHandle local_nh = getPrivateNodeHandle();
 
-		m_display = true;	//todo: parameter
+		// parameters
+		local_nh.param("display", m_display, true);
+		local_nh.param("face_redetection_time", m_faceRedetectionTime, 2.0);
+		local_nh.param("min_segmented_people_ratio_color", m_minSegmentedPeopleRatioColor, 0.7);
+		local_nh.param("min_segmented_people_ratio_range", m_minSegmentedPeopleRatioRange, 0.2);
+		local_nh.param("use_people_segmentation", m_usePeopleSegmentation, true);
+		local_nh.param("tracking_range_m", m_trackingRangeM, 0.3);
+
 		m_it = new image_transport::ImageTransport(m_nodeHandle);
 		m_peopleSegmentationImageSub.subscribe(*m_it, "openni/people_segmentation_image", 1);
 		if (m_display==true) m_colorImageSub.subscribe(*m_it, "camera/rgb/image_color", 1);
 		m_facePositionSubscriber.subscribe(m_nodeHandle, "face_detector/face_position_array", 1);
 
-		if (m_display == false)
+		sensor_msgs::Image::ConstPtr nullPtr;
+		if (m_usePeopleSegmentation == true)
 		{
-			m_syncInput2 = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image> >(2);
-			m_syncInput2->connectInput(m_facePositionSubscriber, m_peopleSegmentationImageSub);
-			sensor_msgs::Image::ConstPtr nullPtr;
-			m_syncInput2->registerCallback(boost::bind(&cobPeopleDetectionNodelet::inputCallback, this, _1, _2, nullPtr));
+			if (m_display == false)
+			{
+				m_syncInput2 = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image> >(2);
+				m_syncInput2->connectInput(m_facePositionSubscriber, m_peopleSegmentationImageSub);
+				m_syncInput2->registerCallback(boost::bind(&cobPeopleDetectionNodelet::inputCallback, this, _1, _2, nullPtr));
+			}
+			else
+			{
+				m_syncInput3 = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image, sensor_msgs::Image> >(3);
+				m_syncInput3->connectInput(m_facePositionSubscriber, m_peopleSegmentationImageSub, m_colorImageSub);
+				m_syncInput3->registerCallback(boost::bind(&cobPeopleDetectionNodelet::inputCallback, this, _1, _2, _3));
+			}
 		}
 		else
 		{
-			m_syncInput3 = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image, sensor_msgs::Image> >(3);
-			m_syncInput3->connectInput(m_facePositionSubscriber, m_peopleSegmentationImageSub, m_colorImageSub);
-			m_syncInput3->registerCallback(boost::bind(&cobPeopleDetectionNodelet::inputCallback, this, _1, _2, _3));
+			if (m_display == true)
+			{
+				m_syncInput2 = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image> >(2);
+				m_syncInput2->connectInput(m_facePositionSubscriber, m_colorImageSub);
+				m_syncInput2->registerCallback(boost::bind(&cobPeopleDetectionNodelet::inputCallback, this, _1, nullPtr, _2));
+			}
+			else
+			{
+				m_facePositionSubscriber.registerCallback(boost::bind(&cobPeopleDetectionNodelet::inputCallback, this, _1, nullPtr, nullPtr));
+			}
 		}
 
 		m_serviceServerDetectPeople = m_nodeHandle.advertiseService("cob_people_detection/detect_people", &cobPeopleDetectionNodelet::detectPeopleCallback, this);
@@ -268,12 +299,11 @@ public:
 			}
 		}
 		// close enough?
-		double metricThreshold = 0.3;	///< in meters - allowed moving distance for a face
 		geometry_msgs::Point* point = &(m_facePositionAccumulator[minIndex].pose.pose.position);
 		double dx = abs(pointIn->x - point->x);
 		double dy = abs(pointIn->y - point->y);
 		double dz = abs(pointIn->z - point->z);
-		if (dx<metricThreshold || dy<metricThreshold || dz<metricThreshold)
+		if (dx<m_trackingRangeM || dy<m_trackingRangeM || dz<m_trackingRangeM)
 		{
 			// close enough, update old face
 			copyDetection(detIn, m_facePositionAccumulator[minIndex], true);
@@ -295,12 +325,19 @@ public:
 		// convert segmentation image to cv::Mat
 		cv_bridge::CvImageConstPtr people_segmentation_image_ptr;
 		cv::Mat people_segmentation_image;
-		convertColorImageMessageToMat(people_segmentation_image_msg, people_segmentation_image_ptr, people_segmentation_image);
+		if (m_usePeopleSegmentation == true) convertColorImageMessageToMat(people_segmentation_image_msg, people_segmentation_image_ptr, people_segmentation_image);
 
 		std::cout << "detections: " << face_position_msg->detections.size() << "\n";
 
+		// source image size
+		std::stringstream ss;
+		ss << face_position_msg->header.frame_id;
+		int width, height;
+		ss >> width;
+		ss >> height;
+
 		// delete old face positions in list
-		ros::Duration timeSpan(2.0);		// todo: make it a parameter
+		ros::Duration timeSpan(m_faceRedetectionTime);
 		for (int i=0; i<(int)m_facePositionAccumulator.size(); i++)
 		{
 			if ((ros::Time::now()-m_facePositionAccumulator[i].header.stamp) > timeSpan) m_facePositionAccumulator.erase(m_facePositionAccumulator.begin()+i);
@@ -325,34 +362,37 @@ public:
 			face.width = detIn->mask.roi.width;
 			face.height = detIn->mask.roi.height;
 
-			// check with people segmentation todo: make it optional as a bool paramter
-			int numberBlackPixels = 0;
-			//std::cout << "face: " << face.x << " " << face.y << " " << face.width << " " << face.height << "\n";
-			for (int v=face.y; v<face.y+face.height; v++)
+			// check with people segmentation
+			if (m_usePeopleSegmentation == true)
 			{
-				uchar* data = people_segmentation_image.ptr(v);
-				for (int u=face.x; u<face.x+face.width; u++)
+				int numberBlackPixels = 0;
+				//std::cout << "face: " << face.x << " " << face.y << " " << face.width << " " << face.height << "\n";
+				for (int v=face.y; v<face.y+face.height; v++)
 				{
-					int index = 3*u;
-					if (data[index]==0 && data[index+1]==0 && data[index+2]==0) numberBlackPixels++;
+					uchar* data = people_segmentation_image.ptr(v);
+					for (int u=face.x; u<face.x+face.width; u++)
+					{
+						int index = 3*u;
+						if (data[index]==0 && data[index+1]==0 && data[index+2]==0) numberBlackPixels++;
+					}
 				}
-			}
-			int faceArea = face.height * face.width;
-			double segmentedPeopleRatio = (double)(faceArea-numberBlackPixels)/(double)faceArea;
+				int faceArea = face.height * face.width;
+				double segmentedPeopleRatio = (double)(faceArea-numberBlackPixels)/(double)faceArea;
 
-			//std::cout << "ratio: " << segmentedPeopleRatio << "\n";
+				//std::cout << "ratio: " << segmentedPeopleRatio << "\n";
 
-			if ((detIn->detector=="color" && segmentedPeopleRatio < 0.7) || (detIn->detector=="range" && segmentedPeopleRatio < 0.2))		// todo: make these thresholds parameters
-			{
-				// False detection
-				std::cout << "False detection\n";
-				continue;
+				if ((detIn->detector=="color" && segmentedPeopleRatio < m_minSegmentedPeopleRatioColor) || (detIn->detector=="range" && segmentedPeopleRatio < m_minSegmentedPeopleRatioRange))
+				{
+					// False detection
+					std::cout << "False detection\n";
+					continue;
+				}
 			}
 
 			// valid face detection
 			std::cout << "Face detection\n";
 			// check whether this face was found before and if it is new, whether it is a color face detection (range detection is not sufficient for a new face)
-			if (faceInList(*detIn, people_segmentation_image.rows, people_segmentation_image.cols)==false && detIn->detector=="color")
+			if (faceInList(*detIn, height, width)==false && detIn->detector=="color")
 			{
 				std::cout << "\n***** New detection *****\n\n";
 				cob_msgs::Detection detOut;
@@ -373,8 +413,11 @@ public:
 
 
 			// display segmentation
-			cv::namedWindow("People Segmentation Image");
-			imshow("People Segmentation Image", people_segmentation_image);
+			if (m_usePeopleSegmentation == true)
+			{
+				cv::namedWindow("People Segmentation Image");
+				imshow("People Segmentation Image", people_segmentation_image);
+			}
 
 			// display color image
 			cv::namedWindow("People Detector and Tracker");

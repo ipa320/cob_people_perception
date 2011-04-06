@@ -67,8 +67,6 @@ void voidDeleter(sensor_msgs::PointCloud2* const) {}
 //####################
 //#### node class ####
 cobFaceDetectionNodelet::cobFaceDetectionNodelet()
-		//: it_(node_handle_)		// node_handle_ not initialized yet at this place, but already needed. Fixed in onInit().
-		//sync_pointcloud(2)
 {
 	it_ = 0;
 	sync_pointcloud = 0;
@@ -82,10 +80,9 @@ cobFaceDetectionNodelet::cobFaceDetectionNodelet()
 	m_occupiedByAction = false;
 	m_recognizeServerRunning = false;
 	m_trainContinuousServerRunning = false;
-//	m_turnOffRecognition = false;
 	m_doRecognition = true;
 	m_display = false;
-	m_directory = ros::package::getPath("cob_people_detection") + "/common/files/windows/";	// todo: make it a parameter
+	m_directory = ros::package::getPath("cob_people_detection") + "/common/files/windows/";	// can be changed by a parameter
 }
 
 cobFaceDetectionNodelet::~cobFaceDetectionNodelet()
@@ -125,6 +122,14 @@ void cobFaceDetectionNodelet::onInit()
 
 	m_showServer = new ShowServer(node_handle_, "show_server", boost::bind(&cobFaceDetectionNodelet::showServerCallback, this, _1), false);
 	m_showServer->start();
+
+	// Parameters
+	ros::NodeHandle local_nh = getPrivateNodeHandle();
+	local_nh.param("face_size_min_m", m_faceSizeMinM, FACE_SIZE_MIN_M);
+	local_nh.param("face_size_max_m", m_faceSizeMaxM, FACE_SIZE_MAX_M);
+	local_nh.param("max_face_z_m", m_maxFaceZM, MAX_FACE_Z_M);
+	local_nh.param("data_directory", m_directory, m_directory);
+	local_nh.param("fill_unassigned_depth_values", m_fillUnassignedDepthValues, true);
 
 	// initializations
 	init();
@@ -421,14 +426,106 @@ unsigned long cobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 {
 	cv::Mat xyz_image_8U3;
 	ipa_Utils::ConvertToShowImage(xyz_image, xyz_image_8U3, 3);
-//todo: read parameter whether a kinect sensor is used
-	if (m_peopleDetector->DetectFaces(color_image, xyz_image_8U3, m_colorFaces, m_rangeFaces, m_rangeFaceIndicesWithColorFaceDetection, true/*(m_RangeImagingCameraType==ipa_CameraSensors::CAM_KINECT)*/) & ipa_Utils::RET_FAILED)
+	if (m_peopleDetector->DetectFaces(color_image, xyz_image_8U3, m_colorFaces, m_rangeFaces, m_rangeFaceIndicesWithColorFaceDetection, m_fillUnassignedDepthValues) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetection::detectFaces" << std::endl;
 		std::cerr << "\t ... Could not detect faces.\n";
 		return ipa_Utils::RET_FAILED;
 	}
 
+	// check whether the color faces have a reasonable 3D size
+	std::vector<cv::Rect> tempFaces = m_colorFaces;
+	m_colorFaces.clear();
+	// For each face...
+	for (uint iface = 0; iface < tempFaces.size(); iface++)
+	{
+		cv::Rect& face = tempFaces[iface];
+
+//		one_face.box2d = faces_vec[iface];
+//		one_face.id = i; // The cascade that computed this face.
+
+		// Get the median disparity in the middle half of the bounding box.
+		int uStart = floor(0.25*face.width);
+		int uEnd = floor(0.75*face.width) + 1;
+		int vStart = floor(0.25*face.height);
+		int vEnd = floor(0.75*face.height) + 1;
+		int du = abs(uEnd-uStart);
+
+		cv::Mat faceRegion = xyz_image(face);
+		cv::Mat tmat(1, du*abs(vEnd-vStart), CV_32FC1);		// vector of all depth values in the face region
+		float* tmatPtr = (float*)tmat.data;
+		for (int v=vStart; v<vEnd; v++)
+		{
+			float* zPtr = (float*)faceRegion.row(v).data;
+			zPtr += 2+3*uStart;
+			for (int u=uStart; u<uEnd; u++)
+			{
+				float depthval = *zPtr;
+				if (!isnan(depthval)) *tmatPtr = depthval;
+				else *tmatPtr = 1e20;
+				tmatPtr++;
+				zPtr += 3;
+			}
+		}
+
+//
+//
+//		int vector_position = 0;
+//		for (int v=vStart; v<vEnd; v++)
+//		  for (int u=uStart; u<uEnd; u++, vector_position++)
+//		  {
+//			float depthval = xyz_image.at<cv::Vec3f>(v,u).z;
+//			if (!isnan(depthval)) tmat.at<float>(0,vector_position) = depthval;
+//			else tmat.at<float>(0,vector_position) = 1e20;
+//		  }
+
+		cv::Mat tmat_sorted;
+		cv::sort(tmat, tmat_sorted, CV_SORT_EVERY_COLUMN+CV_SORT_DESCENDING);
+		double avg_depth = tmat_sorted.at<float>(floor(cv::countNonZero(tmat_sorted>=0.0)*0.5)); // Get the middle valid disparity (-1 disparities are invalid)
+
+		// Fill in the rest of the face data structure.
+//		one_face.center2d = cv::Point2d(one_face.box2d.x+one_face.box2d.width*0.5,
+//										one_face.box2d.y+one_face.box2d.height*0.5);
+//		one_face.radius2d = one_face.box2d.width*0.5;
+
+		// If the median disparity was valid and the face is a reasonable size, the face status is "good".
+		// If the median disparity was valid but the face isn't a reasonable size, the face status is "bad".
+		// Otherwise, the face status is "unknown".
+		// Only bad faces are removed
+		if (avg_depth > 0)
+		{
+			double a,b, radiusX, radiusY, radius3d;
+			// vertical line regularly lies completely on the head whereas this does not hold very often for the horizontal line crossing the bounding box of the face
+			// rectangle in the middle
+			a = (xyz_image.at<cv::Vec3f>((int)(face.x+0.5*face.width), face.y)).val[2];
+			b = (xyz_image.at<cv::Vec3f>((int)(face.x+0.5*face.width), face.y+face.height)).val[2];
+			std::cout << a << "  " << b << "  y(a,b)\n";
+			if (isnan(a) || isnan(b)) radiusY = 0.0;
+			else radiusY = fabs(b-a)*0.5;
+			radius3d = radiusY;
+
+			// for radius estimation with the horizontal line through the face rectangle use points which typically still lie on the face and not in the background
+			a = (xyz_image.at<cv::Vec3f>((int)(face.x+face.width*0.25), (int)(face.y+face.height*0.5))).val[2];
+			b = (xyz_image.at<cv::Vec3f>((int)(face.x+face.width*0.75), (int)(face.y+face.height*0.5))).val[2];
+			std::cout << a << "  " << b << "  x(a,b)\n";
+			if (isnan(a) || isnan(b)) radiusX = 0.0;
+			else
+			{
+				radiusX = fabs(b-a);
+				if (radiusY != 0.0) radius3d = (radiusX+radiusY)*0.5;
+				else radius3d = radiusX;
+			}
+
+//			pcl::PointXYZ pxyz = (*depth_cloud_)(one_face.center2d.x, one_face.center2d.y);
+//			one_face.center3d = cv::Point3d(0.0,0.0,0.0);
+//			if (!isnan(pxyz.z)) one_face.center3d.z = pxyz.z;
+
+			std::cout << "radiusX: " << radiusX << "  radiusY: " << radiusY << "\n";
+			std::cout << "avg_depth: " << avg_depth << " > max_face_z_m_: " << m_maxFaceZM << " ?  2*radius3d: " << 2.0*radius3d << " < face_size_min_m_: " << m_faceSizeMinM << " ?  2radius3d: " << 2.0*radius3d << " > face_size_max_m_:" << m_faceSizeMaxM << "?\n";
+			if (radius3d > 0.0 && (avg_depth > m_maxFaceZM || 2.0*radius3d < m_faceSizeMinM || 2.0*radius3d > m_faceSizeMaxM)) continue;		// face does not match normal human appearance
+		}
+		m_colorFaces.push_back(face);
+	}
 	return ipa_Utils::RET_OK;
 }
 
@@ -932,23 +1029,6 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	// check for disabled recognition
 	if (m_recognizeServerRunning == false) return;
 
-//	if (m_turnOffRecognition == true)
-//	{
-//		m_syncPointcloudCallbackConnection.disconnect();
-//		m_occupiedByAction = false;
-//		m_recognizeServerRunning = false;
-//		m_turnOffRecognition = false;
-//		std::cout << "closing\n";
-//		cv::namedWindow("Face Detector");
-//		cv::waitKey(10);
-//		cv::Mat temp;
-//		temp.create(640,480,CV_8UC3);
-//		cv::imshow("Face Detector", temp);
-//		cv::waitKey(10);
-//		cv::waitKey(10000);
-//		cv::destroyWindow("Face Detector");
-//	}
-
 	// convert input to cv::Mat images
 	// color
 	cv_bridge::CvImageConstPtr color_image_ptr;
@@ -990,7 +1070,11 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
 
 	// publish face positions
+	std::stringstream ss;
+	ss << depth_image.rows << " " << depth_image.cols;
 	cob_msgs::DetectionArray facePositionMsg;
+	// image dimensions
+	facePositionMsg.header.frame_id = ss.str();
 	// time stamp
 	facePositionMsg.header.stamp = ros::Time::now();  //color_image_msg->header.stamp;  //
 	//facePositionMsg.detections.reserve(m_colorFaces.size());
@@ -1117,17 +1201,6 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 		}
 		cv::imshow("Face Detector", colorImage_8U3);
 		cv::waitKey(10);
-//		if (m_turnOffRecognition == true)
-//		{
-//			cv::waitKey(10000);
-//			cv::destroyWindow("Face Detector");
-//			cv::waitKey(10);
-//			m_occupiedByAction = false;
-//			m_recognizeServerRunning = false;
-//			m_turnOffRecognition = false;
-//			std::cout << "closing\n";
-//			m_syncPointcloudCallbackConnection.disconnect();
-//		}
 	}
 }
 
