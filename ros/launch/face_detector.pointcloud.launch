@@ -5,7 +5,7 @@
   <node pkg="nodelet" type="nodelet" name="face_detection_manager"  args="manager" output="screen"/>
 
 <!--  <node pkg="face_detector" type="face_detector" name="face_detector" args="stereo:=wide_stereo image:=image_rect" output="screen"> -->
-  <node pkg="nodelet" type="nodelet" name="FaceDetector" args="load people/FaceDetector face_detection_manager stereo:=wide_stereo image:=image_rect" output="screen">
+  <node pkg="nodelet" type="nodelet" name="FaceDetectorColor" args="load people/FaceDetectorColor face_detection_manager stereo:=wide_stereo image:=image_rect" output="screen">
          <!-- deactivate the remaps if you are using a stereo camera pair -->
 	 <remap from="/wide_stereo/disparity" to="/camera/depth/disparity"/>
 	 <remap from="/wide_stereo/left/image_rect" to="/camera/rgb/image_color"/>

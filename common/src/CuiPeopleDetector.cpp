@@ -243,7 +243,7 @@ unsigned long CuiPeopleDetector::Recognize()
 					break;
 				default:
 					// Face classified
-					tmp << m_DetectorControlFlow->m_id[index[i]].c_str();
+					tmp << m_DetectorControlFlow->m_idUnique[index[i]].c_str();
 					cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
 				}
 			}

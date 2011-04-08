@@ -36,7 +36,7 @@ unsigned long PeopleDetectorControlFlow::Init(std::string directory,
 
 	m_PeopleDetector = new ipa_PeopleDetector::PeopleDetector();
 
-	if (m_PeopleDetector->Init() & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->Init(directory) & ipa_Utils::RET_FAILED)
 	{	
 		std::cerr << "ERROR - PeopleDetectorControlFlow::Init:" << std::endl;
 		std::cerr << "\t ... Could not initialize people detector library.\n";
@@ -101,18 +101,9 @@ unsigned long PeopleDetectorControlFlow::PCA()
 		std::cout << "\t ... Less than two images are trained.\n";
 		return ipa_Utils::RET_OK;
 	}
-	
-	cv::Size faceImgSize(m_faceImages[0].cols, m_faceImages[0].rows);
 
 	// Delete memory
 	m_eigenVectArr.clear();
-
-
-	// Allocate memory
-	m_nEigens = m_faceImages.size()-1;
-	m_eigenVectArr.resize(m_nEigens, cv::Mat(faceImgSize, CV_32FC1));
-	m_eigenValMat = cv::Mat(1, m_nEigens, CV_32FC1);
-	m_avgImage = cv::Mat(faceImgSize, CV_32FC1);
 
 	// Do PCA
 	if (m_PeopleDetector->PCA(&m_nEigens, m_eigenVectArr, m_eigenValMat, m_avgImage, m_faceImages, m_projectedTrainFaceMat) & ipa_Utils::RET_FAILED)
@@ -123,7 +114,7 @@ unsigned long PeopleDetectorControlFlow::PCA()
 	}
 
 	// Calculate FaceClasses
-	if (m_PeopleDetector->CalculateFaceClasses(m_projectedTrainFaceMat, m_id, &m_nEigens) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->CalculateFaceClasses(m_projectedTrainFaceMat, m_id, &m_nEigens, m_faceClassAvgProjections, m_idUnique) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while calculating FaceClasses.\n";
@@ -137,7 +128,7 @@ unsigned long PeopleDetectorControlFlow::PCA()
 
 unsigned long PeopleDetectorControlFlow::RecognizeFace(ipa_SensorFusion::ColoredPointCloudPtr pc, std::vector<int>& index)
 {
-	if (m_PeopleDetector->RecognizeFace(pc->GetColorImage(), m_colorFaces, &m_nEigens, m_eigenVectArr, m_avgImage, m_projectedTrainFaceMat, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->RecognizeFace(pc->GetColorImage(), m_colorFaces, &m_nEigens, m_eigenVectArr, m_avgImage, m_faceClassAvgProjections, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::RecognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";
@@ -156,49 +147,80 @@ unsigned long PeopleDetectorControlFlow::SaveTrainingData()
 	std::ostringstream complete;
 	complete << path << filename;
 
-	try
-	{
-		//fs::remove_all(path.c_str());
-		//fs::create_directory(path.c_str());
-	}
-	catch (const std::exception &ex)
-	{
-		std::cerr << "ERROR - PeopleDetectorControlFlow::SaveTrainingData():" << std::endl;
-		std::cerr << "\t ... Exception catch of '" << ex.what() << "'" << std::endl;
-	}
+//	try
+//	{
+//		fs::remove_all(path.c_str());
+//		fs::create_directory(path.c_str());
+//	}
+//	catch (const std::exception &ex)
+//	{
+//		std::cerr << "ERROR - PeopleDetectorControlFlow::SaveTrainingData():" << std::endl;
+//		std::cerr << "\t ... Exception catch of '" << ex.what() << "'" << std::endl;
+//	}
 	
-	CvFileStorage *fileStorage;
-	fileStorage = cvOpenFileStorage(complete.str().c_str(), 0, CV_STORAGE_WRITE );
-	if(!fileStorage)
+	cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::WRITE);
+	if(!fileStorage.isOpened())
 	{
 		std::cout << "WARNING - PeopleDetectorControlFlow::SaveTrainingData:" << std::endl;
-		std::cout << "\t ... Cant save training data.\n";
+		std::cout << "\t ... Can't save training data.\n";
 		return ipa_Utils::RET_OK;
 	}
 
 	// Ids
-	cvWriteInt(fileStorage, "id_num", m_id.size());
+	fileStorage << "id_num" << m_id.size();
 	for(int i=0; i<(int)m_id.size(); i++)
 	{
 		std::ostringstream tag;
 		tag << "id_" << i;
-		cvWriteString(fileStorage, tag.str().c_str(), m_id[i].c_str());
+		fileStorage << tag.str().c_str() << m_id[i].c_str();
 	}
-	
-	// Images
-	cvWriteInt(fileStorage, "faces_num", m_faceImages.size());
+
+	// Face images
+	fileStorage << "faces_num" << m_faceImages.size();
 	for(int i=0; i<(int)m_faceImages.size(); i++)
 	{
 		std::ostringstream img;
 		img << path << i << img_ext;
 		std::ostringstream tag;
 		tag << "img_" << i;
-		cvWriteString(fileStorage, tag.str().c_str(), img.str().c_str());
+		fileStorage << tag.str().c_str() << img.str().c_str();
 		//cvSaveImage(img.str().c_str(), &m_faceImages[i]);
 		cv::imwrite(img.str().c_str(), m_faceImages[i]);
 	}
 
-	cvReleaseFileStorage(&fileStorage);
+	// Number eigenvalues/eigenvectors
+	fileStorage << "eigens_num" << m_nEigens;
+
+	// Eigenvectors
+	for (int i=0; i<m_nEigens; i++)
+	{
+		std::ostringstream tag;
+		tag << "ev_" << i;
+		fileStorage << tag.str().c_str() << m_eigenVectors[i];
+	}
+
+	// Eigenvalue matrix
+	fileStorage << "eigen_val_mat" << m_eigenValMat;
+
+	// Average image
+	fileStorage << "avg_image" << m_avgImage;
+
+	// Projections of the training faces
+	fileStorage << "projected_train_face_mat" << m_projectedTrainFaceMat;
+
+	// Unique Ids (m_idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in m_faceClassAvgProjections.row(i))
+	fileStorage << "id_unique_num" << (int)m_idUnique.size();
+	for(int i=0; i<(int)m_idUnique.size(); i++)
+	{
+		std::ostringstream tag;
+		tag << "id_unique_" << i;
+		fileStorage << tag.str().c_str() << m_idUnique[i].c_str();
+	}
+
+	// The average factors of the eigenvector decomposition from each face class
+	fileStorage << "face_class_avg_projections" << m_faceClassAvgProjections;
+
+	fileStorage.release();
 
 	std::cout << "INFO - PeopleDetectorControlFlow::SaveTrainingData:" << std::endl;
 	std::cout << "\t ... " << m_faceImages.size() << " images saved.\n";
@@ -215,41 +237,81 @@ unsigned long PeopleDetectorControlFlow::LoadTrainingData()
 	
 	if(fs::is_directory(path.c_str()))
 	{
-		CvFileStorage * fileStorage;
-		fileStorage = cvOpenFileStorage(complete.str().c_str(), 0, CV_STORAGE_READ );
-		if(!fileStorage)
+		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::READ);
+		if(!fileStorage.isOpened())
 		{
 			std::cout << "WARNING - PeopleDetectorControlFlow::LoadTrainingData:" << std::endl;
-			std::cout << "\t ... Cant open " << filename << ".\n";
+			std::cout << "\t ... Cant open " << complete.str() << ".\n";
 			return ipa_Utils::RET_OK;
 		}
 
 		// Ids
 		m_id.clear();
-		int id_num = cvReadIntByName(fileStorage, 0, "id_num", 0);
+		int id_num = (int)fileStorage["id_num"];
 		for(int i=0; i<id_num; i++)
 		{
 			std::ostringstream tag;
 			tag << "id_" << i;
-			m_id.push_back(cvReadStringByName(fileStorage, 0, tag.str().c_str(), 0));
+			m_id.push_back((std::string)fileStorage[tag.str().c_str()]);
 		}
 
 		// Images
 		m_faceImages.clear();
-		int faces_num = cvReadIntByName(fileStorage, 0, "faces_num", 0);
+		int faces_num = (int)fileStorage["faces_num"];
 		for(int i=0; i<faces_num; i++)
 		{
 			std::ostringstream tag;
 			tag << "img_" << i;
-			std::string path = cvReadStringByName(fileStorage, 0, tag.str().c_str(), 0);
+			std::string path = (std::string)fileStorage[tag.str().c_str()];
 			//IplImage *tmp = cvLoadImage(path.c_str(),0);
 			cv::Mat temp = cv::imread(path.c_str(),0);
 			m_faceImages.push_back(temp);
 		}
 
+		// Number eigenvalues/eigenvectors
+		m_nEigens = (int)fileStorage["eigens_num"];
+
+		// Eigenvectors
+		m_eigenVectors.clear();
+		m_eigenVectors.resize(m_nEigens, cv::Mat());
+		for (int i=0; i<m_nEigens; i++)
+		{
+			std::ostringstream tag;
+			tag << "ev_" << i;
+			fileStorage[tag.str().c_str()] >> m_eigenVectors[i];
+		}
+
+		// Eigenvalue matrix
+		m_eigenValMat = cv::Mat();
+		fileStorage["eigen_val_mat"] >> m_eigenValMat;
+
+		// Average image
+		m_avgImage = cv::Mat();
+		fileStorage["avg_image"] >> m_avgImage;
+
+		// Projections of the training faces
+		m_projectedTrainFaceMat = cv::Mat();
+		fileStorage["projected_train_face_mat"] >> m_projectedTrainFaceMat;
+
+		// Unique Ids (m_idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in m_faceClassAvgProjections.row(i))
+		m_idUnique.clear();
+		int idUniqueNum = (int)fileStorage["id_unique_num"];
+		for(int i=0; i<idUniqueNum; i++)
+		{
+			std::ostringstream tag;
+			tag << "id_unique_" << i;
+			m_idUnique.push_back((std::string)fileStorage[tag.str().c_str()]);
+		}
+
+		// The average factors of the eigenvector decomposition from each face class
+		m_faceClassAvgProjections = cv::Mat();
+		fileStorage["face_class_avg_projections"] >> m_faceClassAvgProjections;
+
+		fileStorage.release();
+
 		// Run PCA
-		m_runPCA = true;
-		PCA();
+//		m_runPCA = true;
+//		PCA();
 
 		std::cout << "INFO - PeopleDetectorControlFlow::LoadTrainingData:" << std::endl;
 		std::cout << "\t ... " << faces_num << " images loaded.\n";
@@ -302,7 +364,7 @@ unsigned long PeopleDetectorControlFlow::GetEigenface(cv::Mat& eigenface, int in
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetectorControlFlow::ShowAVGImage(cv::Mat& avgImage)		// todo: seems to be the same as ConvertToShowImage
+unsigned long PeopleDetectorControlFlow::ShowAVGImage(cv::Mat& avgImage)
 {
 	if(!m_runPCA && m_faceImages.size()<2)
 	{
@@ -351,7 +413,7 @@ unsigned long PeopleDetectorControlFlow::SaveRangeTrainImages(ipa_SensorFusion::
 	std::string path = "ConfigurationFiles/haartraining/";
 	std::string img_ext = ".jpg";
 	cv::Mat xyzImage_8U3(pc->GetXYZImage().size(), CV_8UC3);	//IplImage* xyzImage_8U3 = cvCreateImage(cvGetSize(pc->GetXYZImage()), 8, 3);
-	ipa_Utils::ConvertToShowImage(pc->GetXYZImage(), xyzImage_8U3, 3);		// todo: where is that function?
+	ipa_Utils::ConvertToShowImage(pc->GetXYZImage(), xyzImage_8U3, 3);
 
 	for(int i=0; i<(int)m_colorFaces.size(); i++)
 	{

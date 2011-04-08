@@ -23,7 +23,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/ros/lib)
 #uncomment if you have defined messages
 rosbuild_genmsg()
 #uncomment if you have defined services
-#rosbuild_gensrv()
+rosbuild_gensrv()
 
 # Check for sse support
 rosbuild_check_for_sse()
@@ -37,16 +37,30 @@ rosbuild_check_for_sse()
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 #rosbuild_add_executable(face_detector
-rosbuild_add_library(cob_people_detection
-                       ros/src/face_detection.cpp 
-                       ros/src/faces.cpp)
-rosbuild_link_boost(cob_people_detection thread)
 
-rosbuild_add_executable(face_detector
-			common/src/PeopleDetector.cpp
-			ros/src/people_detection.cpp)
-			
+rosbuild_add_library(color_face_detector
+                       ros/src/color_face_detection.cpp 
+                       ros/src/faces.cpp)
+rosbuild_link_boost(color_face_detector thread)
+
 #rosbuild_add_executable(face_detector
+			#common/src/PeopleDetector.cpp
+			#ros/src/people_detection.cpp)
+rosbuild_add_library(face_detector
+			common/src/PeopleDetector.cpp
+			ros/src/face_detection.cpp)
+
+rosbuild_add_library(people_detector
+			ros/src/people_detection.cpp)
+
+rosbuild_add_executable(people_detection_client
+			ros/src/people_detection_action_client.cpp)
+
+# modified openni tracker
+rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp
+                                       ros/src/SceneDrawer.cpp)
+			
+#rosbuild_add_executable(ros_face_detector
 			#common/src/CuiPeopleDetector.cpp
 			#common/src/PeopleDetector.cpp
 			#common/src/PeopleDetectorControlFlow.cpp
@@ -57,6 +71,7 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ros/include
 		    ${PROJECT_SOURCE_DIR}/common/include)
 
 rosbuild_add_compile_flags(face_detector -D__LINUX__)
+rosbuild_add_compile_flags(people_detector -D__LINUX__)
 
 rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_noface_test_diamondback.bag face_detector_noface_test.bag 37f043be780a4511c853379defdd9855)
 rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_withface_test_diamondback.bag face_detector_withface_test.bag 59126117e049e69d577b7ee27251a6f8)
