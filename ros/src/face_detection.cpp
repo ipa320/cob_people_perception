@@ -134,7 +134,7 @@ void cobFaceDetectionNodelet::onInit()
 	// initializations
 	init();
 
-    ros::spin();
+    //ros::spin(); not necessary with nodelets
 }
 
 unsigned long cobFaceDetectionNodelet::init()
