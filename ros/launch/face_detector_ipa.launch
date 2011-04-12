@@ -3,9 +3,9 @@
 <launch>
   <node pkg="cob_people_detection" type="openni_tracker" name="openniTrackerNode" output="screen"/>
 
-  <node pkg="nodelet" type="nodelet" name="face_detection_ipa_manager"  args="manager" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="nodelet_manager"  args="manager" output="screen"/>
 
-  <node pkg="nodelet" type="nodelet" name="cobFaceDetectionNodelet" args="load ipa_PeopleDetector/cobFaceDetectionNodelet face_detection_ipa_manager" output="screen">
+  <node pkg="nodelet" type="nodelet" name="cobFaceDetectionNodelet" args="load ipa_PeopleDetector/cobFaceDetectionNodelet nodelet_manager" output="screen">
 	<param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/windows/"/>
 	<param name="face_size_max_m" type="double" value="0.35" />
 	<param name="face_size_min_m" type="double" value="0.12" />
@@ -13,8 +13,7 @@
 	<param name="fill_unassigned_depth_values" type="bool" value="true" />	<!-- enable if a kinect sensor is used! -->
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="people_detection_ipa_manager"  args="manager" output="screen"/>
-  <node pkg="nodelet" type="nodelet" name="cobPeopleDetectionNodelet" args="load ipa_PeopleDetector/cobPeopleDetectionNodelet people_detection_ipa_manager" output="screen">
+  <node pkg="nodelet" type="nodelet" name="cobPeopleDetectionNodelet" args="load ipa_PeopleDetector/cobPeopleDetectionNodelet nodelet_manager" output="screen">
 	<!-- displays the results -->
 	<param name="display" type="bool" value="true" />
 	<!-- timespan during which a face is preserved in the list of tracked faces although it is currently not visible -->

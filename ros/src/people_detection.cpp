@@ -216,7 +216,7 @@ public:
 
 		std::cout << "cobPeopleDetectionNodelet initialized.\n";
 
-		ros::spin();
+		//ros::spin(); not necessary with nodelets
 	}
 
 	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image)
