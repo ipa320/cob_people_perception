@@ -4,11 +4,11 @@ reason_about_3dface_size: true
 
 # the maximum feasible face diameter [m] if reason_about_3dface_size is enabled
 # double
-face_size_max_m: 0.35
+face_size_max_m: 0.5
 
 # the minimum feasible face diameter [m] if reason_about_3dface_size is enabled
 # double
-face_size_min_m: 0.12
+face_size_min_m: 0.1
 
 # maximum distance [m] of detected faces to the sensor
 # double
