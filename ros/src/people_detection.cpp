@@ -327,7 +327,7 @@ public:
 		cv::Mat people_segmentation_image;
 		if (m_usePeopleSegmentation == true) convertColorImageMessageToMat(people_segmentation_image_msg, people_segmentation_image_ptr, people_segmentation_image);
 
-		std::cout << "detections: " << face_position_msg->detections.size() << "\n";
+		if (m_display) std::cout << "detections: " << face_position_msg->detections.size() << "\n";
 
 		// source image size
 		std::stringstream ss;
