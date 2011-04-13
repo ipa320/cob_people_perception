@@ -12,6 +12,7 @@
 	<param name="face_size_min_m" type="double" value="0.12" />
 	<param name="m_MaxFaceZM" type="double" value="8.0" />
 	<param name="fill_unassigned_depth_values" type="bool" value="true" />	<!-- enable if a kinect sensor is used! -->
+	<param name="reason_about_3dface_size" type="bool" value="true" />
   </node>
 
   <node pkg="nodelet" ns="cob_people_detection" type="nodelet" name="cobPeopleDetectionNodelet" args="load ipa_PeopleDetector/cobPeopleDetectionNodelet /nodelet_manager" output="screen">

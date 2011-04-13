@@ -69,7 +69,7 @@ void voidDeleter(sensor_msgs::PointCloud2* const) {}
 cobFaceDetectionNodelet::cobFaceDetectionNodelet()
 {
 	it_ = 0;
-	sync_pointcloud = 0;
+	sync_pointcloud_ = 0;
 	m_peopleDetector = 0;
 	m_trainContinuousServer = 0;
 	m_trainCaptureSampleServer = 0;
@@ -95,15 +95,15 @@ cobFaceDetectionNodelet::~cobFaceDetectionNodelet()
 	if (m_saveServer != 0) delete m_saveServer;
 	if (m_showServer != 0) delete m_showServer;
 	if (it_ != 0) delete it_;
-	if (sync_pointcloud != 0) delete sync_pointcloud;
+	if (sync_pointcloud_ != 0) delete sync_pointcloud_;
 }
 
 void cobFaceDetectionNodelet::onInit()
 {
-	sync_pointcloud = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
+	sync_pointcloud_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
-	m_facePositionPublisher = node_handle_.advertise<cob_msgs::DetectionArray>("face_detector/face_position_array", 1);
+	face_position_publisher_ = node_handle_.advertise<cob_msgs::DetectionArray>("face_detector/face_position_array", 1);
 
 	m_recognizeServer = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&cobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
 	m_recognizeServer->start();
@@ -130,6 +130,7 @@ void cobFaceDetectionNodelet::onInit()
 	local_nh.param("max_face_z_m", m_maxFaceZM, MAX_FACE_Z_M);
 	local_nh.param("data_directory", m_directory, m_directory);
 	local_nh.param("fill_unassigned_depth_values", m_fillUnassignedDepthValues, true);
+	local_nh.param("reason_about_3dface_size", reason_about_3dface_size_, true);
 
 	// initializations
 	init();
@@ -141,11 +142,11 @@ unsigned long cobFaceDetectionNodelet::init()
 {
 	shared_image_sub_.subscribe(node_handle_, "/camera/depth/points", 1);
 	color_camera_image_sub_.subscribe(*it_, "/camera/rgb/image_color", 1);
-//	sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
-//	sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
+//	sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
+//	sync_pointcloud_->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
 
-	sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
-	m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
+	sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
+	sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
 
 	colored_pc_ = ipa_SensorFusion::CreateColoredPointCloud();
 
@@ -213,8 +214,8 @@ void cobFaceDetectionNodelet::recognizeServerCallback(const cob_people_detection
 		m_display = goal->display;
 		//cv::namedWindow("Face Detector");
 		//cv::waitKey(1);
-		//sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
-		//m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2, goal->doRecognition, goal->display));
+		//sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
+		//sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2, goal->doRecognition, goal->display));
 	}
 	else
 	{
@@ -272,15 +273,15 @@ void cobFaceDetectionNodelet::trainContinuousServerCallback(const cob_people_det
 		m_trainContinuousServerRunning = true;
 		//cv::namedWindow("Face Recognizer Training");
 		//cv::waitKey(10);
-		//sync_pointcloud->connectInput(shared_image_sub_, color_camera_image_sub_);
-		//m_syncPointcloudCallbackConnection = sync_pointcloud->registerCallback(boost::bind(&cobFaceDetectionNodelet::trainContinuousCallback, this, _1, _2));
+		//sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
+		//sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&cobFaceDetectionNodelet::trainContinuousCallback, this, _1, _2));
 		std::cout << "train run...\n";
 	}
 	else
 	{
 		std::cout << "train off...\n";
 		// disable training
-		//m_syncPointcloudCallbackConnection.disconnect();
+		//sync_pointcloud_callback_connection_.disconnect();
 		m_occupiedByAction = false;
 		m_trainContinuousServerRunning = false;
 		//cv::destroyWindow("Face Recognizer Training");
@@ -520,9 +521,12 @@ unsigned long cobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 //			one_face.center3d = cv::Point3d(0.0,0.0,0.0);
 //			if (!isnan(pxyz.z)) one_face.center3d.z = pxyz.z;
 
-			std::cout << "radiusX: " << radiusX << "  radiusY: " << radiusY << "\n";
-			std::cout << "avg_depth: " << avg_depth << " > max_face_z_m_: " << m_maxFaceZM << " ?  2*radius3d: " << 2.0*radius3d << " < face_size_min_m_: " << m_faceSizeMinM << " ?  2radius3d: " << 2.0*radius3d << " > face_size_max_m_:" << m_faceSizeMaxM << "?\n";
-			if (radius3d > 0.0 && (avg_depth > m_maxFaceZM || 2.0*radius3d < m_faceSizeMinM || 2.0*radius3d > m_faceSizeMaxM)) continue;		// face does not match normal human appearance
+			if (m_display)
+			{
+				std::cout << "radiusX: " << radiusX << "  radiusY: " << radiusY << "\n";
+				std::cout << "avg_depth: " << avg_depth << " > max_face_z_m_: " << m_maxFaceZM << " ?  2*radius3d: " << 2.0*radius3d << " < face_size_min_m_: " << m_faceSizeMinM << " ?  2radius3d: " << 2.0*radius3d << " > face_size_max_m_:" << m_faceSizeMaxM << "?\n";
+			}
+			if (reason_about_3dface_size_==true && radius3d > 0.0 && (avg_depth > m_maxFaceZM || 2.0*radius3d < m_faceSizeMinM || 2.0*radius3d > m_faceSizeMaxM)) continue;		// face does not match normal human appearance
 		}
 		m_colorFaces.push_back(face);
 	}
@@ -1133,7 +1137,7 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 
 		facePositionMsg.detections.push_back(det);
 	}
-	m_facePositionPublisher.publish(facePositionMsg);
+	face_position_publisher_.publish(facePositionMsg);
 
 //	std_msgs::Float32MultiArrayPtr facePositionMsg(new std_msgs::Float32MultiArray);
 //	const int dataBlockSize = 8;
@@ -1163,7 +1167,7 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 //	layout.dim = dim;
 //	layout.data_offset = 0;
 //	facePositionMsg->layout = layout;
-//	m_facePositionPublisher->publish(facePositionMsg);
+//	face_position_publisher_->publish(facePositionMsg);
 
 	// display results
 	if (m_display==true)
