@@ -103,7 +103,7 @@ void cobFaceDetectionNodelet::onInit()
 	sync_pointcloud_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
-	face_position_publisher_ = node_handle_.advertise<cob_msgs::DetectionArray>("face_detector/face_position_array", 1);
+	face_position_publisher_ = node_handle_.advertise<cob_msgs::DetectionArray>("face_position_array", 1);
 
 	m_recognizeServer = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&cobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
 	m_recognizeServer->start();
@@ -140,8 +140,8 @@ void cobFaceDetectionNodelet::onInit()
 
 unsigned long cobFaceDetectionNodelet::init()
 {
-	shared_image_sub_.subscribe(node_handle_, "/camera/depth/points", 1);
-	color_camera_image_sub_.subscribe(*it_, "/camera/rgb/image_color", 1);
+	shared_image_sub_.subscribe(node_handle_, "pointcloud", 1);
+	color_camera_image_sub_.subscribe(*it_, "colorimage", 1);
 //	sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
 //	sync_pointcloud_->registerCallback(boost::bind(&cobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
 
