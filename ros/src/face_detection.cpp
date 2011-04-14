@@ -522,7 +522,7 @@ unsigned long cobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 
 			std::cout << "radiusX: " << radiusX << "  radiusY: " << radiusY << "\n";
 			std::cout << "avg_depth: " << avg_depth << " > max_face_z_m_: " << m_maxFaceZM << " ?  2*radius3d: " << 2.0*radius3d << " < face_size_min_m_: " << m_faceSizeMinM << " ?  2radius3d: " << 2.0*radius3d << " > face_size_max_m_:" << m_faceSizeMaxM << "?\n";
-			if (radius3d > 0.0 && (avg_depth > m_maxFaceZM || 2.0*radius3d < m_faceSizeMinM || 2.0*radius3d > m_faceSizeMaxM)) continue;		// face does not match normal human appearance
+			//if (radius3d > 0.0 && (avg_depth > m_maxFaceZM || 2.0*radius3d < m_faceSizeMinM || 2.0*radius3d > m_faceSizeMaxM)) continue;		// face does not match normal human appearance
 		}
 		m_colorFaces.push_back(face);
 	}
@@ -1236,6 +1236,9 @@ void cobFaceDetectionNodelet::trainContinuousCallback(const sensor_msgs::PointCl
 	}
 
 	cv::imshow("Face Recognizer Training", colorImage_8U3);
+//	cv::Mat xyz_image_8U3;
+//	ipa_Utils::ConvertToShowImage(depth_image, xyz_image_8U3, 3);
+//	cv::imshow("Recognizer depth image", xyz_image_8U3);
 	cv::waitKey(10);
 
 
