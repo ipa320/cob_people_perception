@@ -14,7 +14,7 @@
 <depend package="std_msgs"/>
 <depend package="geometry_msgs"/>
 <depend package="std_srvs"/>
-<depend package="opencv2"/>
+<depend package="cob_opencv2"/>
 <depend package="cv_bridge"/>
 <depend package="stereo_msgs"/>
 <depend package="sensor_msgs"/>
