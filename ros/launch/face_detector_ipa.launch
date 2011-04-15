@@ -1,30 +1,26 @@
 <?xml version="1.0"?>
 
 <launch>
-  <node pkg="cob_people_detection" type="openni_tracker" name="openniTrackerNode" output="screen"/>
+  <!-- Openni people segmentation and tracker - adapted to publish the segmented image (comment out if you do not use the openni-tracker) -->
+  <node pkg="cob_people_detection" ns="cob_people_detection/openni_tracker" type="openni_tracker" name="openniTrackerNode" output="screen"/>
 
-  <node pkg="nodelet" type="nodelet" name="nodelet_manager"  args="manager" output="screen"/>
+  <!-- nodelet manager  (starts somewhere else) -->
+  <!-- <node pkg="nodelet" type="nodelet" name="nodelet_manager"  args="manager" output="screen"/> -->
 
-  <node pkg="nodelet" type="nodelet" name="cobFaceDetectionNodelet" args="load ipa_PeopleDetector/cobFaceDetectionNodelet nodelet_manager" output="screen">
-	<param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/windows/"/>
-	<param name="face_size_max_m" type="double" value="0.35" />
-	<param name="face_size_min_m" type="double" value="0.12" />
-	<param name="m_MaxFaceZM" type="double" value="8.0" />
-	<param name="fill_unassigned_depth_values" type="bool" value="true" />	<!-- enable if a kinect sensor is used! -->
+  <!-- face detection and recognition nodelet (detects faces in range and color image and publishes their positions) -->
+  <rosparam command="load" ns="cob_people_detection/face_detection" file="$(find cob_people_detection)/ros/launch/face_detection_params.yaml"/>
+  <node pkg="nodelet" ns="cob_people_detection/face_detection" type="nodelet" name="cobFaceDetectionNodelet" args="load ipa_PeopleDetector/cobFaceDetectionNodelet /nodelet_manager" output="screen">
+    <remap from="pointcloud" to="/camera/depth/points"/>
+    <remap from="colorimage" to="/camera/rgb/image_color"/>
+	
+    <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/windows/"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="cobPeopleDetectionNodelet" args="load ipa_PeopleDetector/cobPeopleDetectionNodelet nodelet_manager" output="screen">
-	<!-- displays the results -->
-	<param name="display" type="bool" value="true" />
-	<!-- timespan during which a face is preserved in the list of tracked faces although it is currently not visible -->
-	<param name="face_redetection_time" type="double" value="2.0" />
-	<!-- the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker) -->
-	<param name="min_segmented_people_ratio_color" type="double" value="0.7" />
-	<!-- the minimum area inside the face rectangle found in the range image that has to be covered with positive people segmentation results (from openni_tracker) -->
-	<param name="min_segmented_people_ratio_range" type="double" value="0.2" />
-	<!-- enables the combination of face detections with the openni people segmentation -->
-	<param name="use_people_segmentation" type="bool" value="true" />
-	<!-- maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked -->
-	<param name="tracking_range_m" type="double" value="0.3" />
+  <!-- People detection and tracking nodelet (fuses results from face detection/recognition and people segmentation, basic tracking functions) -->
+  <rosparam command="load" ns="cob_people_detection" file="$(find cob_people_detection)/ros/launch/people_detection_params.yaml"/>
+  <node pkg="nodelet" ns="cob_people_detection" type="nodelet" name="cobPeopleDetectionNodelet" args="load ipa_PeopleDetector/cobPeopleDetectionNodelet /nodelet_manager" output="screen" >
+    <remap from="people_segmentation_image" to="/cob_people_detection/openni_tracker/people_segmentation_image"/>
+    <remap from="colorimage" to="/camera/rgb/image_color"/>
+    <remap from="face_position_array_in" to="/cob_people_detection/face_detection/face_position_array"/>
   </node>
 </launch>

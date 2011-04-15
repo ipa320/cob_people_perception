@@ -1,0 +1,23 @@
+# display the results if true
+# bool
+display: true
+
+# timespan during which a face is preserved in the list of tracked faces although it is currently not visible
+# double
+face_redetection_time: 2.0
+
+# the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker)
+# double
+min_segmented_people_ratio_color: 0.7
+
+# the minimum area inside the face rectangle found in the range image that has to be covered with positive people segmentation results (from openni_tracker)
+# double
+min_segmented_people_ratio_range: 0.2
+
+# enables the combination of face detections with the openni people segmentation
+# bool
+use_people_segmentation: false
+
+# maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked
+# double
+tracking_range_m: 0.3
