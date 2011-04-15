@@ -141,9 +141,9 @@ protected:
 	message_filters::Subscriber<sensor_msgs::PointCloud2> shared_image_sub_;	///< Shared xyz image and color image topic
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter color_camera_image_sub_;	///< Color camera image topic
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >* sync_pointcloud;
-	message_filters::Connection m_syncPointcloudCallbackConnection;
-	ros::Publisher m_facePositionPublisher;		///< publisher for the positions of the detected faces
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >* sync_pointcloud_;
+	message_filters::Connection sync_pointcloud_callback_connection_;
+	ros::Publisher face_position_publisher_;		///< publisher for the positions of the detected faces
 
 	ros::NodeHandle node_handle_;				///< ROS node handle
 
@@ -199,6 +199,7 @@ protected:
 	double m_faceSizeMaxM;		///< in meters
 	double m_maxFaceZM;			///< in meters
 	bool m_fillUnassignedDepthValues;	///< fills the unassigned depth values in the depth image, must be true for a kinect sensor
+	bool reason_about_3dface_size_;		///< if true, the 3d face size is determined and only faces with reasonable size are accepted
 
 public:
 

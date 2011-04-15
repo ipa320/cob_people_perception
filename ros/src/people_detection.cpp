@@ -176,9 +176,9 @@ public:
 		local_nh.param("tracking_range_m", m_trackingRangeM, 0.3);
 
 		m_it = new image_transport::ImageTransport(m_nodeHandle);
-		m_peopleSegmentationImageSub.subscribe(*m_it, "openni/people_segmentation_image", 1);
-		if (m_display==true) m_colorImageSub.subscribe(*m_it, "camera/rgb/image_color", 1);
-		m_facePositionSubscriber.subscribe(m_nodeHandle, "face_detector/face_position_array", 1);
+		m_peopleSegmentationImageSub.subscribe(*m_it, "people_segmentation_image", 1);
+		if (m_display==true) m_colorImageSub.subscribe(*m_it, "colorimage", 1);
+		m_facePositionSubscriber.subscribe(m_nodeHandle, "face_position_array_in", 1);
 
 		sensor_msgs::Image::ConstPtr nullPtr;
 		if (m_usePeopleSegmentation == true)
@@ -210,9 +210,9 @@ public:
 			}
 		}
 
-		m_serviceServerDetectPeople = m_nodeHandle.advertiseService("cob_people_detection/detect_people", &cobPeopleDetectionNodelet::detectPeopleCallback, this);
+		m_serviceServerDetectPeople = m_nodeHandle.advertiseService("detect_people", &cobPeopleDetectionNodelet::detectPeopleCallback, this);
 
-		m_facePositionPublisher = m_nodeHandle.advertise<cob_msgs::DetectionArray>("people_detector/face_position_array", 1);
+		m_facePositionPublisher = m_nodeHandle.advertise<cob_msgs::DetectionArray>("face_position_array", 1);
 
 		std::cout << "cobPeopleDetectionNodelet initialized.\n";
 
@@ -327,7 +327,7 @@ public:
 		cv::Mat people_segmentation_image;
 		if (m_usePeopleSegmentation == true) convertColorImageMessageToMat(people_segmentation_image_msg, people_segmentation_image_ptr, people_segmentation_image);
 
-		std::cout << "detections: " << face_position_msg->detections.size() << "\n";
+		if (m_display) std::cout << "detections: " << face_position_msg->detections.size() << "\n";
 
 		// source image size
 		std::stringstream ss;

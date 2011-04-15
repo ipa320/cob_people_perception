@@ -177,12 +177,12 @@ int main(int argc, char **argv) {
 	ros::Rate r(30);
 
         
-        ros::NodeHandle pnh("~");
-        string frame_id("openni_depth_frame");
-        pnh.getParam("camera_frame_id", frame_id);
+	ros::NodeHandle pnh("~");
+	string frame_id("openni_depth_frame");
+	pnh.getParam("camera_frame_id", frame_id);
 	
 	image_transport::ImageTransport it(nh);
-	image_transport::Publisher pub = it.advertise("openni/people_segmentation_image", 1);
+	image_transport::Publisher pub = it.advertise("people_segmentation_image", 1);
                 
 	while (ros::ok()) {
 		g_Context.WaitAndUpdateAll();
