@@ -157,10 +157,10 @@ void show(ShowClient& showClient, int mode)
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "cob_people_detection_client");
-	RecognizeClient recognizeClient("recognize_server", true); // true -> don't need ros::spin()
-	TrainContinuousClient trainContinuousClient("train_continuous_server", true);
-	TrainCaptureSampleClient trainCaptureSampleClient("train_capture_sample_server", true);
-	ShowClient showClient("show_server", true);
+	RecognizeClient recognizeClient("cob_people_detection/face_detection/recognize_server", true); // true -> don't need ros::spin()
+	TrainContinuousClient trainContinuousClient("cob_people_detection/face_detection/train_continuous_server", true);
+	TrainCaptureSampleClient trainCaptureSampleClient("cob_people_detection/face_detection/train_capture_sample_server", true);
+	ShowClient showClient("cob_people_detection/face_detection/show_server", true);
 	if (!recognizeClient.waitForServer(ros::Duration::Duration(2.0)))
 	{
 		std::cout << "No connection to server 'recognize_server'.\n";
