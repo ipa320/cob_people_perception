@@ -122,13 +122,14 @@ class cobPeopleDetectionNodelet : public nodelet::Nodelet
 {
 protected:
 	//message_filters::Subscriber<sensor_msgs::PointCloud2> shared_image_sub_;	///< Shared xyz image and color image topic
-	image_transport::ImageTransport* m_it;
+	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter m_peopleSegmentationImageSub;	///< Color camera image topic
 	image_transport::SubscriberFilter m_colorImageSub;	///< Color camera image topic
 	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image> >* m_syncInput2;
 	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image, sensor_msgs::Image> >* m_syncInput3;
 	message_filters::Subscriber<cob_msgs::DetectionArray> m_facePositionSubscriber;		///< receives the face messages from the face detector
 	ros::Publisher m_facePositionPublisher;		///< publisher for the positions of the detected faces
+	image_transport::Publisher people_detection_image_pub_;	///< topic for publishing the image containing the people positions
 	ros::ServiceServer m_serviceServerDetectPeople; ///< Service server to request people detection
 
 
@@ -149,14 +150,14 @@ public:
 
 	cobPeopleDetectionNodelet()
 	{
-		m_it = 0;
+		it_ = 0;
 		m_syncInput2 = 0;
 		m_syncInput3 = 0;
 	}
 
 	~cobPeopleDetectionNodelet()
 	{
-		if (m_it != 0) delete m_it;
+		if (it_ != 0) delete it_;
 		if (m_syncInput2 != 0) delete m_syncInput2;
 		if (m_syncInput3 != 0) delete m_syncInput3;
 	}
@@ -175,9 +176,9 @@ public:
 		local_nh.param("use_people_segmentation", m_usePeopleSegmentation, true);
 		local_nh.param("tracking_range_m", m_trackingRangeM, 0.3);
 
-		m_it = new image_transport::ImageTransport(m_nodeHandle);
-		m_peopleSegmentationImageSub.subscribe(*m_it, "people_segmentation_image", 1);
-		if (m_display==true) m_colorImageSub.subscribe(*m_it, "colorimage", 1);
+		it_ = new image_transport::ImageTransport(m_nodeHandle);
+		m_peopleSegmentationImageSub.subscribe(*it_, "people_segmentation_image", 1);
+		if (m_display==true) m_colorImageSub.subscribe(*it_, "colorimage", 1);
 		m_facePositionSubscriber.subscribe(m_nodeHandle, "face_position_array_in", 1);
 
 		sensor_msgs::Image::ConstPtr nullPtr;
@@ -213,6 +214,8 @@ public:
 		m_serviceServerDetectPeople = m_nodeHandle.advertiseService("detect_people", &cobPeopleDetectionNodelet::detectPeopleCallback, this);
 
 		m_facePositionPublisher = m_nodeHandle.advertise<cob_msgs::DetectionArray>("face_position_array", 1);
+
+		people_detection_image_pub_ = it_->advertise("people_detection_image", 1);
 
 		std::cout << "cobPeopleDetectionNodelet initialized.\n";
 
@@ -413,11 +416,11 @@ public:
 
 
 			// display segmentation
-			if (m_usePeopleSegmentation == true)
-			{
-				cv::namedWindow("People Segmentation Image");
-				imshow("People Segmentation Image", people_segmentation_image);
-			}
+			//if (m_usePeopleSegmentation == true)
+			//{
+				//cv::namedWindow("People Segmentation Image");
+				//imshow("People Segmentation Image", people_segmentation_image);
+			//}
 
 			// display color image
 			cv::namedWindow("People Detector and Tracker");
@@ -443,8 +446,13 @@ public:
 					// Face classified
 					cv::putText(colorImage, m_facePositionAccumulator[i].label.c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
 			}
-			cv::imshow("People Detector and Tracker", colorImage);
-			cv::waitKey(10);
+			//cv::imshow("People Detector and Tracker", colorImage);
+			//cv::waitKey(10);
+			// publish image
+			cv_bridge::CvImagePtr cv_ptr;
+			cv_ptr->image = colorImage;
+			cv_ptr->encoding = "bgr8";
+			people_detection_image_pub_.publish(cv_ptr->toImageMsg());
 		}
 	}
 

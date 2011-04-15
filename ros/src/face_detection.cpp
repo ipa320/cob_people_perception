@@ -104,6 +104,7 @@ void cobFaceDetectionNodelet::onInit()
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
 	face_position_publisher_ = node_handle_.advertise<cob_msgs::DetectionArray>("face_position_array", 1);
+	face_detection_image_pub_ = it_->advertise("face_detection_image", 1);
 
 	m_recognizeServer = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&cobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
 	m_recognizeServer->start();
@@ -1203,8 +1204,13 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 				cv::putText(colorImage_8U3, tmp.str().c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
 			}
 		}
-		cv::imshow("Face Detector", colorImage_8U3);
-		cv::waitKey(10);
+		//cv::imshow("Face Detector", colorImage_8U3);
+		//cv::waitKey(10);
+		// publish topic
+        cv_bridge::CvImagePtr cv_ptr;
+        cv_ptr->image = colorImage_8U3;
+        cv_ptr->encoding = "bgr8";
+        face_detection_image_pub_.publish(cv_ptr->toImageMsg());
 	}
 }
 
@@ -1239,11 +1245,13 @@ void cobFaceDetectionNodelet::trainContinuousCallback(const sensor_msgs::PointCl
 		cv::rectangle(colorImage_8U3, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB( 0, 255, 0 ), 2, 8, 0);
 	}
 
-	cv::imshow("Face Recognizer Training", colorImage_8U3);
-//	cv::Mat xyz_image_8U3;
-//	ipa_Utils::ConvertToShowImage(depth_image, xyz_image_8U3, 3);
-//	cv::imshow("Recognizer depth image", xyz_image_8U3);
-	cv::waitKey(10);
+	//cv::imshow("Face Recognizer Training", colorImage_8U3);
+	//cv::waitKey(10);
+	// publish topic
+    cv_bridge::CvImagePtr cv_ptr;
+    cv_ptr->image = colorImage_8U3;
+    cv_ptr->encoding = "bgr8";
+    face_detection_image_pub_.publish(cv_ptr->toImageMsg());
 
 
 	// capture image if triggered by an action
