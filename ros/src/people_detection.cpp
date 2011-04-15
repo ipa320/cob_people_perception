@@ -400,6 +400,7 @@ public:
 				std::cout << "\n***** New detection *****\n\n";
 				cob_msgs::Detection detOut;
 				copyDetection(*detIn, detOut, false);
+				detOut.pose.header.frame_id = "head_tof_link";
 				m_facePositionAccumulator.push_back(detOut);
 			}
 		}
@@ -449,10 +450,10 @@ public:
 			//cv::imshow("People Detector and Tracker", colorImage);
 			//cv::waitKey(10);
 			// publish image
-			cv_bridge::CvImagePtr cv_ptr;
-			cv_ptr->image = colorImage;
-			cv_ptr->encoding = "bgr8";
-			people_detection_image_pub_.publish(cv_ptr->toImageMsg());
+			cv_bridge::CvImage cv_ptr;
+			cv_ptr.image = colorImage;
+			cv_ptr.encoding = "bgr8";
+			people_detection_image_pub_.publish(cv_ptr.toImageMsg());
 		}
 	}
 

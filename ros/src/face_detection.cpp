@@ -1207,10 +1207,10 @@ void cobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 		//cv::imshow("Face Detector", colorImage_8U3);
 		//cv::waitKey(10);
 		// publish topic
-        cv_bridge::CvImagePtr cv_ptr;
-        cv_ptr->image = colorImage_8U3;
-        cv_ptr->encoding = "bgr8";
-        face_detection_image_pub_.publish(cv_ptr->toImageMsg());
+        cv_bridge::CvImage cv_ptr;
+        cv_ptr.image = colorImage_8U3;
+        cv_ptr.encoding = "bgr8";
+        face_detection_image_pub_.publish(cv_ptr.toImageMsg());
 	}
 }
 
@@ -1248,10 +1248,10 @@ void cobFaceDetectionNodelet::trainContinuousCallback(const sensor_msgs::PointCl
 	//cv::imshow("Face Recognizer Training", colorImage_8U3);
 	//cv::waitKey(10);
 	// publish topic
-    cv_bridge::CvImagePtr cv_ptr;
-    cv_ptr->image = colorImage_8U3;
-    cv_ptr->encoding = "bgr8";
-    face_detection_image_pub_.publish(cv_ptr->toImageMsg());
+    cv_bridge::CvImage cv_ptr;
+    cv_ptr.image = colorImage_8U3;
+    cv_ptr.encoding = "bgr8";
+    face_detection_image_pub_.publish(cv_ptr.toImageMsg());
 
 
 	// capture image if triggered by an action
