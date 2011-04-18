@@ -400,6 +400,7 @@ public:
 				std::cout << "\n***** New detection *****\n\n";
 				cob_msgs::Detection detOut;
 				copyDetection(*detIn, detOut, false);
+				detOut.pose.header.frame_id = "head_tof_link";
 				m_facePositionAccumulator.push_back(detOut);
 			}
 		}

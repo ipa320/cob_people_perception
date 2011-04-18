@@ -4,18 +4,18 @@
 	<!-- Specifies the color camera -->
 	<!-- Possible values are: -->
 	<!-- CAM_IC, CAM_AVTPIKE, CAM_AXIS2100, CAM_VIRTUAL -->
-	<ColorCamera name="CAM_VIRTUAL" />
+	<ColorCamera name="CAM_KINECT" />
 
 	<!-- Specifies the range imaging camera -->
 	<!-- Possible values are: -->
 	<!-- CAM_SR3000, CAM_VIRTUAL, CAM_PMDCAMCUBE -->
-	<RangeImagingCamera name="CAM_VIRTUAL" />
+	<RangeImagingCamera name="CAM_KINECT" />
 
 	<!-- Determines the method, used to calculate the colored point cloud -->
 	<!-- Valid values: MODE_SHARED - Use range and color camera -->
 	<!--               MODE_STEREO - Use two color cameras -->
 	<!--               MODE_AUTO - Not implemented, defaults to MODE_SHARED -->
-	<PointCloudMode value="MODE_SHARED" />
+	<PointCloudMode value="MODE_PASSTHROUGH" />
 
 	<!-- Determines the size of the shared image relative to the size of the swissranger image -->
 	<!-- SharedImageSize = SwissrangerImageSize * SharedWorkingSizeFactor -->
