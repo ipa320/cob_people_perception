@@ -278,7 +278,7 @@ public:
 		return ipa_Utils::RET_OK;
 	}
 
-	template<typename t> inline T abs(T x) { return ((x<0) ? -x : x); }
+	template<typename T> inline T abs(T x) { return ((x<0) ? -x : x); }
 	bool faceInList(const cob_msgs::Detection& detIn, int imageHeight, int imageWidth)
 	{
 		if (m_facePositionAccumulator.size() == 0) return false;

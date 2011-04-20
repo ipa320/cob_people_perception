@@ -16,4 +16,4 @@ max_face_z_m: 8.0
 
 # if enabled, invalid pixels of the depth image are interpolated by region growing of their neighbors (enable if a kinect sensor is used!)
 # bool
-fill_unassigned_depth_values: true
+fill_unassigned_depth_values: false
