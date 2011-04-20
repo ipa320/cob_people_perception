@@ -1,5 +1,6 @@
 /// @file HaardetectorUnitTest
-/// Unit test for a trained haard detector. Outputs detection performance.
+/// Unit test for a trained haard detector. Outputs detection performance on the test set.
+/// In Debug mode, each image is displayed and the threshold settings from the provided ini-file apply. In Release mode, the threshold is tested over a range of paramters to obtain the best setting.
 /// @author Richard Bormann
 /// @date 04/2011
 
@@ -86,9 +87,19 @@ int main(int argc, char *argv[])
 	}
 
 	// try different parameter settings
-	for (peopleDetector.m_range_drop_groups = 20; peopleDetector.m_range_drop_groups < 80; peopleDetector.m_range_drop_groups += 2)
+#ifndef __DEBUG__
+	int* parameter = 0;
+	if (detectorMode == 0)
+		parameter = &(peopleDetector.m_range_drop_groups);	// range mode
+	else
+		parameter = &(peopleDetector.m_faces_drop_groups);	// color mode
+	for (*parameter = 20; *parameter < 80; *parameter += 2)
 	{
-		std::cout << "\n\n\n---------------------------------------------------\nparam peopleDetector.m_range_drop_groups = " << peopleDetector.m_range_drop_groups << "\n";
+		if (detectorMode == 0)
+			std::cout << "\n\n\n---------------------------------------------------\nparam peopleDetector.m_range_drop_groups = " << peopleDetector.m_range_drop_groups << "\n";
+		else
+			std::cout << "\n\n\n---------------------------------------------------\nparam peopleDetector.m_faces_drop_groups = " << peopleDetector.m_faces_drop_groups << "\n";
+#endif
 
 		// file containing the ground truth
 		std::string testDataDirectory = argv[1];
@@ -194,7 +205,9 @@ int main(int argc, char *argv[])
 		std::cout << "\nPositive detection rate (#truePositives/#NumFaces): " << (double)stats[TRUE_POS]/(double)numberGroundtruthFaces << "\n";
 		std::cout << "\nFalse positive rate (#falsePositives/#NumFaces): " << (double)stats[FALSE_POS]/(double)numberGroundtruthFaces << "\n";
 		std::cout << "\nNegative detection rate (#trueNegatives/#NumNegatives): " << (double)stats[TRUE_NEG]/(double)numberNegativeImages << "\n";
+#ifndef __DEBUG__
 	}
+#endif
 
 	getchar();
 

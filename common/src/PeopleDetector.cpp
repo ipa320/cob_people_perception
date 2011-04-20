@@ -18,7 +18,7 @@ unsigned long PeopleDetector::Init(std::string directory)
 {	
 	// Load Haar-Classifier for frontal face-, eyes- and body-detection
 	std::string faceCascadePath = directory + "haarcascades/haarcascade_frontalface_alt2.xml";
-	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_4p.xml";	// + "haarcascades/haarcascade_range.xml";
+	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg.xml";	// + "haarcascades/haarcascade_range.xml";
 	m_face_cascade = (CvHaarClassifierCascade*)cvLoad(faceCascadePath.c_str(), 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
 	m_range_cascade = (CvHaarClassifierCascade*)cvLoad(rangeCascadePath.c_str(), 0, 0, 0 );
 
