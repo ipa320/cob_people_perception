@@ -125,13 +125,19 @@ void cobFaceDetectionNodelet::onInit()
 	m_showServer->start();
 
 	// Parameters
-	ros::NodeHandle local_nh = getPrivateNodeHandle();
-	local_nh.param("face_size_min_m", m_faceSizeMinM, FACE_SIZE_MIN_M);
-	local_nh.param("face_size_max_m", m_faceSizeMaxM, FACE_SIZE_MAX_M);
-	local_nh.param("max_face_z_m", m_maxFaceZM, MAX_FACE_Z_M);
-	local_nh.param("data_directory", m_directory, m_directory);
-	local_nh.param("fill_unassigned_depth_values", m_fillUnassignedDepthValues, true);
-	local_nh.param("reason_about_3dface_size", reason_about_3dface_size_, true);
+	std::cout << "\n--------------------------\nFace Detection Parameters:\n--------------------------\n";
+	node_handle_.param("face_size_min_m", m_faceSizeMinM, FACE_SIZE_MIN_M);
+	std::cout << "face_size_min_m = " << m_faceSizeMinM << "\n";
+	node_handle_.param("face_size_max_m", m_faceSizeMaxM, FACE_SIZE_MAX_M);
+	std::cout << "face_size_max_m = " << m_faceSizeMaxM << "\n";
+	node_handle_.param("max_face_z_m", m_maxFaceZM, MAX_FACE_Z_M);
+	std::cout << "max_face_z_m = " << m_maxFaceZM << "\n";
+	node_handle_.param("data_directory", m_directory, m_directory);
+	std::cout << "data_directory = " << m_directory << "\n";
+	node_handle_.param("fill_unassigned_depth_values", m_fillUnassignedDepthValues, true);
+	std::cout << "fill_unassigned_depth_values = " << m_fillUnassignedDepthValues << "\n";
+	node_handle_.param("reason_about_3dface_size", reason_about_3dface_size_, true);
+	std::cout << "reason_about_3dface_size = " << reason_about_3dface_size_ << "\n";
 
 	// initializations
 	init();

@@ -166,15 +166,22 @@ public:
 	void onInit()
 	{
 		m_nodeHandle = getNodeHandle();
-		ros::NodeHandle local_nh = getPrivateNodeHandle();
+		//ros::NodeHandle local_nh = getPrivateNodeHandle();
 
 		// parameters
-		local_nh.param("display", m_display, true);
-		local_nh.param("face_redetection_time", m_faceRedetectionTime, 2.0);
-		local_nh.param("min_segmented_people_ratio_color", m_minSegmentedPeopleRatioColor, 0.7);
-		local_nh.param("min_segmented_people_ratio_range", m_minSegmentedPeopleRatioRange, 0.2);
-		local_nh.param("use_people_segmentation", m_usePeopleSegmentation, true);
-		local_nh.param("tracking_range_m", m_trackingRangeM, 0.3);
+		std::cout << "\n---------------------------\nPeople Detection Parameters:\n---------------------------\n";
+		m_nodeHandle.param("display", m_display, true);
+		std::cout << "display = " << m_display << "\n";
+		m_nodeHandle.param("face_redetection_time", m_faceRedetectionTime, 2.0);
+		std::cout << "face_redetection_time = " << m_faceRedetectionTime << "\n";
+		m_nodeHandle.param("min_segmented_people_ratio_color", m_minSegmentedPeopleRatioColor, 0.7);
+		std::cout << "min_segmented_people_ratio_color = " << m_minSegmentedPeopleRatioColor << "\n";
+		m_nodeHandle.param("min_segmented_people_ratio_range", m_minSegmentedPeopleRatioRange, 0.2);
+		std::cout << "min_segmented_people_ratio_range = " << m_minSegmentedPeopleRatioRange << "\n";
+		m_nodeHandle.param("use_people_segmentation", m_usePeopleSegmentation, true);
+		std::cout << "use_people_segmentation = " << m_usePeopleSegmentation << "\n";
+		m_nodeHandle.param("tracking_range_m", m_trackingRangeM, 0.3);
+		std::cout << "tracking_range_m = " << m_trackingRangeM << "\n";
 
 		it_ = new image_transport::ImageTransport(m_nodeHandle);
 		m_peopleSegmentationImageSub.subscribe(*it_, "people_segmentation_image", 1);
@@ -387,17 +394,17 @@ public:
 				if ((detIn->detector=="color" && segmentedPeopleRatio < m_minSegmentedPeopleRatioColor) || (detIn->detector=="range" && segmentedPeopleRatio < m_minSegmentedPeopleRatioRange))
 				{
 					// False detection
-					std::cout << "False detection\n";
+					if (m_display) std::cout << "False detection\n";
 					continue;
 				}
 			}
 
 			// valid face detection
-			std::cout << "Face detection\n";
+			if (m_display) std::cout << "Face detection\n";
 			// check whether this face was found before and if it is new, whether it is a color face detection (range detection is not sufficient for a new face)
 			if (faceInList(*detIn, height, width)==false && detIn->detector=="color")
 			{
-				std::cout << "\n***** New detection *****\n\n";
+				if (m_display) std::cout << "\n***** New detection *****\n\n";
 				cob_msgs::Detection detOut;
 				copyDetection(*detIn, detOut, false);
 				detOut.pose.header.frame_id = "head_tof_link";
