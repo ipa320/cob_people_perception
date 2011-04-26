@@ -106,8 +106,8 @@ public:
 
   message_filters::TimeSynchronizer<sensor_msgs::Image, stereo_msgs::DisparityImage, sensor_msgs::CameraInfo, sensor_msgs::CameraInfo> sync_stereo_; /**< Stereo topic synchronizer. */
   //message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, stereo_msgs::DisparityImage, sensor_msgs::CameraInfo, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::PointCloud2> > sync_pointcloud_; /**< Pointcloud synchronizer. */
-  message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, stereo_msgs::DisparityImage, sensor_msgs::PointCloud2> > sync_pointcloud_showdisp; /**< Pointcloud synchronizer with disparity display. */
-  message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::PointCloud2> > sync_pointcloud_nodisp; /**< Pointcloud synchronizer without disparity display. */
+  message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, stereo_msgs::DisparityImage, sensor_msgs::PointCloud2> > sync_pointcloud_showdisp_; /**< Pointcloud synchronizer with disparity display. */
+  message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::PointCloud2> > sync_pointcloud_nodisp_; /**< Pointcloud synchronizer without disparity display. */
   
 
   // Action
@@ -234,13 +234,13 @@ public:
       // only connect to the disparity topic if this is available
       if (do_display_disparity_or_depth_==true)
       {
-        sync_pointcloud_showdisp.connectInput(limage_sub_, dimage_sub_, depth_cloud_sub_);
-        sync_pointcloud_showdisp.registerCallback(boost::bind(&FaceDetectorColor::imageCBAll, this, _1, _2, nullCameraInfo, nullCameraInfo, _3));
+        sync_pointcloud_showdisp_.connectInput(limage_sub_, dimage_sub_, depth_cloud_sub_);
+        sync_pointcloud_showdisp_.registerCallback(boost::bind(&FaceDetectorColor::imageCBAll, this, _1, _2, nullCameraInfo, nullCameraInfo, _3));
       }
       else
       {
-        sync_pointcloud_nodisp.connectInput(limage_sub_, depth_cloud_sub_);
-        sync_pointcloud_nodisp.registerCallback(boost::bind(&FaceDetectorColor::imageCBAll, this, _1, nullDisparity, nullCameraInfo, nullCameraInfo, _2));
+        sync_pointcloud_nodisp_.connectInput(limage_sub_, depth_cloud_sub_);
+        sync_pointcloud_nodisp_.registerCallback(boost::bind(&FaceDetectorColor::imageCBAll, this, _1, nullDisparity, nullCameraInfo, nullCameraInfo, _2));
       }
     }
     else
@@ -274,8 +274,8 @@ public:
     BIGDIST_M(1000000.0),
     it_(nh_),
     sync_stereo_(4),
-    sync_pointcloud_showdisp(3),
-    sync_pointcloud_nodisp(2),
+    sync_pointcloud_showdisp_(3),
+    sync_pointcloud_nodisp_(2),
     faces_(0),
     quit_(false)
   {

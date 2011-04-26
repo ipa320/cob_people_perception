@@ -9,8 +9,8 @@
 </library>
 
 <library path="ros/lib/libface_detector">
-  <class name="ipa_PeopleDetector/cobFaceDetectionNodelet"
-         type="ipa_PeopleDetector::cobFaceDetectionNodelet"
+  <class name="ipa_PeopleDetector/CobFaceDetectionNodelet"
+         type="ipa_PeopleDetector::CobFaceDetectionNodelet"
          base_class_type="nodelet::Nodelet">
     <description> 
       The Nodelet for the face detector in the ipa_PeopleDetector namespace.
@@ -19,8 +19,8 @@
 </library>
 
 <library path="ros/lib/libpeople_detector">
-  <class name="ipa_PeopleDetector/cobPeopleDetectionNodelet"
-         type="ipa_PeopleDetector::cobPeopleDetectionNodelet"
+  <class name="ipa_PeopleDetector/CobPeopleDetectionNodelet"
+         type="ipa_PeopleDetector::CobPeopleDetectionNodelet"
          base_class_type="nodelet::Nodelet">
     <description> 
       The Nodelet for the people detector in the ipa_PeopleDetector namespace.
