@@ -266,14 +266,6 @@ public:
 		// person ID
 		if (update==true)
 		{
-//			if (src.label!="No face")
-//			{
-//				if (src.label=="Unknown")
-//				{
-//					if (dest.label=="No face") dest.label = "Unknown";
-//				}
-//				else if (dest.label=="No face" || dest.label=="Unknown") dest.label = src.label;
-//			}
 			// update label history
 			if (src.label!="No face" && src.label!="Unknown")
 			{
@@ -337,46 +329,6 @@ public:
 		double dist = dx*dx+dy*dy+dz*dz;
 		return dist;
 	}
-
-
-//	///
-//	bool faceInList(const cob_msgs::Detection& det_in) //, int image_height, int image_width)
-//	{
-//		if (face_position_accumulator_.size() == 0) return false;
-//
-//		// find the closest face found previously, if it is close enough, assign the new detection to it
-//		double minDistance = 1e50;
-//		size_t minIndex = 0;
-//		const geometry_msgs::Point* pointIn = &(det_in.pose.pose.position);
-//		for (int i=0; i<(int)face_position_accumulator_.size(); i++)
-//		{
-//			geometry_msgs::Point* point = &(face_position_accumulator_[i].pose.pose.position);
-//			double dx = abs(pointIn->x - point->x);
-//			double dy = abs(pointIn->y - point->y);
-//			double dz = abs(pointIn->z - point->z);
-//			double dist = dx*dx+dy*dy+dz*dz;
-//
-//			if (dist < minDistance)
-//			{
-//				minDistance = dist;
-//				minIndex = i;
-//			}
-//		}
-//		// close enough?
-//		geometry_msgs::Point* point = &(face_position_accumulator_[minIndex].pose.pose.position);
-//		double dx = abs(pointIn->x - point->x);
-//		double dy = abs(pointIn->y - point->y);
-//		double dz = abs(pointIn->z - point->z);
-//		if (dx>tracking_range_m_ || dy>tracking_range_m_ || dz>tracking_range_m_)
-//		{
-//			// face was not found in the list
-//			return false;
-//		}
-//
-//		// close enough, update old face
-//		copyDetection(det_in, face_position_accumulator_[minIndex], true);
-//		return true;
-//	}
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 	void inputCallback(const cob_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
