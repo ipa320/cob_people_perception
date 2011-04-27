@@ -1,6 +1,6 @@
 # when this flag is activated, the 3d size of a face is determined and only reasonable sizes may continue in the processing pipeline
 # bool
-reason_about_3dface_size: false
+reason_about_3dface_size: true
 
 # the maximum feasible face diameter [m] if reason_about_3dface_size is enabled
 # double

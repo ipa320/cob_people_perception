@@ -475,7 +475,6 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 				zPtr += 3;
 			}
 		}
-
 //
 //
 //		int vector_position = 0;
@@ -502,24 +501,25 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 		// Only bad faces are removed
 		if (avg_depth > 0)
 		{
-			double a,b, radiusX, radiusY, radius3d;
+			double radiusX, radiusY, radius3d;
+			cv::Vec3f a, b;
 			// vertical line regularly lies completely on the head whereas this does not hold very often for the horizontal line crossing the bounding box of the face
 			// rectangle in the middle
-			a = (xyz_image.at<cv::Vec3f>((int)(face.x+0.5*face.width), face.y)).val[2];
-			b = (xyz_image.at<cv::Vec3f>((int)(face.x+0.5*face.width), face.y+face.height)).val[2];
-			if (display_) std::cout << a << "  " << b << "  y(a,b)\n";
-			if (isnan(a) || isnan(b)) radiusY = 0.0;
-			else radiusY = fabs(b-a)*0.5;
+			a = xyz_image.at<cv::Vec3f>((int)(face.y+face.height*0.25), (int)(face.x+0.5*face.width));
+			b = xyz_image.at<cv::Vec3f>((int)(face.y+face.height*0.75), (int)(face.x+0.5*face.width));
+			if (display_) std::cout << "a: " << a.val[0] << " " << a.val[1] << " " << a.val[2] << "   b: " << " " << b.val[0] << " " << b.val[1] << " " << b.val[2] << "\n";
+			if (isnan(a.val[0]) || isnan(b.val[0])) radiusY = 0.0;
+			else radiusY = cv::norm(b-a);
 			radius3d = radiusY;
 
 			// for radius estimation with the horizontal line through the face rectangle use points which typically still lie on the face and not in the background
-			a = (xyz_image.at<cv::Vec3f>((int)(face.x+face.width*0.25), (int)(face.y+face.height*0.5))).val[2];
-			b = (xyz_image.at<cv::Vec3f>((int)(face.x+face.width*0.75), (int)(face.y+face.height*0.5))).val[2];
-			if (display_) std::cout << a << "  " << b << "  x(a,b)\n";
-			if (isnan(a) || isnan(b)) radiusX = 0.0;
+			a = xyz_image.at<cv::Vec3f>((int)(face.y+face.height*0.5), (int)(face.x+face.width*0.25));
+			b = xyz_image.at<cv::Vec3f>((int)(face.y+face.height*0.5), (int)(face.x+face.width*0.75));
+			if (display_) std::cout << "a: " << a.val[0] << " " << a.val[1] << " " << a.val[2] << "   b: " << " " << b.val[0] << " " << b.val[1] << " " << b.val[2] << "\n";
+			if (isnan(a.val[0]) || isnan(b.val[0])) radiusX = 0.0;
 			else
 			{
-				radiusX = fabs(b-a);
+				radiusX = cv::norm(b-a);
 				if (radiusY != 0.0) radius3d = (radiusX+radiusY)*0.5;
 				else radius3d = radiusX;
 			}
@@ -527,6 +527,13 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 //			pcl::PointXYZ pxyz = (*depth_cloud_)(one_face.center2d.x, one_face.center2d.y);
 //			one_face.center3d = cv::Point3d(0.0,0.0,0.0);
 //			if (!isnan(pxyz.z)) one_face.center3d.z = pxyz.z;
+
+			cv::Point pup(face.x+0.5*face.width, face.y+face.height*0.25);
+			cv::Point plo(face.x+0.5*face.width, face.y+face.height*0.75);
+			cv::Point ple(face.x+face.width*0.25, face.y+face.height*0.5);
+			cv::Point pri(face.x+face.width*0.75, face.y+face.height*0.5);
+			cv::line(xyz_image_8U3, pup, plo, CV_RGB(255, 255, 255), 2);
+			cv::line(xyz_image_8U3, ple, pri, CV_RGB(255, 255, 255), 2);
 
 			if (display_)
 			{
@@ -537,6 +544,9 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 		}
 		color_faces_.push_back(face);
 	}
+			imshow("xyz image", xyz_image_8U3);
+			cv::waitKey(10);
+
 	return ipa_Utils::RET_OK;
 }
 

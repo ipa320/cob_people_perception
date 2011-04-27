@@ -405,6 +405,7 @@ public:
 				face_identification_votes_.erase(face_identification_votes_.begin()+i);
 			}
 		}
+		if (display_) std::cout << "Old face positions deleted.\n";
 
 		// secure this section with a mutex
 		boost::timed_mutex::scoped_timed_lock lock(face_position_accumulator_mutex_, boost::posix_time::milliseconds(2000));
@@ -413,6 +414,7 @@ public:
 			ROS_ERROR("cob_people_detection::CobPeopleDetectionNodelet: Mutex was not freed during response time.");
 			return;
 		}
+		if (display_) std::cout << "Got mutex.\n";
 
 		// verify face detections with people segmentation if enabled -> only accept detected faces if a person is segmented at that position
 		std::vector<int> face_detection_indices;	// index set for face_position_msg_in: contains those indices of detected faces which are supported by a person segmentation at the same location
@@ -459,6 +461,7 @@ public:
 			for (unsigned int i=0; i<face_position_msg_in->detections.size(); i++)
 				face_detection_indices.push_back(i);
 		}
+		if (display_) std::cout << "Verification with people segmentation done.\n";
 
 		// match current detections with previous detections
 		// build distance matrix
@@ -471,6 +474,7 @@ public:
 				distance_row[face_detection_indices[i]] = computeFacePositionDistance(face_position_accumulator_[previous_det], face_position_msg_in->detections[face_detection_indices[i]]);
 			distance_matrix[previous_det] = distance_row;
 		}
+		if (display_) std::cout << "Distance matrix.\n";
 
 		// find matching faces between previous and current detections
 		unsigned int number_matchings = (face_position_accumulator_.size() < face_detection_indices.size()) ? face_position_accumulator_.size() : face_detection_indices.size();
@@ -508,6 +512,7 @@ public:
 			for (distance_matrix_it=distance_matrix.begin(); distance_matrix_it!=distance_matrix.end(); distance_matrix_it++)
 				distance_matrix_it->second.erase(current_min_index);
 		}
+		if (display_) std::cout << "Matches found.\n";
 
 		// create new detections for the unmatched of the current detections
 		for (unsigned int i=0; i<face_detection_indices.size(); i++)
@@ -531,6 +536,7 @@ public:
 				}
 			}
 		}
+		if (display_) std::cout << "New detections.\n";
 
 		// publish face positions
 		cob_msgs::DetectionArray face_position_msg_out;
