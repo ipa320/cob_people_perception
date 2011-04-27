@@ -310,8 +310,8 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 		double distance = cv::norm((temp-avgImage), srcReconstruction, cv::NORM_L2);
 
 		//######################################## Only for debugging and development ########################################
-		/*std::cout.precision( 10 );
-		std::cout << "FS_Distance: " << distance << std::endl;*/
+		//std::cout.precision( 10 );
+		std::cout << "FS_Distance: " << distance << std::endl;
 		//######################################## /Only for debugging and development ########################################
 
 		// -2=distance to face space is too high
@@ -355,8 +355,8 @@ unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *neare
 		//distance = sqrt(distance);
 
 		//######################################## Only for debugging and development ########################################
-		/*std::cout.precision( 10 );
-		std::cout << "Distance_FC: " << distance << std::endl;*/
+		//std::cout.precision( 10 );
+		std::cout << "Distance_FC: " << distance << std::endl;
 		//######################################## /Only for debugging and development ########################################
 
 		if(distance < leastDistSq)
