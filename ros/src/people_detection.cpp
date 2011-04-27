@@ -273,7 +273,7 @@ public:
 		if (update==true)
 		{
 			// update label history
-//			if (src.label!="No face" && src.label!="Unknown")
+//			if (src.label!="No face")
 //			{
 				if (face_identification_votes_[updateIndex].find(src.label) == face_identification_votes_[updateIndex].end())
 					face_identification_votes_[updateIndex][src.label] = 1.0;
@@ -336,6 +336,42 @@ public:
 		double dist = dx*dx+dy*dy+dz*dz;
 		return dist;
 	}
+
+
+	/// Removes multiple instances of a label by renaming the detections with lower score to Unknown.
+	/// @return Return code.
+	unsigned long removeMultipleInstancesOfLabel()
+	{
+		for (int i=0; i<(int)face_position_accumulator_.size(); i++)
+		{
+			// label of this detection
+			std::string label = face_position_accumulator_[i].label;
+
+			// check whether this label has multiple occurrences if it is a real name
+			if (label!="Unknown" && label!="No face")
+			{
+				for (int j=0; j<(int)face_position_accumulator_.size(); j++)
+				{
+					if (j==i) continue;	// do not check yourself
+
+					if (face_position_accumulator_[j].label == label)
+					{
+						// correct this label to Unknown when some other instance has a higher score on this label
+						if (face_identification_votes_[i][label] < face_identification_votes_[j][label])
+						{
+							face_position_accumulator_[i].label = "Unknown";
+							// copy score to unknown if it is higher
+							if (face_identification_votes_[i][label] > face_identification_votes_[i]["Unknown"])
+								face_identification_votes_[i]["Unknown"] = face_identification_votes_[i][label];
+						}
+					}
+				}
+			}
+		}
+
+		return ipa_Utils::RET_OK;
+	}
+
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 	void inputCallback(const cob_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
@@ -489,12 +525,16 @@ public:
 					face_position_accumulator_.push_back(det_out);
 					// remember label history
 					std::map<std::string, double> new_identification_data;
+					new_identification_data["Unknown"] = 0.0;
 					new_identification_data[det_in->label] = 1.0;
 					face_identification_votes_.push_back(new_identification_data);
 				}
 			}
 		}
 		if (display_) std::cout << "New detections.\n";
+
+		// eliminate multiple instances of a label
+		removeMultipleInstancesOfLabel();
 
 		// publish face positions
 		std::vector<cob_msgs::Detection> faces_to_publish;
