@@ -44,17 +44,17 @@
 		<Range_drop_groups value="68" />
 		<!-- Minimum serach scale x --> 
 		<!-- <Range_min_search_scale_x value="20" /> -->
-		<Range_min_search_scale_x value="1" />
+		<Range_min_search_scale_x value="20" />
 		<!-- Minimum serach scale y --> 
 		<!-- <Range_min_search_scale_y value="20" /> -->
-		<Range_min_search_scale_y value="1" />
+		<Range_min_search_scale_y value="20" />
 	</adaBoost>
 	<eigenfaces>
 		<!-- Threshold to each face class --> 
-		<Threshold_Face_Class value="1200000000" />
+		<Threshold_Face_Class value="800000000" />
 		<!-- <Threshold_Face_Class value="2500000000" /> -->
 		<!-- Threshold to face space --> 
-		<Threshold_Facespace value="450000000" />
+		<Threshold_Facespace value="14000" />
 		<!-- <Threshold_Facespace value="450000000" /> -->
 	</eigenfaces>
 </PeopleDetector>

@@ -285,7 +285,7 @@ public:
 
 			// apply voting decay with time and find most voted label
 			unsigned int maxCount = 0;
-			dest.label = "Error";
+			dest.label = src.label;
 			for (std::map<std::string, double>::iterator face_identification_votes_it=face_identification_votes_[updateIndex].begin(); face_identification_votes_it!=face_identification_votes_[updateIndex].end(); face_identification_votes_it++)
 			{
 				face_identification_votes_it->second *= 0.9;		// todo: parameter
