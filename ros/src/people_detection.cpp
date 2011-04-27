@@ -132,7 +132,7 @@ protected:
 
 	std::vector<cob_msgs::Detection> face_position_accumulator_;	///< accumulates face positions over time
 	boost::timed_mutex face_position_accumulator_mutex_;			///< secures write and read operations to face_position_accumulator_
-	std::vector<std::map<std::string, double> > face_identification_votes_;	///< collects votes for all names ever assigned to each detection in face_position_accumulator_
+	std::vector<std::map<std::string, double> > face_identification_votes_;	///< collects votes for all names (map index) ever assigned to each detection (vector index) in face_position_accumulator_
 
 	// parameters
 	bool display_;								///< if on, several debug outputs are activated
@@ -267,13 +267,13 @@ public:
 		if (update==true)
 		{
 			// update label history
-			if (src.label!="No face" && src.label!="Unknown")
-			{
+//			if (src.label!="No face" && src.label!="Unknown")
+//			{
 				if (face_identification_votes_[updateIndex].find(src.label) == face_identification_votes_[updateIndex].end())
 					face_identification_votes_[updateIndex][src.label] = 1.0;
 				else
 					face_identification_votes_[updateIndex][src.label] += 1.0;
-			}
+//			}
 
 			// apply voting decay with time and find most voted label
 			unsigned int maxCount = 0;
@@ -281,10 +281,11 @@ public:
 			for (std::map<std::string, double>::iterator face_identification_votes_it=face_identification_votes_[updateIndex].begin(); face_identification_votes_it!=face_identification_votes_[updateIndex].end(); face_identification_votes_it++)
 			{
 				face_identification_votes_it->second *= 0.9;		// todo: parameter
-				if (face_identification_votes_it->second > maxCount)
+				std::string label = face_identification_votes_it->first;
+				if (label!="Unknown" && label!="No face" && face_identification_votes_it->second > maxCount)
 				{
 					maxCount = face_identification_votes_it->second;
-					dest.label = face_identification_votes_it->first;
+					dest.label = label;
 				}
 			}
 		}
@@ -482,8 +483,7 @@ public:
 					face_position_accumulator_.push_back(det_out);
 					// remember label history
 					std::map<std::string, double> new_identification_data;
-					if (det_in->label!="No face" && det_in->label!="Unknown")
-						new_identification_data[det_in->label] = 1.0;
+					new_identification_data[det_in->label] = 1.0;
 					face_identification_votes_.push_back(new_identification_data);
 				}
 			}
@@ -491,8 +491,19 @@ public:
 		if (display_) std::cout << "New detections.\n";
 
 		// publish face positions
+		std::vector<cob_msgs::Detection> faces_to_publish;
+		for (int i=0; i<(int)face_position_accumulator_.size(); i++)
+		{
+			std::cout << "'Unknown' score: " << face_identification_votes_[i]["Unknown"] << "  label '" << face_position_accumulator_[i].label << "' score: " << face_identification_votes_[i][face_position_accumulator_[i].label] << " - ";
+			if (face_identification_votes_[i][face_position_accumulator_[i].label]>3.0 || face_identification_votes_[i]["Unknown"]>3.0)		// todo: parameter
+			{
+				faces_to_publish.push_back(face_position_accumulator_[i]);
+				std::cout << "published\n";
+			}
+			else std::cout << "not published\n";
+		}
 		cob_msgs::DetectionArray face_position_msg_out;
-		face_position_msg_out.detections = face_position_accumulator_;
+		face_position_msg_out.detections = faces_to_publish;
 		face_position_msg_out.header.stamp = ros::Time::now();
 		face_position_publisher_.publish(face_position_msg_out);
 
@@ -505,27 +516,27 @@ public:
 			convertColorImageMessageToMat(color_image_msg, colorImagePtr, colorImage);
 
 			// display color image
-			for(int i=0; i<(int)face_position_accumulator_.size(); i++)
+			for(int i=0; i<(int)faces_to_publish.size(); i++)
 			{
 				cv::Rect face;
-				cob_msgs::Rect& faceRect = face_position_accumulator_[i].mask.roi;
+				cob_msgs::Rect& faceRect = faces_to_publish[i].mask.roi;
 				face.x = faceRect.x;    face.width = faceRect.width;
 				face.y = faceRect.y;    face.height = faceRect.height;
 
-				if (face_position_accumulator_[i].detector == "range")
+				if (faces_to_publish[i].detector == "range")
 					cv::rectangle(colorImage, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 0, 255), 2, 8, 0);
 				else
 					cv::rectangle(colorImage, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 255, 0), 2, 8, 0);
 
-				if (face_position_accumulator_[i].label == "Unknown")
+				if (faces_to_publish[i].label == "Unknown")
 					// Distance to face class is too high
 					cv::putText(colorImage, "Unknown", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
-				else if (face_position_accumulator_[i].label ==  "No face")
+				else if (faces_to_publish[i].label ==  "No face")
 					// Distance to face space is too high
 					cv::putText(colorImage, "No face", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
 				else
 					// Face classified
-					cv::putText(colorImage, face_position_accumulator_[i].label.c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
+					cv::putText(colorImage, faces_to_publish[i].label.c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
 			}
 			// publish image
 			cv_bridge::CvImage cv_ptr;

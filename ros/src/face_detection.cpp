@@ -524,16 +524,12 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 				else radius3d = radiusX;
 			}
 
-//			pcl::PointXYZ pxyz = (*depth_cloud_)(one_face.center2d.x, one_face.center2d.y);
-//			one_face.center3d = cv::Point3d(0.0,0.0,0.0);
-//			if (!isnan(pxyz.z)) one_face.center3d.z = pxyz.z;
-
-			cv::Point pup(face.x+0.5*face.width, face.y+face.height*0.25);
-			cv::Point plo(face.x+0.5*face.width, face.y+face.height*0.75);
-			cv::Point ple(face.x+face.width*0.25, face.y+face.height*0.5);
-			cv::Point pri(face.x+face.width*0.75, face.y+face.height*0.5);
-			cv::line(xyz_image_8U3, pup, plo, CV_RGB(255, 255, 255), 2);
-			cv::line(xyz_image_8U3, ple, pri, CV_RGB(255, 255, 255), 2);
+//			cv::Point pup(face.x+0.5*face.width, face.y+face.height*0.25);
+//			cv::Point plo(face.x+0.5*face.width, face.y+face.height*0.75);
+//			cv::Point ple(face.x+face.width*0.25, face.y+face.height*0.5);
+//			cv::Point pri(face.x+face.width*0.75, face.y+face.height*0.5);
+//			cv::line(xyz_image_8U3, pup, plo, CV_RGB(255, 255, 255), 2);
+//			cv::line(xyz_image_8U3, ple, pri, CV_RGB(255, 255, 255), 2);
 
 			if (display_)
 			{
@@ -544,8 +540,8 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 		}
 		color_faces_.push_back(face);
 	}
-			imshow("xyz image", xyz_image_8U3);
-			cv::waitKey(10);
+//			imshow("xyz image", xyz_image_8U3);
+//			cv::waitKey(10);
 
 	return ipa_Utils::RET_OK;
 }
