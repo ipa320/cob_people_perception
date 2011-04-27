@@ -141,6 +141,8 @@ protected:
 	double min_segmented_people_ratio_color_;		///< the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker)
 	double min_segmented_people_ratio_range_;		///< the minimum area inside the face rectangle found in the range image that has to be covered with positive people segmentation results (from openni_tracker)
 	double tracking_range_m_;					///< maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked
+	double face_identification_score_decay_rate_;	///< face identification score decay rate (0 < x < 1), i.e. the score for each label at a certain detection location is multiplied by this factor
+	double min_face_identification_score_to_publish_;	///< minimum face identification score to publish (0 <= x < max_score), i.e. this score must be exceeded by a label at a detection location before the person detection is published (higher values increase robustness against short misdetections, but consider the maximum possible score max_score w.r.t. the face_identification_score_decay_rate: new_score = (old_score+1)*face_identification_score_decay_rate --> max_score = face_identification_score_decay_rate/(1-face_identification_score_decay_rate))
 
 public:
 
@@ -177,6 +179,10 @@ public:
 		std::cout << "use_people_segmentation = " << use_people_segmentation_ << "\n";
 		node_handle_.param("tracking_range_m", tracking_range_m_, 0.3);
 		std::cout << "tracking_range_m = " << tracking_range_m_ << "\n";
+		node_handle_.param("face_identification_score_decay_rate", face_identification_score_decay_rate_, 0.9);
+		std::cout << "face_identification_score_decay_rate = " << face_identification_score_decay_rate_ << "\n";
+		node_handle_.param("min_face_identification_score_to_publish", min_face_identification_score_to_publish_, 0.9);
+		std::cout << "min_face_identification_score_to_publish = " << min_face_identification_score_to_publish_ << "\n";
 
 		// subscribers
 		it_ = new image_transport::ImageTransport(node_handle_);
@@ -280,7 +286,7 @@ public:
 			dest.label = src.label;
 			for (std::map<std::string, double>::iterator face_identification_votes_it=face_identification_votes_[updateIndex].begin(); face_identification_votes_it!=face_identification_votes_[updateIndex].end(); face_identification_votes_it++)
 			{
-				face_identification_votes_it->second *= 0.9;		// todo: parameter
+				face_identification_votes_it->second *= face_identification_score_decay_rate_;
 				std::string label = face_identification_votes_it->first;
 				if (label!="Unknown" && label!="No face" && face_identification_votes_it->second > maxCount)
 				{
@@ -495,7 +501,7 @@ public:
 		for (int i=0; i<(int)face_position_accumulator_.size(); i++)
 		{
 			std::cout << "'Unknown' score: " << face_identification_votes_[i]["Unknown"] << "  label '" << face_position_accumulator_[i].label << "' score: " << face_identification_votes_[i][face_position_accumulator_[i].label] << " - ";
-			if (face_identification_votes_[i][face_position_accumulator_[i].label]>3.0 || face_identification_votes_[i]["Unknown"]>3.0)		// todo: parameter
+			if (face_identification_votes_[i][face_position_accumulator_[i].label]>min_face_identification_score_to_publish_ || face_identification_votes_[i]["Unknown"]>min_face_identification_score_to_publish_)
 			{
 				faces_to_publish.push_back(face_position_accumulator_[i]);
 				std::cout << "published\n";
