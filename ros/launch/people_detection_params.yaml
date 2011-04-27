@@ -20,4 +20,4 @@ use_people_segmentation: false
 
 # maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked
 # double
-tracking_range_m: 0.3
+tracking_range_m: 0.2
