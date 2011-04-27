@@ -285,7 +285,7 @@ face_identification_votes_[updateIndex][src.label] += 1.0;
 
 // apply voting decay with time and find most voted label
 unsigned int maxCount = 0;
-dest.label = "Error";
+dest.label = src.label;
 for (std::map<std::string, double>::iterator face_identification_votes_it=face_identification_votes_[updateIndex].begin(); face_identification_votes_it!=face_identification_votes_[updateIndex].end(); face_identification_votes_it++)
 {
 face_identification_votes_it->second *= 0.9; // todo: parameter
@@ -311,10 +311,6 @@ dest.header.stamp = ros::Time::now();
 return ipa_Utils::RET_OK;
 }
 
-<<<<<<< HEAD
-template<typename T> inline T abs(T x) { return ((x<0) ? -x : x); }
-bool faceInList(const cob_msgs::Detection& detIn, int imageHeight, int imageWidth)
-=======
 inline double abs(double x) { return ((x<0) ? -x : x); }
 
 
@@ -322,7 +318,6 @@ inline double abs(double x) { return ((x<0) ? -x : x); }
 /// If the current face detection is outside the neighborhood of the previous detection, DBL_MAX is returned.
 /// @return The Euclidian distance of both faces or DBL_MAX.
 double computeFacePositionDistance(const cob_msgs::Detection& previous_detection, const cob_msgs::Detection& current_detection)
->>>>>>> f033bbab5a7b46c77ea716824eb2205edfee133f
 {
 const geometry_msgs::Point* point_1 = &(previous_detection.pose.pose.position);
 const geometry_msgs::Point* point_2 = &(current_detection.pose.pose.position);
