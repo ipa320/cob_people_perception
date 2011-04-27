@@ -16,7 +16,7 @@ min_segmented_people_ratio_range: 0.2
 
 # enables the combination of face detections with the openni people segmentation
 # bool
-use_people_segmentation: true
+use_people_segmentation: false
 
 # maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked
 # double
