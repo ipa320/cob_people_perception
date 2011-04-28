@@ -51,7 +51,7 @@
 	</adaBoost>
 	<eigenfaces>
 		<!-- Threshold to each face class --> 
-		<Threshold_Face_Class value="54000" />
+		<Threshold_Face_Class value="84000" />
 		<!-- <Threshold_Face_Class value="2500000000" /> -->
 		<!-- Threshold to face space --> 
 		<Threshold_Facespace value="18000" />
