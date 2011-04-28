@@ -352,7 +352,7 @@ unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *neare
 			//distance += d*d;							//Euklid
 			distance += d*d / ((float*)(eigenValMat.data))[e];	//Mahalanobis
 		}
-		//distance = sqrt(distance);
+		distance = sqrt(distance);
 
 		//######################################## Only for debugging and development ########################################
 		//std::cout.precision( 10 );
