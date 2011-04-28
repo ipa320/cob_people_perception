@@ -1116,7 +1116,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 			point->x = p.x; point->y=p.y; point->z=p.z;
 
 			// person ID
-			det.label="Unknown";
+			det.label="UnknownRange";
 
 			// origin of detection
 			det.detector = "range";
