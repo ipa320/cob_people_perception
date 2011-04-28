@@ -72,6 +72,7 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ros/include
 
 rosbuild_add_compile_flags(face_detector -D__LINUX__)
 rosbuild_add_compile_flags(people_detector -D__LINUX__)
+rosbuild_add_compile_flags(people_detection_client -D__LINUX__)
 
 rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_noface_test_diamondback.bag face_detector_noface_test.bag 37f043be780a4511c853379defdd9855)
 rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_withface_test_diamondback.bag face_detector_withface_test.bag 59126117e049e69d577b7ee27251a6f8)
