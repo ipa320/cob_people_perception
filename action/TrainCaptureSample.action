@@ -1,0 +1,8 @@
+# Message triggering the capture of an image in the training mode
+#
+# goal message
+---
+# result message
+uint64 success        # is ipa_Utils::RET_OK if everything went well
+---
+# feedback message

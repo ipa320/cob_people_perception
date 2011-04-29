@@ -14,6 +14,7 @@
 	#include "cob_vision/cob_sensor_fusion/common/include/cob_sensor_fusion/ColoredPointCloud.h"
 #endif
 #include <fstream>
+#include <set>
 
 namespace ipa_PeopleDetector {
 
@@ -44,9 +45,9 @@ public:
 	/// The function detects the face in an given range image
 	/// @param img Image
 	/// @param rangeFaceCoordinates Vector with the coordinates of detected heads in range image
-	/// @param this parameter should be true if the kinect sensor is used (activates a filling method for black pixels)
+	/// @param fillUnassignedDepthValues this parameter should be true if the kinect sensor is used (activates a filling method for black pixels)
 	/// @return Return code
-	virtual unsigned long DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor=false);
+	virtual unsigned long DetectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates, bool fillUnassignedDepthValues=false);
 
 	/// Function to detect faces
 	/// The function calls internally the functions DetectRangeFace() and DetectColorFaces()
@@ -54,10 +55,10 @@ public:
 	/// @param rangeImg Range image
 	/// @param faceCoordinates Vector with the coordinates of detected faces on complete color image
 	/// @param rangeFaceCoordinates Vector with the coordinates of heads on range image
-	/// @param vFaceCoordinates Vector with the coordinates of correct detected faces
-	/// @param this parameter should be true if the kinect sensor is used (activates a filling method for black pixels)
+	/// @param colorToRangeFaceDependency stores the indices of range images that contain a face detection in the color image
+	/// @param fillUnassignedDepthValues this parameter should be true if the kinect sensor is used (activates a filling method for black pixels)
 	/// @return Return code
-	virtual unsigned long DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates, bool fromKinectSensor=false);
+	virtual unsigned long DetectFaces(cv::Mat& img, cv::Mat& rangeImg, std::vector<cv::Rect>& colorFaceCoordinates, std::vector<cv::Rect>& rangeFaceCoordinates, std::set<size_t>& colorToRangeFaceDependency, bool fillUnassignedDepthValues=false);
 
 	/// Function to add a new face
 	/// The function adds a new face to the trained images

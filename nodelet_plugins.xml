@@ -1,6 +1,6 @@
-<library path="ros/lib/libcob_people_detection">
-  <class name="people/FaceDetector"
-         type="people::FaceDetector"
+<library path="ros/lib/libcolor_face_detector">
+  <class name="people/FaceDetectorColor"
+         type="people::FaceDetectorColor"
          base_class_type="nodelet::Nodelet">
     <description> 
       The Nodelet for the face detector in the people package.
@@ -9,11 +9,21 @@
 </library>
 
 <library path="ros/lib/libface_detector">
+  <class name="ipa_PeopleDetector/cobFaceDetectionNodelet"
+         type="ipa_PeopleDetector::cobFaceDetectionNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description> 
+      The Nodelet for the face detector in the ipa_PeopleDetector namespace.
+    </description>
+  </class>
+</library>
+
+<library path="ros/lib/libpeople_detector">
   <class name="ipa_PeopleDetector/cobPeopleDetectionNodelet"
          type="ipa_PeopleDetector::cobPeopleDetectionNodelet"
          base_class_type="nodelet::Nodelet">
     <description> 
-      The Nodelet for the face detector in the ipa_PeopleDetector namespace.
+      The Nodelet for the people detector in the ipa_PeopleDetector namespace.
     </description>
   </class>
 </library>

@@ -1,0 +1,11 @@
+# Enables or disables the continuous recognition process (filter mode: receives input data, ouput face data)
+#
+# goal message
+bool running          # if true, the continuous detection is started or continued, on false detection is stopped
+bool doRecognition    # if true, do the recognition after detection, otherwise just detect faces
+bool display          # if true, the face detection and recognition results are displayed
+---
+# result message
+uint64 success        # is ipa_Utils::RET_OK if everything went well
+---
+# feedback message

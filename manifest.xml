@@ -1,6 +1,8 @@
 <package>
   <description brief="cob_people_detection">
     Face detection in images.
+
+    openni_tracker broadcasts the OpenNI skeleton frames using tf.
   </description>
   <author>Richard Bormann</author>
   <license>Fraunhofer IPA</license>
@@ -8,10 +10,11 @@
   <url>http://ros.org/wiki/cob_people_detection</url>
 
 <depend package="roscpp"/>
+<depend package="roslib"/>
 <depend package="std_msgs"/>
 <depend package="geometry_msgs"/>
 <depend package="std_srvs"/>
-<depend package="opencv2"/>
+<depend package="cob_opencv2"/>
 <depend package="cv_bridge"/>
 <depend package="stereo_msgs"/>
 <depend package="sensor_msgs"/>
@@ -25,6 +28,10 @@
 <depend package="pcl"/>
 <depend package="pcl_ros"/>
 <depend package="nodelet"/>
+<depend package="openni"/>
+<depend package="nite"/>
+<depend package="kdl"/>
+<depend package="cob_msgs"/>
 <depend package="cob_camera_sensors"/>
 <depend package="cob_vision_utils"/>
 <depend package="cob_sensor_fusion"/>
