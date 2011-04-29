@@ -31,8 +31,8 @@
   <node name="image_view2" pkg="image_view" type="image_view" respawn="false" output="screen">
     <remap from="image" to="/cob_people_detection/people_detection_image"/>
   </node>
-  <node name="image_view3" pkg="image_view" type="image_view" respawn="false" output="screen">
+  <!-- <node name="image_view3" pkg="image_view" type="image_view" respawn="false" output="screen">
     <remap from="image" to="/cob_people_detection/openni_tracker/people_segmentation_image"/>
-  </node>
+  </node> -->
 
 </launch>
