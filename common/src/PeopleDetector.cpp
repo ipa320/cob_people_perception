@@ -18,7 +18,7 @@ unsigned long PeopleDetector::Init(std::string directory)
 {	
 	// Load Haar-Classifier for frontal face-, eyes- and body-detection
 	std::string faceCascadePath = directory + "haarcascades/haarcascade_frontalface_alt2.xml";
-	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range.xml";
+	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg.xml";	// + "haarcascades/haarcascade_range.xml";
 	m_face_cascade = (CvHaarClassifierCascade*)cvLoad(faceCascadePath.c_str(), 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
 	m_range_cascade = (CvHaarClassifierCascade*)cvLoad(rangeCascadePath.c_str(), 0, 0, 0 );
 
@@ -310,8 +310,8 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 		double distance = cv::norm((temp-avgImage), srcReconstruction, cv::NORM_L2);
 
 		//######################################## Only for debugging and development ########################################
-		/*std::cout.precision( 10 );
-		std::cout << "FS_Distance: " << distance << std::endl;*/
+		//std::cout.precision( 10 );
+		std::cout << "FS_Distance: " << distance << std::endl;
 		//######################################## /Only for debugging and development ########################################
 
 		// -2=distance to face space is too high
@@ -352,11 +352,11 @@ unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *neare
 			//distance += d*d;							//Euklid
 			distance += d*d / ((float*)(eigenValMat.data))[e];	//Mahalanobis
 		}
-		//distance = sqrt(distance);
+		distance = sqrt(distance);
 
 		//######################################## Only for debugging and development ########################################
-		/*std::cout.precision( 10 );
-		std::cout << "Distance_FC: " << distance << std::endl;*/
+		//std::cout.precision( 10 );
+		std::cout << "Distance_FC: " << distance << std::endl;
 		//######################################## /Only for debugging and development ########################################
 
 		if(distance < leastDistSq)

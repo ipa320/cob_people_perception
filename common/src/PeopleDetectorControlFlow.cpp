@@ -61,7 +61,8 @@ unsigned long PeopleDetectorControlFlow::DetectFaces(ipa_SensorFusion::ColoredPo
 	cv::Mat xyzImage_8U3;
 	ipa_Utils::ConvertToShowImage(pc->GetXYZImage(), xyzImage_8U3, 3);
 
-	if (m_PeopleDetector->DetectFaces(pc->GetColorImage(), xyzImage_8U3, m_colorFaces, m_rangeFaces, (m_RangeImagingCameraType==ipa_CameraSensors::CAM_KINECT)) & ipa_Utils::RET_FAILED)
+	std::set<size_t> colorToRangeDependency;
+	if (m_PeopleDetector->DetectFaces(pc->GetColorImage(), xyzImage_8U3, m_colorFaces, m_rangeFaces, colorToRangeDependency, false/*(m_RangeImagingCameraType==ipa_CameraSensors::CAM_KINECT)*/) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::DetectFaces" << std::endl;
 		std::cerr << "\t ... Could not detect faces.\n";
@@ -103,10 +104,10 @@ unsigned long PeopleDetectorControlFlow::PCA()
 	}
 
 	// Delete memory
-	m_eigenVectArr.clear();
+	m_eigenVectors.clear();
 
 	// Do PCA
-	if (m_PeopleDetector->PCA(&m_nEigens, m_eigenVectArr, m_eigenValMat, m_avgImage, m_faceImages, m_projectedTrainFaceMat) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->PCA(&m_nEigens, m_eigenVectors, m_eigenValMat, m_avgImage, m_faceImages, m_projectedTrainFaceMat) & ipa_Utils::RET_FAILED)
 	{	
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while PCA.\n";
@@ -128,7 +129,7 @@ unsigned long PeopleDetectorControlFlow::PCA()
 
 unsigned long PeopleDetectorControlFlow::RecognizeFace(ipa_SensorFusion::ColoredPointCloudPtr pc, std::vector<int>& index)
 {
-	if (m_PeopleDetector->RecognizeFace(pc->GetColorImage(), m_colorFaces, &m_nEigens, m_eigenVectArr, m_avgImage, m_faceClassAvgProjections, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
+	if (m_PeopleDetector->RecognizeFace(pc->GetColorImage(), m_colorFaces, &m_nEigens, m_eigenVectors, m_avgImage, m_faceClassAvgProjections, index, &m_threshold, &m_threshold_FS, m_eigenValMat) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::RecognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";
@@ -167,7 +168,7 @@ unsigned long PeopleDetectorControlFlow::SaveTrainingData()
 	}
 
 	// Ids
-	fileStorage << "id_num" << m_id.size();
+	fileStorage << "id_num" << (int)m_id.size();
 	for(int i=0; i<(int)m_id.size(); i++)
 	{
 		std::ostringstream tag;
@@ -176,7 +177,7 @@ unsigned long PeopleDetectorControlFlow::SaveTrainingData()
 	}
 
 	// Face images
-	fileStorage << "faces_num" << m_faceImages.size();
+	fileStorage << "faces_num" << (int)m_faceImages.size();
 	for(int i=0; i<(int)m_faceImages.size(); i++)
 	{
 		std::ostringstream img;
@@ -316,7 +317,7 @@ unsigned long PeopleDetectorControlFlow::LoadTrainingData()
 		std::cout << "INFO - PeopleDetectorControlFlow::LoadTrainingData:" << std::endl;
 		std::cout << "\t ... " << faces_num << " images loaded.\n";
 		
-		cvReleaseFileStorage(&fileStorage);
+		//cvReleaseFileStorage(&fileStorage);
 	}
 	else
 	{
@@ -332,7 +333,7 @@ unsigned long PeopleDetectorControlFlow::LoadTrainingData()
 unsigned long PeopleDetectorControlFlow::GetEigenface(cv::Mat& eigenface, int index)
 {
 	//eigenface.create(100, 100, CV_8UC1);
-	cv::normalize(m_eigenVectArr[index], eigenface, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	cv::normalize(m_eigenVectors[index], eigenface, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 
 	
 	// Get the Eigenface Raw data

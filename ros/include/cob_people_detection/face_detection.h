@@ -135,12 +135,13 @@ typedef actionlib::SimpleActionServer<cob_people_detection::ShowAction> ShowServ
 
 //####################
 //#### node class ####
-class cobFaceDetectionNodelet : public nodelet::Nodelet
+class CobFaceDetectionNodelet : public nodelet::Nodelet
 {
 protected:
 	message_filters::Subscriber<sensor_msgs::PointCloud2> shared_image_sub_;	///< Shared xyz image and color image topic
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter color_camera_image_sub_;	///< Color camera image topic
+	image_transport::Publisher face_detection_image_pub_;	///< topic for publishing the image containing the faces
 	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >* sync_pointcloud_;
 	message_filters::Connection sync_pointcloud_callback_connection_;
 	ros::Publisher face_position_publisher_;		///< publisher for the positions of the detected faces
@@ -149,45 +150,45 @@ protected:
 
 	ipa_SensorFusion::ColoredPointCloudPtr colored_pc_; ///< Storage for acquired colored point cloud
 
-	std::string m_directory;					///< directory for the data files
-	bool m_runPCA;								///< has to run a PCA when the data was modified
-	int m_filename;								///< increasing number for files to save
+	std::string directory_;					///< directory for the data files
+	bool run_pca_;								///< has to run a PCA when the data was modified
+	int filename_;								///< increasing number for files to save
 
-	std::vector<cv::Mat> m_faceImages;			///< Trained face images
-	std::vector<std::string> m_id;				///< Id of learned faces
-	std::vector<std::string> m_idUnique;		///< A vector containing all different Ids from the training session exactly once (m_idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in m_faceClassAvgProjections.row(i))
+	std::vector<cv::Mat> face_images_;			///< Trained face images
+	std::vector<std::string> id_;				///< Id of learned faces
+	std::vector<std::string> id_unique_;		///< A vector containing all different Ids from the training session exactly once (id_unique_[i] stores the corresponding id to the average face coordinates in the face subspace in face_class_avg_projections_.row(i))
 
-	int m_nEigens;								///< Number of eigenvalues
-	std::vector<cv::Mat> m_eigenVectors;		///< Eigenvectors (spanning the face space)
-	cv::Mat m_eigenValMat;						///< Eigenvalues
-	cv::Mat m_avgImage;							///< Trained average Image
-	cv::Mat m_projectedTrainFaceMat;			///< Projected training faces (coefficients for the eigenvectors of the face subspace)
-	cv::Mat m_faceClassAvgProjections;			///< The average factors of the eigenvector decomposition from each face class
+	int n_eigens_;								///< Number of eigenvalues
+	std::vector<cv::Mat> eigen_vectors_;		///< Eigenvectors (spanning the face space)
+	cv::Mat eigen_val_mat_;						///< Eigenvalues
+	cv::Mat avg_image_;							///< Trained average Image
+	cv::Mat projected_train_face_mat_;			///< Projected training faces (coefficients for the eigenvectors of the face subspace)
+	cv::Mat face_class_avg_projections_;			///< The average factors of the eigenvector decomposition from each face class
 
-	PeopleDetector* m_peopleDetector;			///< People detector core code
-	int m_threshold;							///< Threshold to detect unknown faces
-	int m_threshold_FS;							///< Threshold to facespace
-	std::vector<cv::Rect> m_colorFaces;			///< Vector with detected faces
-	std::vector<cv::Rect> m_rangeFaces;			///< Vector with detected rangeFaces
-	std::set<size_t> m_rangeFaceIndicesWithColorFaceDetection;	///< this set stores which range faces also had a face detection in the color image
+	PeopleDetector* people_detector_;			///< People detector core code
+	int threshold_;								///< Threshold to detect unknown faces
+	int threshold_fs_;							///< Threshold to facespace
+	std::vector<cv::Rect> color_faces_;			///< Vector with detected faces
+	std::vector<cv::Rect> range_faces_;			///< Vector with detected rangeFaces
+	std::set<size_t> range_face_indices_with_color_face_detection_;	///< this set stores which range faces also had a face detection in the color image
 
 	// Actions
-	TrainContinuousServer* m_trainContinuousServer;
-	TrainCaptureSampleServer* m_trainCaptureSampleServer;
-	RecognizeServer* m_recognizeServer;
-	LoadServer* m_loadServer;
-	SaveServer* m_saveServer;
-	ShowServer* m_showServer;
-	bool m_occupiedByAction;					///< must be set true as long as an action callback is running or while the continuous recognition or training mode is running
-	bool m_recognizeServerRunning;				///< is true while the recognition module is running
-	bool m_trainContinuousServerRunning;		///< is true while the continuous training display is running
-	bool m_captureTrainingFace;					///< can be set true by an action while in training mode. then an image is captured.
-//	bool m_turnOffRecognition;					///< is set true on quit request during recognition mode
-	bool m_doRecognition;						///< does people identification if true, else it's just people detection
-	bool m_display;								///< enables debug output
+	TrainContinuousServer* train_continuous_server_;
+	TrainCaptureSampleServer* train_capture_sample_server_;
+	RecognizeServer* recognize_server_;
+	LoadServer* load_server_;
+	SaveServer* save_server_;
+	ShowServer* show_server_;
+	bool occupied_by_action_;					///< must be set true as long as an action callback is running or while the continuous recognition or training mode is running
+	bool recognize_server_running_;				///< is true while the recognition module is running
+	bool train_continuous_server_running_;		///< is true while the continuous training display is running
+	bool capture_training_face_;				///< can be set true by an action while in training mode. then an image is captured.
+//	bool turn_off_recognition_;					///< is set true on quit request during recognition mode
+	bool do_recognition_;						///< does people identification if true, else it's just people detection
+	bool display_;								///< enables debug output
 
-	std::string m_currentTrainingID;			///< the ID of the current person who is trained
-	boost::timed_mutex m_actionMutex;			///< secures write and read operations to varibales m_occupiedByAction, etc.
+	std::string current_training_id_;			///< the ID of the current person who is trained
+	boost::timed_mutex action_mutex_;			///< secures write and read operations to varibales occupied_by_action_, etc.
 
 	// constants
 	static const double FACE_SIZE_MIN_M = 0.12;
@@ -195,17 +196,17 @@ protected:
 	static const double MAX_FACE_Z_M = 8.0;
 
 	// parameters
-	double m_faceSizeMinM;		///< in meters
-	double m_faceSizeMaxM;		///< in meters
-	double m_maxFaceZM;			///< in meters
-	bool m_fillUnassignedDepthValues;	///< fills the unassigned depth values in the depth image, must be true for a kinect sensor
+	double face_size_min_m_;		///< in meters
+	double face_size_max_m_;		///< in meters
+	double max_face_z_m_;			///< in meters
+	bool fill_unassigned_depth_values_;	///< fills the unassigned depth values in the depth image, must be true for a kinect sensor
 	bool reason_about_3dface_size_;		///< if true, the 3d face size is determined and only faces with reasonable size are accepted
 
 public:
 
-	cobFaceDetectionNodelet();
+	CobFaceDetectionNodelet();
 
-	~cobFaceDetectionNodelet();
+	~CobFaceDetectionNodelet();
 
 	/// Nodelet init function
 	void onInit();
