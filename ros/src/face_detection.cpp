@@ -1034,6 +1034,8 @@ inline std::string CobFaceDetectionNodelet::getLabel(int index)
 	}
 }
 
+inline int abs(int x) { return ((x<0) ? -x : x); }
+
 void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
 	// check if this is a training call
@@ -1110,10 +1112,26 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 			float center2Dx = face.x + face.width*0.5f;
 			float center2Dy = face.y + face.height*0.5f;
 
-			// 3D world coordinates
-			cv::Point3f p = depth_image.at<cv::Point3f>(center2Dy, center2Dx);
+			// 3D world coordinates (and verify that the read pixel contained valid coordinates, otherwise search for valid pixel in neighborhood)
 			geometry_msgs::Point* point = &(det.pose.pose.position);
-			point->x = p.x; point->y=p.y; point->z=p.z;
+			cv::Point3f p;
+			bool validCoordinates = false;
+			for (int d=0; (d<6 && !validCoordinates); d++)
+			{
+				for (int v=-d; (v<=d && !validCoordinates); v++)
+				{
+					for (int u=-d; (u<=d && !validCoordinates); u++)
+					{
+						if (abs(v)!=d && abs(u)!=d) continue;
+
+						p = depth_image.at<cv::Point3f>(center2Dy+v, center2Dx+u);
+						point->x = p.x; point->y=p.y; point->z=p.z;
+
+						if (!isnan(point->x) && !isnan(point->y) && point->z!=0.f) validCoordinates = true;
+					}
+				}
+			}
+			if (validCoordinates==false) continue;
 
 			// person ID
 			det.label="UnknownRange";
@@ -1138,9 +1156,30 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 		float center2Dy = face.y + face.height*0.5f;
 
 		// 3D world coordinates
-		cv::Point3f p = depth_image.at<cv::Point3f>(center2Dy, center2Dx);
+//		cv::Point3f p = depth_image.at<cv::Point3f>(center2Dy, center2Dx);
+//		geometry_msgs::Point* point = &(det.pose.pose.position);
+//		point->x = p.x; point->y=p.y; point->z=p.z;
+
+		// 3D world coordinates (and verify that the read pixel contained valid coordinates, otherwise search for valid pixel in neighborhood)
 		geometry_msgs::Point* point = &(det.pose.pose.position);
-		point->x = p.x; point->y=p.y; point->z=p.z;
+		cv::Point3f p;
+		bool validCoordinates = false;
+		for (int d=0; (d<6 && !validCoordinates); d++)
+		{
+			for (int v=-d; (v<=d && !validCoordinates); v++)
+			{
+				for (int u=-d; (u<=d && !validCoordinates); u++)
+				{
+					if (abs(v)!=d && abs(u)!=d) continue;
+
+					p = depth_image.at<cv::Point3f>(center2Dy+v, center2Dx+u);
+					point->x = p.x; point->y=p.y; point->z=p.z;
+
+					if (!isnan(point->x) && !isnan(point->y) && point->z!=0.f) validCoordinates = true;
+				}
+			}
+		}
+		if (validCoordinates==false) continue;
 
 		// person ID
 		det.label = getLabel(index[i]);
