@@ -108,6 +108,8 @@ void CobFaceDetectionNodelet::onInit()
 
 	recognize_server_ = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&CobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
 	recognize_server_->start();
+        
+        recognize_service_server_ = node_handle_.advertiseService("recognize_service_server", &CobFaceDetectionNodelet::recognizeServerCallback, this);
 
 	train_continuous_server_ = new TrainContinuousServer(node_handle_, "train_continuous_server", boost::bind(&CobFaceDetectionNodelet::trainContinuousServerCallback, this, _1), false);
 	train_continuous_server_->start();
