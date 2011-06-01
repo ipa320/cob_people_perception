@@ -206,24 +206,23 @@ bool CobFaceDetectionNodelet::recognizeServiceServerCallback(cob_people_detectio
                 // another action is running at the moment, first the other action has to finish or to be stopped before this action can run
                 std::cerr << "ERROR - PeopleDetector::recognizeServerCallback:" << std::endl;
                 std::cerr << "\t ... Another action is running at the moment. The other action has to finish or to be stopped before this action can run.\n";
-                result.success = ipa_Utils::RET_FAILED;
-                recognize_server_->setSucceeded(result, "Some other action is handled at the moment.");
+                res.success = ipa_Utils::RET_FAILED;
                 return false;
         }
 
-        // read out goal message
+        // read out req message
         // set up the recognition callback linkage
         if (req.running == true)
         {
                 // enable recognition
                 occupied_by_action_ = true;
                 recognize_server_running_ = true;
-                do_recognition_ = goal.doRecognition;
-                display_ = goal.display;
+                do_recognition_ = req.doRecognition;
+                display_ = req.display;
                 //cv::namedWindow("Face Detector");
                 //cv::waitKey(1);
                 //sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
-                //sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&CobFaceDetectionNodelet::recognizeCallback, this, _1, _2, goal->doRecognition, goal->display));
+                //sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&CobFaceDetectionNodelet::recognizeCallback, this, _1, _2, req->doRecognition, req->display));
         }
         else
         {
@@ -232,7 +231,7 @@ bool CobFaceDetectionNodelet::recognizeServiceServerCallback(cob_people_detectio
                 recognize_server_running_ = false;
         }
 
-        result.success = ipa_Utils::RET_OK;
+        res.success = ipa_Utils::RET_OK;
         return true;
 }
 
