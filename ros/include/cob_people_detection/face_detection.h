@@ -172,6 +172,9 @@ protected:
 	std::vector<cv::Rect> range_faces_;			///< Vector with detected rangeFaces
 	std::set<size_t> range_face_indices_with_color_face_detection_;	///< this set stores which range faces also had a face detection in the color image
 
+        // Services
+        ros::ServiceServer recognize_service_server_; ///< Service server to switch recognition on or off
+
 	// Actions
 	TrainContinuousServer* train_continuous_server_;
 	TrainCaptureSampleServer* train_capture_sample_server_;
