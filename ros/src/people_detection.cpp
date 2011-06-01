@@ -539,7 +539,7 @@ public:
 					if (display_) std::cout << "\n***** New detection *****\n\n";
 					cob_msgs::Detection det_out;
 					copyDetection(*det_in, det_out, false);
-					det_out.pose.header.frame_id = "head_tof_link";
+					det_out.pose.header.frame_id = "head_cam3d_link";
 					face_position_accumulator_.push_back(det_out);
 					// remember label history
 					std::map<std::string, double> new_identification_data;
