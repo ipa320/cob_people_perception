@@ -108,6 +108,8 @@ void CobFaceDetectionNodelet::onInit()
 
 	recognize_server_ = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&CobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
 	recognize_server_->start();
+        
+        recognize_service_server_ = node_handle_.advertiseService("recognize_service_server", &CobFaceDetectionNodelet::recognizeServiceServerCallback, this);
 
 	train_continuous_server_ = new TrainContinuousServer(node_handle_, "train_continuous_server", boost::bind(&CobFaceDetectionNodelet::trainContinuousServerCallback, this, _1), false);
 	train_continuous_server_->start();
@@ -192,6 +194,45 @@ unsigned long CobFaceDetectionNodelet::init()
 	run_pca_ = false;
 
 	return ipa_Utils::RET_OK;
+}
+
+bool CobFaceDetectionNodelet::recognizeServiceServerCallback(cob_people_detection::Recognition::Request &req, cob_people_detection::Recognition::Response &res)
+{
+        // secure this section with a mutex
+        boost::timed_mutex::scoped_timed_lock lock(action_mutex_, boost::posix_time::milliseconds(2000));
+
+        if (lock.owns_lock() == false || (occupied_by_action_ == true && recognize_server_running_ == false))
+        {
+                // another action is running at the moment, first the other action has to finish or to be stopped before this action can run
+                std::cerr << "ERROR - PeopleDetector::recognizeServerCallback:" << std::endl;
+                std::cerr << "\t ... Another action is running at the moment. The other action has to finish or to be stopped before this action can run.\n";
+                res.success = ipa_Utils::RET_FAILED;
+                return false;
+        }
+
+        // read out req message
+        // set up the recognition callback linkage
+        if (req.running == true)
+        {
+                // enable recognition
+                occupied_by_action_ = true;
+                recognize_server_running_ = true;
+                do_recognition_ = req.doRecognition;
+                display_ = req.display;
+                //cv::namedWindow("Face Detector");
+                //cv::waitKey(1);
+                //sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
+                //sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&CobFaceDetectionNodelet::recognizeCallback, this, _1, _2, req->doRecognition, req->display));
+        }
+        else
+        {
+                // disable recognition
+                occupied_by_action_ = false;
+                recognize_server_running_ = false;
+        }
+
+        res.success = ipa_Utils::RET_OK;
+        return true;
 }
 
 void CobFaceDetectionNodelet::recognizeServerCallback(const cob_people_detection::RecognizeGoalConstPtr& goal)

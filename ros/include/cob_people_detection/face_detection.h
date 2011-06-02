@@ -82,6 +82,9 @@
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 
+// services
+#include <cob_people_detection/Recognition.h>
+
 // actions
 #include <actionlib/server/simple_action_server.h>
 #include <cob_people_detection/TrainContinuousAction.h>
@@ -171,6 +174,9 @@ protected:
 	std::vector<cv::Rect> color_faces_;			///< Vector with detected faces
 	std::vector<cv::Rect> range_faces_;			///< Vector with detected rangeFaces
 	std::set<size_t> range_face_indices_with_color_face_detection_;	///< this set stores which range faces also had a face detection in the color image
+
+        // Services
+        ros::ServiceServer recognize_service_server_; ///< Service server to switch recognition on or off
 
 	// Actions
 	TrainContinuousServer* train_continuous_server_;
@@ -287,6 +293,9 @@ public:
 	/// Topic callback managing the treatment of incoming data.
 	void recognizeCallback(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
 
+        
+        bool recognizeServiceServerCallback(cob_people_detection::Recognition::Request &req, cob_people_detection::Recognition::Response &res);
+        
 	/// Action server callback which manages the execution of the recognition functionality
 	void recognizeServerCallback(const cob_people_detection::RecognizeGoalConstPtr& goal);
 
