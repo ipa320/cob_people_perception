@@ -1,4 +1,4 @@
-<!-- Object Detector Initialization file -->
+<!-- People Detector Initialization file -->
 
 <CameraSensors>
 	<!-- Specifies the color camera -->
@@ -41,7 +41,7 @@
 		<Range_increase_search_scale value="1.1" />
 		<!-- Minimum number (minus 1) of neighbor rectangles that makes up an object --> 
 		<!-- <Range_drop_groups value="70" /> -->
-		<Range_drop_groups value="68" />
+		<Range_drop_groups value="20" /><!--68-->
 		<!-- Minimum serach scale x --> 
 		<!-- <Range_min_search_scale_x value="20" /> -->
 		<Range_min_search_scale_x value="20" />

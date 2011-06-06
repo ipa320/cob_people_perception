@@ -8,25 +8,25 @@
   <!-- <node pkg="nodelet" type="nodelet" name="nodelet_manager"  args="manager" output="screen"/> -->
 
   <!-- kinect image flip nodelet - flips kinect images if robot is looking backwards -->
-  <node pkg="nodelet" ns="cob_camera_sensors/kinect" type="nodelet" name="CobKinectImageFlipNodelet" args="load ipa_CameraSensors/CobKinectImageFlipNodelet /nodelet_manager" output="screen">
-    <remap from="pointcloud" to="/camera/depth/points"/>
-    <remap from="colorimage" to="/camera/rgb/image_color"/>
+  <node pkg="nodelet" ns="cam3d" type="nodelet" name="CobKinectImageFlipNodelet" args="load ipa_CameraSensors/CobKinectImageFlipNodelet /nodelet_manager_people_detection" output="screen">
+    <remap from="pointcloud" to="/cam3d/depth/points"/>
+    <remap from="colorimage" to="/cam3d/rgb/image_color"/>
   </node>
 
   <!-- face detection and recognition nodelet (detects faces in range and color image and publishes their positions) -->
   <rosparam command="load" ns="cob_people_detection/face_detection" file="$(find cob_people_detection)/ros/launch/face_detection_params.yaml"/>
-  <node pkg="nodelet" ns="cob_people_detection/face_detection" type="nodelet" name="CobFaceDetectionNodelet" args="load ipa_PeopleDetector/CobFaceDetectionNodelet /nodelet_manager" output="screen">
-    <remap from="pointcloud" to="/cob_camera_sensors/kinect/points"/>
-    <remap from="colorimage" to="/cob_camera_sensors/kinect/image_color"/>
+  <node pkg="nodelet" ns="cob_people_detection/face_detection" type="nodelet" name="CobFaceDetectionNodelet" args="load ipa_PeopleDetector/CobFaceDetectionNodelet /nodelet_manager_people_detection" output="screen">
+    <remap from="pointcloud" to="/cam3d/depth/upright/points"/>
+    <remap from="colorimage" to="/cam3d/rgb/upright/image_color"/>
 	
     <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/windows/"/>
   </node>
 
   <!-- People detection and tracking nodelet (fuses results from face detection/recognition and people segmentation, basic tracking functions) -->
   <rosparam command="load" ns="cob_people_detection" file="$(find cob_people_detection)/ros/launch/people_detection_params.yaml"/>
-  <node pkg="nodelet" ns="cob_people_detection" type="nodelet" name="CobPeopleDetectionNodelet" args="load ipa_PeopleDetector/CobPeopleDetectionNodelet /nodelet_manager" output="screen" >
+  <node pkg="nodelet" ns="cob_people_detection" type="nodelet" name="CobPeopleDetectionNodelet" args="load ipa_PeopleDetector/CobPeopleDetectionNodelet /nodelet_manager_people_detection" output="screen" >
     <remap from="people_segmentation_image" to="/cob_people_detection/openni_tracker/people_segmentation_image"/>
-    <remap from="colorimage" to="/cob_camera_sensors/kinect/image_color"/>
+    <remap from="colorimage" to="/cam3d/rgb/upright/image_color"/>
     <remap from="face_position_array_in" to="/cob_people_detection/face_detection/face_position_array"/>
   </node>
 
