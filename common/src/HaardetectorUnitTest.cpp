@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
 	}
 
 	// try different parameter settings
+	peopleDetector.m_range_drop_groups;
 #ifndef __DEBUG__
 	int* parameter = 0;
 	if (detectorMode == 0)
@@ -129,6 +130,15 @@ int main(int argc, char *argv[])
 			if (imageFilename=="") break;
 			imageFilename = testDataDirectory + imageFilename;
 			cv::Mat img = cv::imread(imageFilename, -1);
+
+			//for (int v=0; v<img.rows; v++)
+			//{
+			//	for (int u=0; u<img.cols; u++)
+			//	{
+			//		if (img.at<uchar>(v,u) == 0) img.at<uchar>(v,u) = 255;
+			//	}
+			//}
+
 	#ifdef __DEBUG__
 			cv::Mat dispImg;
 			cv::cvtColor(img, dispImg, CV_GRAY2BGR, 3);
