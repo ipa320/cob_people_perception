@@ -80,6 +80,7 @@ CobFaceDetectionNodelet::CobFaceDetectionNodelet()
 	occupied_by_action_ = false;
 	recognize_server_running_ = false;
 	train_continuous_server_running_ = false;
+	number_training_images_captured_ = 0;
 	do_recognition_ = true;
 	display_ = false;
 	directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";	// can be changed by a parameter
@@ -324,6 +325,23 @@ void CobFaceDetectionNodelet::trainContinuousServerCallback(const cob_people_det
 		//sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
 		//sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&CobFaceDetectionNodelet::trainContinuousCallback, this, _1, _2));
 		std::cout << "train run...\n";
+
+		// check whether the continuous mode was enabled or if the image capture is manually triggered
+		// todo
+		if (false)
+		{
+			lock.unlock();
+			int numberOfImagesToCapture = 30;
+			number_training_images_captured_ = 0;
+			bool capture = true;
+			while (capture)
+			{
+				boost::timed_mutex::scoped_timed_lock lock(action_mutex_, boost::posix_time::milliseconds(10));
+				if (lock.owns_lock() && capture_training_face_ == false)
+					capture_training_face_ == true;
+				capture = (number_training_images_captured_<numberOfImagesToCapture);
+			}
+		}
 	}
 	else
 	{
@@ -1370,6 +1388,7 @@ void CobFaceDetectionNodelet::trainContinuousCallback(const sensor_msgs::PointCl
 		}
 
 		addFace(colored_pc_->GetColorImage(), current_training_id_);
+		number_training_images_captured_++;
 		std::cout << "INFO - CuiPeopleDetector::ConsoleGUI:" << std::endl;
 		std::cout << "\t ... Face captured (" << face_images_.size() << ")." << std::endl;
 	}
