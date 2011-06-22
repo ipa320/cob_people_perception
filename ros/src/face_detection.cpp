@@ -327,11 +327,9 @@ void CobFaceDetectionNodelet::trainContinuousServerCallback(const cob_people_det
 		std::cout << "train run...\n";
 
 		// check whether the continuous mode was enabled or if the image capture is manually triggered
-		// todo
-		if (false)
+		if (goal->numberOfImagesToCapture > 0)
 		{
 			lock.unlock();
-			int numberOfImagesToCapture = 30;
 			number_training_images_captured_ = 0;
 			bool capture = true;
 			while (capture)
@@ -339,7 +337,24 @@ void CobFaceDetectionNodelet::trainContinuousServerCallback(const cob_people_det
 				boost::timed_mutex::scoped_timed_lock lock(action_mutex_, boost::posix_time::milliseconds(10));
 				if (lock.owns_lock() && capture_training_face_ == false)
 					capture_training_face_ == true;
-				capture = (number_training_images_captured_<numberOfImagesToCapture);
+				capture = (number_training_images_captured_<goal->numberOfImagesToCapture);
+			}
+
+			// turn off training mode
+			std::cout << "train off...\n";
+
+			// disable training
+			occupied_by_action_ = false;
+			train_continuous_server_running_ = false;
+
+			// save images
+			saveTrainingData();
+
+			// do data analysis if enabled
+			if (goal->doPCA)
+			{
+				PCA();
+				saveRecognizerData();
 			}
 		}
 	}
