@@ -212,6 +212,7 @@ unsigned long CuiPeopleDetector::Recognize()
 			std::vector<int> index;
 			m_DetectorControlFlow->RecognizeFace(pc, index);
 			std::cout << "INFO - CuiPeopleDetector::Recognize:" << std::endl;
+			//std::cout << "WARNING: Recognition deactivated in code!\n";
 			//for (int i=0; i<(int)m_DetectorControlFlow->m_colorFaces.size(); i++) index.push_back(-1);
 			//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
 
