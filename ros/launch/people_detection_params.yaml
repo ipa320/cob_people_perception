@@ -4,7 +4,7 @@ display: true
 
 # timespan during which a face is preserved in the list of tracked faces although it is currently not visible
 # double
-face_redetection_time: 2.0
+face_redetection_time: 5.0
 
 # the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker)
 # double
