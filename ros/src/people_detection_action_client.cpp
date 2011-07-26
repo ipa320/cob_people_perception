@@ -54,9 +54,6 @@
 //##################
 //#### includes ####
 
-// standard includes
-//--
-
 // ROS includes
 #include <ros/ros.h>
 
@@ -67,6 +64,26 @@
 #include <cob_people_detection/ShowAction.h>
 #include <actionlib/client/simple_action_client.h>
 
+// standard includes
+#ifdef __LINUX__
+	#include <termios.h>
+
+    int getch();
+
+    int getch()
+    {
+       static int ch = -1, fd = 0;
+       struct termios neu, alt;
+       fd = fileno(stdin);
+       tcgetattr(fd, &alt);
+       neu = alt;
+       neu.c_lflag &= ~(ICANON|ECHO);
+       tcsetattr(fd, TCSANOW, &neu);
+       ch = getchar();
+       tcsetattr(fd, TCSANOW, &alt);
+       return ch;
+    }
+#endif
 
 //####################
 //#### node class ####
@@ -97,7 +114,7 @@ void train(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClien
 
 	std::cout << "Hit 'q' key to quit or 'c' key to capture an image.\n";
 	char key;
-	while ((key=getchar()) != 'q')
+	while ((key=getch()) != 'q')
 	{
 		if (key == 'c')
 		{
@@ -132,7 +149,7 @@ void recognize(RecognizeClient& recognizeClient)
 	printf("Current State: %s\n", recognizeClient.getState().toString().c_str());
 
 	std::cout << "hit any key to quit.\n";
-	getchar();
+	getch();
 
 	goal.running = false;
 	recognizeClient.sendGoal(goal);
@@ -189,7 +206,7 @@ int main(int argc, char** argv)
 	do
 	{
 		std::cout << "\n\nChoose an option:\n1 - train\n2 - recognize\n3 - Show average image\n4 - Show Eigenfaces\nq - Quit\n\n";
-		key = getchar(); getchar();
+		key = getch();
 		if (key == '1') train(trainContinuousClient, trainCaptureSampleClient);
 		else if (key == '2') recognize(recognizeClient);
 		else if (key == '3') show(showClient, 0);
