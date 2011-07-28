@@ -175,8 +175,8 @@ protected:
 	std::vector<cv::Rect> range_faces_;			///< Vector with detected rangeFaces
 	std::set<size_t> range_face_indices_with_color_face_detection_;	///< this set stores which range faces also had a face detection in the color image
 
-        // Services
-        ros::ServiceServer recognize_service_server_; ///< Service server to switch recognition on or off
+	// Services
+	ros::ServiceServer recognize_service_server_; ///< Service server to switch recognition on or off
 
 	// Actions
 	TrainContinuousServer* train_continuous_server_;
@@ -189,6 +189,7 @@ protected:
 	bool recognize_server_running_;				///< is true while the recognition module is running
 	bool train_continuous_server_running_;		///< is true while the continuous training display is running
 	bool capture_training_face_;				///< can be set true by an action while in training mode. then an image is captured.
+	int number_training_images_captured_;		///< if the training is in continuous mode, this variable counts how many training images already have been collected for the current training job
 //	bool turn_off_recognition_;					///< is set true on quit request during recognition mode
 	bool do_recognition_;						///< does people identification if true, else it's just people detection
 	bool display_;								///< enables debug output
@@ -318,3 +319,4 @@ public:
 };
 
 #endif // _FACE_DETECTION_
+

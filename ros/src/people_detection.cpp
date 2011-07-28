@@ -391,6 +391,33 @@ namespace ipa_PeopleDetector {
     }
     
     
+    unsigned long prepareFacePositionMessage(cob_msgs::DetectionArray& face_position_msg_out)
+    {
+        // publish face positions
+        std::vector<cob_msgs::Detection> faces_to_publish;
+        for (int i=0; i<(int)face_position_accumulator_.size(); i++)
+        {
+          if (display_) std::cout << "'UnknownRange' score: " << face_identification_votes_[i]["UnknownRange"] << " label '" << face_position_accumulator_[i].label << "' score: " << face_identification_votes_[i][face_position_accumulator_[i].label] << " - ";
+			if (face_identification_votes_[i][face_position_accumulator_[i].label]>min_face_identification_score_to_publish_ || face_identification_votes_[i]["UnknownRange"]>min_face_identification_score_to_publish_)
+			{
+				faces_to_publish.push_back(face_position_accumulator_[i]);
+				if (display_) std::cout << "published\n";
+			}
+			else if (display_) std::cout << "not published\n";
+        }
+        face_position_msg_out.detections = faces_to_publish;
+        // hack: for WimiCare replace 'Unknown' by '0000'
+        for (int i=0; i<(int)face_position_msg_out.detections.size(); i++)
+        {
+      	  if (face_position_msg_out.detections[i].label=="Unknown")
+      		  face_position_msg_out.detections[i].label = "0000";
+        }
+        face_position_msg_out.header.stamp = ros::Time::now();
+
+        return ipa_Utils::RET_OK;
+    }
+
+
     /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
     void inputCallback(const cob_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
     {
@@ -468,14 +495,13 @@ namespace ipa_PeopleDetector {
             face_detection_indices.push_back(i);
           }
         }
+		  if (display_) std::cout << "Verification with people segmentation done.\n";
       }
       else
       {
         for (unsigned int i=0; i<face_position_msg_in->detections.size(); i++)
           face_detection_indices.push_back(i);
       }
-      if (display_) std::cout << "Verification with people segmentation done.\n";
-      
       // match current detections with previous detections
       // build distance matrix
       std::map<int, std::map<int, double> > distance_matrix; // 1. index = face_position_accumulator_ index of previous detections, 2. index = index of current detections, content = spatial distance between the indexed faces
@@ -556,20 +582,28 @@ namespace ipa_PeopleDetector {
       removeMultipleInstancesOfLabel();
       
       // publish face positions
-      std::vector<cob_msgs::Detection> faces_to_publish;
+      cob_msgs::DetectionArray face_position_msg_out;
+/*      std::vector<cob_msgs::Detection> faces_to_publish;
       for (int i=0; i<(int)face_position_accumulator_.size(); i++)
       {
         if (display_) std::cout << "'UnknownRange' score: " << face_identification_votes_[i]["UnknownRange"] << " label '" << face_position_accumulator_[i].label << "' score: " << face_identification_votes_[i][face_position_accumulator_[i].label] << " - ";
-                                                       if (face_identification_votes_[i][face_position_accumulator_[i].label]>min_face_identification_score_to_publish_ || face_identification_votes_[i]["UnknownRange"]>min_face_identification_score_to_publish_)
-                                                       {
-                                                         faces_to_publish.push_back(face_position_accumulator_[i]);
-                                                         if (display_) std::cout << "published\n";
-                                                       }
-                                                       else if (display_) std::cout << "not published\n";
+		if (face_identification_votes_[i][face_position_accumulator_[i].label]>min_face_identification_score_to_publish_ || face_identification_votes_[i]["UnknownRange"]>min_face_identification_score_to_publish_)
+		{
+			faces_to_publish.push_back(face_position_accumulator_[i]);
+			if (display_) std::cout << "published\n";
+		}
+		else if (display_) std::cout << "not published\n";
       }
-      cob_msgs::DetectionArray face_position_msg_out;
       face_position_msg_out.detections = faces_to_publish;
+      // hack: for WimiCare replace 'Unknown' by '0000'
+      for (int i=0; i<(int)face_position_msg_out.detections.size(); i++)
+      {
+    	  if (face_position_msg_out.detections[i].label=="Unknown")
+    		  face_position_msg_out.detections[i].label = "0000";
+      }
       face_position_msg_out.header.stamp = ros::Time::now();
+      */
+      prepareFacePositionMessage(face_position_msg_out);
       face_position_publisher_.publish(face_position_msg_out);
       
       // display
@@ -581,27 +615,27 @@ namespace ipa_PeopleDetector {
         convertColorImageMessageToMat(color_image_msg, colorImagePtr, colorImage);
         
         // display color image
-        for(int i=0; i<(int)faces_to_publish.size(); i++)
+        for(int i=0; i<(int)face_position_msg_out.detections.size(); i++)
         {
           cv::Rect face;
-          cob_msgs::Rect& faceRect = faces_to_publish[i].mask.roi;
+          cob_msgs::Rect& faceRect = face_position_msg_out.detections[i].mask.roi;
           face.x = faceRect.x; face.width = faceRect.width;
           face.y = faceRect.y; face.height = faceRect.height;
           
-          if (faces_to_publish[i].detector == "range")
+          if (face_position_msg_out.detections[i].detector == "range")
             cv::rectangle(colorImage, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 0, 255), 2, 8, 0);
           else
             cv::rectangle(colorImage, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 255, 0), 2, 8, 0);
           
-          if (faces_to_publish[i].label == "Unknown")
+          if (face_position_msg_out.detections[i].label == "Unknown")
             // Distance to face class is too high
-          cv::putText(colorImage, "Unknown", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
-          else if (faces_to_publish[i].label == "No face")
+            cv::putText(colorImage, "Unknown", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
+          else if (face_position_msg_out.detections[i].label == "No face")
             // Distance to face space is too high
           cv::putText(colorImage, "No face", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
           else
             // Face classified
-            cv::putText(colorImage, faces_to_publish[i].label.c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
+            cv::putText(colorImage, face_position_msg_out.detections[i].label.c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
         }
         // publish image
         cv_bridge::CvImage cv_ptr;
@@ -618,10 +652,12 @@ namespace ipa_PeopleDetector {
       if (lock.owns_lock() == false)
       {
         ROS_ERROR("cob_people_detection::CobPeopleDetectionNodelet: Mutex was not freed during response time.");
-      return false;
+        return false;
       }
-      res.people_list.detections = face_position_accumulator_;
-      res.people_list.header.stamp = ros::Time::now();
+
+      prepareFacePositionMessage(res.people_list);
+      //res.people_list.detections = face_position_accumulator_;
+      //res.people_list.header.stamp = ros::Time::now();
       return true;
     }
   };
@@ -631,3 +667,4 @@ namespace ipa_PeopleDetector {
 PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, CobPeopleDetectionNodelet, ipa_PeopleDetector::CobPeopleDetectionNodelet, nodelet::Nodelet);
 
 #endif // _PEOPLE_DETECTION_
+
