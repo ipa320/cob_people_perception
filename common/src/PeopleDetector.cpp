@@ -18,7 +18,9 @@ unsigned long PeopleDetector::Init(std::string directory)
 {	
 	// Load Haar-Classifier for frontal face-, eyes- and body-detection
 	std::string faceCascadePath = directory + "haarcascades/haarcascade_frontalface_alt2.xml";
-	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg+.xml";	// + "haarcascades/haarcascade_range.xml";
+	// todo:
+	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg.xml";
+	//std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg+.xml";	// + "haarcascades/haarcascade_range.xml";
 	m_face_cascade = (CvHaarClassifierCascade*)cvLoad(faceCascadePath.c_str(), 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
 	m_range_cascade = (CvHaarClassifierCascade*)cvLoad(rangeCascadePath.c_str(), 0, 0, 0 );
 
@@ -250,7 +252,8 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	IplImage avgImageIpl = (IplImage)avgImage;
 	cvCalcEigenObjects((int)faceImages.size(), (void*)faceImgArr, (void*)eigenVectArr, CV_EIGOBJ_NO_CALLBACK, 0, 0, &calcLimit, &avgImageIpl, (float*)(eigenValMat.data));
 
-	cv::normalize(eigenValMat,eigenValMat, 1, 0, CV_L1);	//, 0);		0=bug?
+	// todo:
+	cv::normalize(eigenValMat,eigenValMat, 1, 0, /*CV_L1*/CV_L2);	//, 0);		0=bug?
 
 	// Project the training images onto the PCA subspace
 	projectedTrainFaceMat.create(faceImages.size(), *nEigens, CV_32FC1);
@@ -306,6 +309,14 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 		cv::Mat srcReconstruction = cv::Mat::zeros(eigenVectors[0].size(), eigenVectors[0].type());
 		for(int i=0; i<(int)eigenVectors.size(); i++) srcReconstruction += eigenVectorWeights[i]*eigenVectors[i];
 		cv::Mat temp;
+
+		// todo:
+//		cv::Mat reconstrTemp = srcReconstruction + avgImage;
+//		cv::Mat reconstr(eigenVectors[0].size(), CV_8UC1);
+//		reconstrTemp.convertTo(reconstr, CV_8UC1, 1);
+//		cv::imshow("reconstruction", reconstr);
+//		cv::waitKey();
+
 		resized_8U1.convertTo(temp, CV_32FC1, 1.0/255.0);
 		double distance = cv::norm((temp-avgImage), srcReconstruction, cv::NORM_L2);
 
@@ -341,16 +352,17 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *nearest, int *nEigens, cv::Mat& faceClassAvgProjections, int *threshold, cv::Mat& eigenValMat)
 {
 	double leastDistSq = DBL_MAX;
+	int numberEigenvaluesConsidered = *nEigens; /*std::max((int)(*nEigens * 0.2), std::min(*nEigens, 100));*/
 
 	for(int i=0; i<faceClassAvgProjections.rows; i++)
 	{
 		double distance=0;
 		
-		for(int e=0; e<*nEigens; e++)
+		for(int e=0; e<numberEigenvaluesConsidered; e++)
 		{			
 			float d = eigenVectorWeights[e] - ((float*)(faceClassAvgProjections.data))[i * *nEigens + e];
 			//distance += d*d;							//Euklid
-			distance += d*d / ((float*)(eigenValMat.data))[e];	//Mahalanobis
+			distance += d*d * ((float*)(eigenValMat.data))[e];	//Mahalanobis
 		}
 		distance = sqrt(distance);
 
