@@ -110,7 +110,7 @@ void CobFaceDetectionNodelet::onInit()
 	recognize_server_ = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&CobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
 	recognize_server_->start();
         
-        recognize_service_server_ = node_handle_.advertiseService("recognize_service_server", &CobFaceDetectionNodelet::recognizeServiceServerCallback, this);
+	recognize_service_server_ = node_handle_.advertiseService("recognize_service_server", &CobFaceDetectionNodelet::recognizeServiceServerCallback, this);
 
 	train_continuous_server_ = new TrainContinuousServer(node_handle_, "train_continuous_server", boost::bind(&CobFaceDetectionNodelet::trainContinuousServerCallback, this, _1), false);
 	train_continuous_server_->start();
@@ -167,6 +167,14 @@ unsigned long CobFaceDetectionNodelet::init()
 
 	// load data for face recognition
 	loadRecognizerData();
+
+	// use this instead if the rdata.xml file is corrupted
+	//loadTrainingData(false);
+	//loadRecognizerData();
+	//loadTrainingData(false);
+	//run_pca_ = true;
+	//PCA();
+	//saveRecognizerData();
 
 	std::string iniFileNameAndPath = directory_ + "peopleDetectorIni.xml";
 
@@ -341,7 +349,7 @@ void CobFaceDetectionNodelet::trainContinuousServerCallback(const cob_people_det
 			}
 
 			// turn off training mode
-			std::cout << "train off...\n";
+			std::cout << "continuous train off...\n";
 
 			// disable training
 			occupied_by_action_ = false;
@@ -675,6 +683,7 @@ unsigned long CobFaceDetectionNodelet::PCA()
 	}
 
 	// Calculate FaceClasses
+	std::cout << "Debug: n_eigens: " << n_eigens_ << " id: " << id_.size() << "\n";
 	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_, &n_eigens_, face_class_avg_projections_, id_unique_) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
@@ -809,7 +818,7 @@ unsigned long CobFaceDetectionNodelet::saveRecognizerData()
 
 unsigned long CobFaceDetectionNodelet::loadAllData()
 {
-	if (loadTrainingData(false) != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
+	if (loadTrainingData(true) != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
 	if (loadRecognizerData() != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
 
 	return ipa_Utils::RET_OK;
@@ -1757,3 +1766,4 @@ unsigned long CobFaceDetectionNodelet::loadParameters(const char* iniFileName)
 //
 //	return 0;
 //}
+
