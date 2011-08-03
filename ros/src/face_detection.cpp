@@ -110,7 +110,7 @@ void CobFaceDetectionNodelet::onInit()
 	recognize_server_ = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&CobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
 	recognize_server_->start();
         
-        recognize_service_server_ = node_handle_.advertiseService("recognize_service_server", &CobFaceDetectionNodelet::recognizeServiceServerCallback, this);
+	recognize_service_server_ = node_handle_.advertiseService("recognize_service_server", &CobFaceDetectionNodelet::recognizeServiceServerCallback, this);
 
 	train_continuous_server_ = new TrainContinuousServer(node_handle_, "train_continuous_server", boost::bind(&CobFaceDetectionNodelet::trainContinuousServerCallback, this, _1), false);
 	train_continuous_server_->start();
@@ -167,6 +167,15 @@ unsigned long CobFaceDetectionNodelet::init()
 
 	// load data for face recognition
 	loadRecognizerData();
+
+	// use this instead if the rdata.xml file is corrupted
+	// todo:
+//	loadTrainingData(false);
+//	//loadRecognizerData();
+//	//loadTrainingData(false);
+//	run_pca_ = true;
+//	PCA();
+//	saveRecognizerData();
 
 	std::string iniFileNameAndPath = directory_ + "peopleDetectorIni.xml";
 
@@ -341,7 +350,7 @@ void CobFaceDetectionNodelet::trainContinuousServerCallback(const cob_people_det
 			}
 
 			// turn off training mode
-			std::cout << "train off...\n";
+			std::cout << "continuous train off...\n";
 
 			// disable training
 			occupied_by_action_ = false;
@@ -491,11 +500,11 @@ void CobFaceDetectionNodelet::showServerCallback(const cob_people_detection::Sho
 		cv::Mat eigenface;
 		cv::namedWindow("Eigenfaces");
 		PCA();
-		for(int i=0; i<(int)face_images_.size()-1; i++)
+		for(int i=0; i<(int)20/*face_images_.size()-1*/; i++)
 		{
 			getEigenface(eigenface, i);
 			cv::imshow("Eigenfaces", eigenface);
-			cv::waitKey(100);
+			cv::waitKey();
 		}
 		cv::destroyWindow("Eigenfaces");
 	}
@@ -622,7 +631,7 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 
 unsigned long CobFaceDetectionNodelet::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
 {
-	if (people_detector_->RecognizeFace(color_image, color_faces_, &n_eigens_, eigen_vectors_, avg_image_, face_class_avg_projections_, index, &threshold_, &threshold_fs_, eigen_val_mat_) & ipa_Utils::RET_FAILED)
+	if (people_detector_->RecognizeFace(color_image, color_faces_, &n_eigens_, eigen_vectors_, avg_image_, face_class_avg_projections_, index, &threshold_, &threshold_fs_, eigen_val_mat_, &person_classifier_) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetector::recognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";
@@ -666,8 +675,22 @@ unsigned long CobFaceDetectionNodelet::PCA()
 	// Delete memory
 	eigen_vectors_.clear();
 
+	// mirror images
+	//todo:
+//	std::vector<cv::Mat> face_images_doubled;
+//	std::vector<std::string> id_doubled;
+//	for (int i=0; i<(int)face_images_.size(); i++)
+//	{
+//		face_images_doubled.push_back(face_images_[i]);
+//		id_doubled.push_back(id_[i]);
+//		cv::Mat temp;
+//		cv::flip(face_images_[i], temp, 1);
+//		face_images_doubled.push_back(temp);
+//		id_doubled.push_back(id_[i]);
+//	}
+
 	// Do PCA
-	if (people_detector_->PCA(&n_eigens_, eigen_vectors_, eigen_val_mat_, avg_image_, face_images_, projected_train_face_mat_) & ipa_Utils::RET_FAILED)
+	if (people_detector_->PCA(&n_eigens_, eigen_vectors_, eigen_val_mat_, avg_image_, face_images_/*doubled*/, projected_train_face_mat_) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while PCA.\n";
@@ -675,7 +698,8 @@ unsigned long CobFaceDetectionNodelet::PCA()
 	}
 
 	// Calculate FaceClasses
-	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_, &n_eigens_, face_class_avg_projections_, id_unique_) & ipa_Utils::RET_FAILED)
+	std::cout << "Debug: n_eigens: " << n_eigens_ << " id: " << id_.size() << "\n";
+	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_/*doubled*/, &n_eigens_, face_class_avg_projections_, id_unique_, &person_classifier_) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while calculating FaceClasses.\n";
@@ -802,6 +826,10 @@ unsigned long CobFaceDetectionNodelet::saveRecognizerData()
 
 	fileStorage.release();
 
+	// save classifier
+	std::string classifierFile = path + "svm.dat";
+	person_classifier_.save(classifierFile.c_str());
+
 	std::cout << "INFO - PeopleDetector::saveRecognizerData:" << std::endl;
 	std::cout << "\t ... recognizer data saved.\n";
 	return ipa_Utils::RET_OK;
@@ -809,7 +837,7 @@ unsigned long CobFaceDetectionNodelet::saveRecognizerData()
 
 unsigned long CobFaceDetectionNodelet::loadAllData()
 {
-	if (loadTrainingData(false) != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
+	if (loadTrainingData(true) != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
 	if (loadRecognizerData() != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
 
 	return ipa_Utils::RET_OK;
@@ -864,12 +892,12 @@ unsigned long CobFaceDetectionNodelet::loadTrainingData(bool runPCA)
 		run_pca_ = true;
 		if (runPCA) PCA();
 
-		std::cout << "INFO - PeopleDetector::loadRecognizerData:" << std::endl;
+		std::cout << "INFO - PeopleDetector::loadTrainingData:" << std::endl;
 		std::cout << "\t ... " << faces_num << " images loaded.\n";
 	}
 	else
 	{
-		std::cerr << "ERROR - PeopleDetector::loadTrainingData():" << std::endl;
+		std::cerr << "ERROR - PeopleDetector::loadTrainingData:" << std::endl;
 		std::cerr << "\t .... Path '" << path << "' is not a directory." << std::endl;
 		return ipa_Utils::RET_FAILED;
 	}
@@ -935,6 +963,10 @@ unsigned long CobFaceDetectionNodelet::loadRecognizerData()
 		fileStorage["face_class_avg_projections"] >> face_class_avg_projections_;
 
 		fileStorage.release();
+
+		// save classifier
+		std::string classifierFile = path + "svm.dat";
+		person_classifier_.load(classifierFile.c_str());
 
 		// do not run PCA
 		run_pca_ = false;

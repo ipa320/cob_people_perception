@@ -96,6 +96,7 @@
 
 // opencv
 #include <opencv/cv.h>
+#include <opencv/ml.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -153,7 +154,7 @@ protected:
 
 	ipa_SensorFusion::ColoredPointCloudPtr colored_pc_; ///< Storage for acquired colored point cloud
 
-	std::string directory_;					///< directory for the data files
+	std::string directory_;						///< directory for the data files
 	bool run_pca_;								///< has to run a PCA when the data was modified
 	int filename_;								///< increasing number for files to save
 
@@ -166,7 +167,8 @@ protected:
 	cv::Mat eigen_val_mat_;						///< Eigenvalues
 	cv::Mat avg_image_;							///< Trained average Image
 	cv::Mat projected_train_face_mat_;			///< Projected training faces (coefficients for the eigenvectors of the face subspace)
-	cv::Mat face_class_avg_projections_;			///< The average factors of the eigenvector decomposition from each face class
+	cv::Mat face_class_avg_projections_;		///< The average factors of the eigenvector decomposition from each face class
+	cv::SVM person_classifier_;					///< classifier for the identity of a person
 
 	PeopleDetector* people_detector_;			///< People detector core code
 	int threshold_;								///< Threshold to detect unknown faces

@@ -58,8 +58,8 @@ rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)
 
 # modified openni tracker
-rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp
-                                       ros/src/SceneDrawer.cpp)
+#rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp
+#                                       ros/src/SceneDrawer.cpp)
 			
 #rosbuild_add_executable(ros_face_detector
 			#common/src/CuiPeopleDetector.cpp
