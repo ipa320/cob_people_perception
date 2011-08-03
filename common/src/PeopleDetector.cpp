@@ -19,8 +19,13 @@ unsigned long PeopleDetector::Init(std::string directory)
 	// Load Haar-Classifier for frontal face-, eyes- and body-detection
 	std::string faceCascadePath = directory + "haarcascades/haarcascade_frontalface_alt2.xml";
 	// todo:
+<<<<<<< HEAD
 	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg.xml";
 	//std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg+.xml";	// + "haarcascades/haarcascade_range.xml";
+=======
+	//std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg.xml";
+	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg+.xml";	// + "haarcascades/haarcascade_range.xml";
+>>>>>>> c1445fc29d81b468e773e0f7d063ccfe30c515db
 	m_face_cascade = (CvHaarClassifierCascade*)cvLoad(faceCascadePath.c_str(), 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
 	m_range_cascade = (CvHaarClassifierCascade*)cvLoad(rangeCascadePath.c_str(), 0, 0, 0 );
 
@@ -399,12 +404,17 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *nearest, int *nEigens, cv::Mat& faceClassAvgProjections, int *threshold, cv::Mat& eigenValMat, cv::SVM* personClassifier)
 {
 	double leastDistSq = DBL_MAX;
+<<<<<<< HEAD
 	//todo:
 	int metric = 2; 	// 0 = Euklid, 1 = Mahalanobis, 2 = Mahalanobis Cosine
+=======
+	int numberEigenvaluesConsidered = *nEigens; /*std::max((int)(*nEigens * 0.2), std::min(*nEigens, 100));*/
+>>>>>>> c1445fc29d81b468e773e0f7d063ccfe30c515db
 
 	for(int i=0; i<faceClassAvgProjections.rows; i++)
 	{
 		double distance=0;
+<<<<<<< HEAD
 		double cos=0;
 		double length_sample=0;
 		double length_projection=0;
@@ -431,6 +441,14 @@ unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *neare
 			length_projection = sqrt(length_projection);
 			cos /= (length_projection * length_sample);
 			distance = -cos;
+=======
+		
+		for(int e=0; e<numberEigenvaluesConsidered; e++)
+		{			
+			float d = eigenVectorWeights[e] - ((float*)(faceClassAvgProjections.data))[i * *nEigens + e];
+			//distance += d*d;							//Euklid
+			distance += d*d * ((float*)(eigenValMat.data))[e];	//Mahalanobis
+>>>>>>> c1445fc29d81b468e773e0f7d063ccfe30c515db
 		}
 
 		//######################################## Only for debugging and development ########################################
@@ -573,3 +591,4 @@ unsigned long PeopleDetector::CalculateFaceClasses(cv::Mat& projectedTrainFaceMa
 
 	return ipa_Utils::RET_OK;
 }
+

@@ -667,3 +667,4 @@ namespace ipa_PeopleDetector {
 PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, CobPeopleDetectionNodelet, ipa_PeopleDetector::CobPeopleDetectionNodelet, nodelet::Nodelet);
 
 #endif // _PEOPLE_DETECTION_
+

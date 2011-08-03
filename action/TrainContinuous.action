@@ -11,3 +11,4 @@ int32 numberOfImagesToCapture		# if this is 0, image capture is triggered manual
 uint64 success        # is ipa_Utils::RET_OK if everything went well
 ---
 # feedback message
+

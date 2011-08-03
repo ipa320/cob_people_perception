@@ -29,7 +29,11 @@
 		<Faces_increase_search_scale value="1.1" />
 		<!-- Minimum number (minus 1) of neighbor rectangles that makes up an object --> 
 		<!-- <Faces_drop_groups value="120" /> -->
+<<<<<<< HEAD
 		<Faces_drop_groups value="3" /> <!-- 4 -->
+=======
+		<Faces_drop_groups value="1" />
+>>>>>>> c1445fc29d81b468e773e0f7d063ccfe30c515db
 		<!-- Minimum serach scale x --> 
 		<!-- <Faces_min_search_scale_x value="20" /> -->
 		<Faces_min_search_scale_x value="20" />
@@ -41,7 +45,11 @@
 		<Range_increase_search_scale value="1.1" />
 		<!-- Minimum number (minus 1) of neighbor rectangles that makes up an object --> 
 		<!-- <Range_drop_groups value="70" /> -->
+<<<<<<< HEAD
 		<Range_drop_groups value="68" /><!--68-->  <!-- haarcascade_range_multiview_5p_bg+.xml : 200 -->
+=======
+		<Range_drop_groups value="68" /><!--68--> <!-- haarcascade_range_multiview_5p_bg+.xml : 200 -->
+>>>>>>> c1445fc29d81b468e773e0f7d063ccfe30c515db
 		<!-- Minimum serach scale x --> 
 		<!-- <Range_min_search_scale_x value="20" /> -->
 		<Range_min_search_scale_x value="20" />
@@ -51,7 +59,11 @@
 	</adaBoost>
 	<eigenfaces>
 		<!-- Threshold to each face class --> 
+<<<<<<< HEAD
 		<Threshold_Face_Class value="100000000" /> <!-- 80000-->
+=======
+		<Threshold_Face_Class value="1700" />
+>>>>>>> c1445fc29d81b468e773e0f7d063ccfe30c515db
 		<!-- <Threshold_Face_Class value="2500000000" /> -->
 		<!-- Threshold to face space --> 
 		<Threshold_Facespace value="18000" />

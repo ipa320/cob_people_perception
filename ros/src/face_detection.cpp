@@ -169,6 +169,7 @@ unsigned long CobFaceDetectionNodelet::init()
 	loadRecognizerData();
 
 	// use this instead if the rdata.xml file is corrupted
+<<<<<<< HEAD
 	// todo:
 //	loadTrainingData(false);
 //	//loadRecognizerData();
@@ -176,6 +177,14 @@ unsigned long CobFaceDetectionNodelet::init()
 //	run_pca_ = true;
 //	PCA();
 //	saveRecognizerData();
+=======
+	//loadTrainingData(false);
+	//loadRecognizerData();
+	//loadTrainingData(false);
+	//run_pca_ = true;
+	//PCA();
+	//saveRecognizerData();
+>>>>>>> c1445fc29d81b468e773e0f7d063ccfe30c515db
 
 	std::string iniFileNameAndPath = directory_ + "peopleDetectorIni.xml";
 
@@ -699,7 +708,11 @@ unsigned long CobFaceDetectionNodelet::PCA()
 
 	// Calculate FaceClasses
 	std::cout << "Debug: n_eigens: " << n_eigens_ << " id: " << id_.size() << "\n";
+<<<<<<< HEAD
 	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_/*doubled*/, &n_eigens_, face_class_avg_projections_, id_unique_, &person_classifier_) & ipa_Utils::RET_FAILED)
+=======
+	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_, &n_eigens_, face_class_avg_projections_, id_unique_) & ipa_Utils::RET_FAILED)
+>>>>>>> c1445fc29d81b468e773e0f7d063ccfe30c515db
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while calculating FaceClasses.\n";
@@ -1789,3 +1802,4 @@ unsigned long CobFaceDetectionNodelet::loadParameters(const char* iniFileName)
 //
 //	return 0;
 //}
+
