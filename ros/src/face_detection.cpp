@@ -56,6 +56,16 @@
 #include "cob_people_detection/face_detection.h"
 #include <pluginlib/class_list_macros.h>
 
+#ifdef __LINUX__
+	#include "cob_vision_utils/GlobalDefines.h"
+	#include "cob_vision_utils/VisionUtils.h"
+#else
+	#include "cob_common/cob_vision_utils/common/include/cob_vision_utils/GlobalDefines.h"
+	#include "cob_common/cob_vision_utils/common/include/cob_vision_utils/VisionUtils.h"
+#endif
+
+#include <opencv/highgui.h>
+
 PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, CobFaceDetectionNodelet, ipa_PeopleDetector::CobFaceDetectionNodelet, nodelet::Nodelet);
 
 
@@ -104,7 +114,7 @@ void CobFaceDetectionNodelet::onInit()
 	sync_pointcloud_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
-	face_position_publisher_ = node_handle_.advertise<cob_msgs::DetectionArray>("face_position_array", 1);
+	face_position_publisher_ = node_handle_.advertise<cob_object_detection::DetectionArray>("face_position_array", 1);
 	face_detection_image_pub_ = it_->advertise("face_detection_image", 1);
 
 	recognize_server_ = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&CobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
@@ -1197,7 +1207,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	// publish face positions
 	std::stringstream ss;
 	ss << depth_image.rows << " " << depth_image.cols;
-	cob_msgs::DetectionArray facePositionMsg;
+	cob_object_detection::DetectionArray facePositionMsg;
 	// image dimensions
 	facePositionMsg.header.frame_id = ss.str();
 	// time stamp
@@ -1212,7 +1222,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 			cv::Rect face = range_faces_[i];
 
 			// 2D image coordinates
-			cob_msgs::Detection det;
+			cob_object_detection::Detection det;
 			det.mask.roi.x = face.x;           det.mask.roi.y = face.y;
 			det.mask.roi.width = face.width;   det.mask.roi.height = face.height;
 			float center2Dx = face.x + face.width*0.5f;
@@ -1255,7 +1265,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 		cv::Rect face = color_faces_[i];
 
 		// 2D image coordinates
-		cob_msgs::Detection det;
+		cob_object_detection::Detection det;
 		det.mask.roi.x = face.x;           det.mask.roi.y = face.y;
 		det.mask.roi.width = face.width;   det.mask.roi.height = face.height;
 		float center2Dx = face.x + face.width*0.5f;

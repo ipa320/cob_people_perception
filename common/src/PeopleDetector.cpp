@@ -2,9 +2,14 @@
 
 #ifdef __LINUX__
 #include "cob_people_detection/PeopleDetector.h"
+#include "cob_vision_utils/GlobalDefines.h"
 #else
 #include "cob_vision/cob_people_detection/common/include/cob_people_detection/PeopleDetector.h"
+#include "cob_common/cob_vision_utils/common/include/cob_vision_utils/GlobalDefines.h"
 #endif
+
+#include <opencv/cv.h>
+#include <opencv/cvaux.h>
 
 using namespace ipa_PeopleDetector;
 
