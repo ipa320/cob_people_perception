@@ -72,7 +72,7 @@
 // ROS message includes
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <cob_msgs/DetectionArray.h>
+#include <cob_vision_msgs/PeopleDetectionArray.h>
 
 // services
 #include <cob_people_detection/DetectPeople.h>
@@ -120,9 +120,9 @@ namespace ipa_PeopleDetector {
     image_transport::ImageTransport* it_;
     image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
     image_transport::SubscriberFilter color_image_sub_; ///< Color camera image topic
-    message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image> >* sync_input_2_;
-    message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image, sensor_msgs::Image> >* sync_input_3_;
-    message_filters::Subscriber<cob_msgs::DetectionArray> face_position_subscriber_; ///< receives the face messages from the face detector
+    message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_vision_msgs::PeopleDetectionArray, sensor_msgs::Image> >* sync_input_2_;
+    message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_vision_msgs::PeopleDetectionArray, sensor_msgs::Image, sensor_msgs::Image> >* sync_input_3_;
+    message_filters::Subscriber<cob_vision_msgs::PeopleDetectionArray> face_position_subscriber_; ///< receives the face messages from the face detector
     ros::Publisher face_position_publisher_; ///< publisher for the positions of the detected faces
     image_transport::Publisher people_detection_image_pub_; ///< topic for publishing the image containing the people positions
     ros::ServiceServer service_server_detect_people_; ///< Service server to request people detection
@@ -130,7 +130,7 @@ namespace ipa_PeopleDetector {
     
     ros::NodeHandle node_handle_; ///< ROS node handle
     
-    std::vector<cob_msgs::Detection> face_position_accumulator_; ///< accumulates face positions over time
+    std::vector<cob_vision_msgs::PeopleDetection> face_position_accumulator_; ///< accumulates face positions over time
     boost::timed_mutex face_position_accumulator_mutex_; ///< secures write and read operations to face_position_accumulator_
     std::vector<std::map<std::string, double> > face_identification_votes_; ///< collects votes for all names (map index) ever assigned to each detection (vector index) in face_position_accumulator_
     
@@ -199,13 +199,13 @@ namespace ipa_PeopleDetector {
       {
         if (display_ == false)
         {
-          sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image> >(2);
+          sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_vision_msgs::PeopleDetectionArray, sensor_msgs::Image> >(2);
           sync_input_2_->connectInput(face_position_subscriber_, people_segmentation_image_sub_);
           sync_input_2_->registerCallback(boost::bind(&CobPeopleDetectionNodelet::inputCallback, this, _1, _2, nullPtr));
         }
         else
         {
-          sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image, sensor_msgs::Image> >(3);
+          sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_vision_msgs::PeopleDetectionArray, sensor_msgs::Image, sensor_msgs::Image> >(3);
           sync_input_3_->connectInput(face_position_subscriber_, people_segmentation_image_sub_, color_image_sub_);
           sync_input_3_->registerCallback(boost::bind(&CobPeopleDetectionNodelet::inputCallback, this, _1, _2, _3));
         }
@@ -214,7 +214,7 @@ namespace ipa_PeopleDetector {
       {
         if (display_ == true)
         {
-          sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_msgs::DetectionArray, sensor_msgs::Image> >(2);
+          sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_vision_msgs::PeopleDetectionArray, sensor_msgs::Image> >(2);
           sync_input_2_->connectInput(face_position_subscriber_, color_image_sub_);
           sync_input_2_->registerCallback(boost::bind(&CobPeopleDetectionNodelet::inputCallback, this, _1, nullPtr, _2));
         }
@@ -228,7 +228,7 @@ namespace ipa_PeopleDetector {
       service_server_detect_people_ = node_handle_.advertiseService("detect_people", &CobPeopleDetectionNodelet::detectPeopleCallback, this);
       
       // publishers
-      face_position_publisher_ = node_handle_.advertise<cob_msgs::DetectionArray>("face_position_array", 1);
+      face_position_publisher_ = node_handle_.advertise<cob_vision_msgs::PeopleDetectionArray>("face_position_array", 1);
       people_detection_image_pub_ = it_->advertise("people_detection_image", 1);
       
       std::cout << "CobPeopleDetectionNodelet initialized.\n";
@@ -261,7 +261,7 @@ namespace ipa_PeopleDetector {
     /// @param update If update is true, dest must contain the data which shall be updated
     /// @param updateIndex The index in face_identification_votes_ corresponding to the previous detection dest. Only necessary if update is true.
     /// @return Return code.
-    unsigned long copyDetection(const cob_msgs::Detection& src, cob_msgs::Detection& dest, bool update=false, unsigned int updateIndex=UINT_MAX)
+    unsigned long copyDetection(const cob_vision_msgs::PeopleDetection& src, cob_vision_msgs::PeopleDetection& dest, bool update=false, unsigned int updateIndex=UINT_MAX)
     {
       // 2D image coordinates
       dest.mask.roi.x = src.mask.roi.x; dest.mask.roi.y = src.mask.roi.y;
@@ -331,7 +331,7 @@ namespace ipa_PeopleDetector {
     /// Computes the Euclidian distance of a recent faces detection to a current face detection.
     /// If the current face detection is outside the neighborhood of the previous detection, DBL_MAX is returned.
     /// @return The Euclidian distance of both faces or DBL_MAX.
-    double computeFacePositionDistance(const cob_msgs::Detection& previous_detection, const cob_msgs::Detection& current_detection)
+    double computeFacePositionDistance(const cob_vision_msgs::PeopleDetection& previous_detection, const cob_vision_msgs::PeopleDetection& current_detection)
     {
       const geometry_msgs::Point* point_1 = &(previous_detection.pose.pose.position);
       const geometry_msgs::Point* point_2 = &(current_detection.pose.pose.position);
@@ -391,10 +391,10 @@ namespace ipa_PeopleDetector {
     }
     
     
-    unsigned long prepareFacePositionMessage(cob_msgs::DetectionArray& face_position_msg_out)
+    unsigned long prepareFacePositionMessage(cob_vision_msgs::PeopleDetectionArray& face_position_msg_out)
     {
         // publish face positions
-        std::vector<cob_msgs::Detection> faces_to_publish;
+        std::vector<cob_vision_msgs::PeopleDetection> faces_to_publish;
         for (int i=0; i<(int)face_position_accumulator_.size(); i++)
         {
           if (display_) std::cout << "'UnknownRange' score: " << face_identification_votes_[i]["UnknownRange"] << " label '" << face_position_accumulator_[i].label << "' score: " << face_identification_votes_[i][face_position_accumulator_[i].label] << " - ";
@@ -419,7 +419,7 @@ namespace ipa_PeopleDetector {
 
 
     /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-    void inputCallback(const cob_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+    void inputCallback(const cob_vision_msgs::PeopleDetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
     {
       // convert segmentation image to cv::Mat
       cv_bridge::CvImageConstPtr people_segmentation_image_ptr;
@@ -462,7 +462,7 @@ namespace ipa_PeopleDetector {
       {
         for(int i=0; i<(int)face_position_msg_in->detections.size(); i++)
         {
-          const cob_msgs::Detection* const det_in = &(face_position_msg_in->detections[i]);
+          const cob_vision_msgs::PeopleDetection* const det_in = &(face_position_msg_in->detections[i]);
           cv::Rect face;
           face.x = det_in->mask.roi.x;
           face.y = det_in->mask.roi.y;
@@ -558,12 +558,12 @@ namespace ipa_PeopleDetector {
       {
         if (current_detection_has_matching[i] == false)
         {
-          const cob_msgs::Detection* const det_in = &(face_position_msg_in->detections[face_detection_indices[i]]);
+          const cob_vision_msgs::PeopleDetection* const det_in = &(face_position_msg_in->detections[face_detection_indices[i]]);
           if (det_in->detector=="color")
           {
             // save in accumulator
             if (display_) std::cout << "\n***** New detection *****\n\n";
-                                                       cob_msgs::Detection det_out;
+                                                       cob_vision_msgs::PeopleDetection det_out;
             copyDetection(*det_in, det_out, false);
             det_out.pose.header.frame_id = "head_cam3d_link";
             face_position_accumulator_.push_back(det_out);
@@ -582,8 +582,8 @@ namespace ipa_PeopleDetector {
       removeMultipleInstancesOfLabel();
       
       // publish face positions
-      cob_msgs::DetectionArray face_position_msg_out;
-/*      std::vector<cob_msgs::Detection> faces_to_publish;
+      cob_vision_msgs::PeopleDetectionArray face_position_msg_out;
+/*      std::vector<cob_vision_msgs::PeopleDetection> faces_to_publish;
       for (int i=0; i<(int)face_position_accumulator_.size(); i++)
       {
         if (display_) std::cout << "'UnknownRange' score: " << face_identification_votes_[i]["UnknownRange"] << " label '" << face_position_accumulator_[i].label << "' score: " << face_identification_votes_[i][face_position_accumulator_[i].label] << " - ";
@@ -618,7 +618,7 @@ namespace ipa_PeopleDetector {
         for(int i=0; i<(int)face_position_msg_out.detections.size(); i++)
         {
           cv::Rect face;
-          cob_msgs::Rect& faceRect = face_position_msg_out.detections[i].mask.roi;
+          cob_vision_msgs::Rect& faceRect = face_position_msg_out.detections[i].mask.roi;
           face.x = faceRect.x; face.width = faceRect.width;
           face.y = faceRect.y; face.height = faceRect.height;
           

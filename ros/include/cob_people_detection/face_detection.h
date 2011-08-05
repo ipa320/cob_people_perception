@@ -73,7 +73,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 //#include <std_msgs/Float32MultiArray.h>
-#include <cob_object_detection/DetectionArray.h>
+#include <cob_vision_msgs/PeopleDetectionArray.h>
 
 // topics
 #include <message_filters/subscriber.h>
