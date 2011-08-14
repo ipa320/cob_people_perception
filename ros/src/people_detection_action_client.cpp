@@ -105,6 +105,7 @@ void train(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClien
 	goal.running = true;
 	goal.doPCA = true;
 	goal.appendData = true;
+	goal.numberOfImagesToCapture = 0;
 	goal.trainingID = id;
 	trainContinuousClient.sendGoal(goal);
 	trainContinuousClient.waitForResult(ros::Duration::Duration(3.0));
@@ -125,6 +126,32 @@ void train(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClien
 				printf("Image capture initiated.\n");
 		}
 	}
+
+	goal.running = false;
+	trainContinuousClient.sendGoal(goal);
+	trainContinuousClient.waitForResult(ros::Duration::Duration(10.0));
+	if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+		printf("Training off!\n");
+	printf("Current State: %s\n", trainContinuousClient.getState().toString().c_str());
+}
+
+
+void train_continuous(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClient& trainCaptureSampleClient)
+{
+	std::string id;
+	std::cout << "Input the ID of the captured person: ";
+	std::cin >> id;
+
+	cob_people_detection::TrainContinuousGoal goal;
+	// Fill in goal here
+	goal.running = true;
+	goal.doPCA = true;
+	goal.appendData = true;
+	goal.numberOfImagesToCapture = 30;
+	goal.trainingID = id;
+	trainContinuousClient.sendGoal(goal);
+	trainContinuousClient.waitForResult(ros::Duration::Duration(120.0));
+
 
 	goal.running = false;
 	trainContinuousClient.sendGoal(goal);
@@ -205,12 +232,13 @@ int main(int argc, char** argv)
 	char key = 'q';
 	do
 	{
-		std::cout << "\n\nChoose an option:\n1 - train\n2 - recognize\n3 - Show average image\n4 - Show Eigenfaces\nq - Quit\n\n";
+		std::cout << "\n\nChoose an option:\n1 - train with manual capture\n2 - recognize\n3 - train continuously (30 images)\n4 - Show average image\n5 - Show Eigenfaces\nq - Quit\n\n";
 		key = getch();
 		if (key == '1') train(trainContinuousClient, trainCaptureSampleClient);
 		else if (key == '2') recognize(recognizeClient);
-		else if (key == '3') show(showClient, 0);
-		else if (key == '4') show(showClient, 1);
+		else if (key == '3') train_continuous(trainContinuousClient, trainCaptureSampleClient);
+		else if (key == '4') show(showClient, 0);
+		else if (key == '5') show(showClient, 1);
 	}while(key != 'q');
 
 

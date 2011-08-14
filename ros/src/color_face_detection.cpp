@@ -47,7 +47,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include <people_msgs/PositionMeasurement.h>
+#include <cob_people_detection/PositionMeasurement.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -148,7 +148,7 @@ public:
 
   struct RestampedPositionMeasurement {
     ros::Time restamp;
-    people_msgs::PositionMeasurement pos;
+    cob_people_detection::PositionMeasurement pos;
     double dist;
   };
   map<string, RestampedPositionMeasurement> pos_list_; /**< Queue of updated face positions from the filter. */
@@ -253,7 +253,7 @@ public:
     //sync_.registerCallback(boost::bind(&FaceDetectorColor::imageCBAll, this, _1, _2, _3, _4, /*_5*/nullImage, _6));
     
     // Advertise a position measure message.
-    pos_pub_ = nh_.advertise<people_msgs::PositionMeasurement>("face_detector/people_tracker_measurements",1);
+    pos_pub_ = nh_.advertise<cob_people_detection::PositionMeasurement>("face_detector/people_tracker_measurements",1);
     
     cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud>("face_detector/faces_cloud",0);
     
@@ -314,7 +314,7 @@ public:
    * When hooked into the person tracking filter, this callback will listen to messages 
    * from the filter with a person id and 3D position and adjust the person's face position accordingly.
    */ 
-  void posCallback(const people_msgs::PositionMeasurementConstPtr& pos_ptr) {
+  void posCallback(const cob_people_detection::PositionMeasurementConstPtr& pos_ptr) {
 
     std::cout << "Tracking callback\n";
 
@@ -462,7 +462,7 @@ public:
 
       // Associate the found faces with previously seen faces, and publish all good face centers.
       Box2D3D *one_face;
-      people_msgs::PositionMeasurement pos;
+      cob_people_detection::PositionMeasurement pos;
 
       for (uint iface = 0; iface < faces_vector.size(); iface++) {
         one_face = &faces_vector[iface];

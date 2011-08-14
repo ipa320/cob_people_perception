@@ -19,9 +19,8 @@
 <depend package="stereo_msgs"/>
 <depend package="sensor_msgs"/>
 <depend package="tf"/>
-<depend package="rosrecord"/>
 <depend package="image_transport" />
-<depend package="people_msgs" />
+<!--depend package="people_msgs" /-->
 <depend package="image_geometry" />
 <depend package="actionlib_msgs"/>
 <depend package="actionlib"/>
@@ -31,7 +30,8 @@
 <depend package="openni"/>
 <depend package="nite"/>
 <depend package="kdl"/>
-<depend package="cob_msgs"/>
+<!--depend package="cob_msgs"/-->
+<depend package="cob_vision_msgs"/>
 <depend package="cob_camera_sensors"/>
 <depend package="cob_vision_utils"/>
 <depend package="cob_sensor_fusion"/>

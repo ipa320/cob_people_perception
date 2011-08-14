@@ -73,7 +73,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 //#include <std_msgs/Float32MultiArray.h>
-#include <cob_msgs/DetectionArray.h>
+#include <cob_vision_msgs/PeopleDetectionArray.h>
 
 // topics
 #include <message_filters/subscriber.h>
@@ -96,6 +96,7 @@
 
 // opencv
 #include <opencv/cv.h>
+#include <opencv/ml.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -153,7 +154,7 @@ protected:
 
 	ipa_SensorFusion::ColoredPointCloudPtr colored_pc_; ///< Storage for acquired colored point cloud
 
-	std::string directory_;					///< directory for the data files
+	std::string directory_;						///< directory for the data files
 	bool run_pca_;								///< has to run a PCA when the data was modified
 	int filename_;								///< increasing number for files to save
 
@@ -166,7 +167,8 @@ protected:
 	cv::Mat eigen_val_mat_;						///< Eigenvalues
 	cv::Mat avg_image_;							///< Trained average Image
 	cv::Mat projected_train_face_mat_;			///< Projected training faces (coefficients for the eigenvectors of the face subspace)
-	cv::Mat face_class_avg_projections_;			///< The average factors of the eigenvector decomposition from each face class
+	cv::Mat face_class_avg_projections_;		///< The average factors of the eigenvector decomposition from each face class
+	cv::SVM person_classifier_;					///< classifier for the identity of a person
 
 	PeopleDetector* people_detector_;			///< People detector core code
 	int threshold_;								///< Threshold to detect unknown faces
@@ -175,8 +177,8 @@ protected:
 	std::vector<cv::Rect> range_faces_;			///< Vector with detected rangeFaces
 	std::set<size_t> range_face_indices_with_color_face_detection_;	///< this set stores which range faces also had a face detection in the color image
 
-        // Services
-        ros::ServiceServer recognize_service_server_; ///< Service server to switch recognition on or off
+	// Services
+	ros::ServiceServer recognize_service_server_; ///< Service server to switch recognition on or off
 
 	// Actions
 	TrainContinuousServer* train_continuous_server_;
@@ -189,6 +191,7 @@ protected:
 	bool recognize_server_running_;				///< is true while the recognition module is running
 	bool train_continuous_server_running_;		///< is true while the continuous training display is running
 	bool capture_training_face_;				///< can be set true by an action while in training mode. then an image is captured.
+	int number_training_images_captured_;		///< if the training is in continuous mode, this variable counts how many training images already have been collected for the current training job
 //	bool turn_off_recognition_;					///< is set true on quit request during recognition mode
 	bool do_recognition_;						///< does people identification if true, else it's just people detection
 	bool display_;								///< enables debug output
@@ -318,3 +321,4 @@ public:
 };
 
 #endif // _FACE_DETECTION_
+

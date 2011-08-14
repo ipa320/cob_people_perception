@@ -56,6 +56,16 @@
 #include "cob_people_detection/face_detection.h"
 #include <pluginlib/class_list_macros.h>
 
+#ifdef __LINUX__
+	#include "cob_vision_utils/GlobalDefines.h"
+	#include "cob_vision_utils/VisionUtils.h"
+#else
+	#include "cob_common/cob_vision_utils/common/include/cob_vision_utils/GlobalDefines.h"
+	#include "cob_common/cob_vision_utils/common/include/cob_vision_utils/VisionUtils.h"
+#endif
+
+#include <opencv/highgui.h>
+
 PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, CobFaceDetectionNodelet, ipa_PeopleDetector::CobFaceDetectionNodelet, nodelet::Nodelet);
 
 
@@ -80,6 +90,7 @@ CobFaceDetectionNodelet::CobFaceDetectionNodelet()
 	occupied_by_action_ = false;
 	recognize_server_running_ = false;
 	train_continuous_server_running_ = false;
+	number_training_images_captured_ = 0;
 	do_recognition_ = true;
 	display_ = false;
 	directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";	// can be changed by a parameter
@@ -103,13 +114,13 @@ void CobFaceDetectionNodelet::onInit()
 	sync_pointcloud_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
-	face_position_publisher_ = node_handle_.advertise<cob_msgs::DetectionArray>("face_position_array", 1);
+	face_position_publisher_ = node_handle_.advertise<cob_vision_msgs::PeopleDetectionArray>("face_position_array", 1);
 	face_detection_image_pub_ = it_->advertise("face_detection_image", 1);
 
 	recognize_server_ = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&CobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
 	recognize_server_->start();
         
-        recognize_service_server_ = node_handle_.advertiseService("recognize_service_server", &CobFaceDetectionNodelet::recognizeServiceServerCallback, this);
+	recognize_service_server_ = node_handle_.advertiseService("recognize_service_server", &CobFaceDetectionNodelet::recognizeServiceServerCallback, this);
 
 	train_continuous_server_ = new TrainContinuousServer(node_handle_, "train_continuous_server", boost::bind(&CobFaceDetectionNodelet::trainContinuousServerCallback, this, _1), false);
 	train_continuous_server_->start();
@@ -166,6 +177,15 @@ unsigned long CobFaceDetectionNodelet::init()
 
 	// load data for face recognition
 	loadRecognizerData();
+
+	// use this instead if the rdata.xml file is corrupted
+	// todo:
+//	loadTrainingData(false);
+//	//loadRecognizerData();
+//	//loadTrainingData(false);
+//	run_pca_ = true;
+//	PCA();
+//	saveRecognizerData();
 
 	std::string iniFileNameAndPath = directory_ + "peopleDetectorIni.xml";
 
@@ -324,6 +344,38 @@ void CobFaceDetectionNodelet::trainContinuousServerCallback(const cob_people_det
 		//sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
 		//sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&CobFaceDetectionNodelet::trainContinuousCallback, this, _1, _2));
 		std::cout << "train run...\n";
+
+		// check whether the continuous mode was enabled or if the image capture is manually triggered
+		if (goal->numberOfImagesToCapture > 0)
+		{
+			lock.unlock();
+			number_training_images_captured_ = 0;
+			bool capture = true;
+			while (capture)
+			{
+				boost::timed_mutex::scoped_timed_lock lock(action_mutex_, boost::posix_time::milliseconds(10));
+				if (lock.owns_lock() && capture_training_face_ == false)
+					capture_training_face_ == true;
+				capture = (number_training_images_captured_<goal->numberOfImagesToCapture);
+			}
+
+			// turn off training mode
+			std::cout << "continuous train off...\n";
+
+			// disable training
+			occupied_by_action_ = false;
+			train_continuous_server_running_ = false;
+
+			// save images
+			saveTrainingData();
+
+			// do data analysis if enabled
+			if (goal->doPCA)
+			{
+				PCA();
+				saveRecognizerData();
+			}
+		}
 	}
 	else
 	{
@@ -458,11 +510,11 @@ void CobFaceDetectionNodelet::showServerCallback(const cob_people_detection::Sho
 		cv::Mat eigenface;
 		cv::namedWindow("Eigenfaces");
 		PCA();
-		for(int i=0; i<(int)face_images_.size()-1; i++)
+		for(int i=0; i<(int)20/*face_images_.size()-1*/; i++)
 		{
 			getEigenface(eigenface, i);
 			cv::imshow("Eigenfaces", eigenface);
-			cv::waitKey(100);
+			cv::waitKey();
 		}
 		cv::destroyWindow("Eigenfaces");
 	}
@@ -589,7 +641,7 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 
 unsigned long CobFaceDetectionNodelet::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
 {
-	if (people_detector_->RecognizeFace(color_image, color_faces_, &n_eigens_, eigen_vectors_, avg_image_, face_class_avg_projections_, index, &threshold_, &threshold_fs_, eigen_val_mat_) & ipa_Utils::RET_FAILED)
+	if (people_detector_->RecognizeFace(color_image, color_faces_, &n_eigens_, eigen_vectors_, avg_image_, face_class_avg_projections_, index, &threshold_, &threshold_fs_, eigen_val_mat_, &person_classifier_) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetector::recognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";
@@ -633,8 +685,22 @@ unsigned long CobFaceDetectionNodelet::PCA()
 	// Delete memory
 	eigen_vectors_.clear();
 
+	// mirror images
+	//todo:
+//	std::vector<cv::Mat> face_images_doubled;
+//	std::vector<std::string> id_doubled;
+//	for (int i=0; i<(int)face_images_.size(); i++)
+//	{
+//		face_images_doubled.push_back(face_images_[i]);
+//		id_doubled.push_back(id_[i]);
+//		cv::Mat temp;
+//		cv::flip(face_images_[i], temp, 1);
+//		face_images_doubled.push_back(temp);
+//		id_doubled.push_back(id_[i]);
+//	}
+
 	// Do PCA
-	if (people_detector_->PCA(&n_eigens_, eigen_vectors_, eigen_val_mat_, avg_image_, face_images_, projected_train_face_mat_) & ipa_Utils::RET_FAILED)
+	if (people_detector_->PCA(&n_eigens_, eigen_vectors_, eigen_val_mat_, avg_image_, face_images_/*doubled*/, projected_train_face_mat_) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while PCA.\n";
@@ -642,7 +708,8 @@ unsigned long CobFaceDetectionNodelet::PCA()
 	}
 
 	// Calculate FaceClasses
-	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_, &n_eigens_, face_class_avg_projections_, id_unique_) & ipa_Utils::RET_FAILED)
+	std::cout << "Debug: n_eigens: " << n_eigens_ << " id: " << id_.size() << "\n";
+	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_/*doubled*/, &n_eigens_, face_class_avg_projections_, id_unique_, &person_classifier_) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while calculating FaceClasses.\n";
@@ -769,6 +836,10 @@ unsigned long CobFaceDetectionNodelet::saveRecognizerData()
 
 	fileStorage.release();
 
+	// save classifier
+	std::string classifierFile = path + "svm.dat";
+	person_classifier_.save(classifierFile.c_str());
+
 	std::cout << "INFO - PeopleDetector::saveRecognizerData:" << std::endl;
 	std::cout << "\t ... recognizer data saved.\n";
 	return ipa_Utils::RET_OK;
@@ -776,7 +847,7 @@ unsigned long CobFaceDetectionNodelet::saveRecognizerData()
 
 unsigned long CobFaceDetectionNodelet::loadAllData()
 {
-	if (loadTrainingData(false) != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
+	if (loadTrainingData(true) != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
 	if (loadRecognizerData() != ipa_Utils::RET_OK) return ipa_Utils::RET_FAILED;
 
 	return ipa_Utils::RET_OK;
@@ -831,12 +902,12 @@ unsigned long CobFaceDetectionNodelet::loadTrainingData(bool runPCA)
 		run_pca_ = true;
 		if (runPCA) PCA();
 
-		std::cout << "INFO - PeopleDetector::loadRecognizerData:" << std::endl;
+		std::cout << "INFO - PeopleDetector::loadTrainingData:" << std::endl;
 		std::cout << "\t ... " << faces_num << " images loaded.\n";
 	}
 	else
 	{
-		std::cerr << "ERROR - PeopleDetector::loadTrainingData():" << std::endl;
+		std::cerr << "ERROR - PeopleDetector::loadTrainingData:" << std::endl;
 		std::cerr << "\t .... Path '" << path << "' is not a directory." << std::endl;
 		return ipa_Utils::RET_FAILED;
 	}
@@ -902,6 +973,10 @@ unsigned long CobFaceDetectionNodelet::loadRecognizerData()
 		fileStorage["face_class_avg_projections"] >> face_class_avg_projections_;
 
 		fileStorage.release();
+
+		// save classifier
+		std::string classifierFile = path + "svm.dat";
+		person_classifier_.load(classifierFile.c_str());
 
 		// do not run PCA
 		run_pca_ = false;
@@ -1132,7 +1207,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	// publish face positions
 	std::stringstream ss;
 	ss << depth_image.rows << " " << depth_image.cols;
-	cob_msgs::DetectionArray facePositionMsg;
+	cob_vision_msgs::PeopleDetectionArray facePositionMsg;
 	// image dimensions
 	facePositionMsg.header.frame_id = ss.str();
 	// time stamp
@@ -1147,7 +1222,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 			cv::Rect face = range_faces_[i];
 
 			// 2D image coordinates
-			cob_msgs::Detection det;
+			cob_vision_msgs::PeopleDetection det;
 			det.mask.roi.x = face.x;           det.mask.roi.y = face.y;
 			det.mask.roi.width = face.width;   det.mask.roi.height = face.height;
 			float center2Dx = face.x + face.width*0.5f;
@@ -1190,7 +1265,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 		cv::Rect face = color_faces_[i];
 
 		// 2D image coordinates
-		cob_msgs::Detection det;
+		cob_vision_msgs::PeopleDetection det;
 		det.mask.roi.x = face.x;           det.mask.roi.y = face.y;
 		det.mask.roi.width = face.width;   det.mask.roi.height = face.height;
 		float center2Dx = face.x + face.width*0.5f;
@@ -1370,6 +1445,7 @@ void CobFaceDetectionNodelet::trainContinuousCallback(const sensor_msgs::PointCl
 		}
 
 		addFace(colored_pc_->GetColorImage(), current_training_id_);
+		number_training_images_captured_++;
 		std::cout << "INFO - CuiPeopleDetector::ConsoleGUI:" << std::endl;
 		std::cout << "\t ... Face captured (" << face_images_.size() << ")." << std::endl;
 	}
@@ -1723,3 +1799,4 @@ unsigned long CobFaceDetectionNodelet::loadParameters(const char* iniFileName)
 //
 //	return 0;
 //}
+

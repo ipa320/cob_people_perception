@@ -1,4 +1,4 @@
 # request message
 ---
 # response message
-cob_msgs/DetectionArray people_list
+cob_vision_msgs/PeopleDetectionArray people_list

@@ -15,6 +15,7 @@
 #endif
 #include <fstream>
 #include <set>
+#include <opencv/ml.h>
 
 namespace ipa_PeopleDetector {
 
@@ -78,6 +79,11 @@ public:
 	/// @return Return code
 	virtual unsigned long ConvertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face);
 
+	/// Applies some preprocessing to the grayscale face images to obtain a more robust identification.
+	/// @param input_image Grayscale face image.
+	/// @return Preprocessed image.
+	virtual cv::Mat preprocessImage(cv::Mat& input_image);
+
 	/// Function to Run the PCA algorithm
 	/// @param nEigens Number of eigenvalues
 	/// @param eigenVectors Eigenvectors
@@ -100,9 +106,10 @@ public:
 	/// @param threshold The threshold to recognize unkown faces
 	/// @param threshold_FS The threshold to the face space
 	/// @param eigenValMat Eigenvalues
+	/// @param personClassifier A classifier for person identification. It is trained in this function. Can be left out if a simpler identification method is used.
 	/// @return Return code
 	virtual unsigned long RecognizeFace(cv::Mat& colorImage, std::vector<cv::Rect>& colorFaces, int* nEigens, std::vector<cv::Mat>& eigenVectArr, cv::Mat& avgImage, cv::Mat& projectedTrainFaceMat,
-																			std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat);
+																			std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat, cv::SVM* personClassifier = 0);
 
 	/// Function to find the closest face class
 	/// The function calculates the distance of each sample image to the trained face class
@@ -112,8 +119,9 @@ public:
 	/// @param projectedTrainFaceMat The average factors from each face class originating from the eigenvector decomposition
 	/// @param threshold The threshold to recognize unkown faces
 	/// @param eigenValMat Eigenvalues
+	/// @param personClassifier A classifier for person identification. It is trained in this function. Can be left out if a simpler identification method is used.
 	/// @return Return code
-	virtual unsigned long ClassifyFace(float *projectedTestFace, int *nearest, int *nEigens, cv::Mat& projectedTrainFaceMat, int *threshold, cv::Mat& eigenValMat);
+	virtual unsigned long ClassifyFace(float *projectedTestFace, int *nearest, int *nEigens, cv::Mat& projectedTrainFaceMat, int *threshold, cv::Mat& eigenValMat, cv::SVM* personClassifier = 0);
 
 	/// Function to calculate the FaceClasses
 	/// The function calculates the average eigenvector decomposition factors for each face classes.
@@ -122,8 +130,9 @@ public:
 	/// @param nEigens Number of eigenvalues
 	/// @param faceClassAvgProjections The average factors of the eigenvector decomposition from each face class
 	/// @param idUnique A vector containing all different Ids from the training session exactly once (idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in faceClassAvgProjections.row(i))
+	/// @param personClassifier A classifier for person identification. It is trained in this function. Can be left out if a simpler identification method is used.
 	/// @return Return code
-	virtual unsigned long CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections, std::vector<std::string>& idUnique);
+	virtual unsigned long CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections, std::vector<std::string>& idUnique, cv::SVM* personClassifier = 0);
 
 	double m_faces_increase_search_scale;		///< The factor by which the search window is scaled between the subsequent scans
 	int m_faces_drop_groups;					///< Minimum number (minus 1) of neighbor rectangles that makes up an object.

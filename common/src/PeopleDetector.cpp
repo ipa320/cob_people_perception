@@ -2,9 +2,14 @@
 
 #ifdef __LINUX__
 #include "cob_people_detection/PeopleDetector.h"
+#include "cob_vision_utils/GlobalDefines.h"
 #else
 #include "cob_vision/cob_people_detection/common/include/cob_people_detection/PeopleDetector.h"
+#include "cob_common/cob_vision_utils/common/include/cob_vision_utils/GlobalDefines.h"
 #endif
+
+#include <opencv/cv.h>
+#include <opencv/cvaux.h>
 
 using namespace ipa_PeopleDetector;
 
@@ -18,7 +23,9 @@ unsigned long PeopleDetector::Init(std::string directory)
 {	
 	// Load Haar-Classifier for frontal face-, eyes- and body-detection
 	std::string faceCascadePath = directory + "haarcascades/haarcascade_frontalface_alt2.xml";
-	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg+.xml";	// + "haarcascades/haarcascade_range.xml";
+	// todo:
+	std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg.xml";
+	//std::string rangeCascadePath = directory + "haarcascades/haarcascade_range_multiview_5p_bg+.xml";	// + "haarcascades/haarcascade_range.xml";
 	m_face_cascade = (CvHaarClassifierCascade*)cvLoad(faceCascadePath.c_str(), 0, 0, 0 );	//"ConfigurationFiles/haarcascades/haarcascade_frontalface_alt2.xml", 0, 0, 0 );
 	m_range_cascade = (CvHaarClassifierCascade*)cvLoad(rangeCascadePath.c_str(), 0, 0, 0 );
 
@@ -214,6 +221,49 @@ unsigned long PeopleDetector::ConvertAndResize(cv::Mat& img, cv::Mat& resized, c
 	return ipa_Utils::RET_OK;
 }
 
+cv::Mat PeopleDetector::preprocessImage(cv::Mat& input_image)
+{
+	// todo:
+	return input_image;
+
+	// do a modified census transform
+	cv::Mat output(input_image.cols, input_image.rows, input_image.type());
+	//cv::Mat smoothedImage = input_image.clone();
+	//cv::GaussianBlur(smoothedImage, smoothedImage, cv::Size(3,3), 0, 0, cv::BORDER_REPLICATE);
+
+	for (int v=0; v<input_image.rows; v++)
+	{
+		uchar* srcPtr = input_image.ptr(v);
+		//uchar* smoothPtr = smoothedImage.ptr(v);
+		uchar* outPtr = output.ptr(v);
+		for (int u=0; u<input_image.cols; u++)
+		{
+			int ctOutcome = 0;
+			int offset = -1;
+			for (int dv=-1; dv<=1; dv++)
+			{
+				for (int du=-1; du<=1; du++)
+				{
+					if (dv==0 && du==0) continue;
+					offset++;
+					if (v+dv<0 || v+dv>=input_image.rows || u+du<0 || u+du>=input_image.cols) continue;
+					//if (*smoothPtr < *(srcPtr+dv*input_image.step+du)) ctOutcome += 1<<offset;
+					if (*srcPtr < *(srcPtr+dv*input_image.step+du)) ctOutcome += 1<<offset;
+				}
+			}
+			*outPtr = ctOutcome;
+
+			srcPtr++;
+			outPtr++;
+		}
+	}
+
+//	cv::imshow("census transform", output);
+//	cv::waitKey();
+
+	return output;
+}
+
 unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVectors, cv::Mat& eigenValMat, cv::Mat& avgImage, std::vector<cv::Mat>& faceImages, cv::Mat& projectedTrainFaceMat)
 {
 	CvTermCriteria calcLimit;
@@ -234,7 +284,9 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	IplImage** faceImgArr = (IplImage**)cvAlloc((int)faceImages.size()*sizeof(IplImage*));
 	for(int j=0; j<(int)faceImages.size(); j++)
 	{
-		IplImage temp = (IplImage)faceImages[j];
+		// todo: preprocess
+		cv::Mat preprocessedImage = preprocessImage(faceImages[j]);
+		IplImage temp = (IplImage)preprocessedImage;
 		faceImgArr[j] = cvCloneImage(&temp);
 	}
 
@@ -250,7 +302,8 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 	IplImage avgImageIpl = (IplImage)avgImage;
 	cvCalcEigenObjects((int)faceImages.size(), (void*)faceImgArr, (void*)eigenVectArr, CV_EIGOBJ_NO_CALLBACK, 0, 0, &calcLimit, &avgImageIpl, (float*)(eigenValMat.data));
 
-	cv::normalize(eigenValMat,eigenValMat, 1, 0, CV_L1);	//, 0);		0=bug?
+	// todo:
+	cv::normalize(eigenValMat,eigenValMat, 1, 0, /*CV_L1*/CV_L2);	//, 0);		0=bug?
 
 	// Project the training images onto the PCA subspace
 	projectedTrainFaceMat.create(faceImages.size(), *nEigens, CV_32FC1);
@@ -275,7 +328,7 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 }
 
 unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv::Rect>& colorFaceCoordinates, int* nEigens, std::vector<cv::Mat>& eigenVectors, cv::Mat& avgImage, cv::Mat& faceClassAvgProjections,
-										std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat)
+										std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat, cv::SVM* personClassifier)
 {
 	float* eigenVectorWeights = 0;
 
@@ -295,6 +348,8 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 	{
 		cv::Rect face = colorFaceCoordinates[i];
 		ConvertAndResize(colorImage, resized_8U1, face);
+		// todo: preprocess
+		cv::Mat preprocessedImage = preprocessImage(resized_8U1);
 
 		IplImage avgImageIpl = (IplImage)avgImage;
 		
@@ -306,6 +361,14 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 		cv::Mat srcReconstruction = cv::Mat::zeros(eigenVectors[0].size(), eigenVectors[0].type());
 		for(int i=0; i<(int)eigenVectors.size(); i++) srcReconstruction += eigenVectorWeights[i]*eigenVectors[i];
 		cv::Mat temp;
+
+		// todo:
+//		cv::Mat reconstrTemp = srcReconstruction + avgImage;
+//		cv::Mat reconstr(eigenVectors[0].size(), CV_8UC1);
+//		reconstrTemp.convertTo(reconstr, CV_8UC1, 1);
+//		cv::imshow("reconstruction", reconstr);
+//		cv::waitKey();
+
 		resized_8U1.convertTo(temp, CV_32FC1, 1.0/255.0);
 		double distance = cv::norm((temp-avgImage), srcReconstruction, cv::NORM_L2);
 
@@ -325,7 +388,7 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 		else
 		{
 			int nearest;
-			ClassifyFace(eigenVectorWeights, &nearest, nEigens, faceClassAvgProjections, threshold, eigenValMat);
+			ClassifyFace(eigenVectorWeights, &nearest, nEigens, faceClassAvgProjections, threshold, eigenValMat, personClassifier);
 			if(nearest < 0) index.push_back(-1);	// Face Unknown
 			else index.push_back(nearest);	// Face known, it's number nearest
 		}
@@ -338,21 +401,43 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *nearest, int *nEigens, cv::Mat& faceClassAvgProjections, int *threshold, cv::Mat& eigenValMat)
+unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *nearest, int *nEigens, cv::Mat& faceClassAvgProjections, int *threshold, cv::Mat& eigenValMat, cv::SVM* personClassifier)
 {
 	double leastDistSq = DBL_MAX;
+	//todo:
+	int metric = 2; 	// 0 = Euklid, 1 = Mahalanobis, 2 = Mahalanobis Cosine
+
 
 	for(int i=0; i<faceClassAvgProjections.rows; i++)
 	{
 		double distance=0;
-		
+		double cos=0;
+		double length_sample=0;
+		double length_projection=0;
 		for(int e=0; e<*nEigens; e++)
-		{			
-			float d = eigenVectorWeights[e] - ((float*)(faceClassAvgProjections.data))[i * *nEigens + e];
-			//distance += d*d;							//Euklid
-			distance += d*d / ((float*)(eigenValMat.data))[e];	//Mahalanobis
+		{
+			if (metric < 2)
+			{
+				float d = eigenVectorWeights[e] - ((float*)(faceClassAvgProjections.data))[i * *nEigens + e];
+				if (metric==0) distance += d*d;							//Euklid
+				else distance += d*d /* / */ / ((float*)(eigenValMat.data))[e];	//Mahalanobis
+			}
+			else
+			{
+				cos += eigenVectorWeights[e] * ((float*)(faceClassAvgProjections.data))[i * *nEigens + e] / ((float*)(eigenValMat.data))[e];
+				length_projection += ((float*)(faceClassAvgProjections.data))[i * *nEigens + e] * ((float*)(faceClassAvgProjections.data))[i * *nEigens + e] / ((float*)(eigenValMat.data))[e];
+				length_sample += eigenVectorWeights[e]*eigenVectorWeights[e] / ((float*)(eigenValMat.data))[e];
+			}
 		}
-		distance = sqrt(distance);
+		if (metric < 2)
+			distance = sqrt(distance);
+		else
+		{
+			length_sample = sqrt(length_sample);
+			length_projection = sqrt(length_projection);
+			cos /= (length_projection * length_sample);
+			distance = -cos;
+		}
 
 		//######################################## Only for debugging and development ########################################
 		//std::cout.precision( 10 );
@@ -367,11 +452,22 @@ unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *neare
 		}
 	}
 
+	// todo:
+//	if (personClassifier != 0 && *nearest != -1)
+//	{
+//		cv::Mat temp(1, *nEigens, CV_32FC1, eigenVectorWeights);
+//		std::cout << "class. output: " << (int)personClassifier->predict(temp) << "\n";
+//		*nearest = (int)personClassifier->predict(temp);
+//	}
+
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long PeopleDetector::CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections, std::vector<std::string>& idUnique)
+unsigned long PeopleDetector::CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections,
+		std::vector<std::string>& idUnique, cv::SVM* personClassifier)
 {
+	std::cout << "PeopleDetector::CalculateFaceClasses ... ";
+
 	// Look for face classes
 	idUnique.clear();
 	for(int i=0; i<(int)id.size(); i++)
@@ -446,5 +542,41 @@ unsigned long PeopleDetector::CalculateFaceClasses(cv::Mat& projectedTrainFaceMa
 		}
 	}
 
+
+	// todo: machine learning technique for person identification
+	if (personClassifier != 0)
+	{
+		//std::cout << "\n";
+		// prepare ground truth
+		cv::Mat data(id.size(), *nEigens, CV_32FC1);
+		cv::Mat labels(id.size(), 1, CV_32SC1);
+		std::ofstream fout("svm.dat", std::ios::out);
+		for(int sample=0; sample<(int)id.size(); sample++)
+		{
+			// copy data
+			for (int e=0; e<*nEigens; e++)
+			{
+				data.at<float>(sample, e) = ((float*)projectedTrainFaceMat.data)[sample * *nEigens + e];
+				fout << data.at<float>(sample, e) << "\t";
+			}
+			// find corresponding label
+			for(int i=0; i<(int)idUnique.size(); i++)	// for each person
+				if(!(id[sample].compare(idUnique[i])))		// compare the labels
+					labels.at<int>(sample) = i;					// and assign the corresponding label's index from the idUnique list
+			fout << labels.at<int>(sample) << "\n";
+		}
+		fout.close();
+
+		// train the classifier
+		cv::SVMParams svmParams(CvSVM::NU_SVC, CvSVM::RBF, 0.0, 0.001953125, 0.0, 0.0, 0.8, 0.0, 0, cv::TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, FLT_EPSILON));
+		//personClassifier->train_auto(data, labels, cv::Mat(), cv::Mat(), svmParams, 10, cv::SVM::get_default_grid(CvSVM::C), CvParamGrid(0.001953125, 2.01, 2.0), cv::SVM::get_default_grid(CvSVM::P), CvParamGrid(0.0125, 1.0, 2.0));
+		personClassifier->train(data, labels, cv::Mat(), cv::Mat(), svmParams);
+		cv::SVMParams svmParamsOptimal = personClassifier->get_params();
+		std::cout << "Optimal SVM params: gamma=" << svmParamsOptimal.gamma << "  nu=" << svmParamsOptimal.nu << "\n";
+	}
+
+	std::cout << "done\n";
+
 	return ipa_Utils::RET_OK;
 }
+
