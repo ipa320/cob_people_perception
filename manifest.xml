@@ -19,7 +19,6 @@
 <depend package="stereo_msgs"/>
 <depend package="sensor_msgs"/>
 <depend package="tf"/>
-<!--depend package="rosrecord"/-->
 <depend package="image_transport" />
 <!--depend package="people_msgs" /-->
 <depend package="image_geometry" />
