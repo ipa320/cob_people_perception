@@ -108,7 +108,7 @@ void train(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClien
 	goal.numberOfImagesToCapture = 0;
 	goal.trainingID = id;
 	trainContinuousClient.sendGoal(goal);
-	trainContinuousClient.waitForResult(ros::Duration::Duration(3.0));
+	trainContinuousClient.waitForResult(ros::Duration(3.0));
 	if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 		printf("Training on!\n");
 	printf("Current State: %s\n", trainContinuousClient.getState().toString().c_str());
@@ -121,7 +121,7 @@ void train(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClien
 		{
 			cob_people_detection::TrainCaptureSampleGoal captureGoal;
 			trainCaptureSampleClient.sendGoal(captureGoal);
-			trainContinuousClient.waitForResult(ros::Duration::Duration(3.0));
+			trainContinuousClient.waitForResult(ros::Duration(3.0));
 			if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 				printf("Image capture initiated.\n");
 		}
@@ -129,7 +129,7 @@ void train(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClien
 
 	goal.running = false;
 	trainContinuousClient.sendGoal(goal);
-	trainContinuousClient.waitForResult(ros::Duration::Duration(10.0));
+	trainContinuousClient.waitForResult(ros::Duration(10.0));
 	if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 		printf("Training off!\n");
 	printf("Current State: %s\n", trainContinuousClient.getState().toString().c_str());
@@ -150,12 +150,12 @@ void train_continuous(TrainContinuousClient& trainContinuousClient, TrainCapture
 	goal.numberOfImagesToCapture = 30;
 	goal.trainingID = id;
 	trainContinuousClient.sendGoal(goal);
-	trainContinuousClient.waitForResult(ros::Duration::Duration(120.0));
+	trainContinuousClient.waitForResult(ros::Duration(120.0));
 
 
 	goal.running = false;
 	trainContinuousClient.sendGoal(goal);
-	trainContinuousClient.waitForResult(ros::Duration::Duration(10.0));
+	trainContinuousClient.waitForResult(ros::Duration(10.0));
 	if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 		printf("Training off!\n");
 	printf("Current State: %s\n", trainContinuousClient.getState().toString().c_str());
@@ -170,7 +170,7 @@ void recognize(RecognizeClient& recognizeClient)
 	goal.doRecognition = true;
 	goal.display = true;
 	recognizeClient.sendGoal(goal);
-	recognizeClient.waitForResult(ros::Duration::Duration(3.0));
+	recognizeClient.waitForResult(ros::Duration(3.0));
 	if (recognizeClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 		printf("Recognition on!\n");
 	printf("Current State: %s\n", recognizeClient.getState().toString().c_str());
@@ -180,7 +180,7 @@ void recognize(RecognizeClient& recognizeClient)
 
 	goal.running = false;
 	recognizeClient.sendGoal(goal);
-	recognizeClient.waitForResult(ros::Duration::Duration(2.0));
+	recognizeClient.waitForResult(ros::Duration(2.0));
 	if (recognizeClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 		printf("Recognition off!\n");
 	printf("Current State: %s\n", recognizeClient.getState().toString().c_str());
@@ -193,7 +193,7 @@ void show(ShowClient& showClient, int mode)
 	// Fill in goal here
 	goal.mode = mode;
 	showClient.sendGoal(goal);
-	showClient.waitForResult(ros::Duration::Duration(3.0));
+	showClient.waitForResult(ros::Duration(3.0));
 	printf("Current State: %s\n", showClient.getState().toString().c_str());
 }
 
@@ -205,22 +205,22 @@ int main(int argc, char** argv)
 	TrainContinuousClient trainContinuousClient("cob_people_detection/face_detection/train_continuous_server", true);
 	TrainCaptureSampleClient trainCaptureSampleClient("cob_people_detection/face_detection/train_capture_sample_server", true);
 	ShowClient showClient("cob_people_detection/face_detection/show_server", true);
-	if (!recognizeClient.waitForServer(ros::Duration::Duration(2.0)))
+	if (!recognizeClient.waitForServer(ros::Duration(2.0)))
 	{
 		std::cout << "No connection to server 'recognize_server'.\n";
 		return 0;
 	}
-	if (!trainContinuousClient.waitForServer(ros::Duration::Duration(2.0)))
+	if (!trainContinuousClient.waitForServer(ros::Duration(2.0)))
 	{
 		std::cout << "No connection to server 'train_continuous_server'.\n";
 		return 0;
 	}
-	if (!trainCaptureSampleClient.waitForServer(ros::Duration::Duration(2.0)))
+	if (!trainCaptureSampleClient.waitForServer(ros::Duration(2.0)))
 	{
 		std::cout << "No connection to server 'train_capture_sample_server'.\n";
 		return 0;
 	}
-	if (!showClient.waitForServer(ros::Duration::Duration(2.0)))
+	if (!showClient.waitForServer(ros::Duration(2.0)))
 	{
 		std::cout << "No connection to server 'show_server'.\n";
 		return 0;
