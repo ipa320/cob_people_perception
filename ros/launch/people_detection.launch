@@ -9,7 +9,7 @@
 
   <!-- kinect image flip nodelet - flips kinect images if robot is looking backwards -->
   <node pkg="nodelet" ns="cam3d" type="nodelet" name="CobKinectImageFlipNodelet" args="load ipa_CameraSensors/CobKinectImageFlipNodelet /nodelet_manager_people_detection" output="screen">
-    <remap from="pointcloud" to="/cam3d/depth/points"/>
+    <remap from="pointcloud" to="/cam3d/depth_registered/points"/>
     <remap from="colorimage" to="/cam3d/rgb/image_color"/>
   </node>
 
