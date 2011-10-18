@@ -1,0 +1,20 @@
+<stack>
+  <description brief="cob_people_perception">cob_people_perception</description>
+  <author>Maintained by Richard Bormann</author>
+  <license>BSD,Fraunhofer IPA</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/cob_people_perception</url>
+  <depend stack="cob_common" /> <!-- cob_vision_utils -->
+  <depend stack="common" /> <!-- actionlib, tinyxml -->
+  <depend stack="common_msgs" /> <!-- sensor_msgs, actionlib_msgs, geometry_msgs, stereo_msgs -->
+  <depend stack="geometry" /> <!-- tf -->
+  <depend stack="image_common" /> <!-- image_transport -->
+  <depend stack="nodelet_core" /> <!-- nodelet -->
+  <depend stack="openni_kinect" /> <!-- openni, nite -->
+  <depend stack="orocos_kinematics_dynamics" /> <!-- kdl -->
+  <depend stack="perception_pcl" /> <!-- pcl, pcl_ros -->
+  <depend stack="ros" /> <!-- roslib -->
+  <depend stack="ros_comm" /> <!-- std_srvs, std_msgs, roscpp -->
+  <depend stack="vision_opencv" /> <!-- opencv2, image_geometry, cv_bridge -->
+
+</stack>
