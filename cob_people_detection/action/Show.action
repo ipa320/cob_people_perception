@@ -1,0 +1,9 @@
+# Displays data on the screen
+#
+# goal message
+uint32 mode           # the value determines what is shown on screen: 0 = average image, 1 = eigenfaces
+---
+# result message
+uint64 success        # is ipa_Utils::RET_OK if everything went well
+---
+# feedback message

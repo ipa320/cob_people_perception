@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\common\src\HaardetectorUnitTest.cpp" />
+    <ClCompile Include="..\common\src\PeopleDetector.cpp" />
+    <ClCompile Include="..\common\src\PeopleDetectorControlFlow.cpp" />
+    <ClCompile Include="..\..\cob_sensor_fusion\common\src\CameraSensorsControlFlow.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\care-o-bot\cob_common\cob_vision_utils\common\src\VisionUtils.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\src\extern\TinyXml\tinystr.cpp">
+      <Filter>TinyXML</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\src\extern\TinyXml\tinyxml.cpp">
+      <Filter>TinyXML</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\src\extern\TinyXml\tinyxmlerror.cpp">
+      <Filter>TinyXML</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\src\extern\TinyXml\tinyxmlparser.cpp">
+      <Filter>TinyXML</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\include\cob_people_detection\PeopleDetector.h" />
+    <ClInclude Include="..\common\include\cob_people_detection\PeopleDetectorControlFlow.h" />
+    <ClInclude Include="..\..\windows\src\extern\TinyXml\tinystr.h">
+      <Filter>TinyXML</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\windows\src\extern\TinyXml\tinyxml.h">
+      <Filter>TinyXML</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Utilities">
+      <UniqueIdentifier>{eccb7ac0-65ad-4322-930a-e1484d4c5bd4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TinyXML">
+      <UniqueIdentifier>{6549822f-041d-45bf-93b1-69dd35a3312b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

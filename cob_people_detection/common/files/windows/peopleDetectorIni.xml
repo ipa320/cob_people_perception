@@ -1,0 +1,109 @@
+<!-- People Detector Initialization file -->
+
+<CameraSensors>
+	<!-- Specifies the color camera -->
+	<!-- Possible values are: -->
+	<!-- CAM_IC, CAM_AVTPIKE, CAM_AXIS2100, CAM_VIRTUAL -->
+	<ColorCamera name="CAM_KINECT" />
+
+	<!-- Specifies the range imaging camera -->
+	<!-- Possible values are: -->
+	<!-- CAM_SR3000, CAM_VIRTUAL, CAM_PMDCAMCUBE -->
+	<RangeImagingCamera name="CAM_KINECT" />
+
+	<!-- Determines the method, used to calculate the colored point cloud -->
+	<!-- Valid values: MODE_SHARED - Use range and color camera -->
+	<!--               MODE_STEREO - Use two color cameras -->
+	<!--               MODE_AUTO - Not implemented, defaults to MODE_SHARED -->
+	<PointCloudMode value="MODE_PASSTHROUGH" />
+
+	<!-- Determines the size of the shared image relative to the size of the swissranger image -->
+	<!-- SharedImageSize = SwissrangerImageSize * SharedWorkingSizeFactor -->
+	<SharedWorkingSizeFactor value="3.0" />
+
+</CameraSensors>
+
+<PeopleDetector>
+	<adaBoost>
+		<!-- The factor by which the search window is scaled between the subsequent scans --> 
+		<Faces_increase_search_scale value="1.1" />
+		<!-- Minimum number (minus 1) of neighbor rectangles that makes up an object --> 
+		<!-- <Faces_drop_groups value="120" /> -->
+		<Faces_drop_groups value="3" /> <!-- 4 -->
+		<!-- Minimum serach scale x --> 
+		<!-- <Faces_min_search_scale_x value="20" /> -->
+		<Faces_min_search_scale_x value="20" />
+		<!-- Minimum serach scale y --> 
+		<!-- <Faces_min_search_scale_y value="20" /> -->
+		<Faces_min_search_scale_y value="20" />
+
+		<!-- The factor by which the search window is scaled between the subsequent scans --> 
+		<Range_increase_search_scale value="1.1" />
+		<!-- Minimum number (minus 1) of neighbor rectangles that makes up an object --> 
+		<!-- <Range_drop_groups value="70" /> -->
+		<Range_drop_groups value="68" /><!--68-->  <!-- haarcascade_range_multiview_5p_bg+.xml : 200 -->
+		<!-- Minimum serach scale x --> 
+		<!-- <Range_min_search_scale_x value="20" /> -->
+		<Range_min_search_scale_x value="20" />
+		<!-- Minimum serach scale y --> 
+		<!-- <Range_min_search_scale_y value="20" /> -->
+		<Range_min_search_scale_y value="20" />
+	</adaBoost>
+	<eigenfaces>
+		<!-- Threshold to each face class --> 
+		<Threshold_Face_Class value="100000000" /> <!-- 80000-->
+		<!-- <Threshold_Face_Class value="2500000000" /> -->
+		<!-- Threshold to face space --> 
+		<Threshold_Facespace value="18000" />
+		<!-- <Threshold_Facespace value="450000000" /> -->
+	</eigenfaces>
+</PeopleDetector>
+
+<ObjectDetector>
+	<ObjectDetectorParameters>
+		<!-- Defines the center of the 3D sphere used for range segmentation in camera coordinates-->
+		<LearningCenter x="0.02" y="-0.03" z="1.05" />
+
+		<!-- Defines the radius of the sphere around 'LearningCenter' --> 
+		<LearningRadius value="0.19" />
+
+		<!-- Range images produce outliers (wrong range values) -->
+		<!-- In order to remove these values from a model during learning -->
+		<!-- we acquire a number of range images per view and calculate -->
+		<!-- a median image out of it --> 
+		<RangeCamIterations value="100" />
+
+		<!-- Use OpenGL to visualize colored point cloud -->
+		<!-- Otherwise two 2D opencv windows are created, -->
+		<!-- One window for color and the other for range information -->
+		<OpenGL value="0" />
+
+		<!-- Specifies the detection mode of the object detector -->
+		<!-- Possible values are: -->
+		<!--MODEL_FULL_6D, MODEL_SIFT, MODEL_BAYES and MODEL_DISTANCE_BASED_DETECTION -->
+		<ModelType name="MODEL_SIFT" />
+
+		<!-- MODE_DISTANCE_BASED_DETECTION -->
+		<MODEL_DISTANCE_BASED_DETECTION>
+			<!-- Maximal radius that two feature points may reside apart from -->
+			<!-- each other to be considered within the final feature determination -->
+			<DetectionRadius value="0.25" />
+		</MODEL_DISTANCE_BASED_DETECTION>
+
+		<!-- MODE_FULL_6D -->
+		<MODEL_FULL_6D>
+			<!-- VOID -->
+		</MODEL_FULL_6D>
+
+		<!-- MODE_SIFT -->
+		<MODEL_SIFT>
+			<!-- VOID -->
+		</MODEL_SIFT>
+
+		<!-- MODE_BAYES -->
+		<MODEL_BAYES>
+			<!-- VOID -->
+		</MODEL_BAYES>
+
+	</ObjectDetectorParameters>
+</ObjectDetector>

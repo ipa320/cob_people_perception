@@ -1,0 +1,11 @@
+1. Start the openni camera driver:
+roslaunch openni_camera openni_node.launch 
+
+2. Start the face detector and people detector/tracker server:
+roslaunch cob_people_detection face_detector_ipa.launch
+
+3. Start the face detector action client interface:
+rosrun cob_people_detection people_detection_client
+
+4. Service Call with people location response
+rosservice call /cob_people_detection/detect_people

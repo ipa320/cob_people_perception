@@ -1,0 +1,19 @@
+# when this flag is activated, the 3d size of a face is determined and only reasonable sizes may continue in the processing pipeline
+# bool
+reason_about_3dface_size: true
+
+# the maximum feasible face diameter [m] if reason_about_3dface_size is enabled
+# double
+face_size_max_m: 0.35
+
+# the minimum feasible face diameter [m] if reason_about_3dface_size is enabled
+# double
+face_size_min_m: 0.1
+
+# maximum distance [m] of detected faces to the sensor
+# double
+max_face_z_m: 8.0
+
+# if enabled, invalid pixels of the depth image are interpolated by region growing of their neighbors
+# bool
+fill_unassigned_depth_values: true

@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PeopleDetector", "PeopleDetector.vcxproj", "{C9AACCD3-79A9-4822-BAFF-68ECBF02CDCF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76E35449-89E3-4A33-87A1-0E6546FF5EBC} = {76E35449-89E3-4A33-87A1-0E6546FF5EBC}
+		{649B63CC-392A-4033-8DC8-78C33DD125FB} = {649B63CC-392A-4033-8DC8-78C33DD125FB}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LibSensorFusion", "..\..\cob_sensor_fusion\msvc\LibSensorFusion.vcxproj", "{76E35449-89E3-4A33-87A1-0E6546FF5EBC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{649B63CC-392A-4033-8DC8-78C33DD125FB} = {649B63CC-392A-4033-8DC8-78C33DD125FB}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LibCameraSensors", "..\..\cob_camera_sensors_ipa\msvc\LibCameraSensors.vcxproj", "{649B63CC-392A-4033-8DC8-78C33DD125FB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HaardetectorUnitTest", "HaardetectorUnitTest.vcxproj", "{34523734-0181-44A0-B228-9BFF3F485DAA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{76E35449-89E3-4A33-87A1-0E6546FF5EBC} = {76E35449-89E3-4A33-87A1-0E6546FF5EBC}
+		{649B63CC-392A-4033-8DC8-78C33DD125FB} = {649B63CC-392A-4033-8DC8-78C33DD125FB}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Makefile|Win32 = Makefile|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C9AACCD3-79A9-4822-BAFF-68ECBF02CDCF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C9AACCD3-79A9-4822-BAFF-68ECBF02CDCF}.Debug|Win32.Build.0 = Debug|Win32
+		{C9AACCD3-79A9-4822-BAFF-68ECBF02CDCF}.Makefile|Win32.ActiveCfg = Release|Win32
+		{C9AACCD3-79A9-4822-BAFF-68ECBF02CDCF}.Makefile|Win32.Build.0 = Release|Win32
+		{C9AACCD3-79A9-4822-BAFF-68ECBF02CDCF}.Release|Win32.ActiveCfg = Release|Win32
+		{C9AACCD3-79A9-4822-BAFF-68ECBF02CDCF}.Release|Win32.Build.0 = Release|Win32
+		{76E35449-89E3-4A33-87A1-0E6546FF5EBC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{76E35449-89E3-4A33-87A1-0E6546FF5EBC}.Debug|Win32.Build.0 = Debug|Win32
+		{76E35449-89E3-4A33-87A1-0E6546FF5EBC}.Makefile|Win32.ActiveCfg = Release|Win32
+		{76E35449-89E3-4A33-87A1-0E6546FF5EBC}.Makefile|Win32.Build.0 = Release|Win32
+		{76E35449-89E3-4A33-87A1-0E6546FF5EBC}.Release|Win32.ActiveCfg = Release|Win32
+		{76E35449-89E3-4A33-87A1-0E6546FF5EBC}.Release|Win32.Build.0 = Release|Win32
+		{649B63CC-392A-4033-8DC8-78C33DD125FB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{649B63CC-392A-4033-8DC8-78C33DD125FB}.Debug|Win32.Build.0 = Debug|Win32
+		{649B63CC-392A-4033-8DC8-78C33DD125FB}.Makefile|Win32.ActiveCfg = Makefile|Win32
+		{649B63CC-392A-4033-8DC8-78C33DD125FB}.Makefile|Win32.Build.0 = Makefile|Win32
+		{649B63CC-392A-4033-8DC8-78C33DD125FB}.Release|Win32.ActiveCfg = Release|Win32
+		{649B63CC-392A-4033-8DC8-78C33DD125FB}.Release|Win32.Build.0 = Release|Win32
+		{34523734-0181-44A0-B228-9BFF3F485DAA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{34523734-0181-44A0-B228-9BFF3F485DAA}.Debug|Win32.Build.0 = Debug|Win32
+		{34523734-0181-44A0-B228-9BFF3F485DAA}.Makefile|Win32.ActiveCfg = Release|Win32
+		{34523734-0181-44A0-B228-9BFF3F485DAA}.Makefile|Win32.Build.0 = Release|Win32
+		{34523734-0181-44A0-B228-9BFF3F485DAA}.Release|Win32.ActiveCfg = Release|Win32
+		{34523734-0181-44A0-B228-9BFF3F485DAA}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

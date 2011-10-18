@@ -1,0 +1,4 @@
+# request message
+---
+# response message
+cob_vision_msgs/PeopleDetectionArray people_list

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+	<include file="$(find cob_camera_sensors)/ros/launch/cam3d.launch" />
+	<include file="$(find cob_people_detection)/ros/launch/nodelet_manager.launch" />
+	<include file="$(find cob_people_detection)/ros/launch/sandbox/people_detection_with_viewer.launch" />
+
+</launch>

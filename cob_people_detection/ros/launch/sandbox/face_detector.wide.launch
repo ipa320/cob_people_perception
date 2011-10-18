@@ -1,0 +1,22 @@
+<launch>
+  <!-- activate the wide_stereo node if you are using a stereo camera pair, for point cloud sources, just deactivate this node -->
+  <node ns="wide_stereo" pkg="stereo_image_proc" type="stereo_image_proc" args="" output="screen" name="stereoproc"/>
+
+  <node pkg="face_detector" type="face_detector" name="face_detector" args="stereo:=wide_stereo image:=image_rect" output="screen">
+         <!-- deactivate the remaps if you are using a stereo camera pair -->
+	 <!--<remap from="/wide_stereo/disparity" to="/camera/depth/disparity"/>-->
+	 <!--<remap from="/wide_stereo/left/image_rect" to="/camera/rgb/image_color"/>-->
+
+  	 <param name="classifier_name" type="string" value="frontalface" />
+	 <param name="classifier_filename" type="string" value="$(find opencv2)/opencv/share/opencv/haarcascades/haarcascade_frontalface_alt.xml" />
+	 <param name="classifier_reliability" type="double" value="0.9"/>
+  	 <param name="do_continuous" type="bool" value="true" />
+  	 <param name="do_publish_faces_of_unknown_size" type="bool" value="false" />	
+	 <param name="do_display" type="string" value="local" />
+  	 <param name="output" type="string" value="screen" />
+         <param name="face_size_max_m" type="double" value="0.35" />
+         <param name="do_display_disparity_or_depth" type="bool" value="true" />
+         <param name="data_source_mode" type="string" value="stereo" />
+  </node>
+
+</launch>

@@ -1,0 +1,14 @@
+# Message enables or disables the training mode
+#
+# goal message
+bool running          # if true, the continuous image capture is started or continued, on false training is stopped
+bool appendData       # if true, the existing data is loaded and captured images will be appended to the existing data set, otherwise, the old data is deleted
+bool doPCA            # if the training is stopped (running=false), the new data needs to be analyzed for and before the recognition step via PCA, if this is true, the PCA is computed immediately
+string trainingID     # name of the person who is trained
+int32 numberOfImagesToCapture		# if this is 0, image capture is triggered manually via actions; if > 0, image capture is done so many times in a row as the variable indicates 
+---
+# result message
+uint64 success        # is ipa_Utils::RET_OK if everything went well
+---
+# feedback message
+

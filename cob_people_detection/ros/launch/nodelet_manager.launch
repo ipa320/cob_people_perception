@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node pkg="nodelet" type="nodelet" name="nodelet_manager_people_detection"  args="manager" output="screen"/>
+</launch>
