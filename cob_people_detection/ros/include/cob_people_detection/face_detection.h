@@ -73,7 +73,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 //#include <std_msgs/Float32MultiArray.h>
-#include <cob_vision_msgs/PeopleDetectionArray.h>
+#include <cob_people_detection_msgs/PeopleDetectionArray.h>
 
 // topics
 #include <message_filters/subscriber.h>
@@ -105,7 +105,7 @@
 #include <pcl_ros/point_cloud.h>
 
 // tiny xml
-#include "tinyxml/tinyxml.h"
+#include "tinyxml.h"
 
 // boost
 #include <boost/bind.hpp>
@@ -116,9 +116,11 @@
 namespace fs = boost::filesystem;
 
 // external includes
-#include "cob_vision_ipa_utils/MathUtils.h"
-
-#include "cob_sensor_fusion/ColoredPointCloudSequence.h"
+#ifdef __LINUX__
+#else
+	#include "cob_vision_ipa_utils/MathUtils.h"
+	#include "cob_sensor_fusion/ColoredPointCloudSequence.h"
+#endif
 
 #include "cob_people_detection/PeopleDetector.h"
 
@@ -152,7 +154,12 @@ protected:
 
 	ros::NodeHandle node_handle_;				///< ROS node handle
 
+#ifdef __LINUX__
+	cv::Mat color_image_;	///< Storage for acquired color
+	cv::Mat range_image_;	/// and depth image
+#else
 	ipa_SensorFusion::ColoredPointCloudPtr colored_pc_; ///< Storage for acquired colored point cloud
+#endif
 
 	std::string directory_;						///< directory for the data files
 	bool run_pca_;								///< has to run a PCA when the data was modified
@@ -282,7 +289,7 @@ public:
 	/// Function to extract images for training range classifier
 	/// @param pc ColoredPointCloud with images
 	/// @return Return code.
-	unsigned long saveRangeTrainImages(ipa_SensorFusion::ColoredPointCloudPtr pc);
+	unsigned long saveRangeTrainImages(cv::Mat& xyz_image);
 
 	unsigned long getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
 

@@ -114,7 +114,7 @@ void CobFaceDetectionNodelet::onInit()
 	sync_pointcloud_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
-	face_position_publisher_ = node_handle_.advertise<cob_vision_msgs::PeopleDetectionArray>("face_position_array", 1);
+	face_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::PeopleDetectionArray>("face_position_array", 1);
 	face_detection_image_pub_ = it_->advertise("face_detection_image", 1);
 
 	recognize_server_ = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&CobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
@@ -168,7 +168,10 @@ unsigned long CobFaceDetectionNodelet::init()
 	sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
 	sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&CobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
 
+#ifdef __LINUX__
+#else
 	colored_pc_ = ipa_SensorFusion::CreateColoredPointCloud();
+#endif
 
 	if (people_detector_ != 0) delete people_detector_;
 	people_detector_ = new ipa_PeopleDetector::PeopleDetector();
@@ -1015,12 +1018,12 @@ unsigned long CobFaceDetectionNodelet::showAVGImage(cv::Mat& avgImage)
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long CobFaceDetectionNodelet::saveRangeTrainImages(ipa_SensorFusion::ColoredPointCloudPtr pc)
+unsigned long CobFaceDetectionNodelet::saveRangeTrainImages(cv::Mat& xyz_image)
 {
 	std::string path = directory_ + "haarcascades/";
 	std::string img_ext = ".jpg";
-	cv::Mat xyzImage_8U3(pc->GetXYZImage().size(), CV_8UC3);	//IplImage* xyzImage_8U3 = cvCreateImage(cvGetSize(pc->GetXYZImage()), 8, 3);
-	ipa_Utils::ConvertToShowImage(pc->GetXYZImage(), xyzImage_8U3, 3);
+	cv::Mat xyzImage_8U3(xyz_image.size(), CV_8UC3);	//IplImage* xyzImage_8U3 = cvCreateImage(cvGetSize(pc->GetXYZImage()), 8, 3);
+	ipa_Utils::ConvertToShowImage(xyz_image, xyzImage_8U3, 3);
 
 	for(int i=0; i<(int)color_faces_.size(); i++)
 	{
@@ -1079,9 +1082,14 @@ unsigned long CobFaceDetectionNodelet::getMeasurement(const sensor_msgs::PointCl
 		}
 	}
 
+#ifdef __LINUX__
+	color_image_ = color_image_8U3;
+	range_image_ = xyz_image_32F3;
+#else
 	// Images are cloned within setter functions
 	colored_pc_->SetColorImage(color_image_8U3);
 	colored_pc_->SetXYZImage(xyz_image_32F3);
+#endif
 
 //    		cv::Mat xyz_image_8U3;
 //			ipa_Utils::ConvertToShowImage(colored_pc_->GetXYZImage(), xyz_image_8U3, 3);
@@ -1174,9 +1182,14 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	cv::Mat depth_image;
 	convertPclMessageToMat(shared_image_msg, depth_image);
 
+#ifdef __LINUX__
+	color_image_ = color_image;
+	range_image_ = depth_image;
+#else
 	// convert point cloud and color image to colored point cloud
 	colored_pc_->SetColorImage(color_image);
 	colored_pc_->SetXYZImage(depth_image);
+#endif
 	//getMeasurement(shared_image_msg, color_image_msg);
 
 
@@ -1190,10 +1203,15 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	}
 
 	//DWORD start = timeGetTime();
-	detectFaces(colored_pc_->GetXYZImage(), colored_pc_->GetColorImage());
-
 	cv::Mat colorImage_8U3;
+#ifdef __LINUX__
+	detectFaces(range_image_, color_image_);
+	colorImage_8U3 = color_image_.clone();
+#else
+	detectFaces(colored_pc_->GetXYZImage(), colored_pc_->GetColorImage());
 	colored_pc_->GetColorImage().copyTo(colorImage_8U3);
+#endif
+
 
 	std::vector<int> index;
 	if (do_recognition_==true)
@@ -1207,7 +1225,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	// publish face positions
 	std::stringstream ss;
 	ss << depth_image.rows << " " << depth_image.cols;
-	cob_vision_msgs::PeopleDetectionArray facePositionMsg;
+	cob_people_detection_msgs::PeopleDetectionArray facePositionMsg;
 	// image dimensions
 	facePositionMsg.header.frame_id = ss.str();
 	// time stamp
@@ -1222,7 +1240,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 			cv::Rect face = range_faces_[i];
 
 			// 2D image coordinates
-			cob_vision_msgs::PeopleDetection det;
+			cob_people_detection_msgs::PeopleDetection det;
 			det.mask.roi.x = face.x;           det.mask.roi.y = face.y;
 			det.mask.roi.width = face.width;   det.mask.roi.height = face.height;
 			float center2Dx = face.x + face.width*0.5f;
@@ -1265,7 +1283,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 		cv::Rect face = color_faces_[i];
 
 		// 2D image coordinates
-		cob_vision_msgs::PeopleDetection det;
+		cob_people_detection_msgs::PeopleDetection det;
 		det.mask.roi.x = face.x;           det.mask.roi.y = face.y;
 		det.mask.roi.width = face.width;   det.mask.roi.height = face.height;
 		float center2Dx = face.x + face.width*0.5f;
@@ -1395,16 +1413,24 @@ void CobFaceDetectionNodelet::trainContinuousCallback(const sensor_msgs::PointCl
 	cv::Mat depth_image;
 	convertPclMessageToMat(shared_image_msg, depth_image);
 
+#ifdef __LINUX__
+	color_image_ = color_image;
+	range_image_ = depth_image;
+#else
 	// convert point cloud and color image to colored point cloud
 	colored_pc_->SetColorImage(color_image);
 	colored_pc_->SetXYZImage(depth_image);
+#endif
 	//getMeasurement(shared_image_msg, color_image_msg);
 
-
-	detectFaces(colored_pc_->GetXYZImage(), colored_pc_->GetColorImage());
-
 	cv::Mat colorImage_8U3;
-	(colored_pc_->GetColorImage()).copyTo(colorImage_8U3);
+#ifdef __LINUX__
+	detectFaces(range_image_, color_image_);
+	colorImage_8U3 = color_image_.clone();
+#else
+	detectFaces(colored_pc_->GetXYZImage(), colored_pc_->GetColorImage());
+	colored_pc_->GetColorImage().copyTo(colorImage_8U3);
+#endif
 
 	for(int i=0; i<(int)color_faces_.size(); i++)
 	{
@@ -1444,7 +1470,11 @@ void CobFaceDetectionNodelet::trainContinuousCallback(const sensor_msgs::PointCl
 			return;
 		}
 
+#ifdef __LINUX__
+		addFace(color_image_, current_training_id_);
+#else
 		addFace(colored_pc_->GetColorImage(), current_training_id_);
+#endif
 		number_training_images_captured_++;
 		std::cout << "INFO - CuiPeopleDetector::ConsoleGUI:" << std::endl;
 		std::cout << "\t ... Face captured (" << face_images_.size() << ")." << std::endl;

@@ -7,8 +7,8 @@
 #define __PEOPLEDETECTOR_H__
 
 #ifdef __LINUX__
-	#include "cob_vision_ipa_utils/MathUtils.h"
-	#include "cob_sensor_fusion/ColoredPointCloud.h"
+	//#include "cob_vision_ipa_utils/MathUtils.h"
+	//#include "cob_sensor_fusion/ColoredPointCloud.h"
 #else
 	#include "cob_vision/cob_vision_ipa_utils/common/include/cob_vision_ipa_utils/MathUtils.h"
 	#include "cob_vision/cob_sensor_fusion/common/include/cob_sensor_fusion/ColoredPointCloud.h"
@@ -16,6 +16,7 @@
 #include <fstream>
 #include <set>
 #include <opencv/ml.h>
+#include <opencv/cv.h>
 
 namespace ipa_PeopleDetector {
 
