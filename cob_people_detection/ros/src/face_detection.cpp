@@ -644,7 +644,7 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 
 unsigned long CobFaceDetectionNodelet::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
 {
-	if (people_detector_->RecognizeFace(color_image, color_faces_, &n_eigens_, eigen_vectors_, avg_image_, face_class_avg_projections_, index, &threshold_, &threshold_fs_, eigen_val_mat_, &person_classifier_) & ipa_Utils::RET_FAILED)
+	if (people_detector_->RecognizeFace(color_image, color_faces_, &n_eigens_, eigen_vectors_, avg_image_, face_class_avg_projections_, index, &threshold_, &threshold_fs_, eigen_val_mat_, /*&person_classifier_*/0) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetector::recognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";
@@ -712,7 +712,7 @@ unsigned long CobFaceDetectionNodelet::PCA()
 
 	// Calculate FaceClasses
 	std::cout << "Debug: n_eigens: " << n_eigens_ << " id: " << id_.size() << "\n";
-	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_/*doubled*/, &n_eigens_, face_class_avg_projections_, id_unique_, &person_classifier_) & ipa_Utils::RET_FAILED)
+	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_/*doubled*/, &n_eigens_, face_class_avg_projections_, id_unique_, /*&person_classifier_*/0) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while calculating FaceClasses.\n";
@@ -841,7 +841,7 @@ unsigned long CobFaceDetectionNodelet::saveRecognizerData()
 
 	// save classifier
 	std::string classifierFile = path + "svm.dat";
-	person_classifier_.save(classifierFile.c_str());
+	//person_classifier_.save(classifierFile.c_str());
 
 	std::cout << "INFO - PeopleDetector::saveRecognizerData:" << std::endl;
 	std::cout << "\t ... recognizer data saved.\n";
@@ -979,7 +979,7 @@ unsigned long CobFaceDetectionNodelet::loadRecognizerData()
 
 		// save classifier
 		std::string classifierFile = path + "svm.dat";
-		person_classifier_.load(classifierFile.c_str());
+		//person_classifier_.load(classifierFile.c_str());
 
 		// do not run PCA
 		run_pca_ = false;

@@ -32,6 +32,7 @@
 <depend package="tinyxml"/>
 <depend package="cob_people_detection_msgs"/>
 <depend package="cob_vision_utils"/>
+<depend package="cob_image_flip"/>
 
 <export>
   <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>
