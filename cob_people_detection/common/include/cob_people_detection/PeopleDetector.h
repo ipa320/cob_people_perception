@@ -11,7 +11,7 @@
 	//#include "cob_sensor_fusion/ColoredPointCloud.h"
 #else
 	#include "cob_vision/cob_vision_ipa_utils/common/include/cob_vision_ipa_utils/MathUtils.h"
-	#include "cob_vision/cob_sensor_fusion/common/include/cob_sensor_fusion/ColoredPointCloud.h"
+	#include "cob_vision/cob_sensor_fusion/common/include/cob_sensor_fusion/ColoredPointCloud.h"	// todo: necessary?
 #endif
 #include <fstream>
 #include <set>

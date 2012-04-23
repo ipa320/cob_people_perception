@@ -291,7 +291,7 @@ public:
 	/// @return Return code.
 	unsigned long saveRangeTrainImages(cv::Mat& xyz_image);
 
-	unsigned long getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
+	//unsigned long getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
 
 	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& color_image_msg, cv_bridge::CvImageConstPtr& color_image_ptr, cv::Mat& color_image);
 

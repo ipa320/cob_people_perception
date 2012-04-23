@@ -407,11 +407,11 @@ namespace ipa_PeopleDetector {
         }
         face_position_msg_out.detections = faces_to_publish;
         // hack: for WimiCare replace 'Unknown' by '0000'
-        for (int i=0; i<(int)face_position_msg_out.detections.size(); i++)
-        {
-      	  if (face_position_msg_out.detections[i].label=="Unknown")
-      		  face_position_msg_out.detections[i].label = "0000";
-        }
+//        for (int i=0; i<(int)face_position_msg_out.detections.size(); i++)
+//        {
+//      	  if (face_position_msg_out.detections[i].label=="Unknown")
+//      		  face_position_msg_out.detections[i].label = "0000";
+//        }
         face_position_msg_out.header.stamp = ros::Time::now();
 
         return ipa_Utils::RET_OK;
@@ -536,6 +536,8 @@ namespace ipa_PeopleDetector {
           }
         }
         
+        // todo: consider size relation between color and depth image face frames!
+
         // if there is no matching pair of detections interrupt the search for matchings at this point
         if (min_dist == DBL_MAX) break;
                                                        
@@ -632,7 +634,7 @@ namespace ipa_PeopleDetector {
             cv::putText(colorImage, "Unknown", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
           else if (face_position_msg_out.detections[i].label == "No face")
             // Distance to face space is too high
-          cv::putText(colorImage, "No face", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
+            cv::putText(colorImage, "No face", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
           else
             // Face classified
             cv::putText(colorImage, face_position_msg_out.detections[i].label.c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
