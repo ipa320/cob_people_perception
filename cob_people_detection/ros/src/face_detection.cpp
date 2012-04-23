@@ -160,6 +160,8 @@ void CobFaceDetectionNodelet::onInit()
 
 unsigned long CobFaceDetectionNodelet::init()
 {
+	std::cout << "CobFaceDetectionNodelet::init()..." << std::endl;
+
 	shared_image_sub_.subscribe(node_handle_, "pointcloud", 1);
 	color_camera_image_sub_.subscribe(*it_, "colorimage", 1);
 //	sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
@@ -167,6 +169,8 @@ unsigned long CobFaceDetectionNodelet::init()
 
 	sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
 	sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&CobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
+
+	std::cout << "   inputs connected." << std::endl;
 
 #ifdef __LINUX__
 #else
@@ -176,10 +180,13 @@ unsigned long CobFaceDetectionNodelet::init()
 	if (people_detector_ != 0) delete people_detector_;
 	people_detector_ = new ipa_PeopleDetector::PeopleDetector();
 
+	std::cout << "   PeopleDetector created." << std::endl;
+
 	filename_ = 0;
 
 	// load data for face recognition
 	loadRecognizerData();
+	std::cout << "   recognizer data loaded." << std::endl;
 
 	// use this instead if the rdata.xml file is corrupted
 	// todo:
@@ -205,6 +212,7 @@ unsigned long CobFaceDetectionNodelet::init()
 		std::cerr << "\t ... Could not initialize people detector library.\n";
 		return ipa_Utils::RET_FAILED;
 	}
+	std::cout << "   PeopleDetector initilized." << std::endl;
 
 	if(loadParameters(iniFileNameAndPath.c_str()) & ipa_Utils::RET_FAILED)
 	{
@@ -213,6 +221,7 @@ unsigned long CobFaceDetectionNodelet::init()
 		std::cerr << "\t ... " << iniFileNameAndPath << "'.\n";
 		return ipa_Utils::RET_FAILED;
 	}
+	std::cout << "   ini-file loaded." << std::endl;
 
 	run_pca_ = false;
 
@@ -935,6 +944,7 @@ unsigned long CobFaceDetectionNodelet::loadRecognizerData()
 			std::cout << "\t ... Cant open " << complete.str() << ".\n";
 			return ipa_Utils::RET_OK;
 		}
+		std::cout << "   loading recognizer data..." << std::endl;
 
 		// Number eigenvalues/eigenvectors
 		n_eigens_ = (int)fileStorage["eigens_num"];
