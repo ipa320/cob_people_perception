@@ -16,9 +16,9 @@ genaction()
 rosbuild_init()
 
 #set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/ros/bin)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/ros/lib)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #uncomment if you have defined messages
 rosbuild_genmsg()
@@ -38,10 +38,10 @@ rosbuild_check_for_sse()
 #target_link_libraries(example ${PROJECT_NAME})
 #rosbuild_add_executable(face_detector
 
-rosbuild_add_library(color_face_detector
-                       ros/src/color_face_detection.cpp 
-                       ros/src/faces.cpp)
-rosbuild_link_boost(color_face_detector thread)
+#rosbuild_add_library(color_face_detector
+#                       ros/src/color_face_detection.cpp 
+#                       ros/src/faces.cpp)
+#rosbuild_link_boost(color_face_detector thread)
 
 #rosbuild_add_executable(face_detector
 			#common/src/PeopleDetector.cpp

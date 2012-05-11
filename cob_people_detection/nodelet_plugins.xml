@@ -1,4 +1,4 @@
-<library path="ros/lib/libcolor_face_detector">
+<library path="lib/libcolor_face_detector">
   <class name="people/FaceDetectorColor"
          type="people::FaceDetectorColor"
          base_class_type="nodelet::Nodelet">
@@ -8,7 +8,7 @@
   </class>
 </library>
 
-<library path="ros/lib/libface_detector">
+<library path="lib/libface_detector">
   <class name="ipa_PeopleDetector/CobFaceDetectionNodelet"
          type="ipa_PeopleDetector::CobFaceDetectionNodelet"
          base_class_type="nodelet::Nodelet">
@@ -18,7 +18,7 @@
   </class>
 </library>
 
-<library path="ros/lib/libpeople_detector">
+<library path="lib/libpeople_detector">
   <class name="ipa_PeopleDetector/CobPeopleDetectionNodelet"
          type="ipa_PeopleDetector::CobPeopleDetectionNodelet"
          base_class_type="nodelet::Nodelet">
@@ -27,4 +27,3 @@
     </description>
   </class>
 </library>
-

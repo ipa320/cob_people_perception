@@ -160,6 +160,8 @@ void CobFaceDetectionNodelet::onInit()
 
 unsigned long CobFaceDetectionNodelet::init()
 {
+	std::cout << "CobFaceDetectionNodelet::init()..." << std::endl;
+
 	shared_image_sub_.subscribe(node_handle_, "pointcloud", 1);
 	color_camera_image_sub_.subscribe(*it_, "colorimage", 1);
 //	sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
@@ -167,6 +169,8 @@ unsigned long CobFaceDetectionNodelet::init()
 
 	sync_pointcloud_->connectInput(shared_image_sub_, color_camera_image_sub_);
 	sync_pointcloud_callback_connection_ = sync_pointcloud_->registerCallback(boost::bind(&CobFaceDetectionNodelet::recognizeCallback, this, _1, _2));
+
+	std::cout << "   inputs connected." << std::endl;
 
 #ifdef __LINUX__
 #else
@@ -176,10 +180,13 @@ unsigned long CobFaceDetectionNodelet::init()
 	if (people_detector_ != 0) delete people_detector_;
 	people_detector_ = new ipa_PeopleDetector::PeopleDetector();
 
+	std::cout << "   PeopleDetector created." << std::endl;
+
 	filename_ = 0;
 
 	// load data for face recognition
 	loadRecognizerData();
+	std::cout << "   recognizer data loaded." << std::endl;
 
 	// use this instead if the rdata.xml file is corrupted
 	// todo:
@@ -205,6 +212,7 @@ unsigned long CobFaceDetectionNodelet::init()
 		std::cerr << "\t ... Could not initialize people detector library.\n";
 		return ipa_Utils::RET_FAILED;
 	}
+	std::cout << "   PeopleDetector initilized." << std::endl;
 
 	if(loadParameters(iniFileNameAndPath.c_str()) & ipa_Utils::RET_FAILED)
 	{
@@ -213,6 +221,7 @@ unsigned long CobFaceDetectionNodelet::init()
 		std::cerr << "\t ... " << iniFileNameAndPath << "'.\n";
 		return ipa_Utils::RET_FAILED;
 	}
+	std::cout << "   ini-file loaded." << std::endl;
 
 	run_pca_ = false;
 
@@ -358,7 +367,7 @@ void CobFaceDetectionNodelet::trainContinuousServerCallback(const cob_people_det
 			{
 				boost::timed_mutex::scoped_timed_lock lock(action_mutex_, boost::posix_time::milliseconds(10));
 				if (lock.owns_lock() && capture_training_face_ == false)
-					capture_training_face_ == true;
+					capture_training_face_ = true;
 				capture = (number_training_images_captured_<goal->numberOfImagesToCapture);
 			}
 
@@ -538,7 +547,7 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 	}
 
 	// check whether the color faces have a reasonable 3D size
-	std::vector<cv::Rect> tempFaces = color_faces_;
+	std::vector<cv::Rect> tempFaces = color_faces_;			// todo: why copy to tempFaces?
 	color_faces_.clear();
 	// For each face...
 	for (uint iface = 0; iface < tempFaces.size(); iface++)
@@ -597,7 +606,7 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 		// Only bad faces are removed
 		if (avg_depth > 0)
 		{
-			double radiusX, radiusY, radius3d;
+			double radiusX, radiusY, radius3d=1e20;
 			cv::Vec3f a, b;
 			// vertical line regularly lies completely on the head whereas this does not hold very often for the horizontal line crossing the bounding box of the face
 			// rectangle in the middle
@@ -644,7 +653,7 @@ unsigned long CobFaceDetectionNodelet::detectFaces(cv::Mat& xyz_image, cv::Mat& 
 
 unsigned long CobFaceDetectionNodelet::recognizeFace(cv::Mat& color_image, std::vector<int>& index)
 {
-	if (people_detector_->RecognizeFace(color_image, color_faces_, &n_eigens_, eigen_vectors_, avg_image_, face_class_avg_projections_, index, &threshold_, &threshold_fs_, eigen_val_mat_, &person_classifier_) & ipa_Utils::RET_FAILED)
+	if (people_detector_->RecognizeFace(color_image, color_faces_, &n_eigens_, eigen_vectors_, avg_image_, face_class_avg_projections_, index, &threshold_, &threshold_fs_, eigen_val_mat_, /*&person_classifier_*/0) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetector::recognizeFace:" << std::endl;
 		std::cerr << "\t ... Error while recognizing faces.\n";
@@ -712,7 +721,7 @@ unsigned long CobFaceDetectionNodelet::PCA()
 
 	// Calculate FaceClasses
 	std::cout << "Debug: n_eigens: " << n_eigens_ << " id: " << id_.size() << "\n";
-	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_/*doubled*/, &n_eigens_, face_class_avg_projections_, id_unique_, &person_classifier_) & ipa_Utils::RET_FAILED)
+	if (people_detector_->CalculateFaceClasses(projected_train_face_mat_, id_/*doubled*/, &n_eigens_, face_class_avg_projections_, id_unique_, /*&person_classifier_*/0) & ipa_Utils::RET_FAILED)
 	{
 		std::cerr << "ERROR - PeopleDetectorControlFlow::PCA:" << std::endl;
 		std::cerr << "\t ... Error while calculating FaceClasses.\n";
@@ -841,7 +850,7 @@ unsigned long CobFaceDetectionNodelet::saveRecognizerData()
 
 	// save classifier
 	std::string classifierFile = path + "svm.dat";
-	person_classifier_.save(classifierFile.c_str());
+	//person_classifier_.save(classifierFile.c_str());
 
 	std::cout << "INFO - PeopleDetector::saveRecognizerData:" << std::endl;
 	std::cout << "\t ... recognizer data saved.\n";
@@ -935,6 +944,7 @@ unsigned long CobFaceDetectionNodelet::loadRecognizerData()
 			std::cout << "\t ... Cant open " << complete.str() << ".\n";
 			return ipa_Utils::RET_OK;
 		}
+		std::cout << "   loading recognizer data..." << std::endl;
 
 		// Number eigenvalues/eigenvectors
 		n_eigens_ = (int)fileStorage["eigens_num"];
@@ -979,7 +989,7 @@ unsigned long CobFaceDetectionNodelet::loadRecognizerData()
 
 		// save classifier
 		std::string classifierFile = path + "svm.dat";
-		person_classifier_.load(classifierFile.c_str());
+		//person_classifier_.load(classifierFile.c_str());
 
 		// do not run PCA
 		run_pca_ = false;
@@ -1050,55 +1060,55 @@ unsigned long CobFaceDetectionNodelet::saveRangeTrainImages(cv::Mat& xyz_image)
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long CobFaceDetectionNodelet::getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
-{
-	cv::Mat color_image_8U3(shared_image_msg->height, shared_image_msg->width, CV_8UC3);
-	cv::Mat xyz_image_32F3(shared_image_msg->height, shared_image_msg->width, CV_32FC3);
-	float* f_ptr = 0;
-	const uint8_t* data_ptr = 0;
-	unsigned char* uc_ptr = 0;
-	unsigned int xyz_offset = shared_image_msg->fields[0].offset;
-	unsigned int rgb_offset = shared_image_msg->fields[3].offset;
-	size_t b_offset = 2*sizeof(unsigned char);
-	size_t g_offset = sizeof(unsigned char);
-	size_t r_offset = 0;
-	unsigned int col_times_3 = 0;
-	for (unsigned int row = 0; row < shared_image_msg->height; row++)
-	{
-		uc_ptr = color_image_8U3.ptr<unsigned char>(row);
-		f_ptr = xyz_image_32F3.ptr<float>(row);
-
-		data_ptr = &shared_image_msg->data[row * shared_image_msg->width * shared_image_msg->point_step];
-
-		for (unsigned int col = 0; col < shared_image_msg->width; col++)
-		{
-			col_times_3 = 3*col;
-			// Reorder incoming image channels
-			memcpy(&uc_ptr[col_times_3], &data_ptr[col * shared_image_msg->point_step + rgb_offset + b_offset], sizeof(unsigned char));
-			memcpy(&uc_ptr[col_times_3 + 1], &data_ptr[col * shared_image_msg->point_step + rgb_offset + g_offset], sizeof(unsigned char));
-			memcpy(&uc_ptr[col_times_3 + 2], &data_ptr[col * shared_image_msg->point_step + rgb_offset + r_offset], sizeof(unsigned char));
-
-			memcpy(&f_ptr[col_times_3], &data_ptr[col * shared_image_msg->point_step + xyz_offset], 3*sizeof(float));
-		}
-	}
-
-#ifdef __LINUX__
-	color_image_ = color_image_8U3;
-	range_image_ = xyz_image_32F3;
-#else
-	// Images are cloned within setter functions
-	colored_pc_->SetColorImage(color_image_8U3);
-	colored_pc_->SetXYZImage(xyz_image_32F3);
-#endif
-
-//    		cv::Mat xyz_image_8U3;
-//			ipa_Utils::ConvertToShowImage(colored_pc_->GetXYZImage(), xyz_image_8U3, 3);
-//	    	cv::imshow("xyz data", xyz_image_8U3);
-//	    	cv::imshow("color data", colored_pc_->GetColorImage());
-//	    	cv::waitKey();
-
-	return ipa_Utils::RET_OK;
-}
+//unsigned long CobFaceDetectionNodelet::getMeasurement(const sensor_msgs::PointCloud2::ConstPtr& shared_image_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+//{
+//	cv::Mat color_image_8U3(shared_image_msg->height, shared_image_msg->width, CV_8UC3);
+//	cv::Mat xyz_image_32F3(shared_image_msg->height, shared_image_msg->width, CV_32FC3);
+//	float* f_ptr = 0;
+//	const uint8_t* data_ptr = 0;
+//	unsigned char* uc_ptr = 0;
+//	unsigned int xyz_offset = shared_image_msg->fields[0].offset;
+//	unsigned int rgb_offset = shared_image_msg->fields[3].offset;
+//	size_t b_offset = 2*sizeof(unsigned char);
+//	size_t g_offset = sizeof(unsigned char);
+//	size_t r_offset = 0;
+//	unsigned int col_times_3 = 0;
+//	for (unsigned int row = 0; row < shared_image_msg->height; row++)
+//	{
+//		uc_ptr = color_image_8U3.ptr<unsigned char>(row);
+//		f_ptr = xyz_image_32F3.ptr<float>(row);
+//
+//		data_ptr = &shared_image_msg->data[row * shared_image_msg->width * shared_image_msg->point_step];
+//
+//		for (unsigned int col = 0; col < shared_image_msg->width; col++)
+//		{
+//			col_times_3 = 3*col;
+//			// Reorder incoming image channels
+//			memcpy(&uc_ptr[col_times_3], &data_ptr[col * shared_image_msg->point_step + rgb_offset + b_offset], sizeof(unsigned char));
+//			memcpy(&uc_ptr[col_times_3 + 1], &data_ptr[col * shared_image_msg->point_step + rgb_offset + g_offset], sizeof(unsigned char));
+//			memcpy(&uc_ptr[col_times_3 + 2], &data_ptr[col * shared_image_msg->point_step + rgb_offset + r_offset], sizeof(unsigned char));
+//
+//			memcpy(&f_ptr[col_times_3], &data_ptr[col * shared_image_msg->point_step + xyz_offset], 3*sizeof(float));
+//		}
+//	}
+//
+//#ifdef __LINUX__
+//	color_image_ = color_image_8U3;
+//	range_image_ = xyz_image_32F3;
+//#else
+//	// Images are cloned within setter functions
+//	colored_pc_->SetColorImage(color_image_8U3);
+//	colored_pc_->SetXYZImage(xyz_image_32F3);
+//#endif
+//
+////    		cv::Mat xyz_image_8U3;
+////			ipa_Utils::ConvertToShowImage(colored_pc_->GetXYZImage(), xyz_image_8U3, 3);
+////	    	cv::imshow("xyz data", xyz_image_8U3);
+////	    	cv::imshow("color data", colored_pc_->GetColorImage());
+////	    	cv::waitKey();
+//
+//	return ipa_Utils::RET_OK;
+//}
 
 
 unsigned long CobFaceDetectionNodelet::convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& color_image_msg, cv_bridge::CvImageConstPtr& color_image_ptr, cv::Mat& color_image)
@@ -1192,7 +1202,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 #endif
 	//getMeasurement(shared_image_msg, color_image_msg);
 
-
+	// todo: should not be necessary here (e.g. set a trained flag)
 	PCA();
 
 	if(eigen_vectors_.size() < 1)
