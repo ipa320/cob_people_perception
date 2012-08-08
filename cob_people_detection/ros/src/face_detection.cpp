@@ -1817,7 +1817,7 @@ unsigned long CobFaceDetectionNodelet::loadParameters(const char* iniFileName)
 //#### main programm ####
 //int main(int argc, char** argv)
 //{
-//	// Initialize ROS, spezify name of node
+//	// Initialize ROS, specify name of node
 //	ros::init(argc, argv, "people_detection");
 //
 //	// Create a handle for this node, initialize node

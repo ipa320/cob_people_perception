@@ -122,7 +122,7 @@ namespace fs = boost::filesystem;
 	#include "cob_sensor_fusion/ColoredPointCloudSequence.h"
 #endif
 
-#include "cob_people_detection/PeopleDetector.h"
+#include "cob_people_detection/people_detector.h"
 
 #include <sstream>
 #include <string>
