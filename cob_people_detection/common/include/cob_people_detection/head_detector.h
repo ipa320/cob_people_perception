@@ -79,14 +79,13 @@ public:
 
 	/// Constructor.
 	HeadDetector(void); ///< Constructor
-	HeadDetector(std::string model_directory);	///> Constructor + Init
 	~HeadDetector(void); ///< Destructor
 
 	/// Initialization function.
 	/// Creates an instance of a range imaging sensor (i.e. SwissRanger SR-3000) and an instance of
 	/// @param model_directory The directory for data files
 	/// @return Return code
-	virtual unsigned long init(std::string model_directory);
+	virtual unsigned long init(std::string model_directory, double depth_increase_search_scale, int depth_drop_groups, int depth_min_search_scale_x, int depth_min_search_scale_y);
 
 	/// Function to detect the face on range image
 	/// The function detects the face in a given range image
@@ -94,12 +93,7 @@ public:
 	/// @param rangeFaceCoordinates Vector with the coordinates of detected heads in range image
 	/// @param fillUnassignedDepthValues this parameter should be true if the kinect sensor is used (activates a filling method for black pixels)
 	/// @return Return code
-	virtual unsigned long detectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates, bool fillUnassignedDepthValues=false);
-
-	double m_range_increase_search_scale;		///< The factor by which the search window is scaled between the subsequent scans
-	int m_range_drop_groups;					///< Minimum number (minus 1) of neighbor rectangles that makes up an object.
-	int m_range_min_search_scale_x;				///< Minimum search scale x
-	int m_range_min_search_scale_y;				///< Minimum search scale y
+	virtual unsigned long detectRangeFace(cv::Mat& depth_image, std::vector<cv::Rect>& rangeFaceCoordinates, bool fillUnassignedDepthValues=false);
 
 private:
 	/// interpolates unassigned pixels in the depth image when using the kinect
@@ -107,8 +101,15 @@ private:
 	/// @return Return code
 	unsigned long interpolateUnassignedPixels(cv::Mat& img);
 
+	double m_depth_increase_search_scale;		///< The factor by which the search window is scaled between the subsequent scans
+	int m_depth_drop_groups;					///< Minimum number (minus 1) of neighbor rectangles that makes up an object.
+	int m_depth_min_search_scale_x;				///< Minimum search scale x
+	int m_depth_min_search_scale_y;				///< Minimum search scale y
+
 	CvMemStorage* m_storage;					///< Storage for face and eye detection
 	CvHaarClassifierCascade* m_range_cascade;	///< Haar-Classifier for range-detection
+
+	bool m_initialized;		///< indicates whether the class was already initialized
 };
 
 } // end namespace

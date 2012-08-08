@@ -74,16 +74,17 @@ using namespace ipa_PeopleDetector;
 HeadDetector::HeadDetector(void)
 {	
 	m_range_cascade = 0;
+	m_initialized = false;
 }
 
-HeadDetector::HeadDetector(std::string model_directory)
-{
-	m_range_cascade = 0;
-	init(model_directory);
-}
-
-unsigned long HeadDetector::init(std::string model_directory)
+unsigned long HeadDetector::init(std::string model_directory, double depth_increase_search_scale, int depth_drop_groups, int depth_min_search_scale_x, int depth_min_search_scale_y)
 {	
+	// parameters
+	m_depth_increase_search_scale = depth_increase_search_scale;
+	m_depth_drop_groups = depth_drop_groups;
+	m_depth_min_search_scale_x = depth_min_search_scale_x;
+	m_depth_min_search_scale_y = depth_min_search_scale_y;
+
 	// Load Haar-Classifier for head detection in depth images
 	std::string rangeCascadePath = model_directory + "haarcascades/haarcascade_range_multiview_5p_bg.xml";
 	//std::string rangeCascadePath = model_directory + "haarcascades/haarcascade_range_multiview_5p_bg+.xml";	// + "haarcascades/haarcascade_range.xml";
@@ -91,6 +92,8 @@ unsigned long HeadDetector::init(std::string model_directory)
 
 	// Create Memory
 	m_storage = cvCreateMemStorage(0);
+
+	m_initialized = true;
 
 	return ipa_Utils::RET_OK;
 }
@@ -137,16 +140,22 @@ unsigned long HeadDetector::interpolateUnassignedPixels(cv::Mat& img)
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long HeadDetector::detectRangeFace(cv::Mat& img, std::vector<cv::Rect>& rangeFaceCoordinates, bool fillUnassignedDepthValues)
+unsigned long HeadDetector::detectRangeFace(cv::Mat& depth_image, std::vector<cv::Rect>& rangeFaceCoordinates, bool fillUnassignedDepthValues)
 {
+	if (m_initialized == false)
+	{
+		std::cout << "Error: HeadDetector::detectRangeFace: init() must be called first." << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
+
 	rangeFaceCoordinates.clear();
 
-	if (fillUnassignedDepthValues) interpolateUnassignedPixels(img);
-//cv::namedWindow("depth image");
-//cv::imshow("depth image", img);
-//cv::waitKey(10);
-	IplImage imgPtr = (IplImage)img;
-	CvSeq* rangeFaces = cvHaarDetectObjects(&imgPtr, m_range_cascade, m_storage, m_range_increase_search_scale, m_range_drop_groups, CV_HAAR_DO_CANNY_PRUNING, cvSize(m_range_min_search_scale_x, m_range_min_search_scale_y));
+	if (fillUnassignedDepthValues) interpolateUnassignedPixels(depth_image);
+	//cv::namedWindow("depth image");
+	//cv::imshow("depth image", depth_image);
+	//cv::waitKey(10);
+	IplImage imgPtr = (IplImage)depth_image;
+	CvSeq* rangeFaces = cvHaarDetectObjects(&imgPtr, m_range_cascade, m_storage, m_depth_increase_search_scale, m_depth_drop_groups, CV_HAAR_DO_CANNY_PRUNING, cvSize(m_depth_min_search_scale_x, m_depth_min_search_scale_y));
 
 	for(int i=0; i<rangeFaces->total; i++)
 	{

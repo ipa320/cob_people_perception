@@ -69,8 +69,11 @@
 
 // ROS includes
 #include <ros/ros.h>
-//#include <ros/package.h>		// use as: directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
+#include <ros/package.h>		// use as: directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
 
+// ROS message includes
+#include <sensor_msgs/PointCloud2.h>
+#include <cob_people_detection_msgs/ColorDepthImageArray.h>
 
 namespace ipa_PeopleDetector {
 
@@ -87,11 +90,22 @@ public:
 
 protected:
 
-	//message_filters::Subscriber<sensor_msgs::PointCloud2> shared_image_sub_;
+	/// Callback for incoming point clouds
+	void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
+
+	unsigned long convertPclMessageToMat(const sensor_msgs::PointCloud2::ConstPtr& pointlcoud, cv::Mat& depth_image, cv::Mat& color_image);
 
 	ros::NodeHandle node_handle_;
 
+	ros::Subscriber pointcloud_sub_;	///< subscribes to a colored point cloud
+
+	ros::Publisher head_position_publisher_;		///< publisher for the positions of the detected heads
+
 	HeadDetector head_detector_;	///< implementation of the head detector
+
+	// parameters
+	std::string data_directory_;	///< path to the classifier model
+	bool fill_unassigned_depth_values_;	///< fills the unassigned depth values in the depth image, must be true for a kinect sensor
 };
 
 } // end namespace
