@@ -72,7 +72,7 @@
 #include <ros/package.h>		// use as: directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
 
 // ROS message includes
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/Image.h>
 #include <cob_people_detection_msgs/ColorDepthImageArray.h>
 
 namespace ipa_PeopleDetector {

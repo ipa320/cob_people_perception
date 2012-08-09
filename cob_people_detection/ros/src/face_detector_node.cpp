@@ -71,9 +71,9 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
-// point cloud
-#include <pcl/point_types.h>
-#include <pcl_ros/point_cloud.h>
+// Boost
+#include <boost/shared_ptr.hpp>
+
 
 using namespace ipa_PeopleDetector;
 
@@ -116,21 +116,45 @@ FaceDetectorNode::~FaceDetectorNode(void)
 
 void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions)
 {
-	// publish image patches from head region
+	// receive head positions and detect faces in the head region, finally publish detected faces
+	cv_bridge::CvImageConstPtr cv_ptr;
+	std::vector<cv::Mat> heads_color_images;
+	heads_color_images.reserve(head_positions->head_detections.size());
+	for (unsigned int i=0; i<head_positions->head_detections.size(); i++)
+	{
+		sensor_msgs::Image msg = head_positions->head_detections[i].color_image;
+		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image>(&msg);
+		try
+		{
+			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
+		}
+		catch (cv_bridge::Exception& e)
+		{
+		  ROS_ERROR("cv_bridge exception: %s", e.what());
+		  return;
+		}
+		heads_color_images[i] = cv_ptr->image;
+	}
+
+	std::vector<std::vector<cv::Rect> > face_coordinates;
+	face_detector_.detectColorFaces(heads_color_images, face_coordinates);
+
 	cob_people_detection_msgs::ColorDepthImageArray image_array;
-	cv_bridge::CvImage cv_ptr;
-//	for (unsigned int i=0; i<head_bounding_boxes.size(); i++)
-//	{
-//		cv::Mat color_patch = color_image(head_bounding_boxes[i]);
-//		cv_ptr.image = color_image;
-//		cv_ptr.encoding = "bgr8";
-//		image_array.color_images.push_back(*(cv_ptr.toImageMsg()));
-//		cv::Mat depth_patch = depth_image(head_bounding_boxes[i]);
-//		cv_ptr.image = depth_image;
-//		cv_ptr.encoding = "bgr8";
-//		image_array.depth_images.push_back(*(cv_ptr.toImageMsg()));
-//	}
-//	head_position_publisher_.publish(image_array);
+	image_array = *head_positions;
+	for (unsigned int i=0; i<face_coordinates.size(); i++)
+	{
+		for (unsigned int j=0; j<face_coordinates[i].size(); j++)
+		{
+			cob_people_detection_msgs::Rect rect;
+			rect.x = face_coordinates[i][j].x;
+			rect.y = face_coordinates[i][j].y;
+			rect.width = face_coordinates[i][j].width;
+			rect.height = face_coordinates[i][j].height;
+			image_array.head_detections[i].face_detections.push_back(rect);
+		}
+	}
+
+	face_position_publisher_.publish(image_array);
 }
 
 
