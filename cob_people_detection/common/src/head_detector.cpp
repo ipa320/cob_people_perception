@@ -63,6 +63,7 @@
 #ifdef __LINUX__
 	#include "cob_people_detection/head_detector.h"
 	#include "cob_vision_utils/GlobalDefines.h"
+	#include "cob_vision_utils/VisionUtils.h"
 #else
 #endif
 
@@ -150,11 +151,13 @@ unsigned long HeadDetector::detectRangeFace(cv::Mat& depth_image, std::vector<cv
 
 	rangeFaceCoordinates.clear();
 
-	if (fillUnassignedDepthValues) interpolateUnassignedPixels(depth_image);
+	cv::Mat depth_image_8U3;
+	ipa_Utils::ConvertToShowImage(depth_image, depth_image_8U3, 3);
+	if (fillUnassignedDepthValues) interpolateUnassignedPixels(depth_image_8U3);
 	//cv::namedWindow("depth image");
 	//cv::imshow("depth image", depth_image);
 	//cv::waitKey(10);
-	IplImage imgPtr = (IplImage)depth_image;
+	IplImage imgPtr = (IplImage)depth_image_8U3;
 	CvSeq* rangeFaces = cvHaarDetectObjects(&imgPtr, m_range_cascade, m_storage, m_depth_increase_search_scale, m_depth_drop_groups, CV_HAAR_DO_CANNY_PRUNING, cvSize(m_depth_min_search_scale_x, m_depth_min_search_scale_y));
 
 	for(int i=0; i<rangeFaces->total; i++)

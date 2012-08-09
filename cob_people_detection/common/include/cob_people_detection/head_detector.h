@@ -89,8 +89,8 @@ public:
 
 	/// Function to detect the face on range image
 	/// The function detects the face in a given range image
-	/// @param img Depth image of the depth camera
-	/// @param rangeFaceCoordinates Vector with the coordinates of detected heads in range image
+	/// @param img Depth image of the depth camera (in format CV_32FC3 - one channel for x, y and z)
+	/// @param rangeFaceCoordinates Vector with the bounding boxes (image coordinates) of detected heads in range image
 	/// @param fillUnassignedDepthValues this parameter should be true if the kinect sensor is used (activates a filling method for black pixels)
 	/// @return Return code
 	virtual unsigned long detectRangeFace(cv::Mat& depth_image, std::vector<cv::Rect>& rangeFaceCoordinates, bool fillUnassignedDepthValues=false);

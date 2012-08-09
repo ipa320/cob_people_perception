@@ -86,26 +86,30 @@ public:
 	/// Creates an instance of a range imaging sensor (i.e. SwissRanger SR-3000) and an instance of
 	/// @param directory The directory for data files
 	/// @return Return code
-	virtual unsigned long init(std::string directory, double faces_increase_search_scale, int faces_drop_groups, int faces_min_search_scale_x, int faces_min_search_scale_y);
+	virtual unsigned long init(std::string directory, double faces_increase_search_scale, int faces_drop_groups, int faces_min_search_scale_x, int faces_min_search_scale_y,
+			bool reason_about_3dface_size, double face_size_max_m, double face_size_min_m, double max_face_z_m, bool debug);
 
 	/// Function to detect the faces on color image
 	/// The function detects the faces in an given image
 	/// @param heads_color_images Color images of the regions that supposedly contain a head
+	/// @param heads_depth_images Depth images of the regions that supposedly contain a head
 	/// @param face_coordinates Vector of same size as heads_color_images, each entry becomes filled with another vector with the coordinates of detected faces in color image, i.e. outer index corresponds with index of heads_color_images
 	/// @return Return code
-	virtual unsigned long detectColorFaces(std::vector<cv::Mat>& heads_color_images, std::vector<std::vector<cv::Rect> >& face_coordinates);
+	virtual unsigned long detectColorFaces(std::vector<cv::Mat>& heads_color_images, std::vector<cv::Mat>& heads_depth_images, std::vector<std::vector<cv::Rect> >& face_coordinates);
 
 
 private:
-//	/// interpolates unassigned pixels in the depth image when using the kinect
-//	/// @param img depth image
-//	/// @return Return code
-//	unsigned long InterpolateUnassignedPixels(cv::Mat& img);
 
+	// parameters
 	double m_faces_increase_search_scale;		///< The factor by which the search window is scaled between the subsequent scans
 	int m_faces_drop_groups;					///< Minimum number (minus 1) of neighbor rectangles that makes up an object.
 	int m_faces_min_search_scale_x;				///< Minimum search scale x
 	int m_faces_min_search_scale_y;				///< Minimum search scale y
+	bool m_reason_about_3dface_size;			///< if true, the 3d face size is determined and only faces with reasonable size are accepted
+	double m_face_size_max_m;					///< the maximum feasible face diameter [m] if reason_about_3dface_size is enabled
+	double m_face_size_min_m;					///< the minimum feasible face diameter [m] if reason_about_3dface_size is enabled
+	double m_max_face_z_m;						///< maximum distance [m] of detected faces to the sensor
+	bool m_debug;								///< enables some debug outputs
 
 	CvMemStorage* m_storage;					///< Storage for face and eye detection
 	CvHaarClassifierCascade* m_face_cascade;	///< Haar-Classifier for face-detection
