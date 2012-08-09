@@ -123,7 +123,6 @@ FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh)
 
 	// subscribe to head detection topic
 	head_position_subscriber_ = nh.subscribe("head_positions", 1, &FaceDetectorNode::head_positions_callback, this);
-
 }
 
 FaceDetectorNode::~FaceDetectorNode(void)
