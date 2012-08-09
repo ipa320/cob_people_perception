@@ -987,7 +987,7 @@ unsigned long CobFaceDetectionNodelet::loadRecognizerData()
 
 		fileStorage.release();
 
-		// save classifier
+		// load classifier
 		std::string classifierFile = path + "svm.dat";
 		//person_classifier_.load(classifierFile.c_str());
 
