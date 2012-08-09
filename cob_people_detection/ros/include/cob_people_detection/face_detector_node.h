@@ -24,8 +24,8 @@
 * \date Date of creation: 07.08.2012
 *
 * \brief
-* functions for detecting a face within a color image (patch)
-* current approach: haar detector on color image
+* functions for detecting a head within a point cloud/depth image
+* current approach: haar detector on depth image
 *
 *****************************************************************
 *
@@ -59,11 +59,11 @@
 ****************************************************************/
 
 
-#ifndef __FACE_DETECTOR_NODE_H__
-#define __FACE_DETECTOR_NODE_H__
+#ifndef __HEAD_DETECTOR_NODE_H__
+#define __HEAD_DETECTOR_NODE_H__
 
 #ifdef __LINUX__
-	#include "cob_people_detection/face_detector.h"
+	#include "cob_people_detection/head_detector.h"
 #else
 #endif
 
@@ -110,4 +110,4 @@ protected:
 
 } // end namespace
 
-#endif // __FACE_DETECTOR_NODE_H__
+#endif // __HEAD_DETECTOR_NODE_H__

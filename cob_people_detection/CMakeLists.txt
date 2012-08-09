@@ -61,6 +61,11 @@ rosbuild_add_executable(head_detector_node
 			common/src/head_detector.cpp
 			ros/src/head_detector_node.cpp)
 
+rosbuild_add_executable(face_detector_node
+			common/src/face_detector.cpp
+			ros/src/face_detector_node.cpp)
+
+
 # modified openni tracker
 #rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp
 #                                       ros/src/SceneDrawer.cpp)
@@ -79,6 +84,7 @@ rosbuild_add_compile_flags(face_detector -D__LINUX__)
 rosbuild_add_compile_flags(people_detector -D__LINUX__)
 rosbuild_add_compile_flags(people_detection_client -D__LINUX__)
 rosbuild_add_compile_flags(head_detector_node -D__LINUX__)
+rosbuild_add_compile_flags(face_detector_node -D__LINUX__)
 
 # rostest
 #rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_noface_test_diamondback.bag face_detector_noface_test.bag 37f043be780a4511c853379defdd9855)
