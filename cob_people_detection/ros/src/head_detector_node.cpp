@@ -24,8 +24,8 @@
 * \date Date of creation: 07.08.2012
 *
 * \brief
-* functions for detecting a face within a color image (patch)
-* current approach: haar detector on color image
+* functions for detecting a head within a point cloud/depth image
+* current approach: haar detector on depth image
 *
 *****************************************************************
 *
@@ -61,7 +61,7 @@
 
 
 #ifdef __LINUX__
-	#include "cob_people_detection/face_detector_node.h"
+	#include "cob_people_detection/head_detector_node.h"
 	#include "cob_vision_utils/GlobalDefines.h"
 #else
 #endif
@@ -105,7 +105,7 @@ HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
 	head_detector_.init(data_directory_, depth_increase_search_scale, depth_drop_groups, depth_min_search_scale_x, depth_min_search_scale_y);
 
 	// advertise topics
-	head_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageArray>("head_position_images", 1);
+	head_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageArray>("head_positions", 1);
 
 	// subscribe to sensor topic
 	pointcloud_sub_ = nh.subscribe("pointcloud_rgb", 1, &HeadDetectorNode::pointcloud_callback, this);
@@ -129,17 +129,23 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 
 	// publish image patches from head region
 	cob_people_detection_msgs::ColorDepthImageArray image_array;
+	image_array.head_detections.resize(head_bounding_boxes.size());
 	cv_bridge::CvImage cv_ptr;
 	for (unsigned int i=0; i<head_bounding_boxes.size(); i++)
 	{
+		image_array.header = pointcloud->header;
+		image_array.head_detections[i].head_detection.x = head_bounding_boxes[i].x;
+		image_array.head_detections[i].head_detection.y = head_bounding_boxes[i].y;
+		image_array.head_detections[i].head_detection.width = head_bounding_boxes[i].width;
+		image_array.head_detections[i].head_detection.height = head_bounding_boxes[i].height;
 		cv::Mat color_patch = color_image(head_bounding_boxes[i]);
 		cv_ptr.image = color_image;
 		cv_ptr.encoding = "bgr8";
-		image_array.color_images.push_back(*(cv_ptr.toImageMsg()));
+		image_array.head_detections[i].color_image = *(cv_ptr.toImageMsg());
 		cv::Mat depth_patch = depth_image(head_bounding_boxes[i]);
 		cv_ptr.image = depth_image;
 		cv_ptr.encoding = "bgr8";
-		image_array.depth_images.push_back(*(cv_ptr.toImageMsg()));
+		image_array.head_detections[i].depth_image = *(cv_ptr.toImageMsg());
 	}
 	head_position_publisher_.publish(image_array);
 }

@@ -24,8 +24,8 @@
 * \date Date of creation: 07.08.2012
 *
 * \brief
-* functions for detecting a head within a point cloud/depth image
-* current approach: haar detector on depth image
+* functions for detecting a face within a color image (patch)
+* current approach: haar detector on color image
 *
 *****************************************************************
 *
@@ -59,11 +59,11 @@
 ****************************************************************/
 
 
-#ifndef __HEAD_DETECTOR_NODE_H__
-#define __HEAD_DETECTOR_NODE_H__
+#ifndef __FACE_DETECTOR_NODE_H__
+#define __FACE_DETECTOR_NODE_H__
 
 #ifdef __LINUX__
-	#include "cob_people_detection/head_detector.h"
+	#include "cob_people_detection/face_detector.h"
 #else
 #endif
 
@@ -78,36 +78,33 @@
 namespace ipa_PeopleDetector {
 
 
-class HeadDetectorNode
+class FaceDetectorNode
 {
 public:
 
 	/// Constructor
 	/// @param nh ROS node handle
-	HeadDetectorNode(ros::NodeHandle nh);
-	~HeadDetectorNode(void); ///< Destructor
+	FaceDetectorNode(ros::NodeHandle nh);
+	~FaceDetectorNode(void); ///< Destructor
 
 
 protected:
 
-	/// Callback for incoming point clouds
-	void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
-
-	unsigned long convertPclMessageToMat(const sensor_msgs::PointCloud2::ConstPtr& pointlcoud, cv::Mat& depth_image, cv::Mat& color_image);
+	/// Callback for incoming head detections
+	void head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions);
 
 	ros::NodeHandle node_handle_;
 
-	ros::Subscriber pointcloud_sub_;	///< subscribes to a colored point cloud
+	ros::Subscriber head_position_subscriber_;		///< subscribes to the positions of detected head regions
 
-	ros::Publisher head_position_publisher_;		///< publisher for the positions of the detected heads
+	ros::Publisher face_position_publisher_;		///< publisher for the positions of the detected faces
 
-	HeadDetector head_detector_;	///< implementation of the head detector
+	FaceDetector face_detector_;	///< implementation of the face detector
 
 	// parameters
 	std::string data_directory_;	///< path to the classifier model
-	bool fill_unassigned_depth_values_;	///< fills the unassigned depth values in the depth image, must be true for a kinect sensor
 };
 
 } // end namespace
 
-#endif // __HEAD_DETECTOR_NODE_H__
+#endif // __FACE_DETECTOR_NODE_H__

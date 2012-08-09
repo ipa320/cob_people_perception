@@ -24,8 +24,8 @@
 * \date Date of creation: 07.08.2012
 *
 * \brief
-* functions for detecting a head within a point cloud/depth image
-* current approach: haar detector on depth image
+* functions for detecting a face within a color image (patch)
+* current approach: haar detector on color image
 *
 *****************************************************************
 *
@@ -61,7 +61,7 @@
 
 
 #ifdef __LINUX__
-	#include "cob_people_detection/head_detector_node.h"
+	#include "cob_people_detection/face_detector_node.h"
 	#include "cob_vision_utils/GlobalDefines.h"
 #else
 #endif
@@ -77,102 +77,60 @@
 
 using namespace ipa_PeopleDetector;
 
-HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
+FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
 	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
 
 	// Parameters
-	double depth_increase_search_scale;		// The factor by which the search window is scaled between the subsequent scans
-	int depth_drop_groups;					// Minimum number (minus 1) of neighbor rectangles that makes up an object.
-	int depth_min_search_scale_x;				// Minimum search scale x
-	int depth_min_search_scale_y;				// Minimum search scale y
+	double faces_increase_search_scale;		// The factor by which the search window is scaled between the subsequent scans
+	int faces_drop_groups;					// Minimum number (minus 1) of neighbor rectangles that makes up an object.
+	int faces_min_search_scale_x;				// Minimum search scale x
+	int faces_min_search_scale_y;				// Minimum search scale y
 	std::cout << "\n--------------------------\nHead Detector Parameters:\n--------------------------\n";
 	node_handle_.param("data_directory", data_directory_, data_directory_);
 	std::cout << "data_directory = " << data_directory_ << "\n";
-	node_handle_.param("fill_unassigned_depth_values", fill_unassigned_depth_values_, true);
-	std::cout << "fill_unassigned_depth_values = " << fill_unassigned_depth_values_ << "\n";
-	node_handle_.param("depth_increase_search_scale", depth_increase_search_scale, 1.1);
-	std::cout << "depth_increase_search_scale = " << depth_increase_search_scale << "\n";
-	node_handle_.param("depth_drop_groups", depth_drop_groups, 68);
-	std::cout << "depth_drop_groups = " << depth_drop_groups << "\n";
-	node_handle_.param("depth_min_search_scale_x", depth_min_search_scale_x, 20);
-	std::cout << "depth_min_search_scale_x = " << depth_min_search_scale_x << "\n";
-	node_handle_.param("depth_min_search_scale_y", depth_min_search_scale_y, 20);
-	std::cout << "depth_min_search_scale_y = " << depth_min_search_scale_y << "\n";
+	node_handle_.param("faces_increase_search_scale", faces_increase_search_scale, 1.1);
+	std::cout << "faces_increase_search_scale = " << faces_increase_search_scale << "\n";
+	node_handle_.param("faces_drop_groups", faces_drop_groups, 68);
+	std::cout << "faces_drop_groups = " << faces_drop_groups << "\n";
+	node_handle_.param("faces_min_search_scale_x", faces_min_search_scale_x, 20);
+	std::cout << "faces_min_search_scale_x = " << faces_min_search_scale_x << "\n";
+	node_handle_.param("faces_min_search_scale_y", faces_min_search_scale_y, 20);
+	std::cout << "faces_min_search_scale_y = " << faces_min_search_scale_y << "\n";
 
-	// initialize head detector
-	head_detector_.init(data_directory_, depth_increase_search_scale, depth_drop_groups, depth_min_search_scale_x, depth_min_search_scale_y);
+	// initialize face detector
+	face_detector_.init(data_directory_, faces_increase_search_scale, faces_drop_groups, faces_min_search_scale_x, faces_min_search_scale_y);
 
 	// advertise topics
-	head_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageArray>("head_position_images", 1);
+	face_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageArray>("face_positions", 1);
 
-	// subscribe to sensor topic
-	pointcloud_sub_ = nh.subscribe("pointcloud_rgb", 1, &HeadDetectorNode::pointcloud_callback, this);
+	// subscribe to head detection topic
+	head_position_subscriber_ = nh.subscribe("head_positions", 1, &FaceDetectorNode::head_positions_callback, this);
 
 }
 
-HeadDetectorNode::~HeadDetectorNode(void)
+FaceDetectorNode::~FaceDetectorNode(void)
 {
 }
 
-void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
+void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions)
 {
-	// convert incoming colored point cloud to cv::Mat images
-	cv::Mat depth_image;
-	cv::Mat color_image;
-	convertPclMessageToMat(pointcloud, depth_image, color_image);
-
-	// detect heads in the depth image
-	std::vector<cv::Rect> head_bounding_boxes;
-	head_detector_.detectRangeFace(depth_image, head_bounding_boxes, fill_unassigned_depth_values_);
-
 	// publish image patches from head region
 	cob_people_detection_msgs::ColorDepthImageArray image_array;
 	cv_bridge::CvImage cv_ptr;
-	for (unsigned int i=0; i<head_bounding_boxes.size(); i++)
-	{
-		cv::Mat color_patch = color_image(head_bounding_boxes[i]);
-		cv_ptr.image = color_image;
-		cv_ptr.encoding = "bgr8";
-		image_array.color_images.push_back(*(cv_ptr.toImageMsg()));
-		cv::Mat depth_patch = depth_image(head_bounding_boxes[i]);
-		cv_ptr.image = depth_image;
-		cv_ptr.encoding = "bgr8";
-		image_array.depth_images.push_back(*(cv_ptr.toImageMsg()));
-	}
-	head_position_publisher_.publish(image_array);
-}
-
-unsigned long HeadDetectorNode::convertPclMessageToMat(const sensor_msgs::PointCloud2::ConstPtr& pointcloud, cv::Mat& depth_image, cv::Mat& color_image)
-{
-	pcl::PointCloud<pcl::PointXYZRGB> depth_cloud; // point cloud
-	pcl::fromROSMsg(*pointcloud, depth_cloud);
-	depth_image.create(depth_cloud.height, depth_cloud.width, CV_32FC3);
-	color_image.create(depth_cloud.height, depth_cloud.width, CV_8UC3);
-	uchar* depth_image_ptr = (uchar*) depth_image.data;
-	uchar* color_image_ptr = (uchar*) color_image.data;
-	for (int v=0; v<(int)depth_cloud.height; v++)
-	{
-		int depth_base_index = depth_image.step*v;
-		int color_base_index = color_image.step*v;
-		for (int u=0; u<(int)depth_cloud.width; u++)
-		{
-			int depth_index = depth_base_index + 3*u*sizeof(float);
-			float* depth_data_ptr = (float*)(depth_image_ptr+depth_index);
-			int color_index = color_base_index + 3*u*sizeof(uchar);
-			uchar* color_data_ptr = (uchar*)(color_image_ptr+color_index);
-			pcl::PointXYZRGB point_xyz = depth_cloud(u,v);
-			depth_data_ptr[0] = point_xyz.x;
-			depth_data_ptr[1] = point_xyz.y;
-			depth_data_ptr[2] = (isnan(point_xyz.z)) ? 0.f : point_xyz.z;
-			color_data_ptr[0] = point_xyz.r;
-			color_data_ptr[1] = point_xyz.g;
-			color_data_ptr[2] = point_xyz.b;
-			//if (u%100 == 0) std::cout << "u" << u << " v" << v << " z" << data_ptr[2] << "\n";
-		}
-	}
-	return ipa_Utils::RET_OK;
+//	for (unsigned int i=0; i<head_bounding_boxes.size(); i++)
+//	{
+//		cv::Mat color_patch = color_image(head_bounding_boxes[i]);
+//		cv_ptr.image = color_image;
+//		cv_ptr.encoding = "bgr8";
+//		image_array.color_images.push_back(*(cv_ptr.toImageMsg()));
+//		cv::Mat depth_patch = depth_image(head_bounding_boxes[i]);
+//		cv_ptr.image = depth_image;
+//		cv_ptr.encoding = "bgr8";
+//		image_array.depth_images.push_back(*(cv_ptr.toImageMsg()));
+//	}
+//	head_position_publisher_.publish(image_array);
 }
 
 
@@ -181,13 +139,13 @@ unsigned long HeadDetectorNode::convertPclMessageToMat(const sensor_msgs::PointC
 int main(int argc, char** argv)
 {
 	// Initialize ROS, specify name of node
-	ros::init(argc, argv, "head_detector");
+	ros::init(argc, argv, "face_detector");
 
 	// Create a handle for this node, initialize node
 	ros::NodeHandle nh;
 
-	// Create HeadDetectorNode class instance
-	HeadDetectorNode head_detector_node(nh);
+	// Create FaceDetectorNode class instance
+	FaceDetectorNode face_detector_node(nh);
 
 	// Create action nodes
 	//DetectObjectsAction detect_action_node(object_detection_node, nh);

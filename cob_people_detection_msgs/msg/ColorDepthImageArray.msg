@@ -1,5 +1,3 @@
-Header header					# timestamp etc.
-sensor_msgs/Image[] color_images		# just an array of images
-sensor_msgs/Image[] depth_images		# just an array of images
-BoundingBoxTree detections_bounding_boxes	# bounding boxes of detected heads
+Header header				# timestamp etc.
+ColorDepthImage[] head_detections	# each entry contains the bounding box, color image, depth image and color image face detections of a head region
 
