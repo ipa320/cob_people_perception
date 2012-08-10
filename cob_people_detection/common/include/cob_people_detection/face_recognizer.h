@@ -62,6 +62,7 @@
 #define __FACE_RECOGNIZER_H__
 
 #ifdef __LINUX__
+	#include <cob_people_detection/abstract_face_recognizer.h>
 #else
 	#include "cob_vision/cob_vision_ipa_utils/common/include/cob_vision_ipa_utils/MathUtils.h"
 	#include "cob_vision/cob_sensor_fusion/common/include/cob_sensor_fusion/ColoredPointCloud.h"	// todo: necessary?
@@ -75,7 +76,7 @@ namespace ipa_PeopleDetector {
 
 /// Interface to Calibrate Head of Care-O-bot 3.
 /// Long description
-class FaceRecognizer
+class FaceRecognizer : public AbstractFaceRecognizer
 {
 public:
 
@@ -84,10 +85,15 @@ public:
 	~FaceRecognizer(void); ///< Destructor
 
 	/// Initialization function.
-	/// Creates an instance of a range imaging sensor (i.e. SwissRanger SR-3000) and an instance of
 	/// @param directory The directory for data files
 	/// @return Return code
 	virtual unsigned long init();
+
+
+
+//	load/save
+//	capture images (?)
+//	train
 
 	/// Function to add a new face
 	/// The function adds a new face to the trained images
@@ -97,7 +103,61 @@ public:
 	/// @param images Vector with trained images
 	/// @param ids Vector with trained ids
 	/// @return Return code
-	virtual unsigned long AddFace(cv::Mat& img, cv::Rect& face, std::string id, std::vector<cv::Mat>& images, std::vector<std::string>& ids);
+	//virtual unsigned long AddFace(cv::Mat& img, cv::Rect& face, std::string id, std::vector<cv::Mat>& images, std::vector<std::string>& ids);
+
+	/// Trains a model for the recognition of a given set of faces.
+	/// @param directory The directory for data files
+	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
+	/// @return Return code
+	virtual unsigned long trainRecognitionModel(std::string directory, std::vector<std::string>& identification_indices_to_train);
+
+	/// Saves the currently trained model for the recognition of a given set of faces.
+	/// @param directory The directory for data files
+	/// @return Return code
+	virtual unsigned long saveRecognitionModel(std::string directory);
+
+	/// Loads a model for the recognition of a given set of faces.
+	/// @param directory The directory for data files
+	/// @param identification_labels_to_recognize List of labels whose corresponding faces shall be available for recognition
+	/// @return Return code
+	virtual unsigned long loadRecognitionModel(std::string directory, std::vector<std::string>& identification_labels_to_recognize);
+
+	enum Metrics {EUCLIDEAN, MAHALANOBIS, MAHALANOBISCOSINE};
+
+protected:
+
+	/// Function to Recognize faces
+	/// The function recognize the faces
+	/// @param color_image source color image
+	/// @param face_coordinates Bounding boxes of detected faces (input parameter)
+	/// @param identification_index Vector of indices of classified faces, indices correspond with bounding boxes in face_coordinates
+	/// @return Return code
+	virtual unsigned long recognizeFace(cv::Mat& color_image, std::vector<cv::Rect>& face_coordinates, std::vector<int>& identification_index);
+
+	/// Function to find the closest face class
+	/// The function calculates the distance of each sample image to the trained face class
+	/// @param eigen_vector_weights The weights of corresponding eigenvectors of projected test face
+	/// @param face_index Index of closest face, or -1 if the face is unknown
+	/// @param number_eigenvectors Number of eigenvalues
+	/// @return Return code
+	virtual unsigned long classifyFace(float *eigen_vector_weights, int *face_index, int number_eigenvectors);
+
+	/// Function to Run the Eigenface-PCA algorithm
+	/// @param number_eigenvectors Target number of eigenvectors
+	/// @param face_images Face images for training
+	/// @return Return code
+	virtual unsigned long PCA(int number_eigenvectors, std::vector<cv::Mat>& face_images);
+
+	/// Function to calculate the average eigenvector decomposition factors for each face class.
+	/// The function calculates the average eigenvector decomposition factors for each face class. Assumes that PCA() was executed before.
+	/// @return Return code
+	virtual unsigned long computeAverageFaceProjections();
+
+	/// Applies some preprocessing to the grayscale face images to obtain a more robust identification.
+	/// todo: not implemented yet
+	/// @param input_image Grayscale face image.
+	/// @return Preprocessed image.
+	virtual cv::Mat preprocessImage(cv::Mat& input_image);
 
 	/// Function to Convert and Resizes a given image
 	/// The function converts a 8U3 image from camera to an 8U1 image and resizes the face to new_size.
@@ -108,79 +168,40 @@ public:
 	/// @return Return code
 	virtual unsigned long convertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face, cv::Size new_size);
 
-	/// Applies some preprocessing to the grayscale face images to obtain a more robust identification.
-	/// @param input_image Grayscale face image.
-	/// @return Preprocessed image.
-	virtual cv::Mat preprocessImage(cv::Mat& input_image);
+	/// Just converts m_eigenvectors to m_eigen_vectors_ipl which is a conversion of std::vector<cv::Mat> to IplImage**.
+	/// Necessary to avoid in-place conversion each time recognizeFace is called.
+	virtual unsigned long convertEigenvectorsToIpl();
 
-	/// Function to Run the PCA algorithm
-	/// @param nEigens Number of eigenvalues
-	/// @param eigenVectors Eigenvectors
-	/// @param eigenValMat Eigenvalues
-	/// @param avgImage Average image
-	/// @param images Trained faces
-	/// @param projectedTrainFaceMat Projected training faces (coefficients for the eigenvectors of the face subspace)
+	/// Saves the training data
+	/// todo
 	/// @return Return code
-	virtual unsigned long PCA(int* nEigens, std::vector<cv::Mat>& eigenVectors, cv::Mat& eigenValMat, cv::Mat& avgImage, std::vector<cv::Mat>& images, cv::Mat& projectedTrainFaceMat);
+	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images);
 
-	/// Function to Recognize faces
-	/// The function recognize the faces
-	/// @param colorImage source color image
-	/// @param faceCoordinates Detected faces
-	/// @param nEigens Number of eigenvalues
-	/// @param eigenVectArr Eigenvectors
-	/// @param avgImage Average image
-	/// @param projectedTrainFaceMat Projected training faces
-	/// @param index Index of classified face in vector
-	/// @param threshold The threshold to recognize unkown faces
-	/// @param threshold_FS The threshold to the face space
-	/// @param eigenValMat Eigenvalues
-	/// @param personClassifier A classifier for person identification. It is trained in this function. Can be left out if a simpler identification method is used.
+	/// Loads the training data for the persons specified in identification_labels_to_train
+	/// @param face_images A vector containing all training images
+	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
 	/// @return Return code
-	virtual unsigned long RecognizeFace(cv::Mat& colorImage, std::vector<cv::Rect>& colorFaces, std::vector<int>& index, cv::SVM* personClassifier = 0);
+	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<std::string>& identification_labels_to_train);
 
-	/// Function to find the closest face class
-	/// The function calculates the distance of each sample image to the trained face class
-	/// @param projectedTestFace The projected test face
-	/// @param nearest Index of nearest face, or -1 if the face is unknown
-	/// @param nEigens Number of eigenvalues
-	/// @param projectedTrainFaceMat The average factors from each face class originating from the eigenvector decomposition
-	/// @param threshold The threshold to recognize unkown faces
-	/// @param eigenValMat Eigenvalues
-	/// @param personClassifier A classifier for person identification. It is trained in this function. Can be left out if a simpler identification method is used.
-	/// @return Return code
-	virtual unsigned long ClassifyFace(float *projectedTestFace, int *nearest, int *nEigens, cv::Mat& projectedTrainFaceMat, int *threshold, cv::Mat& eigenValMat, cv::SVM* personClassifier = 0);
-
-	/// Function to calculate the FaceClasses
-	/// The function calculates the average eigenvector decomposition factors for each face classes.
-	/// @param projectedTrainFaceMat The projected training faces
-	/// @param id The ids of the training faces
-	/// @param nEigens Number of eigenvalues
-	/// @param faceClassAvgProjections The average factors of the eigenvector decomposition from each face class
-	/// @param idUnique A vector containing all different Ids from the training session exactly once (idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in faceClassAvgProjections.row(i))
-	/// @param personClassifier A classifier for person identification. It is trained in this function. Can be left out if a simpler identification method is used.
-	/// @return Return code
-	virtual unsigned long CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections, std::vector<std::string>& idUnique, cv::SVM* personClassifier = 0);
-
-
-private:
-	/// interpolates unassigned pixels in the depth image when using the kinect
-	/// @param img depth image
-	/// @return Return code
-	unsigned long InterpolateUnassignedPixels(cv::Mat& img);
-
-//	int m_n_eigens;								///< Number of eigenvalues
-	std::vector<cv::Mat> m_eigen_vectors;		///< Eigenvectors (spanning the face space)
-	cv::Mat m_eigen_val_mat;					///< Eigenvalues
-	cv::Mat m_avg_image;						///< Trained average Image
-	cv::Mat m_projected_train_face_mat;			///< Projected training faces (coefficients for the eigenvectors of the face subspace)
-	cv::Mat m_face_class_avg_projections;		///< The average factors of the eigenvector decomposition from each face class
-	cv::SVM m_person_classifier;				///< classifier for the identity of a person
+	// data
+	std::vector<cv::Mat> m_eigenvectors;			///< Eigenvectors (spanning the face space)
+	IplImage** m_eigen_vectors_ipl;					///< Eigenvalues stored in IplImage format (to avoid conversion each time the function is called)
+	cv::Mat m_eigenvalues;							///< Eigenvalues
+	cv::Mat m_average_image;						///< Trained average Image
+	cv::Mat m_projected_training_faces;				///< Projected training faces (coefficients for the eigenvectors of the face subspace)
+	std::vector<std::string> m_face_labels;			///< A vector containing the corresponding labels to each face image projection in m_projected_training_faces (m_face_labels[i] stores the corresponding name to the face coordinates in the face subspace in m_projected_training_faces.rows(i))
+	cv::Mat m_face_class_average_projections;		///< The average factors of the eigenvector decomposition from each face class; The average factors from each face class originating from the eigenvector decomposition.
+	std::vector<std::string> m_current_label_set;	///< A vector containing all different labels from the training session exactly once, order of appearance matters! (m_current_label_set[i] stores the corresponding name to the average face coordinates in the face subspace in m_face_class_average_projections.rows(i))
+	cv::SVM m_person_classifier;					///< classifier for the identity of a person
+	std::string m_data_directory;					///< folder that contains the training data
 
 	// parameters
-	int m_threshold_unknown;					///< Threshold to detect unknown faces
-	int m_threshold_facespace;					///< Threshold to facespace
-
+	int m_eigenface_size;						///< Desired width and height of the Eigenfaces (=eigenvectors).
+	int m_eigenvectors_per_person;				///< Number of eigenvectors per person to identify -> controls the total number of eigenvectors
+	double m_threshold_facespace;				///< Threshold to facespace
+	double m_threshold_unknown;					///< Threshold to detect unknown faces
+	int m_metric; 								///< metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
+	bool m_debug;								///< enables some debug outputs
 };
 
 } // end namespace

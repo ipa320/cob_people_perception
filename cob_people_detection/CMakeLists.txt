@@ -52,7 +52,7 @@ rosbuild_add_library(face_detector
 
 rosbuild_add_library(people_detector
 			ros/src/people_detection.cpp)
-add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/windows/TrainingData)
+add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)

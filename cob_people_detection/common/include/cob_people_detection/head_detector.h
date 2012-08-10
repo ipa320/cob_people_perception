@@ -82,8 +82,11 @@ public:
 	~HeadDetector(void); ///< Destructor
 
 	/// Initialization function.
-	/// Creates an instance of a range imaging sensor (i.e. SwissRanger SR-3000) and an instance of
 	/// @param model_directory The directory for data files
+	/// @param depth_increase_search_scale The factor by which the search window is scaled between the subsequent scans
+	/// @param depth_drop_groups Minimum number (minus 1) of neighbor rectangles that makes up an object.
+	/// @param depth_min_search_scale_x Minimum search scale x
+	/// @param depth_min_search_scale_y Minimum search scale y
 	/// @return Return code
 	virtual unsigned long init(std::string model_directory, double depth_increase_search_scale, int depth_drop_groups, int depth_min_search_scale_x, int depth_min_search_scale_y);
 
@@ -95,7 +98,7 @@ public:
 	/// @return Return code
 	virtual unsigned long detectRangeFace(cv::Mat& depth_image, std::vector<cv::Rect>& rangeFaceCoordinates, bool fillUnassignedDepthValues=false);
 
-private:
+protected:
 	/// interpolates unassigned pixels in the depth image when using the kinect
 	/// @param img depth image
 	/// @return Return code

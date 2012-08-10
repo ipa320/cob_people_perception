@@ -83,8 +83,16 @@ public:
 	~FaceDetector(void); ///< Destructor
 
 	/// Initialization function.
-	/// Creates an instance of a range imaging sensor (i.e. SwissRanger SR-3000) and an instance of
 	/// @param directory The directory for data files
+	/// @param faces_increase_search_scale The factor by which the search window is scaled between the subsequent scans
+	/// @param faces_drop_groups Minimum number (minus 1) of neighbor rectangles that makes up an object.
+	/// @param faces_min_search_scale_x Minimum search scale x
+	/// @param faces_min_search_scale_y Minimum search scale y
+	/// @param reason_about_3dface_size if true, the 3d face size is determined and only faces with reasonable size are accepted
+	/// @param face_size_max_m the maximum feasible face diameter [m] if reason_about_3dface_size is enabled
+	/// @param face_size_min_m the minimum feasible face diameter [m] if reason_about_3dface_size is enabled
+	/// @param max_face_z_m maximum distance [m] of detected faces to the sensor
+	/// @param debug enables some debug outputs
 	/// @return Return code
 	virtual unsigned long init(std::string directory, double faces_increase_search_scale, int faces_drop_groups, int faces_min_search_scale_x, int faces_min_search_scale_y,
 			bool reason_about_3dface_size, double face_size_max_m, double face_size_min_m, double max_face_z_m, bool debug);
@@ -98,7 +106,7 @@ public:
 	virtual unsigned long detectColorFaces(std::vector<cv::Mat>& heads_color_images, std::vector<cv::Mat>& heads_depth_images, std::vector<std::vector<cv::Rect> >& face_coordinates);
 
 
-private:
+protected:
 
 	// parameters
 	double m_faces_increase_search_scale;		///< The factor by which the search window is scaled between the subsequent scans
