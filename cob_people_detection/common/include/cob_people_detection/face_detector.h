@@ -72,8 +72,6 @@
 
 namespace ipa_PeopleDetector {
 
-/// Interface to Calibrate Head of Care-O-bot 3.
-/// Long description
 class FaceDetector
 {
 public:

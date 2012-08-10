@@ -7,12 +7,12 @@
   <!-- nodelet manager  (starts somewhere else) -->
   <!-- <node pkg="nodelet" type="nodelet" name="nodelet_manager_people_detection"  args="manager" output="screen"/> -->
 
-  <!-- head detection node (detects faces in depth image and publishes their positions) -->
+  <!-- face detection node (detects faces in color image and publishes their positions) -->
   <rosparam command="load" ns="cob_people_detection/face_detector" file="$(find cob_people_detection)/ros/launch/face_detector_params.yaml"/>
   <node name="face_detector" pkg="cob_people_detection" ns="cob_people_detection/face_detector" type="face_detector_node" output="screen">
-    <remap from="head_positions" to="cob_people_detection/face_detector/head_positions"/>
+    <remap from="head_positions" to="cob_people_detection/head_detector/head_positions"/>
 	
-    <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/windows/"/>
+    <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/"/>
   </node>
 
 </launch>

@@ -80,7 +80,7 @@ using namespace ipa_PeopleDetector;
 HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
-	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
+	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 
 	// Parameters
 	double depth_increase_search_scale;		// The factor by which the search window is scaled between the subsequent scans

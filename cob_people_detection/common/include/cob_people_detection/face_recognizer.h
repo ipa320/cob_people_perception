@@ -69,13 +69,11 @@
 #endif
 
 // opencv
-#include <opencv/ml.h>
 #include <opencv/cv.h>
+#include <opencv/ml.h>
 
 namespace ipa_PeopleDetector {
 
-/// Interface to Calibrate Head of Care-O-bot 3.
-/// Long description
 class FaceRecognizer : public AbstractFaceRecognizer
 {
 public:
@@ -85,15 +83,10 @@ public:
 	~FaceRecognizer(void); ///< Destructor
 
 	/// Initialization function.
-	/// @param directory The directory for data files
+	/// Parameters: see class member explanations.
+	/// @param data_directory The directory for data files
 	/// @return Return code
-	virtual unsigned long init();
-
-
-
-//	load/save
-//	capture images (?)
-//	train
+	virtual unsigned long init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug);
 
 	/// Function to add a new face
 	/// The function adds a new face to the trained images
@@ -106,21 +99,18 @@ public:
 	//virtual unsigned long AddFace(cv::Mat& img, cv::Rect& face, std::string id, std::vector<cv::Mat>& images, std::vector<std::string>& ids);
 
 	/// Trains a model for the recognition of a given set of faces.
-	/// @param directory The directory for data files
 	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
 	/// @return Return code
-	virtual unsigned long trainRecognitionModel(std::string directory, std::vector<std::string>& identification_indices_to_train);
+	virtual unsigned long trainRecognitionModel(std::vector<std::string>& identification_labels_to_train);
 
 	/// Saves the currently trained model for the recognition of a given set of faces.
-	/// @param directory The directory for data files
 	/// @return Return code
-	virtual unsigned long saveRecognitionModel(std::string directory);
+	virtual unsigned long saveRecognitionModel();
 
 	/// Loads a model for the recognition of a given set of faces.
-	/// @param directory The directory for data files
 	/// @param identification_labels_to_recognize List of labels whose corresponding faces shall be available for recognition
 	/// @return Return code
-	virtual unsigned long loadRecognitionModel(std::string directory, std::vector<std::string>& identification_labels_to_recognize);
+	virtual unsigned long loadRecognitionModel(std::vector<std::string>& identification_labels_to_recognize);
 
 	enum Metrics {EUCLIDEAN, MAHALANOBIS, MAHALANOBISCOSINE};
 
@@ -130,17 +120,17 @@ protected:
 	/// The function recognize the faces
 	/// @param color_image source color image
 	/// @param face_coordinates Bounding boxes of detected faces (input parameter)
-	/// @param identification_index Vector of indices of classified faces, indices correspond with bounding boxes in face_coordinates
+	/// @param identification_labels Vector of labels of classified faces, vector indices correspond with bounding boxes in face_coordinates
 	/// @return Return code
-	virtual unsigned long recognizeFace(cv::Mat& color_image, std::vector<cv::Rect>& face_coordinates, std::vector<int>& identification_index);
+	virtual unsigned long recognizeFace(cv::Mat& color_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels);
 
 	/// Function to find the closest face class
 	/// The function calculates the distance of each sample image to the trained face class
 	/// @param eigen_vector_weights The weights of corresponding eigenvectors of projected test face
-	/// @param face_index Index of closest face, or -1 if the face is unknown
+	/// @param face_label Label of closest face, or 'Unknown' if the face is unknown
 	/// @param number_eigenvectors Number of eigenvalues
 	/// @return Return code
-	virtual unsigned long classifyFace(float *eigen_vector_weights, int *face_index, int number_eigenvectors);
+	virtual unsigned long classifyFace(float *eigen_vector_weights, std::string& face_label, int number_eigenvectors);
 
 	/// Function to Run the Eigenface-PCA algorithm
 	/// @param number_eigenvectors Target number of eigenvectors
@@ -168,7 +158,7 @@ protected:
 	/// @return Return code
 	virtual unsigned long convertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face, cv::Size new_size);
 
-	/// Just converts m_eigenvectors to m_eigen_vectors_ipl which is a conversion of std::vector<cv::Mat> to IplImage**.
+	/// Just converts m_eigenvectors to m_eigenvectors_ipl which is a conversion of std::vector<cv::Mat> to IplImage**.
 	/// Necessary to avoid in-place conversion each time recognizeFace is called.
 	virtual unsigned long convertEigenvectorsToIpl();
 
@@ -185,14 +175,14 @@ protected:
 
 	// data
 	std::vector<cv::Mat> m_eigenvectors;			///< Eigenvectors (spanning the face space)
-	IplImage** m_eigen_vectors_ipl;					///< Eigenvalues stored in IplImage format (to avoid conversion each time the function is called)
+	IplImage** m_eigenvectors_ipl;					///< Eigenvalues stored in IplImage format (to avoid conversion each time the function is called)
 	cv::Mat m_eigenvalues;							///< Eigenvalues
 	cv::Mat m_average_image;						///< Trained average Image
 	cv::Mat m_projected_training_faces;				///< Projected training faces (coefficients for the eigenvectors of the face subspace)
-	std::vector<std::string> m_face_labels;			///< A vector containing the corresponding labels to each face image projection in m_projected_training_faces (m_face_labels[i] stores the corresponding name to the face coordinates in the face subspace in m_projected_training_faces.rows(i))
+	std::vector<std::string> m_face_labels;			///< A vector containing the corresponding labels to each face image projection in m_projected_training_faces (m_face_labels[i] stores the corresponding name to the face representation in the face subspace in m_projected_training_faces.rows(i))
 	cv::Mat m_face_class_average_projections;		///< The average factors of the eigenvector decomposition from each face class; The average factors from each face class originating from the eigenvector decomposition.
 	std::vector<std::string> m_current_label_set;	///< A vector containing all different labels from the training session exactly once, order of appearance matters! (m_current_label_set[i] stores the corresponding name to the average face coordinates in the face subspace in m_face_class_average_projections.rows(i))
-	cv::SVM m_person_classifier;					///< classifier for the identity of a person
+	cv::SVM m_face_classifier;					///< classifier for the identity of a person
 	std::string m_data_directory;					///< folder that contains the training data
 
 	// parameters

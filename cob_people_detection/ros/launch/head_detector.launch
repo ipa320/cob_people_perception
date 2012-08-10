@@ -12,7 +12,7 @@
   <node name="head_detector" pkg="cob_people_detection" ns="cob_people_detection/head_detector" type="head_detector_node" output="screen">
     <remap from="pointcloud_rgb" to="/cam3d/depth/upright/points"/>
 	
-    <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/windows/"/>
+    <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/"/>
   </node>
 
 </launch>

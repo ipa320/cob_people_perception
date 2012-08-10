@@ -1,10 +1,10 @@
-# if enabled, invalid pixels of the depth image are interpolated by region growing of their neighbors
-# bool
-fill_unassigned_depth_values: true
-
 # this string allows to change the path to the Haar classifier model
 # string
 # data_directory: path_to_data -> please change this parameter in the launch file
+
+# if enabled, invalid pixels of the depth image are interpolated by region growing of their neighbors
+# bool
+fill_unassigned_depth_values: true
 
 # The factor by which the search window is scaled between the subsequent scans
 # double

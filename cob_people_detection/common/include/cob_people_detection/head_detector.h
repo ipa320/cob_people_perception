@@ -72,7 +72,6 @@
 
 namespace ipa_PeopleDetector {
 
-
 class HeadDetector
 {
 public:

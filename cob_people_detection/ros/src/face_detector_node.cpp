@@ -80,7 +80,7 @@ using namespace ipa_PeopleDetector;
 FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
-	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
+	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 
 	// Parameters
 	double faces_increase_search_scale;		// The factor by which the search window is scaled between the subsequent scans
@@ -92,7 +92,7 @@ FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh)
 	double face_size_min_m;					// the minimum feasible face diameter [m] if reason_about_3dface_size is enabled
 	double max_face_z_m;					// maximum distance [m] of detected faces to the sensor
 	bool debug;								// enables some debug outputs
-	std::cout << "\n--------------------------\nHead Detector Parameters:\n--------------------------\n";
+	std::cout << "\n--------------------------\nFace Detector Parameters:\n--------------------------\n";
 	node_handle_.param("data_directory", data_directory_, data_directory_);
 	std::cout << "data_directory = " << data_directory_ << "\n";
 	node_handle_.param("faces_increase_search_scale", faces_increase_search_scale, 1.1);
@@ -136,7 +136,8 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 	// convert color and depth image patches of head regions
 	cv_bridge::CvImageConstPtr cv_ptr;
 	std::vector<cv::Mat> heads_color_images, heads_depth_images;
-	heads_color_images.reserve(head_positions->head_detections.size());
+	heads_color_images.resize(head_positions->head_detections.size());
+	heads_depth_images.resize(head_positions->head_detections.size());
 	for (unsigned int i=0; i<head_positions->head_detections.size(); i++)
 	{
 		sensor_msgs::Image msg = head_positions->head_detections[i].color_image;
