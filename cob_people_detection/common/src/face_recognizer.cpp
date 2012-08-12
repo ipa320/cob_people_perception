@@ -75,6 +75,12 @@
 #include <opencv/cvaux.h>
 #include <opencv/highgui.h>
 
+// boost
+#include "boost/filesystem/operations.hpp"
+#include "boost/filesystem/convenience.hpp"
+#include "boost/filesystem/path.hpp"
+namespace fs = boost::filesystem;
+
 
 using namespace ipa_PeopleDetector;
 
@@ -93,7 +99,7 @@ FaceRecognizer::~FaceRecognizer(void)
 	}
 }
 
-unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug)
+unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize)
 {
 	// parameters
 	m_data_directory = data_directory;
@@ -103,6 +109,9 @@ unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_siz
 	m_threshold_unknown = threshold_unknown;
 	m_metric = metric;
 	m_debug = debug;
+
+	if (identification_labels_to_recognize.size() > 0)
+		loadRecognitionModel(identification_labels_to_recognize);
 
 	return ipa_Utils::RET_OK;
 }
@@ -223,8 +232,8 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "rdata.xml";
 
-//	if(fs::is_directory(path.c_str()))
-//	{
+	if(fs::is_directory(path.c_str()))
+	{
 		std::ostringstream complete;
 		complete << path << filename;
 		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::READ);
@@ -313,12 +322,12 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 		}
 
 		fileStorage.release();
-//	}
-//	else
-//	{
-//		std::cerr << "Error: FaceRecognizer::loadRecognizerData(): Path '" << path << "' is not a directory." << std::endl;
-//		return ipa_Utils::RET_FAILED;
-//	}
+	}
+	else
+	{
+		std::cerr << "Error: FaceRecognizer::loadRecognizerData(): Path '" << path << "' is not a directory." << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
 
 	return ipa_Utils::RET_OK;
 }
@@ -326,6 +335,12 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 unsigned long FaceRecognizer::recognizeFace(cv::Mat& color_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels)
 {
 	int number_eigenvectors = m_eigenvectors.size();
+	if (number_eigenvectors == 0)
+	{
+		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
+
 	float* eigen_vector_weights = 0;
 	eigen_vector_weights = (float *)cvAlloc(number_eigenvectors*sizeof(float));
 
@@ -707,8 +722,8 @@ unsigned long FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images
 	std::ostringstream complete;
 	complete << path << filename;
 
-//	if(fs::is_directory(path.c_str()))
-//	{
+	if(fs::is_directory(path.c_str()))
+	{
 		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::READ);
 		if(!fileStorage.isOpened())
 		{
@@ -763,13 +778,12 @@ unsigned long FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images
 		fileStorage.release();
 
 		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " images loaded.\n" << std::endl;
-//	}
-//	else
-//	{
-//		std::cerr << "ERROR - FaceRecognizer::loadTrainingData:" << std::endl;
-//		std::cerr << "\t .... Path '" << path << "' is not a directory." << std::endl;
-//		return ipa_Utils::RET_FAILED;
-//	}
+	}
+	else
+	{
+		std::cerr << "Error: FaceRecognizer::loadTrainingData: Path '" << path << "' is not a directory." << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
 
 	return ipa_Utils::RET_OK;
 }

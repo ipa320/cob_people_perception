@@ -144,9 +144,10 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 		image_array.head_detections[i].color_image = *(cv_ptr.toImageMsg());
 		cv::Mat depth_patch = depth_image(head_bounding_boxes[i]);
 		cv_ptr.image = depth_image;
-		cv_ptr.encoding = "bgr8";
+		cv_ptr.encoding = sensor_msgs::image_encodings::TYPE_32FC3;	// CV32FC3
 		image_array.head_detections[i].depth_image = *(cv_ptr.toImageMsg());
 	}
+	image_array.header.stamp = ros::Time::now();
 	head_position_publisher_.publish(image_array);
 }
 

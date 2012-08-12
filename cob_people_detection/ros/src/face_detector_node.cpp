@@ -140,6 +140,7 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 	heads_depth_images.resize(head_positions->head_detections.size());
 	for (unsigned int i=0; i<head_positions->head_detections.size(); i++)
 	{
+		// color image
 		sensor_msgs::Image msg = head_positions->head_detections[i].color_image;
 		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image>(&msg);
 		try
@@ -153,11 +154,12 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 		}
 		heads_color_images[i] = cv_ptr->image;
 
+		// depth image
 		msg = head_positions->head_detections[i].depth_image;
 		msgPtr = boost::shared_ptr<sensor_msgs::Image>(&msg);
 		try
 		{
-			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
+			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::TYPE_32FC3);
 		}
 		catch (cv_bridge::Exception& e)
 		{

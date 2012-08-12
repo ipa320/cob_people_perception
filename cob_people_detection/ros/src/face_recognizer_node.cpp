@@ -89,9 +89,12 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	double threshold_unknown;				// Threshold to detect unknown faces
 	int metric; 							// metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 	bool debug;								// enables some debug outputs
+	std::vector<std::string> identification_labels_to_recognize;	// a list of labels of persons that shall be recognized
 	std::cout << "\n--------------------------\nFace Recognizer Parameters:\n--------------------------\n";
 	node_handle_.param("data_directory", data_directory_, data_directory_);
 	std::cout << "data_directory = " << data_directory_ << "\n";
+	node_handle_.param("enable_face_recognition", enable_face_recognition_, true);
+	std::cout << "enable_face_recognition = " << enable_face_recognition_ << "\n";
 	node_handle_.param("eigenface_size", eigenface_size, 100);
 	std::cout << "eigenface_size = " << eigenface_size << "\n";
 	node_handle_.param("eigenvectors_per_person", eigenvectors_per_person, 1);
@@ -104,86 +107,226 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	std::cout << "metric = " << metric << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
+	std::cout << "identification_labels_to_recognize: \n";
+	XmlRpc::XmlRpcValue identification_labels_to_recognize_list;
+	node_handle_.getParam("identification_labels_to_recognize", identification_labels_to_recognize_list);
+	if (identification_labels_to_recognize_list.getType() == XmlRpc::XmlRpcValue::TypeArray)
+	{
+		identification_labels_to_recognize.resize(identification_labels_to_recognize_list.size());
+		for (int i=0; i<identification_labels_to_recognize_list.size(); i++)
+		{
+		  ROS_ASSERT(identification_labels_to_recognize_list[i].getType() == XmlRpc::XmlRpcValue::TypeString);
+		  identification_labels_to_recognize[i] = static_cast<std::string>(identification_labels_to_recognize_list[i]);
+		  std::cout << "          - " << identification_labels_to_recognize[i] << std::endl;
+		}
+	}
 
 	// initialize face recognizer
-	face_recognizer_.init(data_directory_, eigenface_size, eigenvectors_per_person, threshold_facespace, threshold_unknown, metric, debug);
+	face_recognizer_.init(data_directory_, eigenface_size, eigenvectors_per_person, threshold_facespace, threshold_unknown, metric, debug, identification_labels_to_recognize);
 
 	// advertise topics
-	// todo
-	face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageArray>("face_recognitions", 1);
+	face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_recognitions", 1);
 
 	// subscribe to head detection topic
-	face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceRecognizerNode::face_positions_callback, this);
+	face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceRecognizerNode::facePositionsCallback, this);
+
+	// launch LoadModel server
+	load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
+	load_model_server_->start();
 }
 
 FaceRecognizerNode::~FaceRecognizerNode(void)
 {
+	if (load_model_server_ != 0) delete load_model_server_;
 }
 
-void FaceRecognizerNode::face_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions)
+void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions)
 {
 	// receive head and face positions and recognize faces in the face region, finally publish detected and recognized faces
 
-	// convert color image patches of head regions and contained face bounding boxes
+	// --- convert color image patches of head regions and contained face bounding boxes ---
 	cv_bridge::CvImageConstPtr cv_ptr;
 	std::vector<cv::Mat> heads_color_images;
 	heads_color_images.resize(face_positions->head_detections.size());
+	std::vector<cv::Mat> heads_depth_images;
+	heads_depth_images.resize(face_positions->head_detections.size());
 	std::vector< std::vector<cv::Rect> > face_bounding_boxes;
 	face_bounding_boxes.resize(face_positions->head_detections.size());
+	std::vector<cv::Rect> head_bounding_boxes;
+	head_bounding_boxes.resize(face_positions->head_detections.size());
 	for (unsigned int i=0; i<face_positions->head_detections.size(); i++)
 	{
 		// color image
-		sensor_msgs::Image msg = face_positions->head_detections[i].color_image;
+		if (enable_face_recognition_ == true)
+		{
+			sensor_msgs::Image msg = face_positions->head_detections[i].color_image;
+			sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image>(&msg);
+			try
+			{
+				cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
+			}
+			catch (cv_bridge::Exception& e)
+			{
+				ROS_ERROR("cv_bridge exception: %s", e.what());
+				return;
+			}
+			heads_color_images[i] = cv_ptr->image;
+		}
+
+		// depth image
+		sensor_msgs::Image msg = face_positions->head_detections[i].depth_image;
 		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image>(&msg);
 		try
 		{
-			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
+			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::TYPE_32FC3);
 		}
 		catch (cv_bridge::Exception& e)
 		{
 			ROS_ERROR("cv_bridge exception: %s", e.what());
 			return;
 		}
-		heads_color_images[i] = cv_ptr->image;
+		heads_depth_images[i] = cv_ptr->image;
 
-		// face bounding box
-		face_bounding_boxes.resize(face_positions->head_detections[i].face_detections.size());
-		for (uint j=0; j<face_bounding_boxes.size(); j++)
+		// face bounding boxes
+		face_bounding_boxes[i].resize(face_positions->head_detections[i].face_detections.size());
+		for (uint j=0; j<face_bounding_boxes[i].size(); j++)
 		{
 			const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].face_detections[j];
 			cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 			face_bounding_boxes[i][j] = rect;
 		}
+
+		// head bounding box
+		const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].head_detection;
+		cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
+		head_bounding_boxes[i] = rect;
 	}
 
-	// recognize faces
+	// --- face recognition ---
 	std::vector< std::vector<std::string> > identification_labels;
-	face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
+	if (enable_face_recognition_ == true)
+	{
+		// recognize faces
+		unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
+		if (result_state == ipa_Utils::RET_FAILED)
+		{
+			ROS_ERROR("FaceRecognizerNode::face_positions_callback: Please load a face recognition model at first.");
+			return;
+		}
+	}
+	else
+	{
+		// label all image unknown if face recognition disabled
+		identification_labels.resize(face_positions->head_detections.size());
+		for (uint i=0; i<identification_labels.size(); i++)
+		{
+			identification_labels[i].resize(face_positions->head_detections[i].face_detections.size());
+			for (uint j=0; j<identification_labels[i].size(); j++)
+				identification_labels[i][j] = "Unknown";
+		}
+	}
 
-	// publish detection message
+	// --- publish detection message ---
+	cob_people_detection_msgs::DetectionArray detection_msg;
+	detection_msg.header = face_positions->header;
 
+	// prepare message
+	for (int head=0; head<(int)head_bounding_boxes.size(); head++)
+	{
+		if (face_bounding_boxes[head].size() == 0)
+		{
+			// no faces detected in head region -> publish head position
+			cob_people_detection_msgs::Detection det;
+			cv::Rect& head_bb = head_bounding_boxes[head];
+			// set 3d position of head's center
+			bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], 0.5*(float)head_bb.width, 0.5*(float)head_bb.height, det.pose.pose.position, 6);
+			if (valid_3d_position==false)
+				continue;
+			// write bounding box
+			det.mask.roi.x = head_bb.x;           det.mask.roi.y = head_bb.y;
+			det.mask.roi.width = head_bb.width;   det.mask.roi.height = head_bb.height;
+			// set label
+			det.label="UnknownHead";
+			// set origin of detection
+			det.detector = "head";
+			// add to message
+			detection_msg.detections.push_back(det);
+		}
+		else
+		{
+			// process all faces in head region
+			for (int face=0; face<(int)face_bounding_boxes[head].size(); face++)
+			{
+				cob_people_detection_msgs::Detection det;
+				cv::Rect& head_bb = head_bounding_boxes[head];
+				cv::Rect& face_bb = face_bounding_boxes[head][face];
+				// set 3d position of head's center
+				bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], face_bb.x+0.5*(float)face_bb.width, face_bb.y+0.5*(float)face_bb.height, det.pose.pose.position, 6);
+				if (valid_3d_position==false)
+					continue;
+				// write bounding box
+				det.mask.roi.x = head_bb.x+face_bb.x; det.mask.roi.y = head_bb.y+face_bb.y;
+				det.mask.roi.width = face_bb.width;   det.mask.roi.height = face_bb.height;
+				// set label
+				det.label=identification_labels[head][face];
+				// set origin of detection
+				det.detector = "face";
+				// add to message
+				detection_msg.detections.push_back(det);
+			}
+		}
+	}
 
-//	std::vector<std::vector<cv::Rect> > face_coordinates;
-//	face_detector_.detectColorFaces(heads_color_images, heads_depth_images, face_coordinates);
-//
-//	cob_people_detection_msgs::ColorDepthImageArray image_array;
-//	image_array = *face_positions;
-//	for (unsigned int i=0; i<face_coordinates.size(); i++)
-//	{
-//		for (unsigned int j=0; j<face_coordinates[i].size(); j++)
-//		{
-//			cob_people_detection_msgs::Rect rect;
-//			rect.x = face_coordinates[i][j].x;
-//			rect.y = face_coordinates[i][j].y;
-//			rect.width = face_coordinates[i][j].width;
-//			rect.height = face_coordinates[i][j].height;
-//			image_array.head_detections[i].face_detections.push_back(rect);
-//		}
-//	}
-//
-//	face_position_publisher_.publish(image_array);
+	// publish message
+	face_recognition_publisher_.publish(detection_msg);
 }
 
+
+bool FaceRecognizerNode::determine3DFaceCoordinates(cv::Mat& depth_image, int center2Dx, int center2Dy, geometry_msgs::Point& center3D, int search_radius)
+{
+	// 3D world coordinates (and verify that the read pixel contained valid coordinates, otherwise search for valid pixel in neighborhood)
+	cv::Point3f p;
+	bool valid_coordinates = false;
+	for (int d=0; (d<search_radius && !valid_coordinates); d++)
+	{
+		for (int v=-d; (v<=d && !valid_coordinates); v++)
+		{
+			for (int u=-d; (u<=d && !valid_coordinates); u++)
+			{
+				if ((abs(v)!=d && abs(u)!=d) || center2Dx+u<0 || center2Dx+u>=depth_image.cols || center2Dy+v<0 || center2Dy+v>=depth_image.rows)
+					continue;
+
+				p = depth_image.at<cv::Point3f>(center2Dy+v, center2Dx+u);
+				if (!isnan(p.x) && !isnan(p.y) && p.z!=0.f)
+				{
+					valid_coordinates = true;
+					center3D.x = p.x; center3D.y=p.y; center3D.z=p.z;
+				}
+			}
+		}
+	}
+
+	return valid_coordinates;
+}
+
+void FaceRecognizerNode::loadModelServerCallback(const cob_people_detection::LoadModelGoalConstPtr& goal)
+{
+	load_model_server_->acceptNewGoal();
+
+	// read list of labels of persons that shall be recognized from goal message
+	std::vector<std::string> identification_labels_to_recognize(goal->labels.size());
+	for (int i=0; i<(int)goal->labels.size(); i++)
+		identification_labels_to_recognize[i] = goal->labels[i];
+
+	// load the corresponding recognition model
+	bool result_state = face_recognizer_.loadRecognitionModel(identification_labels_to_recognize);
+
+	cob_people_detection::LoadModelActionResult result;
+	if (result_state == ipa_Utils::RET_OK)
+		load_model_server_->setSucceeded(result, "Model successfully loaded.");
+	else
+		load_model_server_->setAborted(result, "Loading new model failed.");
+}
 
 //#######################
 //#### main programm ####

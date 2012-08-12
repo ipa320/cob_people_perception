@@ -114,7 +114,7 @@ void CobFaceDetectionNodelet::onInit()
 	sync_pointcloud_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
-	face_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::PeopleDetectionArray>("face_position_array", 1);
+	face_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_position_array", 1);
 	face_detection_image_pub_ = it_->advertise("face_detection_image", 1);
 
 	recognize_server_ = new RecognizeServer(node_handle_, "recognize_server", boost::bind(&CobFaceDetectionNodelet::recognizeServerCallback, this, _1), false);
@@ -1235,7 +1235,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	// publish face positions
 	std::stringstream ss;
 	ss << depth_image.rows << " " << depth_image.cols;
-	cob_people_detection_msgs::PeopleDetectionArray facePositionMsg;
+	cob_people_detection_msgs::DetectionArray facePositionMsg;
 	// image dimensions
 	facePositionMsg.header.frame_id = ss.str();
 	// time stamp
@@ -1250,7 +1250,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 			cv::Rect face = range_faces_[i];
 
 			// 2D image coordinates
-			cob_people_detection_msgs::PeopleDetection det;
+			cob_people_detection_msgs::Detection det;
 			det.mask.roi.x = face.x;           det.mask.roi.y = face.y;
 			det.mask.roi.width = face.width;   det.mask.roi.height = face.height;
 			float center2Dx = face.x + face.width*0.5f;
@@ -1293,7 +1293,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 		cv::Rect face = color_faces_[i];
 
 		// 2D image coordinates
-		cob_people_detection_msgs::PeopleDetection det;
+		cob_people_detection_msgs::Detection det;
 		det.mask.roi.x = face.x;           det.mask.roi.y = face.y;
 		det.mask.roi.width = face.width;   det.mask.roi.height = face.height;
 		float center2Dx = face.x + face.width*0.5f;

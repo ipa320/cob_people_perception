@@ -73,10 +73,17 @@
 
 // ROS message includes
 #include <sensor_msgs/Image.h>
+#include <geometry_msgs/Point.h>
+#include <cob_people_detection_msgs/DetectionArray.h>
 #include <cob_people_detection_msgs/ColorDepthImageArray.h>
+
+// Actions
+#include <actionlib/server/simple_action_server.h>
+#include <cob_people_detection/LoadModelAction.h>
 
 namespace ipa_PeopleDetector {
 
+typedef actionlib::SimpleActionServer<cob_people_detection::LoadModelAction> LoadModelServer;
 
 class FaceRecognizerNode
 {
@@ -91,7 +98,19 @@ public:
 protected:
 
 	/// Callback for incoming head detections
-	void face_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions);
+	void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions);
+
+	/// Computes the 3D coordinate of a detected face.
+	/// @param depth_image Coordinate image in format CV32FC3
+	/// @param center2Dx Image x-coordinate of the center of the detected face
+	/// @param center2Dy Image y-coordinate of the center of the detected face
+	/// @param center3D (x,y,z) coordinates of the face's center point
+	/// @param search_radius Radius of pixel neighborhood which is searched for valid 3D coordinates.
+	/// @return Indicates whether the found 3D coordinates are valid, i.e. if true, the 3D coordinates do not contain NaN values and are valid.
+	bool determine3DFaceCoordinates(cv::Mat& depth_image, int center2Dx, int center2Dy, geometry_msgs::Point& center3D, int search_radius);
+
+	/// Callback for load requests to load a new recognition model
+	void loadModelServerCallback(const cob_people_detection::LoadModelGoalConstPtr& goal);
 
 	ros::NodeHandle node_handle_;
 
@@ -99,10 +118,14 @@ protected:
 
 	ros::Publisher face_recognition_publisher_;		///< publisher for the positions and labels of the detected faces
 
+	LoadModelServer* load_model_server_;				///< Action server that handles load requests for a new recognition model
+
 	FaceRecognizer face_recognizer_;		///< implementation of the face recognizer
 
 	// parameters
 	std::string data_directory_;	///< path to the classifier model
+	bool enable_face_recognition_;	///< this flag enables or disables the face recognition step
+
 };
 
 } // end namespace

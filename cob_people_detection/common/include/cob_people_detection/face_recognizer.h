@@ -85,8 +85,9 @@ public:
 	/// Initialization function.
 	/// Parameters: see class member explanations.
 	/// @param data_directory The directory for data files
+	/// @param identification_labels_to_recognize A list of labels of persons that shall be recognized
 	/// @return Return code
-	virtual unsigned long init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug);
+	virtual unsigned long init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize);
 
 	/// Function to add a new face
 	/// The function adds a new face to the trained images
