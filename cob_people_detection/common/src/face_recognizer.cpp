@@ -150,10 +150,15 @@ unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& id
 
 	// PCA
 	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size());
-	PCA(number_eigenvectors, face_images);
+	bool return_value = PCA(number_eigenvectors, face_images);
+	if (return_value == ipa_Utils::RET_FAILED)
+		return ipa_Utils::RET_FAILED;
 
 	// compute average face projections per class
 	computeAverageFaceProjections();
+
+	// save new model
+	saveRecognitionModel();
 
 	return ipa_Utils::RET_OK;
 }
@@ -256,12 +261,17 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 
 		// compare m_current_label_set with identification_labels_to_recognize, only load data if both vectors contain same elements in same order
 		bool same_data_set = true;
-		for (uint i=0; i<identification_labels_to_recognize.size(); i++)
+		if (identification_labels_to_recognize.size() == 0)
+			same_data_set = false;
+		else
 		{
-			if(identification_labels_to_recognize[i].compare(m_current_label_set[i]))
+			for (uint i=0; i<identification_labels_to_recognize.size(); i++)
 			{
-				same_data_set = false;
-				break;
+				if(identification_labels_to_recognize[i].compare(m_current_label_set[i]))
+				{
+					same_data_set = false;
+					break;
+				}
 			}
 		}
 
@@ -318,7 +328,9 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 		else
 		{
 			// stored set differs from requested set -> recompute the model from training data
-			trainRecognitionModel(identification_labels_to_recognize);
+			bool return_value = trainRecognitionModel(identification_labels_to_recognize);
+			if (return_value == ipa_Utils::RET_FAILED)
+				return ipa_Utils::RET_FAILED;
 		}
 
 		fileStorage.release();
