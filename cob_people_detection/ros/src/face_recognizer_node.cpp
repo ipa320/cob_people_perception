@@ -321,7 +321,7 @@ void FaceRecognizerNode::loadModelServerCallback(const cob_people_detection::Loa
 	// load the corresponding recognition model
 	bool result_state = face_recognizer_.loadRecognitionModel(identification_labels_to_recognize);
 
-	cob_people_detection::LoadModelActionResult result;
+	cob_people_detection::LoadModelResult result;
 	if (result_state == ipa_Utils::RET_OK)
 		load_model_server_->setSucceeded(result, "Model successfully loaded.");
 	else

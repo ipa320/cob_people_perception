@@ -46,13 +46,16 @@ rosbuild_check_for_sse()
 #rosbuild_add_executable(face_detector
 			#common/src/people_detector.cpp
 			#ros/src/people_detection.cpp)
-rosbuild_add_library(face_detector
-			common/src/people_detector.cpp
-			ros/src/face_detection.cpp)
 
-rosbuild_add_library(people_detector
-			ros/src/people_detection.cpp)
-add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
+
+#rosbuild_add_library(face_detector
+#			common/src/people_detector.cpp
+#			ros/src/face_detection.cpp)
+
+#rosbuild_add_library(people_detector
+#			ros/src/people_detection.cpp)
+#add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
+
 
 rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)
@@ -60,15 +63,22 @@ rosbuild_add_executable(people_detection_client
 rosbuild_add_executable(head_detector_node
 			common/src/head_detector.cpp
 			ros/src/head_detector_node.cpp)
+add_custom_command(TARGET head_detector_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 rosbuild_add_executable(face_detector_node
 			common/src/face_detector.cpp
 			ros/src/face_detector_node.cpp)
+add_custom_command(TARGET face_detector_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 rosbuild_add_executable(face_recognizer_node
 			common/src/abstract_face_recognizer.cpp
 			common/src/face_recognizer.cpp
 			ros/src/face_recognizer_node.cpp)
+add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
+
+rosbuild_add_executable(detection_tracker_node
+			ros/src/detection_tracker_node.cpp)
+
 
 # modified openni tracker
 #rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp
@@ -84,12 +94,13 @@ rosbuild_add_executable(face_recognizer_node
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ros/include
 		    ${PROJECT_SOURCE_DIR}/common/include)
 
-rosbuild_add_compile_flags(face_detector -D__LINUX__)
-rosbuild_add_compile_flags(people_detector -D__LINUX__)
+#rosbuild_add_compile_flags(face_detector -D__LINUX__)
+#rosbuild_add_compile_flags(people_detector -D__LINUX__)
 rosbuild_add_compile_flags(people_detection_client -D__LINUX__)
 rosbuild_add_compile_flags(head_detector_node -D__LINUX__)
 rosbuild_add_compile_flags(face_detector_node -D__LINUX__)
 rosbuild_add_compile_flags(face_recognizer_node -D__LINUX__)
+rosbuild_add_compile_flags(detection_tracker_node -D__LINUX__)
 
 # rostest
 #rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_noface_test_diamondback.bag face_detector_noface_test.bag 37f043be780a4511c853379defdd9855)

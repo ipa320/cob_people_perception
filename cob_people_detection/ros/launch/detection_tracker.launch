@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- Openni people segmentation and tracker - adapted to publish the segmented image (does not work upside down, i.e. when robot is watching backwards) (comment out if you do not use the openni-tracker) -->
+  <!-- <node pkg="cob_people_detection" ns="cob_people_detection/openni_tracker" type="openni_tracker" name="openniTrackerNode" output="screen"/> -->
+
+  <!-- nodelet manager  (starts somewhere else) -->
+  <!-- <node pkg="nodelet" type="nodelet" name="nodelet_manager_people_detection"  args="manager" output="screen"/> -->
+
+  <!-- detection tracker node (tracks faces in color and depth image and publishes their positions) -->
+  <rosparam command="load" ns="cob_people_detection/detection_tracker" file="$(find cob_people_detection)/ros/launch/detection_tracker_params.yaml"/>
+  <node name="detection_tracker" pkg="cob_people_detection" ns="cob_people_detection/detection_tracker" type="detection_tracker_node" output="screen">
+    <remap from="face_position_array_in" to="cob_people_detection/face_recognizer/face_recognitions"/>
+    <remap from="people_segmentation_image" to="cob_people_detection/people_segmentation/people_segmentation_image"/>
+
+    <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/"/>
+  </node>
+
+</launch>

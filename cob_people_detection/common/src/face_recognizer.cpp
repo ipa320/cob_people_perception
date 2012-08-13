@@ -110,6 +110,7 @@ unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_siz
 	m_metric = metric;
 	m_debug = debug;
 
+	// load model
 	if (identification_labels_to_recognize.size() > 0)
 		loadRecognitionModel(identification_labels_to_recognize);
 
@@ -132,6 +133,9 @@ unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_siz
 
 unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& identification_labels_to_train)
 {
+	// secure this function with a mutex
+	boost::lock_guard<boost::mutex> lock(m_data_mutex);
+
 	// load necessary data
 	std::vector<cv::Mat> face_images;
 	loadTrainingData(face_images, identification_labels_to_train);
@@ -233,6 +237,9 @@ unsigned long FaceRecognizer::saveRecognitionModel()
 
 unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& identification_labels_to_recognize)
 {
+	// secure this function with a mutex
+	boost::lock_guard<boost::mutex>* lock = new boost::lock_guard<boost::mutex>(m_data_mutex);
+
 	// check whether currently trained data set corresponds with intentification_labels_to_recognize
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "rdata.xml";
@@ -323,17 +330,22 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 			std::string classifier_file = path + "svm.dat";
 			//m_face_classifier_.load(classifier_file.c_str());  // todo
 
+			fileStorage.release();
+
 			std::cout << "INFO: FaceRecognizer::loadRecognizerData: recognizer data loaded.\n" << std::endl;
 		}
 		else
 		{
 			// stored set differs from requested set -> recompute the model from training data
+			fileStorage.release();
+
+			// release lock, trainRecognitionModel requests its own lock
+			delete lock;
+
 			bool return_value = trainRecognitionModel(identification_labels_to_recognize);
 			if (return_value == ipa_Utils::RET_FAILED)
 				return ipa_Utils::RET_FAILED;
 		}
-
-		fileStorage.release();
 	}
 	else
 	{
@@ -346,6 +358,9 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 
 unsigned long FaceRecognizer::recognizeFace(cv::Mat& color_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels)
 {
+	// secure this function with a mutex
+	boost::lock_guard<boost::mutex> lock(m_data_mutex);
+
 	int number_eigenvectors = m_eigenvectors.size();
 	if (number_eigenvectors == 0)
 	{
