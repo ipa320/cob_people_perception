@@ -140,6 +140,9 @@ FaceRecognizerNode::~FaceRecognizerNode(void)
 	if (load_model_server_ != 0) delete load_model_server_;
 }
 
+// Prevent deleting memory twice, when using smart pointer
+void voidDeleter(const sensor_msgs::Image* const) {}
+
 void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions)
 {
 	// receive head and face positions and recognize faces in the face region, finally publish detected and recognized faces
@@ -159,8 +162,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 		// color image
 		if (enable_face_recognition_ == true)
 		{
-			sensor_msgs::Image msg = face_positions->head_detections[i].color_image;
-			sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image>(&msg);
+			sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->head_detections[i].color_image), voidDeleter);
 			try
 			{
 				cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
@@ -174,8 +176,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 		}
 
 		// depth image
-		sensor_msgs::Image msg = face_positions->head_detections[i].depth_image;
-		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image>(&msg);
+		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->head_detections[i].depth_image), voidDeleter);
 		try
 		{
 			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::TYPE_32FC3);

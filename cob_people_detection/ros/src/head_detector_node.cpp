@@ -130,22 +130,22 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 	// publish image patches from head region
 	cob_people_detection_msgs::ColorDepthImageArray image_array;
 	image_array.head_detections.resize(head_bounding_boxes.size());
-	cv_bridge::CvImage cv_ptr;
 	for (unsigned int i=0; i<head_bounding_boxes.size(); i++)
 	{
+		cv_bridge::CvImage cv_ptr;
 		image_array.header = pointcloud->header;
 		image_array.head_detections[i].head_detection.x = head_bounding_boxes[i].x;
 		image_array.head_detections[i].head_detection.y = head_bounding_boxes[i].y;
 		image_array.head_detections[i].head_detection.width = head_bounding_boxes[i].width;
 		image_array.head_detections[i].head_detection.height = head_bounding_boxes[i].height;
-		cv::Mat color_patch = color_image(head_bounding_boxes[i]);
-		cv_ptr.image = color_image;
-		cv_ptr.encoding = "bgr8";
-		image_array.head_detections[i].color_image = *(cv_ptr.toImageMsg());
 		cv::Mat depth_patch = depth_image(head_bounding_boxes[i]);
-		cv_ptr.image = depth_image;
+		cv_ptr.image = depth_patch;
 		cv_ptr.encoding = sensor_msgs::image_encodings::TYPE_32FC3;	// CV32FC3
 		image_array.head_detections[i].depth_image = *(cv_ptr.toImageMsg());
+		cv::Mat color_patch = color_image(head_bounding_boxes[i]);
+		cv_ptr.image = color_patch;
+		cv_ptr.encoding = sensor_msgs::image_encodings::BGR8;
+		image_array.head_detections[i].color_image = *(cv_ptr.toImageMsg());
 	}
 	image_array.header.stamp = ros::Time::now();
 	head_position_publisher_.publish(image_array);

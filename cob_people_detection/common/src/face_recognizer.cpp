@@ -111,8 +111,7 @@ unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_siz
 	m_debug = debug;
 
 	// load model
-	if (identification_labels_to_recognize.size() > 0)
-		loadRecognitionModel(identification_labels_to_recognize);
+	loadRecognitionModel(identification_labels_to_recognize);
 
 	return ipa_Utils::RET_OK;
 }
@@ -160,6 +159,8 @@ unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& id
 
 	// compute average face projections per class
 	computeAverageFaceProjections();
+
+	std::cout << "before saving"<< std::endl;
 
 	// save new model
 	saveRecognitionModel();
@@ -244,6 +245,7 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "rdata.xml";
 
+	bool training_necessary = false;
 	if(fs::is_directory(path.c_str()))
 	{
 		std::ostringstream complete;
@@ -251,106 +253,115 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::READ);
 		if(!fileStorage.isOpened())
 		{
-			std::cout << "Error: FaceRecognizer::loadRecognizerData: Cant open " << complete.str() << ".\n" << std::endl;
-			return ipa_Utils::RET_FAILED;
+			std::cout << "Info: FaceRecognizer::loadRecognizerData: Can't open " << complete.str() << ".\n" << std::endl;
+			training_necessary = true;
 		}
-
-		// A vector containing all different labels from the training session exactly once, order of appearance matters! (m_current_label_set[i] stores the corresponding name to the average face coordinates in the face subspace in m_face_class_average_projections.rows(i))
-		m_current_label_set.clear();
-		int number_current_labels = (int)fileStorage["number_current_labels"];
-		m_current_label_set.resize(number_current_labels);
-		for(int i=0; i<number_current_labels; i++)
-		{
-			std::ostringstream tag;
-			tag << "current_label_" << i;
-			m_current_label_set[i] = (std::string)fileStorage[tag.str().c_str()];
-		}
-
-		// compare m_current_label_set with identification_labels_to_recognize, only load data if both vectors contain same elements in same order
-		bool same_data_set = true;
-		if (identification_labels_to_recognize.size() == 0)
-			same_data_set = false;
 		else
 		{
-			for (uint i=0; i<identification_labels_to_recognize.size(); i++)
+			// A vector containing all different labels from the training session exactly once, order of appearance matters! (m_current_label_set[i] stores the corresponding name to the average face coordinates in the face subspace in m_face_class_average_projections.rows(i))
+			m_current_label_set.clear();
+			int number_current_labels = (int)fileStorage["number_current_labels"];
+			m_current_label_set.resize(number_current_labels);
+			for(int i=0; i<number_current_labels; i++)
 			{
-				if(identification_labels_to_recognize[i].compare(m_current_label_set[i]))
+				std::ostringstream tag;
+				tag << "current_label_" << i;
+				m_current_label_set[i] = (std::string)fileStorage[tag.str().c_str()];
+			}
+
+			// compare m_current_label_set with identification_labels_to_recognize, only load data if both vectors contain same elements in same order
+			bool same_data_set = true;
+			if (identification_labels_to_recognize.size() == 0)
+				same_data_set = false;
+			else
+			{
+				for (uint i=0; i<identification_labels_to_recognize.size(); i++)
 				{
-					same_data_set = false;
-					break;
+					if(identification_labels_to_recognize[i].compare(m_current_label_set[i]))
+					{
+						same_data_set = false;
+						break;
+					}
 				}
 			}
-		}
 
-		if (same_data_set == true)
-		{
-			// stored set is equal to requested set -> just load the data
-
-			// Number eigenvalues/eigenvectors
-			int number_eigenfaces = (int)fileStorage["number_eigenfaces"];
-
-			// Eigenvectors
-			m_eigenvectors.clear();
-			m_eigenvectors.resize(number_eigenfaces, cv::Mat());
-			for (int i=0; i<number_eigenfaces; i++)
+			if (same_data_set == true)
 			{
-				std::ostringstream tag;
-				tag << "ev_" << i;
-				fileStorage[tag.str().c_str()] >> m_eigenvectors[i];
+				// stored set is equal to requested set -> just load the data
+
+				// Number eigenvalues/eigenvectors
+				int number_eigenfaces = (int)fileStorage["number_eigenfaces"];
+
+				// Eigenvectors
+				m_eigenvectors.clear();
+				m_eigenvectors.resize(number_eigenfaces, cv::Mat());
+				for (int i=0; i<number_eigenfaces; i++)
+				{
+					std::ostringstream tag;
+					tag << "ev_" << i;
+					fileStorage[tag.str().c_str()] >> m_eigenvectors[i];
+				}
+
+				// Eigenvalue matrix
+				m_eigenvalues = cv::Mat();
+				fileStorage["eigenvalues"] >> m_eigenvalues;
+
+				// Average image
+				m_average_image = cv::Mat();
+				fileStorage["average_image"] >> m_average_image;
+
+				// Projections of the training faces
+				m_projected_training_faces = cv::Mat();
+				fileStorage["projected_training_faces"] >> m_projected_training_faces;
+
+				// corresponding labels to each face image projection in m_projected_training_faces
+				int number_face_labels = (int)fileStorage["number_face_labels"];
+				m_face_labels.clear();
+				m_face_labels.resize(number_face_labels);
+				for (int i=0; i<number_face_labels; i++)
+				{
+					std::ostringstream tag;
+					tag << "face_label_" << i;
+					fileStorage[tag.str().c_str()] >> m_face_labels[i];
+				}
+
+				// The average factors of the eigenvector decomposition from each face class
+				m_face_class_average_projections = cv::Mat();
+				fileStorage["face_class_average_projections"] >> m_face_class_average_projections;
+
+				// load classifier
+				std::string classifier_file = path + "svm.dat";
+				//m_face_classifier_.load(classifier_file.c_str());  // todo
+
+				std::cout << "INFO: FaceRecognizer::loadRecognizerData: recognizer data loaded.\n" << std::endl;
+			}
+			else
+			{
+				training_necessary = true;
 			}
 
-			// Eigenvalue matrix
-			m_eigenvalues = cv::Mat();
-			fileStorage["eigenvalues"] >> m_eigenvalues;
-
-			// Average image
-			m_average_image = cv::Mat();
-			fileStorage["average_image"] >> m_average_image;
-
-			// Projections of the training faces
-			m_projected_training_faces = cv::Mat();
-			fileStorage["projected_training_faces"] >> m_projected_training_faces;
-
-			// corresponding labels to each face image projection in m_projected_training_faces
-			int number_face_labels = (int)fileStorage["number_face_labels"];
-			m_face_labels.clear();
-			m_face_labels.resize(number_face_labels);
-			for (int i=0; i<number_face_labels; i++)
-			{
-				std::ostringstream tag;
-				tag << "face_label_" << i;
-				fileStorage[tag.str().c_str()] >> m_face_labels[i];
-			}
-
-			// The average factors of the eigenvector decomposition from each face class
-			m_face_class_average_projections = cv::Mat();
-			fileStorage["face_class_average_projections"] >> m_face_class_average_projections;
-
-			// load classifier
-			std::string classifier_file = path + "svm.dat";
-			//m_face_classifier_.load(classifier_file.c_str());  // todo
-
 			fileStorage.release();
-
-			std::cout << "INFO: FaceRecognizer::loadRecognizerData: recognizer data loaded.\n" << std::endl;
-		}
-		else
-		{
-			// stored set differs from requested set -> recompute the model from training data
-			fileStorage.release();
-
-			// release lock, trainRecognitionModel requests its own lock
 			delete lock;
-
-			bool return_value = trainRecognitionModel(identification_labels_to_recognize);
-			if (return_value == ipa_Utils::RET_FAILED)
-				return ipa_Utils::RET_FAILED;
+			lock = 0;
 		}
 	}
 	else
 	{
 		std::cerr << "Error: FaceRecognizer::loadRecognizerData(): Path '" << path << "' is not a directory." << std::endl;
 		return ipa_Utils::RET_FAILED;
+	}
+
+	if (training_necessary == true)
+	{
+		// stored set differs from requested set -> recompute the model from training data
+
+		// release lock, trainRecognitionModel requests its own lock
+		if (lock != 0)
+			delete lock;
+
+		bool return_value = trainRecognitionModel(identification_labels_to_recognize);
+		if (return_value == ipa_Utils::RET_FAILED)
+			return ipa_Utils::RET_FAILED;
 	}
 
 	return ipa_Utils::RET_OK;
@@ -440,6 +451,8 @@ unsigned long FaceRecognizer::classifyFace(float *eigen_vector_weights, std::str
 {
 	double least_dist_sqared = DBL_MAX;
 
+	// todo: compare against single examples from training data, i.e. KNN
+	// comparing against average is arbitrarily bad
 	for(int i=0; i<m_face_class_average_projections.rows; i++)
 	{
 		double distance=0;

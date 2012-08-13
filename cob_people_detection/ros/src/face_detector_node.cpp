@@ -129,23 +129,25 @@ FaceDetectorNode::~FaceDetectorNode(void)
 {
 }
 
+// Prevent deleting memory twice, when using smart pointer
+void voidDeleter(const sensor_msgs::Image* const) {}
+
 void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions)
 {
 	// receive head positions and detect faces in the head region, finally publish detected faces
 
 	// convert color and depth image patches of head regions
-	cv_bridge::CvImageConstPtr cv_ptr;
 	std::vector<cv::Mat> heads_color_images, heads_depth_images;
 	heads_color_images.resize(head_positions->head_detections.size());
 	heads_depth_images.resize(head_positions->head_detections.size());
+	cv_bridge::CvImageConstPtr cv_ptr;
 	for (unsigned int i=0; i<head_positions->head_detections.size(); i++)
 	{
 		// color image
-		sensor_msgs::Image msg = head_positions->head_detections[i].color_image;
-		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image>(&msg);
+		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(head_positions->head_detections[i].color_image), voidDeleter);
 		try
 		{
-			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
+			cv_ptr = cv_bridge::toCvCopy(msgPtr, sensor_msgs::image_encodings::BGR8);
 		}
 		catch (cv_bridge::Exception& e)
 		{
@@ -155,8 +157,7 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 		heads_color_images[i] = cv_ptr->image;
 
 		// depth image
-		msg = head_positions->head_detections[i].depth_image;
-		msgPtr = boost::shared_ptr<sensor_msgs::Image>(&msg);
+		msgPtr = boost::shared_ptr<const sensor_msgs::Image>(&(head_positions->head_detections[i].depth_image), voidDeleter);
 		try
 		{
 			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::TYPE_32FC3);
@@ -168,7 +169,6 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 		}
 		heads_depth_images[i] = cv_ptr->image;
 	}
-
 	std::vector<std::vector<cv::Rect> > face_coordinates;
 	face_detector_.detectColorFaces(heads_color_images, heads_depth_images, face_coordinates);
 
