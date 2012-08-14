@@ -108,6 +108,35 @@ public:
 	/// @return Return code
 	virtual unsigned long addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
 
+	/// Updates the labels of a stored person.
+	/// @param old_label The label in the database which shall be replaced by the new label
+	/// @param new_label The new label
+	/// @return Return code
+	virtual unsigned long updateFaceLabel(std::string old_label, std::string new_label);
+
+	/// Updates the label of a single face in the database.
+	/// @param index The index of the face in the database whose label shall be replaced by the new label
+	/// @param new_label The new label
+	/// @return Return code
+	virtual unsigned long updateFaceLabel(int index, std::string new_label);
+
+	/// Deletes all database entries with the provided label.
+	/// @param label The label of the database entries which shall be deleted
+	/// @param face_images Vector containing all trained images
+	/// @return Return code
+	virtual unsigned long deleteFaces(std::string label, std::vector<cv::Mat>& face_images);
+
+	/// Deletes the database entry with the provided index.
+	/// @param index The index of the database entry which shall be deleted
+	/// @param face_images Vector containing all trained images
+	/// @return Return code
+	virtual unsigned long deleteFace(int index, std::vector<cv::Mat>& face_images);
+
+	/// Saves the training data
+	/// @param face_images A vector containing all training images
+	/// @return Return code
+	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images);
+
 	/// Trains a model for the recognition of a given set of faces.
 	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
 	/// @return Return code
@@ -171,11 +200,6 @@ protected:
 	/// Just converts m_eigenvectors to m_eigenvectors_ipl which is a conversion of std::vector<cv::Mat> to IplImage**.
 	/// Necessary to avoid in-place conversion each time recognizeFace is called.
 	virtual unsigned long convertEigenvectorsToIpl();
-
-	/// Saves the training data
-	/// @param face_images A vector containing all training images
-	/// @return Return code
-	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images);
 
 	/// Loads the training data for the persons specified in identification_labels_to_train
 	/// @param face_images A vector containing all training images

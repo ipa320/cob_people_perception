@@ -133,14 +133,54 @@ unsigned long FaceRecognizer::initTraining(std::string data_directory, int eigen
 
 unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images)
 {
-	cv::Mat resized_8U1;
-	cv::Size new_size(m_eigenface_size, m_eigenface_size);
-	convertAndResize(color_image, resized_8U1, face_bounding_box, new_size);
+//	// store in appropriate format for this method
+//	cv::Mat resized_8U1;
+//	cv::Size new_size(m_eigenface_size, m_eigenface_size);
+//	convertAndResize(color_image, resized_8U1, face_bounding_box, new_size);
+
+	// keep image in original format --> more flexibility later
+	cv::Mat roi = color_image(face_bounding_box);
 
 	// Save image
-	face_images.push_back(resized_8U1);
+	face_images.push_back(roi);
 	m_face_labels.push_back(label);
 
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long FaceRecognizer::updateFaceLabel(std::string old_label, std::string new_label)
+{
+	for (int i=0; i<(int)m_face_labels.size(); i++)
+	{
+		if (m_face_labels[i].compare(old_label) == 0)
+			m_face_labels[i] = new_label;
+	}
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long FaceRecognizer::updateFaceLabel(int index, std::string new_label)
+{
+	m_face_labels[index] = new_label;
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long FaceRecognizer::deleteFaces(std::string label, std::vector<cv::Mat>& face_images)
+{
+	for (int i=0; i<(int)m_face_labels.size(); i++)
+	{
+		if (m_face_labels[i].compare(label) == 0)
+		{
+			m_face_labels.erase(m_face_labels.begin()+i);
+			face_images.erase(face_images.begin()+i);
+		}
+	}
+	return ipa_Utils::RET_OK;
+}
+
+unsigned long FaceRecognizer::deleteFace(int index, std::vector<cv::Mat>& face_images)
+{
+	m_face_labels.erase(m_face_labels.begin()+index);
+	face_images.erase(face_images.begin()+index);
 	return ipa_Utils::RET_OK;
 }
 
@@ -154,11 +194,18 @@ unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& id
 	loadTrainingData(face_images, identification_labels_to_train);
 	m_current_label_set = identification_labels_to_train;
 
-	// rescale if necessary to m_eigenface_size
-	if (face_images.size() > 0 && (face_images[0].cols != m_eigenface_size || face_images[0].rows != m_eigenface_size))
+	// convert face_images to right format if necessary
+	cv::Size new_size(m_eigenface_size, m_eigenface_size);
+	for (uint i=0; i<face_images.size(); i++)
 	{
-		cv::Size new_size(m_eigenface_size, m_eigenface_size);
-		for (uint i=0; i<face_images.size(); i++)
+		// convert to grayscale if necessary
+		if (face_images[i].type() == CV_8UC3)
+		{
+			cv::Mat temp = face_images[i];
+			cv::cvtColor(temp, face_images[i], CV_BGR2GRAY);
+		}
+		// rescale if necessary to m_eigenface_size
+		if (face_images[i].cols != m_eigenface_size || face_images[i].rows != m_eigenface_size)
 		{
 			cv::Mat temp = face_images[i];
 			cv::resize(temp, face_images[i], new_size);
