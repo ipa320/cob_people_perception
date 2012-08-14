@@ -92,15 +92,21 @@ public:
 	/// @return Return code
 	virtual unsigned long init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize);
 
-	/// Function to add a new face
-	/// The function adds a new face to the trained images
-	/// @param img Image
-	/// @param face The face
-	/// @param id Id of the new face
-	/// @param images Vector with trained images
-	/// @param ids Vector with trained ids
+	/// Initialization function for training purposes.
+	/// Parameters: see class member explanations.
+	/// @param data_directory The directory for data files
+	/// @param face_images A list of images of persons that shall be recognized which will be loaded by the function.
 	/// @return Return code
-	//virtual unsigned long AddFace(cv::Mat& img, cv::Rect& face, std::string id, std::vector<cv::Mat>& images, std::vector<std::string>& ids);
+	virtual unsigned long initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images);
+
+	/// Function to add a new face
+	/// The function adds a new face to the trained images. The labels are stored internally in m_face_labels. The face_images are stored externally to avoid waste of memory.
+	/// @param color_image Color image containing the face
+	/// @param face_bounding_box Rectangular bounding box of the detected face
+	/// @param label Label of the new face
+	/// @param face_images Vector containing all trained images
+	/// @return Return code
+	virtual unsigned long addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
 
 	/// Trains a model for the recognition of a given set of faces.
 	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
@@ -167,7 +173,7 @@ protected:
 	virtual unsigned long convertEigenvectorsToIpl();
 
 	/// Saves the training data
-	/// todo
+	/// @param face_images A vector containing all training images
 	/// @return Return code
 	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images);
 

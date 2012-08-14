@@ -139,7 +139,6 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 FaceRecognizerNode::~FaceRecognizerNode(void)
 {
 	if (load_model_server_ != 0) delete load_model_server_;
-	std::cout << "frn: destructor" << std::endl;
 }
 
 // Prevent deleting memory twice, when using smart pointer
@@ -252,6 +251,8 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 			det.label="UnknownHead";
 			// set origin of detection
 			det.detector = "head";
+			// header
+			det.header = face_positions->header;
 			// add to message
 			detection_msg.detections.push_back(det);
 		}
@@ -274,6 +275,8 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 				det.label=identification_labels[head][face];
 				// set origin of detection
 				det.detector = "face";
+				// header
+				det.header = face_positions->header;
 				// add to message
 				detection_msg.detections.push_back(det);
 			}

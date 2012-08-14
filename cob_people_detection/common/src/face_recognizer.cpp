@@ -97,8 +97,6 @@ FaceRecognizer::~FaceRecognizer(void)
 			cvReleaseImage(&(m_eigenvectors_ipl[i]));
 		cvFree(&m_eigenvectors_ipl);
 	}
-
-	std::cout << "fr: destructor" << std::endl;
 }
 
 unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize)
@@ -118,19 +116,33 @@ unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_siz
 	return ipa_Utils::RET_OK;
 }
 
+unsigned long FaceRecognizer::initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images)
+{
+	// parameters
+	m_data_directory = data_directory;
+	m_eigenface_size = eigenface_size;
+	m_debug = debug;
 
-//unsigned long FaceRecognizer::AddFace(cv::Mat& img, cv::Rect& face, std::string id, std::vector<cv::Mat>& images, std::vector<std::string>& ids)
-//{
-//	//IplImage *resized_8U1 = cvCreateImage(cvSize(100, 100), 8, 1);
-//	cv::Mat resized_8U1(100, 100, CV_8UC1);
-//	ConvertAndResize(img, resized_8U1, face);
-//
-//	// Save image
-//	images.push_back(resized_8U1);
-//	ids.push_back(id);
-//
-//	return ipa_Utils::RET_OK;
-//}
+	// load model
+	m_face_labels.clear();	 // keep empty to load all available data
+	loadTrainingData(face_images, m_face_labels);
+
+	return ipa_Utils::RET_OK;
+}
+
+
+unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images)
+{
+	cv::Mat resized_8U1;
+	cv::Size new_size(m_eigenface_size, m_eigenface_size);
+	convertAndResize(color_image, resized_8U1, face_bounding_box, new_size);
+
+	// Save image
+	face_images.push_back(resized_8U1);
+	m_face_labels.push_back(label);
+
+	return ipa_Utils::RET_OK;
+}
 
 unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& identification_labels_to_train)
 {
@@ -381,6 +393,14 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 			return ipa_Utils::RET_FAILED;
 	}
 
+	if (m_debug == true)
+	{
+		std::cout << "Current model set:" << std::endl;
+		for (int i=0; i<(int)m_current_label_set.size(); i++)
+			std::cout << "          - " << m_current_label_set[i] << std::endl;
+		std::cout << std::endl;
+	}
+
 	return ipa_Utils::RET_OK;
 }
 
@@ -395,6 +415,8 @@ unsigned long FaceRecognizer::recognizeFace(cv::Mat& color_image, std::vector<cv
 		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
 		return ipa_Utils::RET_FAILED;
 	}
+
+	identification_labels.clear();
 
 	float* eigen_vector_weights = 0;
 	eigen_vector_weights = (float *)cvAlloc(number_eigenvectors*sizeof(float));
@@ -470,7 +492,9 @@ unsigned long FaceRecognizer::classifyFace(float *eigen_vector_weights, std::str
 
 	// todo: compare against single examples from training data, i.e. KNN
 	// comparing against average is arbitrarily bad
-	for(int i=0; i<m_face_class_average_projections.rows; i++)
+	cv::Mat& model_data = m_projected_training_faces; 		//m_face_class_average_projections
+	std::vector<std::string>& label_data = m_face_labels;	//m_current_label_set
+	for(int i=0; i<model_data.rows; i++)
 	{
 		double distance=0;
 		double cos=0;
@@ -480,7 +504,7 @@ unsigned long FaceRecognizer::classifyFace(float *eigen_vector_weights, std::str
 		{
 			if (m_metric < 2)
 			{
-				float d = eigen_vector_weights[e] - ((float*)(m_face_class_average_projections.data))[i * number_eigenvectors + e];
+				float d = eigen_vector_weights[e] - ((float*)(model_data.data))[i * number_eigenvectors + e];
 				if (m_metric==0)
 					distance += d*d;							//Euklid
 				else
@@ -488,8 +512,8 @@ unsigned long FaceRecognizer::classifyFace(float *eigen_vector_weights, std::str
 			}
 			else
 			{
-				cos += eigen_vector_weights[e] * ((float*)(m_face_class_average_projections.data))[i * number_eigenvectors + e] / ((float*)(m_eigenvalues.data))[e];
-				length_projection += ((float*)(m_face_class_average_projections.data))[i * number_eigenvectors + e] * ((float*)(m_face_class_average_projections.data))[i * number_eigenvectors + e] / ((float*)(m_eigenvalues.data))[e];
+				cos += eigen_vector_weights[e] * ((float*)(model_data.data))[i * number_eigenvectors + e] / ((float*)(m_eigenvalues.data))[e];
+				length_projection += ((float*)(model_data.data))[i * number_eigenvectors + e] * ((float*)(model_data.data))[i * number_eigenvectors + e] / ((float*)(m_eigenvalues.data))[e];
 				length_sample += eigen_vector_weights[e]*eigen_vector_weights[e] / ((float*)(m_eigenvalues.data))[e];
 			}
 		}
@@ -500,7 +524,7 @@ unsigned long FaceRecognizer::classifyFace(float *eigen_vector_weights, std::str
 			length_sample = sqrt(length_sample);
 			length_projection = sqrt(length_projection);
 			cos /= (length_projection * length_sample);
-			distance = -cos;		// todo why not abs?
+			distance = std::abs(cos); //-cos;		// todo why not abs?
 		}
 
 		if (m_debug) std::cout << "distance to face class: " << distance << std::endl;
@@ -511,9 +535,10 @@ unsigned long FaceRecognizer::classifyFace(float *eigen_vector_weights, std::str
 			if(least_dist_sqared > m_threshold_unknown)
 				face_label = "Unknown";
 			else
-				face_label = m_current_label_set[i];
+				face_label = label_data[i];
 		}
 	}
+	if (m_debug) std::cout << "least distance to face class: " << least_dist_sqared << std::endl;
 
 	// todo:
 //	if (personClassifier != 0 && *nearest != -1)
@@ -745,25 +770,22 @@ unsigned long FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images
 			return ipa_Utils::RET_FAILED;
 		}
 
-		// labels
-		fileStorage << "number_labels" << (int)m_face_labels.size();
+		// store data
+		fileStorage << "number_entries" << (int)m_face_labels.size();
 		for(int i=0; i<(int)m_face_labels.size(); i++)
 		{
+			// labels
 			std::ostringstream tag;
 			tag << "label_" << i;
 			fileStorage << tag.str().c_str() << m_face_labels[i].c_str();
-		}
 
-		// face images
-		fileStorage << "number_face_images" << (int)face_images.size();
-		for(int i=0; i<(int)face_images.size(); i++)
-		{
+			// face images
 			std::ostringstream img, shortname;
 			img << path << i << img_ext;
 			shortname << "training_data/" << i << img_ext;
-			std::ostringstream tag;
-			tag << "image_" << i;
-			fileStorage << tag.str().c_str() << shortname.str().c_str();
+			std::ostringstream tag2;
+			tag2 << "image_" << i;
+			fileStorage << tag2.str().c_str() << shortname.str().c_str();
 			cv::imwrite(img.str().c_str(), face_images[i]);
 		}
 

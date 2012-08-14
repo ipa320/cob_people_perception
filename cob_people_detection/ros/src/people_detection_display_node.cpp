@@ -67,8 +67,8 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 	it_ = 0;
 	sync_input_3_ = 0;
 
-//	// parameters
-//	std::cout << "\n---------------------------\nPeople Detection Parameters:\n---------------------------\n";
+	// parameters
+	std::cout << "\n---------------------------\nPeople Detection Parameters:\n---------------------------\n";
 //	node_handle_.param("display", display_, true);
 //	std::cout << "display = " << display_ << "\n";
 //	node_handle_.param("face_redetection_time", face_redetection_time_, 2.0);
@@ -96,7 +96,7 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 	color_image_sub_.subscribe(*it_, "colorimage", 1);
 
 	// input synchronization
-	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(3);
+	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(10);
 	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, color_image_sub_);
 	sync_input_3_->registerCallback(boost::bind(&PeopleDetectionDisplayNode::inputCallback, this, _1, _2, _3));
 
@@ -149,7 +149,7 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 		for (int j=0; j<(int)face_detection_msg->head_detections[i].face_detections.size(); j++)
 		{
 			const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[i].face_detections[j];
-			cv::Rect face(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
+			cv::Rect face(face_rect.x+head.x, face_rect.y+head.y, face_rect.width, face_rect.height);
 			cv::rectangle(color_image, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(191, 255, 148), 2, 8, 0);
 		}
 	}
