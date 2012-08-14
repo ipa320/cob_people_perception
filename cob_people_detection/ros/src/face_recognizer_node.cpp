@@ -68,6 +68,7 @@
 
 // OpenCV
 #include "opencv/cv.h"
+#include "opencv/highgui.h"
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -138,6 +139,7 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 FaceRecognizerNode::~FaceRecognizerNode(void)
 {
 	if (load_model_server_ != 0) delete load_model_server_;
+	std::cout << "frn: destructor" << std::endl;
 }
 
 // Prevent deleting memory twice, when using smart pointer

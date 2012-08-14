@@ -129,11 +129,11 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 
 	// publish image patches from head region
 	cob_people_detection_msgs::ColorDepthImageArray image_array;
+	image_array.header = pointcloud->header;
 	image_array.head_detections.resize(head_bounding_boxes.size());
 	for (unsigned int i=0; i<head_bounding_boxes.size(); i++)
 	{
 		cv_bridge::CvImage cv_ptr;
-		image_array.header = pointcloud->header;
 		image_array.head_detections[i].head_detection.x = head_bounding_boxes[i].x;
 		image_array.head_detections[i].head_detection.y = head_bounding_boxes[i].y;
 		image_array.head_detections[i].head_detection.width = head_bounding_boxes[i].width;
@@ -147,7 +147,6 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 		cv_ptr.encoding = sensor_msgs::image_encodings::BGR8;
 		image_array.head_detections[i].color_image = *(cv_ptr.toImageMsg());
 	}
-	image_array.header.stamp = ros::Time::now();
 	head_position_publisher_.publish(image_array);
 }
 

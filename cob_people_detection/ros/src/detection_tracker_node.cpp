@@ -511,6 +511,7 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 	// publish face positions
 	cob_people_detection_msgs::DetectionArray face_position_msg_out;
 	prepareFacePositionMessage(face_position_msg_out);
+	face_position_msg_out.header.stamp = face_position_msg_in->header.stamp;
 	face_position_publisher_.publish(face_position_msg_out);
   
 //  // display
