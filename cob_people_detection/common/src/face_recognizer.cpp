@@ -148,7 +148,7 @@ unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Rect& face_bound
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::updateFaceLabel(std::string old_label, std::string new_label)
+unsigned long FaceRecognizer::updateFaceLabels(std::string old_label, std::string new_label)
 {
 	for (int i=0; i<(int)m_face_labels.size(); i++)
 	{

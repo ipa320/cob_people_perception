@@ -6,6 +6,7 @@
   <include file="$(find cob_people_detection)/ros/launch/face_recognizer.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/detection_tracker.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/people_detection_display.launch"/>
+  <include file="$(find cob_people_detection)/ros/launch/face_capture.launch"/>
 
 
 

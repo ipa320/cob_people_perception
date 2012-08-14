@@ -82,24 +82,6 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	std::cout << "eigenface_size = " << eigenface_size << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
-//	node_handle_.param("display", display_, true);
-//	std::cout << "display = " << display_ << "\n";
-//	node_handle_.param("face_redetection_time", face_redetection_time_, 2.0);
-//	std::cout << "face_redetection_time = " << face_redetection_time_ << "\n";
-//	node_handle_.param("min_segmented_people_ratio_color", min_segmented_people_ratio_color_, 0.7);
-//	std::cout << "min_segmented_people_ratio_color = " << min_segmented_people_ratio_color_ << "\n";
-//	node_handle_.param("min_segmented_people_ratio_range", min_segmented_people_ratio_range_, 0.2);
-//	std::cout << "min_segmented_people_ratio_range = " << min_segmented_people_ratio_range_ << "\n";
-//	node_handle_.param("use_people_segmentation", use_people_segmentation_, true);
-//	std::cout << "use_people_segmentation = " << use_people_segmentation_ << "\n";
-//	node_handle_.param("tracking_range_m", tracking_range_m_, 0.3);
-//	std::cout << "tracking_range_m = " << tracking_range_m_ << "\n";
-//	node_handle_.param("face_identification_score_decay_rate", face_identification_score_decay_rate_, 0.9);
-//	std::cout << "face_identification_score_decay_rate = " << face_identification_score_decay_rate_ << "\n";
-//	node_handle_.param("min_face_identification_score_to_publish", min_face_identification_score_to_publish_, 0.9);
-//	std::cout << "min_face_identification_score_to_publish = " << min_face_identification_score_to_publish_ << "\n";
-//	node_handle_.param("fall_back_to_unknown_identification", fall_back_to_unknown_identification_, true);
-//	std::cout << "fall_back_to_unknown_identification = " << fall_back_to_unknown_identification_ << "\n";
 
 	// face recognizer trainer
 	face_recognizer_trainer_.initTraining(data_directory_, eigenface_size, debug, face_images_);
@@ -109,11 +91,15 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 //	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
 //	face_recognition_subscriber_.subscribe(node_handle_, "face_position_array", 1);
 	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
-	color_image_sub_.subscribe(*it_, "colorimage", 1);
+	color_image_sub_.subscribe(*it_, "color_image", 1);
 
 	// actions
 	add_data_server_ = new AddDataServer(node_handle_, "add_data_server", boost::bind(&FaceCaptureNode::addDataServerCallback, this, _1), false);
 	add_data_server_->start();
+	update_data_server_ = new UpdateDataServer(node_handle_, "update_data_server", boost::bind(&FaceCaptureNode::updateDataServerCallback, this, _1), false);
+	update_data_server_->start();
+	delete_data_server_ = new DeleteDataServer(node_handle_, "delete_data_server", boost::bind(&FaceCaptureNode::deleteDataServerCallback, this, _1), false);
+	delete_data_server_->start();
 
 	// input synchronization
 	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(10);
@@ -259,6 +245,75 @@ bool FaceCaptureNode::finishRecordingCallback(cob_people_detection::finishRecord
 	finish_image_capture_ = true;
 	return true;
 }
+
+void FaceCaptureNode::updateDataServerCallback(const cob_people_detection::updateDataGoalConstPtr& goal)
+{
+	// secure this function with a mutex
+	boost::lock_guard<boost::mutex> lock(active_action_mutex_);
+
+	// accept goal
+	update_data_server_->acceptNewGoal();
+	cob_people_detection::updateDataResult result;
+
+	// determine the update mode
+	if (goal->update_mode == BY_INDEX)
+	{
+		// update only one entry identified by its index
+		face_recognizer_trainer_.updateFaceLabel(goal->update_index, goal->new_label);
+	}
+	else if (goal->update_mode == BY_LABEL)
+	{
+		// update all entries identified by their old label
+		face_recognizer_trainer_.updateFaceLabels(goal->old_label, goal->new_label);
+	}
+	else
+	{
+		ROS_ERROR("FaceCaptureNode::updateDataServerCallback: Unknown update_mode.");
+		update_data_server_->setAborted(result, "Unknown update_mode. No entries have been updated.");
+		return;
+	}
+
+	// save new database status
+	face_recognizer_trainer_.saveTrainingData(face_images_);
+
+	// close action
+	update_data_server_->setSucceeded(result, "Database update finished successfully.");
+}
+
+void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::deleteDataGoalConstPtr& goal)
+{
+	// secure this function with a mutex
+	boost::lock_guard<boost::mutex> lock(active_action_mutex_);
+
+	// accept goal
+	delete_data_server_->acceptNewGoal();
+	cob_people_detection::deleteDataResult result;
+
+	// determine the delete mode
+	if (goal->delete_mode == BY_INDEX)
+	{
+		// delete only one entry identified by its index
+		face_recognizer_trainer_.deleteFace(goal->delete_index, face_images_);
+	}
+	else if (goal->delete_mode == BY_LABEL)
+	{
+		// delete all entries identified by their label
+		face_recognizer_trainer_.deleteFaces(goal->label, face_images_);
+	}
+	else
+	{
+		ROS_ERROR("FaceCaptureNode::deleteDataServerCallback: Unknown delete_mode.");
+		delete_data_server_->setAborted(result, "Unknown delete_mode. No entries have been deleted from the database.");
+		return;
+	}
+
+	// save new database status
+	face_recognizer_trainer_.saveTrainingData(face_images_);
+
+	// close action
+	delete_data_server_->setSucceeded(result, "Deleting entries from the database finished successfully.");
+}
+
 
 //#######################
 //#### main programm ####

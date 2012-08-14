@@ -85,6 +85,8 @@
 // actions
 #include <actionlib/server/simple_action_server.h>
 #include <cob_people_detection/addDataAction.h>
+#include <cob_people_detection/updateDataAction.h>
+#include <cob_people_detection/deleteDataAction.h>
 
 // services
 #include <cob_people_detection/captureImage.h>
@@ -110,6 +112,8 @@
 namespace ipa_PeopleDetector {
 
 typedef actionlib::SimpleActionServer<cob_people_detection::addDataAction> AddDataServer;
+typedef actionlib::SimpleActionServer<cob_people_detection::updateDataAction> UpdateDataServer;
+typedef actionlib::SimpleActionServer<cob_people_detection::deleteDataAction> DeleteDataServer;
 
 class FaceCaptureNode
 {
@@ -128,6 +132,8 @@ protected:
 	int number_captured_images_;				///<
 	bool finish_image_capture_;					///<
 	enum CaptureMode {MANUAL=0, CONTINUOUS};
+	enum UpdateMode {BY_INDEX=1, BY_LABEL};
+	//enum DeleteMode {BY_INDEX=1, BY_LABEL};
 
 	image_transport::ImageTransport* it_;
 //	image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
@@ -139,6 +145,8 @@ protected:
 
 	// actions
 	AddDataServer* add_data_server_;				///< Action server that handles add data requests
+	UpdateDataServer* update_data_server_;			///< Action server that handles update data requests
+	DeleteDataServer* delete_data_server_;			///< Action server that handles delete data requests
 
 	// services
 	ros::ServiceServer service_server_capture_image_; 		///< Service server that triggers an image recording
@@ -169,6 +177,9 @@ protected:
 
 	bool finishRecordingCallback(cob_people_detection::finishRecording::Request &req, cob_people_detection::finishRecording::Response &res);
 
+	void updateDataServerCallback(const cob_people_detection::updateDataGoalConstPtr& goal);
+
+	void deleteDataServerCallback(const cob_people_detection::deleteDataGoalConstPtr& goal);
 
 public:
 

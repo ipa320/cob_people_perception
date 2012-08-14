@@ -112,7 +112,7 @@ public:
 	/// @param old_label The label in the database which shall be replaced by the new label
 	/// @param new_label The new label
 	/// @return Return code
-	virtual unsigned long updateFaceLabel(std::string old_label, std::string new_label);
+	virtual unsigned long updateFaceLabels(std::string old_label, std::string new_label);
 
 	/// Updates the label of a single face in the database.
 	/// @param index The index of the face in the database whose label shall be replaced by the new label
