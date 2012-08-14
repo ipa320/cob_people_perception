@@ -68,7 +68,7 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 	sync_input_3_ = 0;
 
 	// parameters
-	std::cout << "\n---------------------------\nPeople Detection Parameters:\n---------------------------\n";
+	std::cout << "\n---------------------------\nPeople Detection Display Parameters:\n---------------------------\n";
 //	node_handle_.param("display", display_, true);
 //	std::cout << "display = " << display_ << "\n";
 //	node_handle_.param("face_redetection_time", face_redetection_time_, 2.0);
@@ -132,7 +132,7 @@ unsigned long PeopleDetectionDisplayNode::convertColorImageMessageToMat(const se
 /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
-	// convert segmentation image to cv::Mat
+	// convert color image to cv::Mat
 	cv_bridge::CvImageConstPtr color_image_ptr;
 	cv::Mat color_image;
 	convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);

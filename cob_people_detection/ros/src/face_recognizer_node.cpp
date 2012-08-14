@@ -315,7 +315,7 @@ bool FaceRecognizerNode::determine3DFaceCoordinates(cv::Mat& depth_image, int ce
 	return valid_coordinates;
 }
 
-void FaceRecognizerNode::loadModelServerCallback(const cob_people_detection::LoadModelGoalConstPtr& goal)
+void FaceRecognizerNode::loadModelServerCallback(const cob_people_detection::loadModelGoalConstPtr& goal)
 {
 	load_model_server_->acceptNewGoal();
 
@@ -327,7 +327,7 @@ void FaceRecognizerNode::loadModelServerCallback(const cob_people_detection::Loa
 	// load the corresponding recognition model
 	bool result_state = face_recognizer_.loadRecognitionModel(identification_labels_to_recognize);
 
-	cob_people_detection::LoadModelResult result;
+	cob_people_detection::loadModelResult result;
 	if (result_state == ipa_Utils::RET_OK)
 		load_model_server_->setSucceeded(result, "Model successfully loaded.");
 	else

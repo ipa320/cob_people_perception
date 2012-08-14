@@ -72,7 +72,7 @@
 
 // ROS message includes
 #include <sensor_msgs/Image.h>
-#include <cob_people_detection_msgs/DetectionArray.h>
+//#include <cob_people_detection_msgs/DetectionArray.h>
 #include <cob_people_detection_msgs/ColorDepthImageArray.h>
 
 // topics
@@ -82,6 +82,10 @@
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 
+// Actions
+#include <actionlib/server/simple_action_server.h>
+#include <cob_people_detection/addDataAction.h>
+
 // opencv
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
@@ -90,29 +94,52 @@
 
 // boost
 #include <boost/bind.hpp>
+#include <boost/thread/mutex.hpp>
 
 // external includes
 #include "cob_vision_utils/GlobalDefines.h"
 
 
+#include "cob_people_detection/face_recognizer.h"
+
+
 namespace ipa_PeopleDetector {
+
+typedef actionlib::SimpleActionServer<cob_people_detection::addDataAction> AddDataServer;
 
 class FaceCaptureNode
 {
 protected:
-	//message_filters::Subscriber<sensor_msgs::PointCloud2> shared_image_sub_; ///< Shared xyz image and color image topic
-	image_transport::ImageTransport* it_;
-//	image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
-	image_transport::SubscriberFilter color_image_sub_; ///< Color camera image topic
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_3_;
-	message_filters::Subscriber<cob_people_detection_msgs::ColorDepthImageArray> face_detection_subscriber_; ///< receives the face messages from the face detector
-	message_filters::Subscriber<cob_people_detection_msgs::DetectionArray> face_recognition_subscriber_; ///< receives the face messages from the detection tracker
-
-	image_transport::Publisher people_detection_image_pub_; ///< topic for publishing the image containing the people positions
 
 	ros::NodeHandle node_handle_; ///< ROS node handle
 
-//	// parameters
+	// mutex
+	boost::mutex active_action_mutex_;					///< facilitates that only one action server can be active at the same time
+
+	// face recognizer trainer
+	FaceRecognizer face_recognizer_trainer_;
+	std::vector<cv::Mat> face_images_;			///< Vector of face images
+	std::string current_label_;					///< Label of currently captured images
+	bool image_capture_service_enabled_;		///<
+	bool capture_image_manually_;				///<
+	bool capture_image_continuously_;			///<
+	int captured_images_;						///<
+	bool finish_image_capture_;					///<
+	enum CaptureMode {MANUAL=0, CONTINUOUS};
+
+	image_transport::ImageTransport* it_;
+//	image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
+//	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_3_;
+//	message_filters::Subscriber<cob_people_detection_msgs::DetectionArray> face_recognition_subscriber_; ///< receives the face messages from the detection tracker
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_2_;
+	message_filters::Subscriber<cob_people_detection_msgs::ColorDepthImageArray> face_detection_subscriber_; ///< receives the face messages from the face detector
+	image_transport::SubscriberFilter color_image_sub_; ///< Color camera image topic
+
+	// actions
+	AddDataServer* add_data_server_;				///< Action server that handles add data requests
+
+	// parameters
+	std::string data_directory_;	///< path to the classifier model
 //	bool display_; ///< if on, several debug outputs are activated
 //	bool use_people_segmentation_; ///< enables the combination of face detections with the openni people segmentation
 //	double face_redetection_time_; ///< timespan during which a face is preserved in the list of tracked faces although it is currently not visible
@@ -123,6 +150,11 @@ protected:
 //	double min_face_identification_score_to_publish_; ///< minimum face identification score to publish (0 <= x < max_score), i.e. this score must be exceeded by a label at a detection location before the person detection is published (higher values increase robustness against short misdetections, but consider the maximum possible score max_score w.r.t. the face_identification_score_decay_rate: new_score = (old_score+1)*face_identification_score_decay_rate --> max_score = face_identification_score_decay_rate/(1-face_identification_score_decay_rate))
 //	bool fall_back_to_unknown_identification_; ///< if this is true, the unknown label will be assigned for the identification of a person if it has the highest score, otherwise, the last detection of a name will display as label even if there has been a detection of Unknown recently for that face
 
+	void addDataServerCallback(const cob_people_detection::addDataGoalConstPtr& goal);
+
+	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
+	void inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
+
 public:
 
 	FaceCaptureNode(ros::NodeHandle nh);
@@ -130,9 +162,6 @@ public:
 
 	/// Converts a color image message to cv::Mat format.
 	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image);
-
-	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-	void inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
 };
 
 };

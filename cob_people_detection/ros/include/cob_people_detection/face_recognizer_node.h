@@ -79,11 +79,11 @@
 
 // Actions
 #include <actionlib/server/simple_action_server.h>
-#include <cob_people_detection/LoadModelAction.h>
+#include <cob_people_detection/loadModelAction.h>
 
 namespace ipa_PeopleDetector {
 
-typedef actionlib::SimpleActionServer<cob_people_detection::LoadModelAction> LoadModelServer;
+typedef actionlib::SimpleActionServer<cob_people_detection::loadModelAction> LoadModelServer;
 
 class FaceRecognizerNode
 {
@@ -110,7 +110,7 @@ protected:
 	bool determine3DFaceCoordinates(cv::Mat& depth_image, int center2Dx, int center2Dy, geometry_msgs::Point& center3D, int search_radius);
 
 	/// Callback for load requests to load a new recognition model
-	void loadModelServerCallback(const cob_people_detection::LoadModelGoalConstPtr& goal);
+	void loadModelServerCallback(const cob_people_detection::loadModelGoalConstPtr& goal);
 
 	ros::NodeHandle node_handle_;
 
