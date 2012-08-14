@@ -1,0 +1,11 @@
+# Updates data in the training database
+#
+# goal message
+int32 update_mode			# update the label with new_label either for 1=one image given the update_index, 2=all entries labeled with old_label
+int32 update_index			# the database entry with this index number shall be updated with a new label
+string old_label			# all database entries carrying this label are to be updated with new_label
+string new_label			# the new label that is supposed to replace the old one
+---
+# result message
+---
+# feedback message

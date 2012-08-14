@@ -1,0 +1,10 @@
+# Deletes specific data in the training database
+#
+# goal message
+int32 delete_mode			# delete database entries in one of the following ways: 1=one entry given the delete_index, 2=all entries labeled with label
+int32 delete_index			# the database entry with this index number shall be deleted
+string label				# all database entries carrying this label are to be deleted
+---
+# result message
+---
+# feedback message

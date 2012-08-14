@@ -82,9 +82,13 @@
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 
-// Actions
+// actions
 #include <actionlib/server/simple_action_server.h>
 #include <cob_people_detection/addDataAction.h>
+
+// services
+#include <cob_people_detection/captureImage.h>
+#include <cob_people_detection/finishRecording.h>
 
 // opencv
 #include <opencv/cv.h>
@@ -120,10 +124,8 @@ protected:
 	FaceRecognizer face_recognizer_trainer_;
 	std::vector<cv::Mat> face_images_;			///< Vector of face images
 	std::string current_label_;					///< Label of currently captured images
-	bool image_capture_service_enabled_;		///<
-	bool capture_image_manually_;				///<
-	bool capture_image_continuously_;			///<
-	int captured_images_;						///<
+	bool capture_image_;						///<
+	int number_captured_images_;				///<
 	bool finish_image_capture_;					///<
 	enum CaptureMode {MANUAL=0, CONTINUOUS};
 
@@ -138,6 +140,10 @@ protected:
 	// actions
 	AddDataServer* add_data_server_;				///< Action server that handles add data requests
 
+	// services
+	ros::ServiceServer service_server_capture_image_; 		///< Service server that triggers an image recording
+	ros::ServiceServer service_server_finish_recording_; 	///< Service server that finishes image recording
+
 	// parameters
 	std::string data_directory_;	///< path to the classifier model
 //	bool display_; ///< if on, several debug outputs are activated
@@ -150,18 +156,24 @@ protected:
 //	double min_face_identification_score_to_publish_; ///< minimum face identification score to publish (0 <= x < max_score), i.e. this score must be exceeded by a label at a detection location before the person detection is published (higher values increase robustness against short misdetections, but consider the maximum possible score max_score w.r.t. the face_identification_score_decay_rate: new_score = (old_score+1)*face_identification_score_decay_rate --> max_score = face_identification_score_decay_rate/(1-face_identification_score_decay_rate))
 //	bool fall_back_to_unknown_identification_; ///< if this is true, the unknown label will be assigned for the identification of a person if it has the highest score, otherwise, the last detection of a name will display as label even if there has been a detection of Unknown recently for that face
 
+
 	void addDataServerCallback(const cob_people_detection::addDataGoalConstPtr& goal);
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 	void inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
 
+	/// Converts a color image message to cv::Mat format.
+	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image);
+
+	bool captureImageCallback(cob_people_detection::captureImage::Request &req, cob_people_detection::captureImage::Response &res);
+
+	bool finishRecordingCallback(cob_people_detection::finishRecording::Request &req, cob_people_detection::finishRecording::Response &res);
+
+
 public:
 
 	FaceCaptureNode(ros::NodeHandle nh);
 	~FaceCaptureNode();
-
-	/// Converts a color image message to cv::Mat format.
-	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image);
 };
 
 };

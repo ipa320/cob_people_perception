@@ -82,6 +82,11 @@ rosbuild_add_executable(detection_tracker_node
 rosbuild_add_executable(people_detection_display_node
 			ros/src/people_detection_display_node.cpp)
 
+rosbuild_add_executable(face_capture_node
+			common/src/abstract_face_recognizer.cpp
+			common/src/face_recognizer.cpp
+			ros/src/face_capture_node.cpp)
+
 # modified openni tracker
 #rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp
 #                                       ros/src/SceneDrawer.cpp)
@@ -104,6 +109,7 @@ rosbuild_add_compile_flags(face_detector_node -D__LINUX__)
 rosbuild_add_compile_flags(face_recognizer_node -D__LINUX__)
 rosbuild_add_compile_flags(detection_tracker_node -D__LINUX__)
 rosbuild_add_compile_flags(people_detection_display_node -D__LINUX__)
+rosbuild_add_compile_flags(face_capture_node -D__LINUX__)
 
 # rostest
 #rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_noface_test_diamondback.bag face_detector_noface_test.bag 37f043be780a4511c853379defdd9855)

@@ -66,9 +66,7 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 {
 	it_ = 0;
 	sync_input_2_ = 0;
-	image_capture_service_enabled_ = false;
-	capture_image_manually_ = false;
-	capture_image_continuously_ = false;
+	capture_image_ = false;
 	finish_image_capture_ = false;
 	face_images_.clear();
 
@@ -145,17 +143,23 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
 	sync_input_2_->registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1, _2));
 
-	if (goal->capture_mode == cob_people_detection::CaptureMode::MANUAL)
+	if (goal->capture_mode == MANUAL)
 	{
 		// configure manual recording
 		finish_image_capture_ = false;		// finishes the image recording
-		capture_image_manually_ = false;	// trigger for image capture -> set true by service message
-		capture_image_continuously_ = false;	// images are only recorded on demand
-		image_capture_service_enabled_ = true;	// allow image capture service messages to capture images
+		capture_image_ = false;				// trigger for image capture -> set true by service message
+
+		// activate service server for image capture trigger messages and finish
+		service_server_capture_image_ = node_handle_.advertiseService("capture_image", &FaceCaptureNode::captureImageCallback, this);
+		service_server_finish_recording_ = node_handle_.advertiseService("finish_recording", &FaceCaptureNode::finishRecordingCallback, this);
 
 		// wait until finish manual capture service message arrives
 		while (finish_image_capture_ == false)
 			ros::spinOnce();
+
+		// unadvertise the manual image capture trigger service and finish recording service
+		service_server_capture_image_.shutdown();
+		service_server_finish_recording_.shutdown();
 
 		// save new database status
 		face_recognizer_trainer_.saveTrainingData(face_images_);
@@ -164,14 +168,14 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		cob_people_detection::addDataResult result;
 		add_data_server_->setSucceeded(result, "Manual capture finished successfully.");
 	}
-	else if (goal->capture_mode == cob_people_detection::CaptureMode::CONTINUOUS)
+	else if (goal->capture_mode == CONTINUOUS)
 	{
 		// configure continuous recording
-		captured_images_ = 0;
-		while (captured_images_ < goal->continuous_mode_images_to_capture)
+		number_captured_images_ = 0;
+		while (number_captured_images_ < goal->continuous_mode_images_to_capture)
 		{
-			capture_image_continuously_ = true;		// trigger for image recording
-			ros::Duration(goal->continuous_mode_delay).sleep();		// wait for given time until next image can be captured
+			capture_image_ = true;		// trigger for image recording
+			ros::Duration(goal->continuous_mode_delay).sleep();		// wait for a given time until next image can be captured
 		}
 
 		// save new database status
@@ -193,6 +197,39 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 	}
 }
 
+/// captures the images
+void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+{
+	// only capture images if a recording is triggered
+	if (capture_image_ == true)
+	{
+		// check number of detected faces -> accept only exactly one
+		if (face_detection_msg->head_detections.size() != 1)
+		{
+			ROS_WARN("Either no head or more than one head detected. Discarding image.");
+			return;
+		}
+		if (face_detection_msg->head_detections[0].face_detections.size() != 1)
+		{
+			ROS_WARN("Either no face or more than one face detected. Discarding image.");
+			return;
+		}
+
+		// convert color image to cv::Mat
+		cv_bridge::CvImageConstPtr color_image_ptr;
+		cv::Mat color_image;
+		convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
+
+		// store image and label
+		const cob_people_detection_msgs::Rect& rect = face_detection_msg->head_detections[0].face_detections[0];
+		cv::Rect face_bounding_box(rect.x, rect.y, rect.width, rect.height);
+		face_recognizer_trainer_.addFace(color_image, face_bounding_box, current_label_, face_images_);
+
+		// only after successful recording
+		capture_image_ = false;			// reset trigger for recording
+		number_captured_images_++;		// increase number of captured images
+	}
+}
 
 /// Converts a color image message to cv::Mat format.
 unsigned long FaceCaptureNode::convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image)
@@ -210,81 +247,18 @@ unsigned long FaceCaptureNode::convertColorImageMessageToMat(const sensor_msgs::
 
 	return ipa_Utils::RET_OK;
 }
-    
-/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+
+bool FaceCaptureNode::captureImageCallback(cob_people_detection::captureImage::Request &req, cob_people_detection::captureImage::Response &res)
 {
-	// only capture images if a recording is triggered
-	if (capture_image_continuously_ == true || (image_capture_service_enabled_ == true && capture_image_manually_ == true))
-	{
-		// convert color image to cv::Mat
-		cv_bridge::CvImageConstPtr color_image_ptr;
-		cv::Mat color_image;
-		convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
-
-		// check number of detected faces -> accept only exactly one
-
-		// store image and label
-//		face_recognizer_trainer_.addFace(color_image, face_detection_msg->)
-
-		// only after successful recording
-		capture_image_continuously_ = false;		// reset trigger for continuous recording
-		capture_image_manually_ = false;	// reset trigger for manual recording
-	}
-
-/*
-
-	// insert all detected heads and faces
-	for (int i=0; i<(int)face_detection_msg->head_detections.size(); i++)
-	{
-		// paint head
-		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[i].head_detection;
-		cv::Rect head(head_rect.x, head_rect.y, head_rect.width, head_rect.height);
-		cv::rectangle(color_image, cv::Point(head.x, head.y), cv::Point(head.x + head.width, head.y + head.height), CV_RGB(148, 219, 255), 2, 8, 0);
-
-		// paint faces
-		for (int j=0; j<(int)face_detection_msg->head_detections[i].face_detections.size(); j++)
-		{
-			const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[i].face_detections[j];
-			cv::Rect face(face_rect.x+head.x, face_rect.y+head.y, face_rect.width, face_rect.height);
-			cv::rectangle(color_image, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(191, 255, 148), 2, 8, 0);
-		}
-	}
-
-	// insert recognized faces
-	for(int i=0; i<(int)face_recognition_msg->detections.size(); i++)
-	{
-		const cob_people_detection_msgs::Rect& face_rect = face_recognition_msg->detections[i].mask.roi;
-		cv::Rect face(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
-
-		if (face_recognition_msg->detections[i].detector == "head")
-			cv::rectangle(color_image, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 0, 255), 2, 8, 0);
-		else
-			cv::rectangle(color_image, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(0, 255, 0), 2, 8, 0);
-
-		if (face_recognition_msg->detections[i].label == "Unknown")
-			// Distance to face class is too high
-			cv::putText(color_image, "Unknown", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
-		else if (face_recognition_msg->detections[i].label == "No face")
-			// Distance to face space is too high
-			cv::putText(color_image, "No face", cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 255, 0, 0 ), 2);
-		else
-			// Face classified
-			cv::putText(color_image, face_recognition_msg->detections[i].label.c_str(), cv::Point(face.x,face.y+face.height+25), cv::FONT_HERSHEY_PLAIN, 2, CV_RGB( 0, 255, 0 ), 2);
-	}
-
-	// display image
-	cv::imshow("Detections and Recognitions", color_image);
-	cv::waitKey(10);
-
-	// publish image
-	cv_bridge::CvImage cv_ptr;
-	cv_ptr.image = color_image;
-	cv_ptr.encoding = "bgr8";
-	people_detection_image_pub_.publish(cv_ptr.toImageMsg());
-	*/
+	capture_image_ = true;
+	return true;
 }
 
+bool FaceCaptureNode::finishRecordingCallback(cob_people_detection::finishRecording::Request &req, cob_people_detection::finishRecording::Response &res)
+{
+	finish_image_capture_ = true;
+	return true;
+}
 
 //#######################
 //#### main programm ####
