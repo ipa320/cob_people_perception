@@ -113,12 +113,17 @@ FaceCaptureNode::~FaceCaptureNode()
 	if (it_ != 0) delete it_;
 	if (sync_input_2_ != 0) delete sync_input_2_;
 	if (add_data_server_ != 0) delete add_data_server_;
+	if (update_data_server_ != 0) delete update_data_server_;
+	if (delete_data_server_ != 0) delete delete_data_server_;
 }
 
 void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataGoalConstPtr& goal)
 {
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(active_action_mutex_);
+
+	// open the gateway for sensor messages
+	// rosrun dynamic_reconfigure dynparam set /cob_people_detection/sensor_message_gateway/sensor_message_gateway target_publishing_rate 2.0
 
 	// set the label for the images than will be captured
 	current_label_ = goal->label;
