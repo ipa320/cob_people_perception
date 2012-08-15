@@ -298,7 +298,7 @@ void activateSensorMessageGateway(ros::ServiceClient& sensor_message_gateway_ope
 	else if (open_close == 2)
 	{
 		// deactivate
-		cob_people_detection::recognitionTrigger rec;
+		std_srvs::Empty rec;
 		if (sensor_message_gateway_close_client.call(rec) == true)
 			printf("Gateway successfully closed.\n");
 		else

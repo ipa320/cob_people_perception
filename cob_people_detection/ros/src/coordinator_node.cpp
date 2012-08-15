@@ -93,7 +93,7 @@ CoordinatorNode::~CoordinatorNode()
 void CoordinatorNode::detectionsCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& detection_array)
 {
 	// secure this function with a mutex
-	boost::lock_guard<boost::mutex> lock(active_action_mutex_);
+	boost::lock_guard<boost::mutex> lock(last_detection_mutex_);
 
 	last_detection_message_ = *detection_array;
 }
@@ -112,15 +112,25 @@ void CoordinatorNode::getDetectionsServerCallback(const cob_people_detection::ge
 	}
 
 	bool message_received = false;
+	bool collect_messages = true;
 	ros::Duration maximal_message_age(goal->maximum_message_age);
 	ros::Duration timeout(goal->timeout);
 	ros::Time start_time = ros::Time::now();
-	while (message_received==false && (goal->timeout==0 || (ros::Time::now()-start_time)<timeout))
+	while (collect_messages==true && (goal->timeout==0 || (ros::Time::now()-start_time)<timeout))
 	{
+		// secure the access to last_detection_message_ with a mutex
+		boost::lock_guard<boost::mutex> lock(last_detection_mutex_);
+
+		std::cout << "timeout " << (ros::Time::now()-start_time).toSec() << "      maximal_age " << (ros::Time::now()-last_detection_message_.header.stamp).toSec() << std::endl;
 		if ((ros::Time::now()-last_detection_message_.header.stamp)<maximal_message_age || goal->maximum_message_age==0)
 		{
-			result.detections = last_detection_message_;
+			// take the first message for the result or any other message with at least so many detections as before
+			if (message_received == false || (result.detections.detections.size()<=last_detection_message_.detections.size()))
+				result.detections = last_detection_message_;
 			message_received = true;
+			// answer directly when in continous mode
+			if (sensor_message_gateway_open_ == true)
+				collect_messages = false;
 		}
 		ros::spinOnce();
 	}

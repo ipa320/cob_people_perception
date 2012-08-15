@@ -350,6 +350,8 @@ unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_people_detect
 /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg)
 {
+	// todo: make update rates time dependent!
+
 	// convert segmentation image to cv::Mat
 	cv_bridge::CvImageConstPtr people_segmentation_image_ptr;
 	cv::Mat people_segmentation_image;

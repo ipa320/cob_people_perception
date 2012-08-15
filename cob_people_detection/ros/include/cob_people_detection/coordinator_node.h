@@ -100,7 +100,7 @@ protected:
 	ros::NodeHandle node_handle_; ///< ROS node handle
 
 	boost::mutex active_action_mutex_;	///< mutex to avoid double call of an action
-
+	boost::mutex last_detection_mutex_;	///< mutex to guard access to last_detection_message_
 	cob_people_detection_msgs::DetectionArray last_detection_message_;		///> buffer for the last received detection
 
 	bool sensor_message_gateway_open_;		///< tracks whether the gateway was opened or not
