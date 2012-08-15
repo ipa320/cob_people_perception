@@ -228,6 +228,15 @@ unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& id
 	// save new model
 	saveRecognitionModel();
 
+	// output
+	if (m_debug)
+	{
+		std::cout << "FaceRecognizer::trainRecognitionModel: New model trained with labels: " << std::endl;
+		for (int i=0; i<(int)m_current_label_set.size(); i++)
+			std::cout << "   - " << m_current_label_set[i] << std::endl;
+		std::cout << std::endl;
+	}
+
 	return ipa_Utils::RET_OK;
 }
 
@@ -351,13 +360,13 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 
 			// compare m_current_label_set with identification_labels_to_recognize, only load data if both vectors contain same elements in same order
 			bool same_data_set = true;
-			if (identification_labels_to_recognize.size() == 0)
+			if (identification_labels_to_recognize.size()==0 || m_current_label_set.size()!=identification_labels_to_recognize.size())
 				same_data_set = false;
 			else
 			{
 				for (uint i=0; i<identification_labels_to_recognize.size(); i++)
 				{
-					if(identification_labels_to_recognize[i].compare(m_current_label_set[i]))
+					if(identification_labels_to_recognize[i].compare(m_current_label_set[i]) != 0)
 					{
 						same_data_set = false;
 						break;
@@ -448,7 +457,7 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 	{
 		std::cout << "Current model set:" << std::endl;
 		for (int i=0; i<(int)m_current_label_set.size(); i++)
-			std::cout << "          - " << m_current_label_set[i] << std::endl;
+			std::cout << "   - " << m_current_label_set[i] << std::endl;
 		std::cout << std::endl;
 	}
 
@@ -612,6 +621,7 @@ unsigned long FaceRecognizer::PCA(int number_eigenvectors, std::vector<cv::Mat>&
 
 	// Allocate memory
 	cv::Size face_image_size(face_images[0].cols, face_images[0].rows);
+	int old_number_eigenvectors = m_eigenvectors.size();
 	m_eigenvectors.clear();
 	m_eigenvectors.resize(number_eigenvectors, cv::Mat(face_image_size, CV_32FC1));
 	m_eigenvalues.create(1, number_eigenvectors, CV_32FC1);
@@ -631,8 +641,8 @@ unsigned long FaceRecognizer::PCA(int number_eigenvectors, std::vector<cv::Mat>&
 		face_images_ipl[j] = cvCloneImage(&temp);
 	}
 
-	// Convert eigenvector vector to array
-	convertEigenvectorsToIpl();
+	// Convert eigenvector vector to array and delete old data if available
+	convertEigenvectorsToIpl(old_number_eigenvectors);
 
 	// Compute average image, eigenvalues, and eigenvectors
 	IplImage average_image_ipl = (IplImage)m_average_image;
@@ -661,8 +671,6 @@ unsigned long FaceRecognizer::PCA(int number_eigenvectors, std::vector<cv::Mat>&
 	// Clean
 	for (int i=0; i<(int)face_images.size(); i++) cvReleaseImage(&(face_images_ipl[i]));
 	cvFree(&face_images_ipl);
-	//for (int i=0; i<(int)m_eigenvectors.size(); i++) cvReleaseImage(&(m_eigenvectors_ipl[i]));
-	//cvFree(&m_eigenvectors_ipl);
 
 	return ipa_Utils::RET_OK;
 }
@@ -780,21 +788,21 @@ unsigned long FaceRecognizer::convertAndResize(cv::Mat& img, cv::Mat& resized, c
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::convertEigenvectorsToIpl()
+unsigned long FaceRecognizer::convertEigenvectorsToIpl(int old_number_eigenvectors)
 {
-	int number_eigenvectors = m_eigenvectors.size();
+	int new_number_eigenvectors = m_eigenvectors.size();
 
 	// clear
 	if (m_eigenvectors_ipl != 0)
 	{
-		for (int i=0; i<number_eigenvectors; i++)
+		for (int i=0; i<old_number_eigenvectors; i++)
 			cvReleaseImage(&(m_eigenvectors_ipl[i]));
 		cvFree(&m_eigenvectors_ipl);
 	}
 
 	// Convert vector to array
-	m_eigenvectors_ipl = (IplImage**)cvAlloc(number_eigenvectors*sizeof(IplImage*));
-	for(int j=0; j<number_eigenvectors; j++)
+	m_eigenvectors_ipl = (IplImage**)cvAlloc(new_number_eigenvectors*sizeof(IplImage*));
+	for(int j=0; j<new_number_eigenvectors; j++)
 	{
 		IplImage temp = (IplImage)m_eigenvectors[j];
 		m_eigenvectors_ipl[j] = cvCloneImage(&temp);
@@ -913,6 +921,22 @@ unsigned long FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images
 			std::string path = m_data_directory + (std::string)fileStorage[tag_image.str().c_str()];
 			cv::Mat temp = cv::imread(path.c_str(),-1);
 			face_images.push_back(temp);
+		}
+
+		// clean identification_labels_to_train -> only keep those labels that appear in the training data
+		for(int j=0; j<(int)identification_labels_to_train.size(); j++)
+		{
+			bool class_exists = false;
+			for (int k=0; k<(int)m_face_labels.size(); k++)
+			{
+				if(identification_labels_to_train[j].compare(m_face_labels[k]) == 0)
+					class_exists = true;
+			}
+			if (class_exists == false)
+			{
+				identification_labels_to_train.erase(identification_labels_to_train.begin()+j);
+				j--;
+			}
 		}
 
 		// set next free filename

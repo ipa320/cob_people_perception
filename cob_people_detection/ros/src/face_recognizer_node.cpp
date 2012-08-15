@@ -317,8 +317,6 @@ bool FaceRecognizerNode::determine3DFaceCoordinates(cv::Mat& depth_image, int ce
 
 void FaceRecognizerNode::loadModelServerCallback(const cob_people_detection::loadModelGoalConstPtr& goal)
 {
-	load_model_server_->acceptNewGoal();
-
 	// read list of labels of persons that shall be recognized from goal message
 	std::vector<std::string> identification_labels_to_recognize(goal->labels.size());
 	for (int i=0; i<(int)goal->labels.size(); i++)

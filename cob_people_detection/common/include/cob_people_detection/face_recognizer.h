@@ -92,7 +92,7 @@ public:
 	/// @return Return code
 	virtual unsigned long init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize);
 
-	/// Initialization function for training purposes.
+	/// Initialization function for training purposes (only for capturing images, not the training of recognition models).
 	/// Parameters: see class member explanations.
 	/// @param data_directory The directory for data files
 	/// @param face_images A list of images of persons that shall be recognized which will be loaded by the function.
@@ -199,7 +199,8 @@ protected:
 
 	/// Just converts m_eigenvectors to m_eigenvectors_ipl which is a conversion of std::vector<cv::Mat> to IplImage**.
 	/// Necessary to avoid in-place conversion each time recognizeFace is called.
-	virtual unsigned long convertEigenvectorsToIpl();
+	/// @param old_number_eigenvectors The number of eigenvectors previously stored in m_eigenvectors_ipl. Needed for correct memory release.
+	virtual unsigned long convertEigenvectorsToIpl(int old_number_eigenvectors);
 
 	/// Loads the training data for the persons specified in identification_labels_to_train
 	/// @param face_images A vector containing all training images
