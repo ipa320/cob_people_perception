@@ -206,6 +206,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 
 	// --- face recognition ---
 	std::vector< std::vector<std::string> > identification_labels;
+	bool identification_failed = false;
 	if (enable_face_recognition_ == true)
 	{
 		// recognize faces
@@ -213,10 +214,10 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 		if (result_state == ipa_Utils::RET_FAILED)
 		{
 			ROS_ERROR("FaceRecognizerNode::face_positions_callback: Please load a face recognition model at first.");
-			return;
+			identification_failed = true;
 		}
 	}
-	else
+	if (enable_face_recognition_ == false || identification_failed == true)
 	{
 		// label all image unknown if face recognition disabled
 		identification_labels.resize(face_positions->head_detections.size());

@@ -102,7 +102,7 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	delete_data_server_->start();
 
 	// input synchronization
-	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(10);
+	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
 	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
 
 	std::cout << "FaceCaptureNode initialized.\n";
