@@ -115,9 +115,9 @@ void CoordinatorNode::getDetectionsServerCallback(const cob_people_detection::ge
 	ros::Duration maximal_message_age(goal->maximum_message_age);
 	ros::Duration timeout(goal->timeout);
 	ros::Time start_time = ros::Time::now();
-	while (message_received==false && (ros::Time::now()-start_time)<timeout)
+	while (message_received==false && (goal->timeout==0 || (ros::Time::now()-start_time)<timeout))
 	{
-		if ((ros::Time::now()-last_detection_message_.header.stamp)<maximal_message_age)
+		if ((ros::Time::now()-last_detection_message_.header.stamp)<maximal_message_age || goal->maximum_message_age==0)
 		{
 			result.detections = last_detection_message_;
 			message_received = true;
@@ -158,9 +158,7 @@ bool CoordinatorNode::stopRecognitionCallback(std_srvs::Empty::Request &req, std
 	boost::lock_guard<boost::mutex> lock(active_action_mutex_);
 
 	// set target frame rate
-	std::stringstream ss;
-	ss << "rosrun dynamic_reconfigure dynparam set /cob_people_detection/sensor_message_gateway/sensor_message_gateway target_publishing_rate 0.0";
-	int retval = system(ss.str().c_str());
+	int retval = system("rosrun dynamic_reconfigure dynparam set /cob_people_detection/sensor_message_gateway/sensor_message_gateway target_publishing_rate 0");
 
 	sensor_message_gateway_open_ = false;
 

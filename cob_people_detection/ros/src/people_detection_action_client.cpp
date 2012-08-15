@@ -63,10 +63,13 @@
 #include <cob_people_detection/updateDataAction.h>
 #include <cob_people_detection/deleteDataAction.h>
 #include <cob_people_detection/loadModelAction.h>
+#include <cob_people_detection/getDetectionsAction.h>
 
 // services
 #include <cob_people_detection/captureImage.h>
 #include <cob_people_detection/finishRecording.h>
+#include <cob_people_detection/recognitionTrigger.h>
+#include <std_srvs/Empty.h>
 
 // standard includes
 #ifdef __LINUX__
@@ -96,111 +99,8 @@ typedef actionlib::SimpleActionClient<cob_people_detection::addDataAction> AddDa
 typedef actionlib::SimpleActionClient<cob_people_detection::updateDataAction> UpdateDataClient;
 typedef actionlib::SimpleActionClient<cob_people_detection::deleteDataAction> DeleteDataClient;
 typedef actionlib::SimpleActionClient<cob_people_detection::loadModelAction> LoadModelClient;
+typedef actionlib::SimpleActionClient<cob_people_detection::getDetectionsAction> GetDetectionsClient;
 
-/*
-void train(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClient& trainCaptureSampleClient)
-{
-	std::string id;
-	std::cout << "Input the ID of the captured person: ";
-	std::cin >> id;
-
-	cob_people_detection::TrainContinuousGoal goal;
-	// Fill in goal here
-	goal.running = true;
-	goal.doPCA = true;
-	goal.appendData = true;
-	goal.numberOfImagesToCapture = 0;
-	goal.trainingID = id;
-	trainContinuousClient.sendGoal(goal);
-	trainContinuousClient.waitForResult(ros::Duration(3.0));
-	if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-		printf("Training on!\n");
-	printf("Current State: %s\n", trainContinuousClient.getState().toString().c_str());
-
-	std::cout << "Hit 'q' key to quit or 'c' key to capture an image.\n";
-	char key;
-	while ((key=getch()) != 'q')
-	{
-		if (key == 'c')
-		{
-			cob_people_detection::TrainCaptureSampleGoal captureGoal;
-			trainCaptureSampleClient.sendGoal(captureGoal);
-			trainContinuousClient.waitForResult(ros::Duration(3.0));
-			if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-				printf("Image capture initiated.\n");
-		}
-	}
-
-	goal.running = false;
-	trainContinuousClient.sendGoal(goal);
-	trainContinuousClient.waitForResult(ros::Duration(10.0));
-	if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-		printf("Training off!\n");
-	printf("Current State: %s\n", trainContinuousClient.getState().toString().c_str());
-}
-
-
-void train_continuous(TrainContinuousClient& trainContinuousClient, TrainCaptureSampleClient& trainCaptureSampleClient)
-{
-	std::string id;
-	std::cout << "Input the ID of the captured person: ";
-	std::cin >> id;
-
-	cob_people_detection::TrainContinuousGoal goal;
-	// Fill in goal here
-	goal.running = true;
-	goal.doPCA = true;
-	goal.appendData = true;
-	goal.numberOfImagesToCapture = 30;
-	goal.trainingID = id;
-	trainContinuousClient.sendGoal(goal);
-	trainContinuousClient.waitForResult(ros::Duration(120.0));
-
-
-	goal.running = false;
-	trainContinuousClient.sendGoal(goal);
-	trainContinuousClient.waitForResult(ros::Duration(10.0));
-	if (trainContinuousClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-		printf("Training off!\n");
-	printf("Current State: %s\n", trainContinuousClient.getState().toString().c_str());
-}
-
-
-void recognize(RecognizeClient& recognizeClient)
-{
-	cob_people_detection::RecognizeGoal goal;
-	// Fill in goal here
-	goal.running = true;
-	goal.doRecognition = true;
-	goal.display = true;
-	recognizeClient.sendGoal(goal);
-	recognizeClient.waitForResult(ros::Duration(3.0));
-	if (recognizeClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-		printf("Recognition on!\n");
-	printf("Current State: %s\n", recognizeClient.getState().toString().c_str());
-
-	std::cout << "hit any key to quit.\n";
-	getch();
-
-	goal.running = false;
-	recognizeClient.sendGoal(goal);
-	recognizeClient.waitForResult(ros::Duration(2.0));
-	if (recognizeClient.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-		printf("Recognition off!\n");
-	printf("Current State: %s\n", recognizeClient.getState().toString().c_str());
-}
-
-
-void show(ShowClient& showClient, int mode)
-{
-	cob_people_detection::ShowGoal goal;
-	// Fill in goal here
-	goal.mode = mode;
-	showClient.sendGoal(goal);
-	showClient.waitForResult(ros::Duration(3.0));
-	printf("Current State: %s\n", showClient.getState().toString().c_str());
-}
-*/
 
 void addData(AddDataClient& add_data_client, ros::ServiceClient& capture_image_client, ros::ServiceClient& finish_recording_client)
 {
@@ -376,6 +276,64 @@ void loadRecognitionModel(LoadModelClient& load_model_client)
 	printf("Current State: %s   Message: %s\n", load_model_client.getState().toString().c_str(), load_model_client.getState().getText().c_str());
 }
 
+void activateSensorMessageGateway(ros::ServiceClient& sensor_message_gateway_open_client, ros::ServiceClient& sensor_message_gateway_close_client)
+{
+	int open_close = 0;
+	std::cout << "Type 1 to activate or 2 to deactivate the sensor message gateway: ";
+	std::cin >> open_close;
+
+	if (open_close == 1)
+	{
+		// activate
+		cob_people_detection::recognitionTriggerRequest req;
+		cob_people_detection::recognitionTriggerResponse res;
+		std::cout << "At which target frame rate (Hz) shall the sensor message gateway operate: ";
+		std::cin >> req.target_frame_rate;
+
+		if (sensor_message_gateway_open_client.call(req, res) == true)
+			printf("Gateway successfully opened.\n");
+		else
+			printf("Opening gateway was not successful.\n");
+	}
+	else if (open_close == 2)
+	{
+		// deactivate
+		cob_people_detection::recognitionTrigger rec;
+		if (sensor_message_gateway_close_client.call(rec) == true)
+			printf("Gateway successfully closed.\n");
+		else
+			printf("Closing gateway was not successful.\n");
+	}
+}
+
+void getDetections(GetDetectionsClient& get_detections_client)
+{
+	cob_people_detection::getDetectionsGoal goal;
+
+	std::cout << "Enter a maximum age of the detection message (in seconds): ";
+	std::cin >> goal.maximum_message_age;
+
+	std::cout << "Enter the maximum waiting time to receive the message (in seconds): ";
+	std::cin >> goal.timeout;
+
+	// send goal to server
+	get_detections_client.sendGoal(goal);
+	std::cout << "Waiting for the server to send the detections ..." << std::endl;
+	get_detections_client.waitForResult();
+
+	if (get_detections_client.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+	{
+		cob_people_detection::getDetectionsResultConstPtr result = get_detections_client.getResult();
+		std::cout << "Received a detection message with " << result->detections.detections.size() << " detections.\nThe labels are" << std::endl;
+		for (int i=0; i<(int)result->detections.detections.size(); i++)
+			std::cout << "   - " << result->detections.detections[i].label << std::endl;
+	}
+	else
+		std::cout << "No detections received.\n";
+
+	printf("Current State: %s   Message: %s\n", get_detections_client.getState().toString().c_str(), get_detections_client.getState().getText().c_str());
+}
+
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "cob_people_detection_client");
@@ -388,6 +346,9 @@ int main(int argc, char** argv)
 	UpdateDataClient update_data_client("/cob_people_detection/face_capture/update_data_server", true);
 	DeleteDataClient delete_data_client("/cob_people_detection/face_capture/delete_data_server", true);
 	LoadModelClient load_model_client("/cob_people_detection/face_recognizer/load_model_server", true);
+	GetDetectionsClient get_detections_client("/cob_people_detection/coordinator/get_detections_server", true);
+	ros::ServiceClient sensor_message_gateway_open_client = nh.serviceClient<cob_people_detection::recognitionTrigger>("/cob_people_detection/coordinator/start_recognition");
+	ros::ServiceClient sensor_message_gateway_close_client = nh.serviceClient<std_srvs::Empty>("/cob_people_detection/coordinator/stop_recognition");
 
 	if (!add_data_client.waitForServer(ros::Duration(2.0)))
 	{
@@ -409,6 +370,11 @@ int main(int argc, char** argv)
 		std::cout << "No connection to server 'load_model_server'.\n";
 		return 0;
 	}
+	if (!get_detections_client.waitForServer(ros::Duration(2.0)))
+	{
+		std::cout << "No connection to server 'get_detections_server'.\n";
+		return 0;
+	}
 
 	std::cout << "Connected to servers.\n";
 
@@ -416,13 +382,14 @@ int main(int argc, char** argv)
 	char key = 'q';
 	do
 	{
-		std::cout << "\n\nChoose an option:\n1 - capture face images\n2 - update database labels\n3 - delete database entries\n4 - load recognition model (necessary if new images/persons were added to the database)\n5 - \nq - Quit\n\n";
+		std::cout << "\n\nChoose an option:\n1 - capture face images\n2 - update database labels\n3 - delete database entries\n4 - load recognition model (necessary if new images/persons were added to the database)\n5 - activate/deactivate sensor message gateway\n6 - get detections\nq - Quit\n\n";
 		key = getch();
 		if (key == '1') addData(add_data_client, capture_image_client, finish_recording_client);//train(trainContinuousClient, trainCaptureSampleClient);
 		else if (key == '2') updateData(update_data_client);//recognize(recognizeClient);
 		else if (key == '3') deleteData(delete_data_client);//train_continuous(trainContinuousClient, trainCaptureSampleClient);
 		else if (key == '4') loadRecognitionModel(load_model_client);//show(showClient, 0);
-		else if (key == '5') std::cout << "";//show(showClient, 1);
+		else if (key == '5') activateSensorMessageGateway(sensor_message_gateway_open_client, sensor_message_gateway_close_client);//show(showClient, 1);
+		else if (key == '6') getDetections(get_detections_client);
 	}while(key != 'q');
 
 

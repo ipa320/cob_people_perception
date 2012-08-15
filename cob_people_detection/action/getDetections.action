@@ -1,6 +1,6 @@
 #goal
 float32 maximum_message_age		# maximal allowed age of response message (in s), 0 means we do not care
-float32 timeout				# maximal waiting time for receiving a detection
+float32 timeout				# maximal waiting time (in s) for receiving a detection, 0 is infinitely
 ---
 #result
 cob_people_detection_msgs/DetectionArray detections	# array of detections
