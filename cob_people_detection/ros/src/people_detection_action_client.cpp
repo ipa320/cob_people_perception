@@ -416,13 +416,13 @@ int main(int argc, char** argv)
 	char key = 'q';
 	do
 	{
-		std::cout << "\n\nChoose an option:\n1 - capture face images\n2 - update database labels\n3 - delete database entries\n4 - load recognition model (necessary if new images/persons were added to the database)\n5 - Show Eigenfaces\na - Train\nq - Quit\n\n";
+		std::cout << "\n\nChoose an option:\n1 - capture face images\n2 - update database labels\n3 - delete database entries\n4 - load recognition model (necessary if new images/persons were added to the database)\n5 - \nq - Quit\n\n";
 		key = getch();
 		if (key == '1') addData(add_data_client, capture_image_client, finish_recording_client);//train(trainContinuousClient, trainCaptureSampleClient);
 		else if (key == '2') updateData(update_data_client);//recognize(recognizeClient);
 		else if (key == '3') deleteData(delete_data_client);//train_continuous(trainContinuousClient, trainCaptureSampleClient);
 		else if (key == '4') loadRecognitionModel(load_model_client);//show(showClient, 0);
-		else if (key == '5') ;//show(showClient, 1);
+		else if (key == '5') std::cout << "";//show(showClient, 1);
 	}while(key != 'q');
 
 

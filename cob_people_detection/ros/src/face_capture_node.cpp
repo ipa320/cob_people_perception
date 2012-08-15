@@ -104,7 +104,6 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	// input synchronization
 	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(10);
 	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
-	sync_input_2_->registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1, _2));
 
 	std::cout << "FaceCaptureNode initialized.\n";
 }
@@ -124,7 +123,8 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 	// set the label for the images than will be captured
 	current_label_ = goal->label;
 
-	// todo: subscribe/unsubscribe to face image topics
+	// subscribe to face image topics
+	message_filters::Connection input_callback_connection = sync_input_2_->registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1, _2));
 
 	if (goal->capture_mode == MANUAL)
 	{
@@ -179,11 +179,16 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		ss << "Unknown capture mode: " << goal->capture_mode;
 		add_data_server_->setAborted(result, ss.str());
 	}
+
+	// unsubscribe face image topics
+	input_callback_connection.disconnect();
 }
 
 /// captures the images
 void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
+	ROS_INFO("inputCallback");
+
 	// only capture images if a recording is triggered
 	if (capture_image_ == true)
 	{
