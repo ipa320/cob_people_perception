@@ -103,6 +103,8 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 
 	// input synchronization
 	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(10);
+	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
+	sync_input_2_->registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1, _2));
 
 	std::cout << "FaceCaptureNode initialized.\n";
 }
@@ -119,19 +121,15 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(active_action_mutex_);
 
-	// accept goal
-	add_data_server_->acceptNewGoal();
-
 	// set the label for the images than will be captured
 	current_label_ = goal->label;
 
-	// subscribe to face image topics
-	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
-	sync_input_2_->registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1, _2));
+	// todo: subscribe/unsubscribe to face image topics
 
 	if (goal->capture_mode == MANUAL)
 	{
 		// configure manual recording
+		number_captured_images_ = 0;
 		finish_image_capture_ = false;		// finishes the image recording
 		capture_image_ = false;				// trigger for image capture -> set true by service message
 
@@ -207,13 +205,17 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
 
 		// store image and label
-		const cob_people_detection_msgs::Rect& rect = face_detection_msg->head_detections[0].face_detections[0];
-		cv::Rect face_bounding_box(rect.x, rect.y, rect.width, rect.height);
-		face_recognizer_trainer_.addFace(color_image, face_bounding_box, current_label_, face_images_);
+		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
+		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
+		cv::Rect face_bounding_box(head_rect.x+face_rect.x, head_rect.y+face_rect.y, face_rect.width, face_rect.height);
+		cv::Mat img = color_image.clone();
+		face_recognizer_trainer_.addFace(img, face_bounding_box, current_label_, face_images_);
 
 		// only after successful recording
 		capture_image_ = false;			// reset trigger for recording
 		number_captured_images_++;		// increase number of captured images
+
+		ROS_INFO("Face number %d captured.", number_captured_images_);
 	}
 }
 
@@ -237,6 +239,10 @@ unsigned long FaceCaptureNode::convertColorImageMessageToMat(const sensor_msgs::
 bool FaceCaptureNode::captureImageCallback(cob_people_detection::captureImage::Request &req, cob_people_detection::captureImage::Response &res)
 {
 	capture_image_ = true;
+	// block until captured
+	while (capture_image_ == true)
+		ros::spinOnce();
+	res.number_captured_images = number_captured_images_;
 	return true;
 }
 
@@ -251,8 +257,6 @@ void FaceCaptureNode::updateDataServerCallback(const cob_people_detection::updat
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(active_action_mutex_);
 
-	// accept goal
-	update_data_server_->acceptNewGoal();
 	cob_people_detection::updateDataResult result;
 
 	// determine the update mode
@@ -285,8 +289,6 @@ void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::delet
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(active_action_mutex_);
 
-	// accept goal
-	delete_data_server_->acceptNewGoal();
 	cob_people_detection::deleteDataResult result;
 
 	// determine the delete mode

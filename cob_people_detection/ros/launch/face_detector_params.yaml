@@ -36,4 +36,4 @@ max_face_z_m: 8.0
 
 # enables some debug outputs
 # bool
-debug: true
+debug: false

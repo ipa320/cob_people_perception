@@ -1,7 +1,3 @@
-# enables some debug outputs
-# bool
-debug: true
-
 # enables the combination of face detections with the openni people segmentation
 # bool
 use_people_segmentation: false
@@ -33,3 +29,7 @@ min_face_identification_score_to_publish: 3.0
 # if this is true, the unknown label will be assigned for the identification of a person if it has the highest score, otherwise, the last detection of a name will display as label even if there has been a detection of Unknown recently for that face (i.e. if true: face names will display only while they are certain, if false: face names will always display after they have been certain once)
 # bool
 fall_back_to_unknown_identification: true
+
+# enables some debug outputs
+# bool
+debug: false

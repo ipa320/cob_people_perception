@@ -124,8 +124,8 @@ unsigned long FaceRecognizer::initTraining(std::string data_directory, int eigen
 	m_debug = debug;
 
 	// load model
-	m_face_labels.clear();	 // keep empty to load all available data
-	loadTrainingData(face_images, m_face_labels);
+	m_current_label_set.clear();	 // keep empty to load all available data
+	loadTrainingData(face_images, m_current_label_set);
 
 	return ipa_Utils::RET_OK;
 }
@@ -133,6 +133,9 @@ unsigned long FaceRecognizer::initTraining(std::string data_directory, int eigen
 
 unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images)
 {
+	// secure this function with a mutex
+	boost::lock_guard<boost::mutex> lock(m_data_mutex);
+
 //	// store in appropriate format for this method
 //	cv::Mat resized_8U1;
 //	cv::Size new_size(m_eigenface_size, m_eigenface_size);
@@ -172,6 +175,7 @@ unsigned long FaceRecognizer::deleteFaces(std::string label, std::vector<cv::Mat
 		{
 			m_face_labels.erase(m_face_labels.begin()+i);
 			face_images.erase(face_images.begin()+i);
+			i--;
 		}
 	}
 	return ipa_Utils::RET_OK;
@@ -213,7 +217,7 @@ unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& id
 	}
 
 	// PCA
-	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size());
+	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size()-1);
 	bool return_value = PCA(number_eigenvectors, face_images);
 	if (return_value == ipa_Utils::RET_FAILED)
 		return ipa_Utils::RET_FAILED;
@@ -633,12 +637,12 @@ unsigned long FaceRecognizer::PCA(int number_eigenvectors, std::vector<cv::Mat>&
 	// Compute average image, eigenvalues, and eigenvectors
 	IplImage average_image_ipl = (IplImage)m_average_image;
 
-	float eigenvalues[number_eigenvectors+1];
+	float eigenvalues[number_eigenvectors*number_eigenvectors];		// hack: if strange crashes occur, the array size should be increased
 	cvCalcEigenObjects((int)face_images.size(), (void*)face_images_ipl, (void*)m_eigenvectors_ipl, CV_EIGOBJ_NO_CALLBACK, 0, 0, &calcLimit, &average_image_ipl, eigenvalues);
 	for (int i=0; i<m_eigenvalues.cols; i++)
 		m_eigenvalues.at<float>(i) = eigenvalues[i];
 
-	cv::normalize(m_eigenvalues,m_eigenvalues, 1, 0, /*CV_L1*/CV_L2);	//, 0);		0=bug?
+	cv::normalize(m_eigenvalues, m_eigenvalues, 1, 0, /*CV_L1*/CV_L2);	//, 0);		0=bug?
 
 	// Project the training images onto the PCA subspace
 	m_projected_training_faces.create(face_images.size(), number_eigenvectors, CV_32FC1);
@@ -907,7 +911,7 @@ unsigned long FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images
 			std::ostringstream tag_image;
 			tag_image << "image_" << i;
 			std::string path = m_data_directory + (std::string)fileStorage[tag_image.str().c_str()];
-			cv::Mat temp = cv::imread(path.c_str(),0);
+			cv::Mat temp = cv::imread(path.c_str(),-1);
 			face_images.push_back(temp);
 		}
 
