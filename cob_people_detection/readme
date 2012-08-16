@@ -3,19 +3,6 @@ roslaunch cob_people_detection openni.launch
 
 2. Start the face detector and people detector/tracker server:
 roslaunch cob_people_detection people_detection.launch
-(roslaunch cob_people_detection nodelet_manager.launch as well if not included in people_detection.launch)
 
 3. Start the face detector action client interface:
 rosrun cob_people_detection people_detection_client
-
-3.1. Training with 1 in gui on the first time of usage.
--> Visualization of face detections with
-rosrun image_view image_view image:=/cob_people_detection/face_detection/face_detection_image
-
-3.2. Detection - enable face detection with 2 in the menu. 
--> Visualization with 
-rosrun image_view image_view image:=/cob_people_detection/face_detection/face_detection_image   (that is the intermediate result)
-rosrun image_view image_view image:=/cob_people_detection/people_detection_image      (this is the final person detection with name tag)
-
-4. Service Call with people location response
-rosservice call /cob_people_detection/detect_people
