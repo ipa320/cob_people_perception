@@ -1,0 +1,12 @@
+# Adds data to the training database
+#
+# goal message
+string label				# a label for the data which shall be added
+int32 capture_mode			# mode of data capture: 0=manual (i.e. initiate data capture with service messages), 1=continuous
+int32 continuous_mode_images_to_capture	# if the continuous mode is selected this number specifies how many images shall be captured
+float32 continuous_mode_delay		# if the continuous mode is selected this number specifies the delay time between the recording of two successive images (in seconds)
+---
+# result message
+---
+# feedback message
+int32 images_captured			# the number of images already captured

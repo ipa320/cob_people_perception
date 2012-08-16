@@ -1,13 +1,13 @@
 <package>
-  <description brief="cob_vision_msgs">
+  <description brief="cob_people_detection_msgs">
 
-     cob_vision_msgs
+     Contains some special messages used by cob_people_detection.
 
   </description>
   <author>Richard Bormann</author>
-  <license>BSD</license>
+  <license>LGPL, Fraunhofer IPA</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/cob_vision_msgs</url>
+  <url>http://ros.org/wiki/cob_people_detection_msgs</url>
 
   <depend package="std_msgs"/>
   <depend package="geometry_msgs"/>

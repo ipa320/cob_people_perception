@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- coordinator node for the detection pipeline -->
+  <rosparam command="load" ns="/cob_people_detection/coordinator" file="$(find cob_people_detection)/ros/launch/coordinator_params.yaml"/>
+  <node name="coordinator" pkg="cob_people_detection" ns="/cob_people_detection/coordinator" type="coordinator_node" output="screen">
+    <remap from="detection_array" to="/cob_people_detection/detection_tracker/face_position_array"/>
+  </node>
+
+</launch>
