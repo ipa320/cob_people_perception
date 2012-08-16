@@ -93,7 +93,7 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 //	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
 	face_recognition_subscriber_.subscribe(node_handle_, "face_position_array", 1);
 	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
-	color_image_sub_.subscribe(*it_, "colorimage", 1);
+	color_image_sub_.subscribe(*it_, "color_image", 1);
 
 	// input synchronization
 	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);

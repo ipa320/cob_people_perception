@@ -1,4 +1,4 @@
-# this string allows to change the path to the Haar classifier model
+# this string allows to change the path to the stored recognition models
 # string
 # data_directory: path_to_data -> please change this parameter in the launch file
 
@@ -10,7 +10,7 @@ enable_face_recognition: true
 # string[] e.g. ['albert', 'bernhard', 'caesar']
 #identification_labels_to_recognize: ['albert', 'bernhard', 'caesar']
 
-# desired width and height of the Eigenfaces (=eigenvectors)
+# desired width and height of the eigenfaces (=eigenvectors)
 # int
 eigenface_size: 100
 
@@ -18,11 +18,11 @@ eigenface_size: 100
 # int
 eigenvectors_per_person: 5
 
-# Threshold to facespace
+# threshold to facespace, detections with a higher score are not considered as being faces
 # double
 threshold_facespace: 13000
 
-# Threshold to detect unknown faces
+# threshold to detect unknown faces, detections with a higher score receive the unknown label and not a name
 # double
 threshold_unknown: 2500
 

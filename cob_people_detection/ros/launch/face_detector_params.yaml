@@ -2,19 +2,19 @@
 # string
 # data_directory: path_to_data -> please change this parameter in the launch file
 
-# The factor by which the search window is scaled between the subsequent scans
+# the factor by which the search window is scaled between the subsequent scans
 # double
 faces_increase_search_scale: 1.1
 
-# Minimum number (minus 1) of neighbor rectangles that makes up an object.
+# minimum number (minus 1) of neighbor rectangles that makes up an object.
 # int
 faces_drop_groups: 3
 
-# Minimum search scale x
+# minimum search scale x
 # int
 faces_min_search_scale_x: 20
 
-# Minimum search scale y
+# minimum search scale y
 # int
 faces_min_search_scale_y: 20
 
