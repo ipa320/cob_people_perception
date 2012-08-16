@@ -73,7 +73,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 //#include <std_msgs/Float32MultiArray.h>
-#include <cob_people_detection_msgs/PeopleDetectionArray.h>
+#include <cob_people_detection_msgs/DetectionArray.h>
 
 // topics
 #include <message_filters/subscriber.h>
@@ -122,7 +122,7 @@ namespace fs = boost::filesystem;
 	#include "cob_sensor_fusion/ColoredPointCloudSequence.h"
 #endif
 
-#include "cob_people_detection/PeopleDetector.h"
+#include "cob_people_detection/people_detector.h"
 
 #include <sstream>
 #include <string>

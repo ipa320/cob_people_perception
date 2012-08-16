@@ -1,0 +1,8 @@
+#goal
+float32 maximum_message_age		# maximal allowed age of response message (in s), 0 means we do not care
+float32 timeout				# maximal waiting time (in s) for receiving a detection, 0 is infinitely. If the detection pipeline was not running before, it will start upon receiving this message and collect messages for the full timeout period.
+---
+#result
+cob_people_detection_msgs/DetectionArray detections	# array of detections
+---
+#feedback

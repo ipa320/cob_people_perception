@@ -15,6 +15,11 @@ genaction()
 
 rosbuild_init()
 
+#add dynamic reconfigure api
+rosbuild_find_ros_package(dynamic_reconfigure)
+include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
+gencfg()
+
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
@@ -44,18 +49,54 @@ rosbuild_check_for_sse()
 #rosbuild_link_boost(color_face_detector thread)
 
 #rosbuild_add_executable(face_detector
-			#common/src/PeopleDetector.cpp
+			#common/src/people_detector.cpp
 			#ros/src/people_detection.cpp)
-rosbuild_add_library(face_detector
-			common/src/PeopleDetector.cpp
-			ros/src/face_detection.cpp)
 
-rosbuild_add_library(people_detector
-			ros/src/people_detection.cpp)
-add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/windows/TrainingData)
+
+#rosbuild_add_library(face_detector
+#			common/src/people_detector.cpp
+#			ros/src/face_detection.cpp)
+
+#rosbuild_add_library(people_detector
+#			ros/src/people_detection.cpp)
+#add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
+
 
 rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)
+
+rosbuild_add_executable(head_detector_node
+			common/src/head_detector.cpp
+			ros/src/head_detector_node.cpp)
+add_custom_command(TARGET head_detector_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
+
+rosbuild_add_executable(face_detector_node
+			common/src/face_detector.cpp
+			ros/src/face_detector_node.cpp)
+add_custom_command(TARGET face_detector_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
+
+rosbuild_add_executable(face_recognizer_node
+			common/src/abstract_face_recognizer.cpp
+			common/src/face_recognizer.cpp
+			ros/src/face_recognizer_node.cpp)
+add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
+
+rosbuild_add_executable(detection_tracker_node
+			ros/src/detection_tracker_node.cpp)
+
+rosbuild_add_executable(people_detection_display_node
+			ros/src/people_detection_display_node.cpp)
+
+rosbuild_add_executable(face_capture_node
+			common/src/abstract_face_recognizer.cpp
+			common/src/face_recognizer.cpp
+			ros/src/face_capture_node.cpp)
+
+rosbuild_add_executable(sensor_message_gateway_node
+			ros/src/sensor_message_gateway_node.cpp)
+
+rosbuild_add_executable(coordinator_node
+			ros/src/coordinator_node.cpp)
 
 # modified openni tracker
 #rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp
@@ -71,9 +112,17 @@ rosbuild_add_executable(people_detection_client
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ros/include
 		    ${PROJECT_SOURCE_DIR}/common/include)
 
-rosbuild_add_compile_flags(face_detector -D__LINUX__)
-rosbuild_add_compile_flags(people_detector -D__LINUX__)
+#rosbuild_add_compile_flags(face_detector -D__LINUX__)
+#rosbuild_add_compile_flags(people_detector -D__LINUX__)
 rosbuild_add_compile_flags(people_detection_client -D__LINUX__)
+rosbuild_add_compile_flags(head_detector_node -D__LINUX__)
+rosbuild_add_compile_flags(face_detector_node -D__LINUX__)
+rosbuild_add_compile_flags(face_recognizer_node -D__LINUX__)
+rosbuild_add_compile_flags(detection_tracker_node -D__LINUX__)
+rosbuild_add_compile_flags(people_detection_display_node -D__LINUX__)
+rosbuild_add_compile_flags(face_capture_node -D__LINUX__)
+rosbuild_add_compile_flags(sensor_message_gateway_node -D__LINUX__)
+rosbuild_add_compile_flags(coordinator_node -D__LINUX__)
 
 # rostest
 #rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_noface_test_diamondback.bag face_detector_noface_test.bag 37f043be780a4511c853379defdd9855)

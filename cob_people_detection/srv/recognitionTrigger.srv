@@ -1,0 +1,4 @@
+# request message
+float32 target_frame_rate	# desired frame rate for the recognition pipeline
+---
+# response message

@@ -1,0 +1,3 @@
+# rate at which the input messages are published (in Hz)
+# double
+target_publishing_rate: 5

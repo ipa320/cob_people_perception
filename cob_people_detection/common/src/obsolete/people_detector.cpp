@@ -1,7 +1,7 @@
 /// @file PeopleDetector.cpp
 
 #ifdef __LINUX__
-#include "cob_people_detection/PeopleDetector.h"
+#include "cob_people_detection/people_detector.h"
 #include "cob_vision_utils/GlobalDefines.h"
 #else
 #include "cob_vision/cob_people_detection/common/include/cob_people_detection/PeopleDetector.h"
