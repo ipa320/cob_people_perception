@@ -13,7 +13,7 @@
   <depend stack="geometry" /> <!-- tf -->
   <depend stack="image_common" /> <!-- image_transport -->
   <depend stack="nodelet_core" /> <!-- nodelet -->
-  <depend stack="openni_kinect" /> <!-- openni_launch, openni, nite -->
+  <depend stack="openni_kinect" /> <!-- openni, nite -->
   <depend stack="orocos_kinematics_dynamics" /> <!-- kdl -->
   <depend stack="perception_pcl" /> <!-- pcl, pcl_ros -->
   <depend stack="ros" /> <!-- roslib -->
