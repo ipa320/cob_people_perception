@@ -20,11 +20,11 @@ eigenvectors_per_person: 5
 
 # threshold to facespace, detections with a higher score are not considered as being faces
 # double
-threshold_facespace: 13000
+threshold_facespace: 22000
 
 # threshold to detect unknown faces, detections with a higher score receive the unknown label and not a name
 # double
-threshold_unknown: 2500
+threshold_unknown: 4000
 
 # metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 # int
@@ -32,4 +32,4 @@ metric: 0
 
 # enables some debug outputs
 # bool
-debug: false
+debug: true

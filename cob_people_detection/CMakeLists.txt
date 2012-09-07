@@ -34,6 +34,8 @@ rosbuild_gensrv()
 rosbuild_check_for_sse()
 #set(SSE_FLAGS "-msse2 -mfpmath=sse")
 
+rosbuild_add_boost_directories()
+
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
 #target_link_libraries(${PROJECT_NAME} another_library)
@@ -79,6 +81,7 @@ rosbuild_add_executable(face_recognizer_node
 			common/src/abstract_face_recognizer.cpp
 			common/src/face_recognizer.cpp
 			ros/src/face_recognizer_node.cpp)
+rosbuild_link_boost(face_recognizer_node filesystem)
 add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 rosbuild_add_executable(detection_tracker_node
@@ -91,6 +94,7 @@ rosbuild_add_executable(face_capture_node
 			common/src/abstract_face_recognizer.cpp
 			common/src/face_recognizer.cpp
 			ros/src/face_capture_node.cpp)
+rosbuild_link_boost(face_capture_node filesystem)
 
 rosbuild_add_executable(sensor_message_gateway_node
 			ros/src/sensor_message_gateway_node.cpp)
