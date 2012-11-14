@@ -98,6 +98,12 @@ rosbuild_add_executable(sensor_message_gateway_node
 rosbuild_add_executable(coordinator_node
 			ros/src/coordinator_node.cpp)
 
+
+
+    # SANDBOX EXE
+rosbuild_add_executable(impre common/src/sandbox.cpp)    
+
+
 # modified openni tracker
 #rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp
 #                                       ros/src/SceneDrawer.cpp)

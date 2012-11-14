@@ -158,6 +158,7 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 
 				// generate vector of all depth values in the face region, NaNs are converted to -1
 				cv::Mat face_region = heads_depth_images[head_index];
+        // EDIT
 				cv::Mat tmat(1, du*abs(vEnd-vStart), CV_32FC1);
 				float* tmatPtr = (float*)tmat.data;
 				for (int v=vStart; v<vEnd; v++)

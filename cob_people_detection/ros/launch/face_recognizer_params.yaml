@@ -20,7 +20,7 @@ eigenvectors_per_person: 5
 
 # Threshold to facespace
 # double
-threshold_facespace: 13000
+threshold_facespace: 16000
 
 # Threshold to detect unknown faces
 # double
@@ -32,4 +32,4 @@ metric: 0
 
 # enables some debug outputs
 # bool
-debug: false
+debug: false 
