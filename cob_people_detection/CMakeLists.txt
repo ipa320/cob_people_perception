@@ -73,6 +73,7 @@ add_custom_command(TARGET head_detector_node POST_BUILD COMMAND mkdir -p ${PROJE
 rosbuild_add_executable(face_detector_node
 			common/src/face_detector.cpp
 			ros/src/face_detector_node.cpp)
+target_link_libraries(face_detector_node face_normalizer)    
 add_custom_command(TARGET face_detector_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 rosbuild_add_executable(face_recognizer_node
@@ -98,6 +99,8 @@ rosbuild_add_executable(sensor_message_gateway_node
 rosbuild_add_executable(coordinator_node
 			ros/src/coordinator_node.cpp)
 
+rosbuild_add_library(face_normalizer
+			common/src/face_normalizer.cpp)
 
 
     # SANDBOX EXE

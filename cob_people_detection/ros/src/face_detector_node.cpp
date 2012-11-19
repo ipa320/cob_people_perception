@@ -171,6 +171,8 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 	}
 	std::vector<std::vector<cv::Rect> > face_coordinates;
 	face_detector_.detectColorFaces(heads_color_images, heads_depth_images, face_coordinates);
+  face_normalizer_.normalizeFaces(heads_color_images, heads_depth_images, face_coordinates);
+
 
 	cob_people_detection_msgs::ColorDepthImageArray image_array;
 	image_array = *head_positions;
