@@ -61,6 +61,8 @@
 
 using namespace ipa_PeopleDetector;
 
+inline bool isnan_(double num) { return (num != num); };
+
 PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
@@ -148,7 +150,8 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 		for (unsigned int u=0; u<point_cloud_src.width; u++)
 		{
 			pcl::PointXYZRGB point = point_cloud_src[v*point_cloud_src.height + u];
-			color_image.at<cv::Point3_<unsigned char> >(v,u) = cv::Point3_<unsigned char>(point.r, point.g, point.b);
+			if (isnan_(point.z) == false)
+				color_image.at<cv::Point3_<unsigned char> >(v,u) = cv::Point3_<unsigned char>(point.r, point.g, point.b);
 		}
 	}
 
