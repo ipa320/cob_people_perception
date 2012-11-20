@@ -89,15 +89,16 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 //	std::cout << "fall_back_to_unknown_identification = " << fall_back_to_unknown_identification_ << "\n";
 
 	// subscribers
-	it_ = new image_transport::ImageTransport(node_handle_);
 //	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
+//	it_ = new image_transport::ImageTransport(node_handle_);
+//	color_image_sub_.subscribe(*it_, "color_image", 1);
 	face_recognition_subscriber_.subscribe(node_handle_, "face_position_array", 1);
 	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
-	color_image_sub_.subscribe(*it_, "color_image", 1);
+	pointcloud_sub_.subscribe(node_handle_, "pointcloud_in", 1);
 
 	// input synchronization
-	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
-	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, color_image_sub_);
+	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::PointCloud2> >(30);
+	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, pointcloud_sub_);
 	sync_input_3_->registerCallback(boost::bind(&PeopleDetectionDisplayNode::inputCallback, this, _1, _2, _3));
 
 	// publishers
@@ -130,12 +131,26 @@ unsigned long PeopleDetectionDisplayNode::convertColorImageMessageToMat(const se
 }
     
 /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg)
 {
 	// convert color image to cv::Mat
-	cv_bridge::CvImageConstPtr color_image_ptr;
-	cv::Mat color_image;
-	convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
+//	cv_bridge::CvImageConstPtr color_image_ptr;
+//	cv::Mat color_image;
+//	convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
+
+	// get color image from point cloud
+	pcl::PointCloud<pcl::PointXYZRGB> point_cloud_src;
+	pcl::fromROSMsg(*pointcloud_msg, point_cloud_src);
+
+	cv::Mat color_image = cv::Mat::zeros(point_cloud_src.height, point_cloud_src.width, CV_8UC1);
+	for (unsigned int v=0; v<point_cloud_src.height; v++)
+	{
+		for (unsigned int u=0; u<point_cloud_src.width; u++)
+		{
+			pcl::PointXYZRGB point = point_cloud_src[v*point_cloud_src.height + u];
+			color_image.at<cv::Point3_<unsigned char> >(v,u) = cv::Point3_<unsigned char>(point.r, point.g, point.b);
+		}
+	}
 
 	// insert all detected heads and faces
 	for (int i=0; i<(int)face_detection_msg->head_detections.size(); i++)
