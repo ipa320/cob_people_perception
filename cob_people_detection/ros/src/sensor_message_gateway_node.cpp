@@ -91,7 +91,7 @@ SensorMessageGatewayNode::SensorMessageGatewayNode(ros::NodeHandle nh)
 	pointcloud_pub_ = node_handle_.advertise<sensor_msgs::PointCloud2>("pointcloud_rgb_out", 1);
 
 	// subscribe to sensor topic
-	pointcloud_sub_ = nh.subscribe("pointcloud_rgb_in", 1, &SensorMessageGatewayNode::pointcloudCallback, this);
+	pointcloud_sub_ = node_handle_.subscribe("pointcloud_rgb_in", 1, &SensorMessageGatewayNode::pointcloudCallback, this);
 
 }
 

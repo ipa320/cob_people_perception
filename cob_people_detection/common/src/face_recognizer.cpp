@@ -647,7 +647,7 @@ unsigned long FaceRecognizer::PCA(int number_eigenvectors, std::vector<cv::Mat>&
 	// Compute average image, eigenvalues, and eigenvectors
 	IplImage average_image_ipl = (IplImage)m_average_image;
 
-	float eigenvalues[number_eigenvectors*number_eigenvectors];		// hack: if strange crashes occur, the array size should be increased
+	float eigenvalues[number_eigenvectors*number_eigenvectors*number_eigenvectors];		// hack: if strange crashes occur, the array size should be increased
 	cvCalcEigenObjects((int)face_images.size(), (void*)face_images_ipl, (void*)m_eigenvectors_ipl, CV_EIGOBJ_NO_CALLBACK, 0, 0, &calcLimit, &average_image_ipl, eigenvalues);
 	for (int i=0; i<m_eigenvalues.cols; i++)
 		m_eigenvalues.at<float>(i) = eigenvalues[i];
