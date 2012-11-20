@@ -139,7 +139,6 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 			face_coordinates[head].push_back(*face);
 		}
 	}
-	
 	if (m_reason_about_3dface_size==true)
 	{
 		// check whether the color faces have a reasonable 3D size
