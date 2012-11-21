@@ -1,11 +1,16 @@
 #include<cob_people_detection/face_normalizer.h>
 using namespace cv;
 FaceNormalizer::FaceNormalizer():scale_(1.0),
+                                det_eye_l_(0,0,0),
+                                det_eye_r_(0,0,0),
+                                det_mouth_(0,0,0),
+                                det_nose_ (0,0,0),
                                 norm_eye_l_(50,60,0),
                                 norm_eye_r_(110,60,0),
-                                norm_mouth_(60,500,0),
+                                norm_mouth_(80,140,0),
                                 norm_nose_(80,100),
-                                norm_size_(160,160)
+                                norm_size_(160,160),
+                                debug_(false)
 {
 
   std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
@@ -16,13 +21,13 @@ FaceNormalizer::FaceNormalizer():scale_(1.0),
               eye_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_path.c_str(),0,0,0);
               eye_storage_=cvCreateMemStorage(0);
 
-  std::string eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-  //std::string eye_l_path="/home/goa-tz/data/haarcascade_lefteye_2splits.xml";
+  //std::string eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+  std::string eye_l_path="/home/goa-tz/data/haarcascade_lefteye_2splits.xml";
               eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
               eye_l_storage_=cvCreateMemStorage(0);
 
-  std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
-  //std::string eye_r_path="/home/goa-tz/data/haarcascade_righteye_2splits.xml";
+  //std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
+  std::string eye_r_path="/home/goa-tz/data/haarcascade_righteye_2splits.xml";
               eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
               eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
               eye_r_storage_=cvCreateMemStorage(0);
@@ -120,8 +125,11 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Vec3f& coords,int code)
 {
 
   CvSeq* seq;
+  cv::Vec2f offset;
+
   if(code==PP_NOSE)
   {
+    offset<< (0,0);
     IplImage ipl_img=(IplImage)img;
      seq=cvHaarDetectObjects(&ipl_img,nose_cascade_,nose_storage_,1.3,2,CV_HAAR_DO_CANNY_PRUNING,cvSize(15,15));
   }
@@ -129,25 +137,43 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Vec3f& coords,int code)
 
   if(code==PP_EYE_L)
   {
-    IplImage ipl_img=(IplImage)img;
+    offset[0]=0;
+    offset[1]=0;
+    cv::Mat sub_img=img.clone();
+    sub_img=sub_img(cvRect(0,0,det_nose_[0],det_nose_[1]));
+    IplImage ipl_img=(IplImage)sub_img;
      seq=cvHaarDetectObjects(&ipl_img,eye_l_cascade_,eye_l_storage_,1.15,3,CV_HAAR_DO_CANNY_PRUNING,cvSize(25,15));
+
+    if(debug_)showImg(sub_img,"EYEL");
   }
+
   if(code==PP_EYE_R)
   {
-    IplImage ipl_img=(IplImage)img;
+    offset[0]=((int)det_nose_[0]);
+    offset[1]=0;
+    cv::Mat sub_img=img.clone();
+    sub_img=sub_img(cvRect(det_nose_[0],0,img.cols-det_nose_[0]-1,det_nose_[1]));
+    IplImage ipl_img=(IplImage)sub_img;
      seq=cvHaarDetectObjects(&ipl_img,eye_r_cascade_,eye_r_storage_,1.25,3,CV_HAAR_DO_CANNY_PRUNING,cvSize(25,15));
+
+    if(debug_) showImg(sub_img,"EYER");
   }
   if(code==PP_MOUTH)
   {
-    IplImage ipl_img=(IplImage)img;
+    offset[0]=0;
+    offset[1]=(int)det_nose_[1];
+    cv::Mat sub_img=img.clone();
+    sub_img=sub_img(cvRect(0,det_nose_[1],img.cols,img.rows-det_nose_[1]-1));
+    IplImage ipl_img=(IplImage)sub_img;
      seq=cvHaarDetectObjects(&ipl_img,mouth_cascade_,mouth_storage_,1.3,4,CV_HAAR_DO_CANNY_PRUNING,cvSize(15,15));
+
+    if(debug_)showImg(sub_img,"MOUTH");
   }
 
     if(seq->total ==0) return false;
-    std::cout<<"SEQ TOTAL"<<code<<" "<<seq->total<<std::endl;
     Rect* seq_det=(Rect*)cvGetSeqElem(seq,0);
-    coords[0]=(float)seq_det->x+seq_det->width/2;
-    coords[1]=(float)seq_det->y+seq_det->height/2;
+    coords[0]=(float)seq_det->x+seq_det->width/2+offset[0];
+    coords[1]=(float)seq_det->y+seq_det->height/2+offset[1];
     coords[2]=0.0;
 
     return true;
@@ -164,60 +190,77 @@ void FaceNormalizer::normalizeFaces(std::vector<cv::Mat>& head_color,
   if(head_color.size()==0) return;
 
 
- //resetNormFeatures();
+ resetNormFeatures();
  for(int face=0;face<head_color.size();++face)
  {
 
   if(face_rect[face].size()==0) return;
 
-   head_color[face]=head_color[face](face_rect[face][0]);
-   head_depth[face]=head_depth[face](face_rect[face][0]);
-   cvtColor(head_color[face],head_color[face],CV_BGR2RGB);
-   cv::resize(head_color[face],head_color[face],norm_size_,0,0);
-   cv::resize(head_depth[face],head_depth[face],norm_size_,0,0);
-   cv::Vec3f mouth,nose,eye_r,eye_l;
-   bool coord=getCoords(head_color[face],head_depth[face],mouth,nose,eye_l,eye_r);
+  cv::Mat color_crop=head_color[face].clone();
+  cv::Mat depth_crop=head_depth[face].clone();
 
-   if(coord==false)return;
-  showFeatures(head_color[face],nose,mouth,eye_l,eye_r);
+   color_crop=color_crop(face_rect[face][0]);
+   depth_crop=depth_crop(face_rect[face][0]);
 
-   cv::Mat trafo(2,3,CV_32FC1);
+   cvtColor(color_crop,color_crop,CV_BGR2RGB);
+   cv::resize(color_crop,color_crop,norm_size_,0,0);
+   cv::resize(depth_crop,depth_crop,norm_size_,0,0);
+   bool coord=calcModel(color_crop,depth_crop);
+
+
+   if(coord==false)
+   {
+   return;
+   }
+  if(debug_)showFeatures(color_crop);
+
    cv::Mat warped = cv::Mat(head_color[face].rows,head_color[face].cols,head_color[face].type());
 
-       transformAffine(eye_l,eye_r,nose,trafo);
-       cv::warpAffine(head_color[face],warped,trafo,warped.size() );
-       showImg(warped,"warped");
+       cv::Mat trafo(2,3,CV_32FC1);
+       transformAffine(trafo);
+       cv::warpAffine(head_color[face],head_color[face],trafo,warped.size() );
+       //cv::warpAffine(head_color[face],warped,trafo,warped.size() );
+
+      //cv::Mat trafo(3,3,CV_32FC1);
+      // transformPerspective(trafo);
+      // cv::warpPerspective(head_color[face],warped,trafo,warped.size());
+
+       if(debug_)showImg(warped,"warped");
  }
 }
 
-void FaceNormalizer::transformAffine(cv::Vec3f& eye_l,cv::Vec3f& eye_r,cv::Vec3f& nose,cv::Mat& trafo)
+void FaceNormalizer::transformPerspective(cv::Mat& trafo)
 {
-  cv::Point2f src[3],dst[3];
 
-  src[0]=Point2f(eye_l[0],eye_l[1]);
-  src[1]=Point2f(eye_r[0],eye_r[1]);
-  src[2]=Point2f(nose[0],nose[1]);
+  cv::Point2f src[4],dst[4];
+  src[0]=Point2f(det_eye_l_[0],det_eye_l_[1]);
+  src[1]=Point2f(det_eye_r_[0],det_eye_r_[1]);
+  src[2]=Point2f(det_mouth_[0],det_mouth_[1]);
+  src[3]=Point2f(det_nose_[0],det_nose_[1]);
 
   dst[0]=Point2f(norm_eye_l_[0],norm_eye_l_[1]);
   dst[1]=Point2f(norm_eye_r_[0],norm_eye_r_[1]);
-  dst[2]=Point2f(norm_nose_[0],norm_nose_[1]);
+  dst[2]=Point2f(norm_mouth_[0],norm_mouth_[1]);
+  dst[3]=Point2f(norm_nose_[0],norm_nose_[1]);
+  trafo=cv::getPerspectiveTransform(src,dst);
+}
+
+void FaceNormalizer::transformAffine(cv::Mat& trafo)
+{
+  cv::Point2f src[3],dst[3];
+
+  src[0]=Point2f(det_eye_l_[0],det_eye_l_[1]);
+  src[1]=Point2f(det_eye_r_[0],det_eye_r_[1]);
+  src[2]=Point2f(det_mouth_[0],det_mouth_[1]);
+  //src[2]=Point2f(det_nose_[0],det_nose_[1]);
+
+  dst[0]=Point2f(norm_eye_l_[0],norm_eye_l_[1]);
+  dst[1]=Point2f(norm_eye_r_[0],norm_eye_r_[1]);
+  dst[2]=Point2f(norm_mouth_[0],norm_mouth_[1]);
+  //dst[2]=Point2f(norm_nose_[0],norm_nose_[1]);
 
 
-//----
-  std::cout<<"x eye l"<<eye_l[0]<<" "<<norm_eye_l_[0]<<std::endl;
-  std::cout<<"y eye l"<<eye_l[1]<<" "<<norm_eye_l_[1]<<std::endl;
-  std::cout<<"z eye l"<<eye_l[2]<<" "<<norm_eye_l_[2]<<std::endl;
-  std::cout<<"x eye_r"<<eye_r[0]<<" "<<norm_eye_r_[0]<<std::endl;
-  std::cout<<"y eye_r"<<eye_r[1]<<" "<<norm_eye_r_[1]<<std::endl;
-  std::cout<<"z eye_r"<<eye_r[2]<<" "<<norm_eye_r_[2]<<std::endl;
-  std::cout<<"x nose"<<nose[0]<<" "<<norm_nose_[0]<<std::endl;
-  std::cout<<"y nose"<<nose[1]<<" "<<norm_nose_[1]<<std::endl;
-  std::cout<<"z nose"<<nose[2]<<" "<<norm_nose_[2]<<std::endl;
-  std::cout<<"------------------------------------\n";
-//----
-
-trafo = cv::getAffineTransform(src,dst);
-//trafo = cv::getAffineTransform(src,src);
+  trafo = cv::getAffineTransform(src,dst);
 
 
 
@@ -225,79 +268,24 @@ trafo = cv::getAffineTransform(src,dst);
 
 
 
-bool FaceNormalizer::getCoords(cv::Mat& img_color,cv::Mat& img_depth,cv::Vec3f& mouth_coord,
-    cv::Vec3f& nose_coord,cv::Vec3f& eye_l_coord,cv::Vec3f& eye_r_coord)
+bool FaceNormalizer::calcModel(cv::Mat& img_color,cv::Mat& img_depth)
 {
 
- // IplImage ipl_img=(IplImage)img_color;
-//
-//
-//
-//
-//  if(noses->total >0 && eyes->total >1 && mouths->total >0)
-//  {
-//    Rect* nose_det=(Rect*)cvGetSeqElem(noses,0);
-//    Rect* mouth_det=(Rect*)cvGetSeqElem(mouths,0);
-//    Rect eye_l_det,eye_r_det;
-//    for(int eye_it=0;eye_it<2;eye_it++){
-//    Rect* eyes_det=(Rect*)cvGetSeqElem(eyes,eye_it);
-//
-//      if(eye_it==0){
-//         eye_l_det=*eyes_det;
-//      }
-//      if(eye_it==1){
-//         eye_r_det=*eyes_det;
-//    }
-//      }
+  cv::Vec3f nose_coord,eye_l_coord,eye_r_coord,mouth_coord;
+  if (detect_feature(img_color,nose_coord,PP_NOSE))  det_nose_ =nose_coord;
+  else return false;
+  if(detect_feature(img_color,eye_l_coord,PP_EYE_L)) det_eye_l_=eye_l_coord;
+  else return false;
+  if(detect_feature(img_color,eye_r_coord,PP_EYE_R)) det_eye_r_=eye_r_coord;
+  else return false;
+  if(detect_feature(img_color,mouth_coord,PP_MOUTH)) det_mouth_=mouth_coord;
+  else return false;
 
-
-
-
-// once detected -> polausibility  checks ( left right up down etc)
-//
-// get depth information
-// nose coordinate
-  //float  nose_depth=head_depth[face].at<CV_32F>((int)nose_det->x,nose_det->y+nose_det->height);
-
-////NOSE
-//  nose_coord[0]=(float)nose_det->x+nose_det->width/2;
-//  nose_coord[1]=(float)nose_det->y+nose_det->height/2;
-//  //getDepthInRect(img_depth,*nose_det,nose_coord[2]);
-//
-//  //MOUTH
-//  mouth_coord[0]=(float)mouth_det->x+mouth_det->width/2;
-//  mouth_coord[1]=(float)mouth_det->y+mouth_det->height/2;
-//  //getDepthInRect(img_depth,*mouth_det,mouth_coord[2]);
-//  //norm_mouth_=head_depth[face].at<cv::Vec3f>(norm_mouth_[0],norm_mouth_[1]);
-//
-////EYE LEFT
-//  eye_l_coord[0]=(float)eye_l_det.x+eye_l_det.width/2;
-//  eye_l_coord[1]=(float)eye_l_det.y+eye_l_det.height/2;
-//  //getDepthInRect(img_depth,eye_l_det,eye_l_coord[2]);
-//  //norm_eye_l_=head_depth[face].at<cv::Vec3f>(norm_eye_l_[0],norm_eye_l_[1]);
-//
-////EYE RIGHT
-//  eye_r_coord[0]=(float)eye_r_det.x+eye_r_det.width/2;
-//  eye_r_coord[1]=(float)eye_r_det.y+eye_r_det.height/2;
-//  //getDepthInRect(img_depth,eye_r_det,eye_r_coord[2]);
-
-  detect_feature(img_color,eye_l_coord,PP_EYE_L);
-  detect_feature(img_color,eye_r_coord,PP_EYE_R);
-  detect_feature(img_color,nose_coord,PP_NOSE);
-  detect_feature(img_color,mouth_coord,PP_MOUTH);
-
-//  bool intersected=checkIntersection(eye_l_det,eye_r_det,*nose_det,*mouth_det);
-  bool plausible =checkPlausibility(eye_l_coord,eye_r_coord,nose_coord,mouth_coord);
- // if( plausible == true)  {
- //     showFeatures(img_color,*nose_det,*mouth_det,eye_l_det,eye_r_det);
- //     return true;
- // }
- // else{
- //   return false;
- // }
- //
- //}
-  }
+  if(checkModel()) return true;
+  else{
+    std::cout<<"Model inconsistent\n";
+    return false;}
+}
 
 
 void FaceNormalizer::getDepthInRect(cv::Mat& depth_map,cv::Rect& rect,float& depth)
@@ -341,31 +329,39 @@ void FaceNormalizer::calcM(cv::Vec3f& eye_l,cv::Vec3f& eye_r,cv::Vec3f& mouth){
 void FaceNormalizer::resetNormFeatures(){
 
   scale_=1.0;
-  norm_eye_l_[0]=40;
-  norm_eye_l_[1]=40;
-  norm_eye_l_[2]=0;
-  norm_eye_r_[0]=100;
-  norm_eye_r_[1]=40;
-  norm_eye_r_[2]=0;
-  norm_mouth_[0]=60;
-  norm_mouth_[1]=100;
-  norm_mouth_[2]=0;
-  norm_nose_[0]=80;
-  norm_nose_[1]=90;
-  norm_nose_[2]=0;
+  norm_eye_l_= cv::Vec3f (50,60,0);
+  norm_eye_r_= cv::Vec3f (110,60,0);
+  norm_mouth_= cv::Vec3f (80,140,0);
+  norm_nose_=  cv::Vec3f (80,100,0);
+  det_eye_l_=  cv::Vec3f (0,0,0);
+  det_eye_r_=  cv::Vec3f (0,0,0);
+  det_mouth_=  cv::Vec3f (0,0,0);
+  det_nose_=   cv::Vec3f (0,0,0);
 
 }
 
-void FaceNormalizer::showFeatures(cv::Mat img,cv::Vec3f& nose,cv::Vec3f& mouth,cv::Vec3f& eye_l,cv::Vec3f& eye_r)
+void FaceNormalizer::showFeatures(cv::Mat& img)
 {
 
   cv::Mat img2;
   img.copyTo(img2);
   IplImage ipl_img=(IplImage)img2;
-   cv::circle(img2,cv::Point(nose[0],nose[1]),3,CV_RGB(255,0,0));
-   cv::circle(img2,cv::Point(mouth[0],mouth[1]),3,CV_RGB(0,255,0));
-   cv::circle(img2,cv::Point(eye_l[0],eye_l[1]),3,CV_RGB(255,255,0));
-   cv::circle(img2,cv::Point(eye_r[0],eye_r[1]),3,CV_RGB(255,0,255));
+   cv::circle(img2,cv::Point(det_nose_[0], det_nose_[1]),5,CV_RGB(255,0,0));
+   cv::circle(img2,cv::Point(det_mouth_[0],det_mouth_[1]),5,CV_RGB(0,255,0));
+   cv::circle(img2,cv::Point(det_eye_l_[0],det_eye_l_[1]),5,CV_RGB(255,255,0));
+   cv::circle(img2,cv::Point(det_eye_r_[0],det_eye_r_[1]),5,CV_RGB(255,0,255));
+    showImg(img2,"features");
+}
+void FaceNormalizer::showFeatures(cv::Mat& img,cv::Vec3f& nose,cv::Vec3f& mouth,cv::Vec3f& eye_l,cv::Vec3f& eye_r)
+{
+
+  cv::Mat img2;
+  img.copyTo(img2);
+  IplImage ipl_img=(IplImage)img2;
+   cv::circle(img2,cv::Point(nose[0],nose[1]),5,CV_RGB(255,0,0));
+   cv::circle(img2,cv::Point(mouth[0],mouth[1]),5,CV_RGB(0,255,0));
+   cv::circle(img2,cv::Point(eye_l[0],eye_l[1]),5,CV_RGB(255,255,0));
+   cv::circle(img2,cv::Point(eye_r[0],eye_r[1]),5,CV_RGB(255,0,255));
     showImg(img2,"features");
 }
 
@@ -399,7 +395,7 @@ void FaceNormalizer:: showImg(cv::Mat& img,std::string window_name){
   cv::waitKey(50);
     }
 
-bool FaceNormalizer::checkPlausibility(cv::Vec3f& eye_l,cv::Vec3f& eye_r,cv::Vec3f& nose,cv::Vec3f& mouth)
+bool FaceNormalizer::checkModel()
 {
 //  eye_l------------eye_r
 //            |
@@ -409,21 +405,16 @@ bool FaceNormalizer::checkPlausibility(cv::Vec3f& eye_l,cv::Vec3f& eye_r,cv::Vec
 //            |
 //          mouth
 //
-  cv::Vec3f temp;
-  if(eye_l[0]>eye_r[0])
-  {
-    eye_l=temp;
-    eye_r=eye_l;
-    eye_l=temp;
-  }
+return true;
 
-  if(nose[1]<eye_l[1])   return false;
-  if(nose[1]<eye_r[1])   return false;
-  if(mouth[1]<eye_l[1])  return false;
-  if(mouth[1]<eye_r[1])  return false;
-  if(mouth[1]<nose[1])   return false;
+//TODO: Always return false...
+  if(det_nose_[1]<det_eye_l_[1])   return false;
+  else if(det_nose_[1]<det_eye_r_[1])   return false;
+  else if(det_mouth_[1]<det_eye_l_[1])  return false;
+  else if(det_mouth_[1]<det_eye_r_[1])  return false;
+  else if(det_mouth_[1]<det_nose_[1])   return false;
 
-      return true;
+  else    return true;
 
 
 }
