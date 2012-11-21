@@ -180,11 +180,11 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Vec3f& coords,int code)
 
 }
 
-void FaceNormalizer::normalizeFace(cv::Mat& img)
+bool FaceNormalizer::normalizeFace(cv::Mat& img)
 {
 
    cv::resize(img,img,norm_size_,0,0);
-   if(!calcModel(img,img))return;
+   if(!calcModel(img,img))return false;
 
   if(debug_)showFeatures(img);
 
@@ -193,17 +193,20 @@ void FaceNormalizer::normalizeFace(cv::Mat& img)
 
        cv::Mat trafo(2,3,CV_32FC1);
        transformAffine(trafo);
-       cv::warpAffine(img,img,trafo,warped.size() );
+       std::cout<<"trafo "<<trafo.rows<<" x "<<trafo.cols<<"\n";
+       std::cout<<"img "<<img.rows<<" x "<<img.cols<<"\n";
+       cv::warpAffine(img,warped,trafo,cv::Size(img.rows,img.cols) );
+       warped.copyTo(img);
        //cv::warpAffine(head_color[face],warped,trafo,warped.size() );
 
       //cv::Mat trafo(3,3,CV_32FC1);
       // transformPerspective(trafo);
       // cv::warpPerspective(head_color[face],warped,trafo,warped.size());
 
-       showImg(img,"warped");
+       if(debug_)showImg(img,"warped");
        //if(debug_)showImg(warped,"warped");
 
-
+      return true;
 
 
 }
@@ -252,7 +255,9 @@ void FaceNormalizer::normalizeFaces(std::vector<cv::Mat>& head_color,
       // transformPerspective(trafo);
       // cv::warpPerspective(head_color[face],warped,trafo,warped.size());
 
-       showImg(warped,"warped");
+       warped.copyTo(color_crop);
+       showImg(color_crop,"warped");
+      //TODO: INPUIT IMAGE IS NOT MODIFIED
        //if(debug_)showImg(warped,"warped");
  }
 }

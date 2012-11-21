@@ -145,7 +145,7 @@ unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Rect& face_bound
 	cv::Mat roi = color_image(face_bounding_box);
 
 
-  face_normalizer_.normalizeFace(roi);
+  if(!face_normalizer_.normalizeFace(roi))return ipa_Utils::RET_FAILED;
 
 	// Save image
 	face_images.push_back(roi);

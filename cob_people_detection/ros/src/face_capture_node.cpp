@@ -220,7 +220,11 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		cv::Rect face_bounding_box(head_rect.x+face_rect.x, head_rect.y+face_rect.y, face_rect.width, face_rect.height);
 		cv::Mat img = color_image.clone();
     // normalize face
-		face_recognizer_trainer_.addFace(img, face_bounding_box, current_label_, face_images_);
+		if (face_recognizer_trainer_.addFace(img, face_bounding_box, current_label_, face_images_)==ipa_Utils::RET_FAILED)
+     {
+      ROS_WARN("Normalizing failed");
+     return;
+     }
 
 		// only after successful recording
 		capture_image_ = false;			// reset trigger for recording

@@ -21,7 +21,7 @@ class FaceNormalizer{
     void normalizeFaces(std::vector<cv::Mat>& head_color,
                               std::vector<cv::Mat>& head_depth,
                               std::vector<std::vector<cv::Rect> >& face_rect);
-    void normalizeFace(cv::Mat & img);
+    bool normalizeFace(cv::Mat & img);
     void getDepthInRect(cv::Mat& depth_map,cv::Rect& rect,float& depth);
     void calcM(cv::Vec3f& eye_l,cv::Vec3f & eye_r,cv::Vec3f & mouth);
     void resetNormFeatures();
