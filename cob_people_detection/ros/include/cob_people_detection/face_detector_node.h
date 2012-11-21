@@ -64,7 +64,6 @@
 
 #ifdef __LINUX__
 	#include "cob_people_detection/face_detector.h"
-	#include "cob_people_detection/face_normalizer.h"
 #else
 #endif
 
@@ -101,7 +100,6 @@ protected:
 	ros::Publisher face_position_publisher_;		///< publisher for the positions of the detected faces
 
 	FaceDetector face_detector_;	///< implementation of the face detector
-  FaceNormalizer face_normalizer_;
 
 	// parameters
 	std::string data_directory_;	///< path to the classifier model

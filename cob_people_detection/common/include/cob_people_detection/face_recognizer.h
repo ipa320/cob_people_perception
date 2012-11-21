@@ -63,6 +63,7 @@
 
 #ifdef __LINUX__
 	#include <cob_people_detection/abstract_face_recognizer.h>
+	#include <cob_people_detection/face_normalizer.h>
 #else
 	#include "cob_vision/cob_vision_ipa_utils/common/include/cob_vision_ipa_utils/MathUtils.h"
 	#include "cob_vision/cob_sensor_fusion/common/include/cob_sensor_fusion/ColoredPointCloud.h"	// todo: necessary?
@@ -208,6 +209,7 @@ protected:
 	/// @return Return code
 	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<std::string>& identification_labels_to_train);
 
+  FaceNormalizer face_normalizer_;
 	// data
 	std::vector<cv::Mat> m_eigenvectors;			///< Eigenvectors (spanning the face space)
 	IplImage** m_eigenvectors_ipl;					///< Eigenvalues stored in IplImage format (to avoid conversion each time the function is called)

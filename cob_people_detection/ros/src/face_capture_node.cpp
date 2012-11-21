@@ -219,6 +219,7 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
 		cv::Rect face_bounding_box(head_rect.x+face_rect.x, head_rect.y+face_rect.y, face_rect.width, face_rect.height);
 		cv::Mat img = color_image.clone();
+    // normalize face
 		face_recognizer_trainer_.addFace(img, face_bounding_box, current_label_, face_images_);
 
 		// only after successful recording

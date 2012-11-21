@@ -180,7 +180,33 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Vec3f& coords,int code)
 
 }
 
+void FaceNormalizer::normalizeFace(cv::Mat& img)
+{
 
+   cv::resize(img,img,norm_size_,0,0);
+   if(!calcModel(img,img))return;
+
+  if(debug_)showFeatures(img);
+
+   //cv::Mat warped = cv::Mat(head_color[face].rows,head_color[face].cols,head_color[face].type());
+   cv::Mat warped = cv::Mat(img.rows,img.cols,img.type());
+
+       cv::Mat trafo(2,3,CV_32FC1);
+       transformAffine(trafo);
+       cv::warpAffine(img,img,trafo,warped.size() );
+       //cv::warpAffine(head_color[face],warped,trafo,warped.size() );
+
+      //cv::Mat trafo(3,3,CV_32FC1);
+      // transformPerspective(trafo);
+      // cv::warpPerspective(head_color[face],warped,trafo,warped.size());
+
+       showImg(img,"warped");
+       //if(debug_)showImg(warped,"warped");
+
+
+
+
+}
 void FaceNormalizer::normalizeFaces(std::vector<cv::Mat>& head_color,
                               std::vector<cv::Mat>& head_depth,
                               std::vector<std::vector<cv::Rect> >& face_rect)
@@ -214,18 +240,20 @@ void FaceNormalizer::normalizeFaces(std::vector<cv::Mat>& head_color,
    }
   if(debug_)showFeatures(color_crop);
 
-   cv::Mat warped = cv::Mat(head_color[face].rows,head_color[face].cols,head_color[face].type());
+   //cv::Mat warped = cv::Mat(head_color[face].rows,head_color[face].cols,head_color[face].type());
+   cv::Mat warped = cv::Mat(color_crop.rows,color_crop.cols,color_crop.type());
 
        cv::Mat trafo(2,3,CV_32FC1);
        transformAffine(trafo);
-       cv::warpAffine(head_color[face],head_color[face],trafo,warped.size() );
+       cv::warpAffine(color_crop,warped,trafo,warped.size() );
        //cv::warpAffine(head_color[face],warped,trafo,warped.size() );
 
       //cv::Mat trafo(3,3,CV_32FC1);
       // transformPerspective(trafo);
       // cv::warpPerspective(head_color[face],warped,trafo,warped.size());
 
-       if(debug_)showImg(warped,"warped");
+       showImg(warped,"warped");
+       //if(debug_)showImg(warped,"warped");
  }
 }
 
