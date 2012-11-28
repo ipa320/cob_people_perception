@@ -106,7 +106,7 @@ rosbuild_add_library(face_normalizer
 
     # SANDBOX EXE
 rosbuild_add_executable(impre common/src/sandbox.cpp)    
-
+rosbuild_add_executable(FN common/src/face_normalizer.cpp)
 
 # modified openni tracker
 #rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp

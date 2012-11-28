@@ -12,7 +12,7 @@ enable_face_recognition: true
 
 # desired width and height of the Eigenfaces (=eigenvectors)
 # int
-eigenface_size: 100
+eigenface_size: 160
 
 # number of eigenvectors per person to identify -> controls the total number of eigenvectors
 # int

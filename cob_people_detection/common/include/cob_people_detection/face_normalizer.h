@@ -5,6 +5,7 @@
 
 #include <iostream>
 
+#include <boost/lexical_cast.hpp>
 #define PP_NOSE 1
 #define PP_EYE_L 2
 #define PP_EYE_R 3
@@ -29,6 +30,8 @@ class FaceNormalizer{
 
 
     bool detect_feature(cv::Mat& img,cv::Vec3f& coords,int code);
+    void dump_img(cv::Mat& data,std::string name,int& epoch);
+    void dyn_norm_face();
 //---------------------------------------------------------
     void normalizeFaces(std::vector<cv::Mat>& head_color,
                               std::vector<cv::Mat>& head_depth,
@@ -83,4 +86,6 @@ class FaceNormalizer{
 
 
 
+  int epoch_ctr;
+  std::string debug_path_;
 };
