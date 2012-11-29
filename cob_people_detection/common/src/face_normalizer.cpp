@@ -14,8 +14,9 @@ FaceNormalizer::FaceNormalizer():scale_(1.0),
               eye_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_path.c_str(),0,0,0);
               eye_storage_=cvCreateMemStorage(0);
 
-  //std::string eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+ //std::string eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
   std::string eye_l_path="/home/goa-tz/data/haarcascade_lefteye_2splits.xml";
+ //std::string eye_l_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/common/files/haarcascades/haarcascade_eye_tree_eyeglasses.xml";
               eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
               eye_l_storage_=cvCreateMemStorage(0);
 
@@ -40,11 +41,11 @@ void FaceNormalizer::set_norm_face(int& size)
   norm_size_.width=size;
 
 
-  norm_eye_l_[0]=0.3*norm_size_.width;
+  norm_eye_l_[0]=0.25*norm_size_.width;
   norm_eye_l_[1]=0.3*norm_size_.height;
   norm_eye_l_[2]=0;
 
-  norm_eye_r_[0]=0.7*norm_size_.width;
+  norm_eye_r_[0]=0.75*norm_size_.width;
   norm_eye_r_[1]=0.3*norm_size_.height;
   norm_eye_r_[2]=0;
 
@@ -87,16 +88,16 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
   if(debug_)
   {
     cv::cvtColor(img,img,CV_BGR2RGB);
-    dump_img(img,"orig",epoch_ctr);
+    //dump_img(img,"orig",epoch_ctr);
   }
 
   // radiometric normalization
   if(!normalize_radiometry(img)) return false;
-  dump_img(img,"eq",epoch_ctr);
+  //dump_img(img,"eq",epoch_ctr);
 
   //resizing
   cv::resize(img,img,norm_size_,0,0);
-  if(debug_)dump_img(img,"resized",epoch_ctr);
+  //if(debug_)dump_img(img,"resized",epoch_ctr);
 
   //geometric normalization
   if(!normalize_geometry(img)) return false;
@@ -195,8 +196,9 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Vec3f& coords,int code)
     offset[1]=0;
     cv::Mat sub_img=img.clone();
     sub_img=sub_img(cvRect(0,0,det_nose_[0],det_nose_[1]));
+    //showImg(sub_img,"eye_l");
     IplImage ipl_img=(IplImage)sub_img;
-     seq=cvHaarDetectObjects(&ipl_img,eye_l_cascade_,eye_l_storage_,1.15,3,CV_HAAR_DO_CANNY_PRUNING,cvSize(25,15));
+     seq=cvHaarDetectObjects(&ipl_img,eye_l_cascade_,eye_l_storage_,1.1,1,0,cvSize(5,5));
 
   }
 
@@ -207,7 +209,7 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Vec3f& coords,int code)
     cv::Mat sub_img=img.clone();
     sub_img=sub_img(cvRect(det_nose_[0],0,img.cols-det_nose_[0]-1,det_nose_[1]));
     IplImage ipl_img=(IplImage)sub_img;
-     seq=cvHaarDetectObjects(&ipl_img,eye_r_cascade_,eye_r_storage_,1.25,3,CV_HAAR_DO_CANNY_PRUNING,cvSize(25,15));
+     seq=cvHaarDetectObjects(&ipl_img,eye_r_cascade_,eye_r_storage_,1.1,1,0,cvSize(5,5));
 
   }
 
