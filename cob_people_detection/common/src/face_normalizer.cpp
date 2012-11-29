@@ -42,30 +42,39 @@ void FaceNormalizer::set_norm_face(int& size)
 
   norm_eye_l_[0]=0.3*norm_size_.width;
   norm_eye_l_[1]=0.3*norm_size_.height;
+  norm_eye_l_[2]=0;
 
   norm_eye_r_[0]=0.7*norm_size_.width;
   norm_eye_r_[1]=0.3*norm_size_.height;
+  norm_eye_r_[2]=0;
 
   norm_mouth_[0]=0.5*norm_size_.width;
   norm_mouth_[1]=0.85*norm_size_.height;
+  norm_mouth_[2]=0;
 
   norm_nose_[0]=0.5*norm_size_.width;
-  norm_nose_[1]=0.6*norm_size_.height;
+  norm_nose_[1]=0.4*norm_size_.height;
+  //norm_nose_[1]=0.6*norm_size_.height;
+  norm_nose_[2]=0;
 
 
   // reset detections
   det_eye_l_[0]=-1;
   det_eye_l_[1]=-1;
+  det_eye_l_[2]=0;
 
   det_eye_r_[0]=-1;
   det_eye_r_[1]=-1;
+  det_eye_r_[1]=0;
 
   det_mouth_[0]=-1;
   det_mouth_[1]=-1;
+  det_mouth_[2]=0;
 
 
   det_nose_ [0]=-1;
   det_nose_ [1]=-1;
+  det_nose_ [2]=0;
 
 }
 
@@ -78,20 +87,20 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
   if(debug_)
   {
     cv::cvtColor(img,img,CV_BGR2RGB);
-    dump_img(img,"orig_",epoch_ctr);
+    dump_img(img,"orig",epoch_ctr);
   }
 
   // radiometric normalization
   if(!normalize_radiometry(img)) return false;
-  dump_img(img,"eq_",epoch_ctr);
+  dump_img(img,"eq",epoch_ctr);
 
   //resizing
   cv::resize(img,img,norm_size_,0,0);
-  if(debug_)dump_img(img,"resized_",epoch_ctr);
+  if(debug_)dump_img(img,"resized",epoch_ctr);
 
   //geometric normalization
   if(!normalize_geometry(img)) return false;
-  if(debug_)dump_img(img,"warped_",epoch_ctr);
+  if(debug_)dump_img(img,"warped",epoch_ctr);
 
 
   epoch_ctr++;
@@ -128,7 +137,7 @@ bool FaceNormalizer::normalize_geometry(cv::Mat& img)
   // detect features
   if(!features_from_color(img))return false;
 
-  dyn_norm_face();
+   dyn_norm_face();
   //calculate transformation
    cv::Mat trafo(2,3,CV_32FC1);
    get_transform_affine(trafo);
@@ -146,9 +155,21 @@ bool FaceNormalizer::normalize_geometry(cv::Mat& img)
 
 bool FaceNormalizer::features_from_color(cv::Mat& img_color)
 {
-  if(!detect_feature(img_color,det_nose_,PP_NOSE))    return false;
-  if(!detect_feature(img_color,det_eye_l_,PP_EYE_L)) return false;
-  if(!detect_feature(img_color,det_eye_r_,PP_EYE_R)) return false;
+  if(!detect_feature(img_color,det_nose_,PP_NOSE))
+  {
+    std::cout<<"no nose"<<std::endl;
+     return false;
+  }
+  if(!detect_feature(img_color,det_eye_l_,PP_EYE_L))
+  {
+    std::cout<<"no eye_l"<<std::endl;
+     return false;
+  }
+  if(!detect_feature(img_color,det_eye_r_,PP_EYE_R)) 
+  {
+    std::cout<<"no eye_r"<<std::endl;
+     return false;
+  }
   detect_feature(img_color,det_mouth_,PP_MOUTH) ;
 
   return true;
@@ -363,6 +384,10 @@ void FaceNormalizer::transformPerspective(cv::Mat& trafo)
 
 void FaceNormalizer::get_transform_affine(cv::Mat& trafo)
 {
+  std::cout<<"norm mouth"<<norm_mouth_[0]<<" "<<norm_mouth_[1]<<" "<<norm_mouth_[2]<<std::endl;
+  std::cout<<"norm eye_l"<<norm_eye_l_[0]<<" "<<norm_eye_l_[1]<<" "<<norm_eye_l_[2]<<std::endl;
+  std::cout<<"norm eye_r"<<norm_eye_r_[0]<<" "<<norm_eye_r_[1]<<" "<<norm_eye_r_[2]<<std::endl;
+  std::cout<<"norm nose"<<norm_nose_[0]<<" "<<norm_nose_[1]<<" "<<norm_nose_[2]<<std::endl;
   cv::Point2f src[3],dst[3];
 
   src[0]=Point2f(det_eye_l_[0],det_eye_l_[1]);
@@ -569,8 +594,9 @@ bool FaceNormalizer::rectIntersect(cv::Rect& r1,cv::Rect& r2)
 
 void FaceNormalizer::dump_img(cv::Mat& data,std::string name,int& epoch){
   std::string filename =debug_path_;
-  filename.append(name);
   filename.append(boost::lexical_cast<std::string>(epoch));
+  filename.append("_");
+  filename.append(name);
   filename.append(".jpg");
 
   cv::imwrite(filename,data);
@@ -580,31 +606,38 @@ void FaceNormalizer::dump_img(cv::Mat& data,std::string name,int& epoch){
 void FaceNormalizer::dyn_norm_face()
 {
 
-  //TODO: make this work
-  return;
   //measured values x
 
   //eye base
-  double a=cv::norm(det_eye_l_,det_eye_r_);
-  double b=sqrt(-(a/2)*(a/2)+cv::norm(det_eye_l_,det_nose_)*cv::norm(det_eye_l_,det_nose_));
-  double c=sqrt(-(a/2)*(a/2)+cv::norm(det_eye_l_,det_mouth_)*cv::norm(det_eye_l_,det_mouth_))-b;
+  cv::Vec3f base=det_eye_r_-det_eye_l_;
+  cv::normalize(base,base);
+  double a=cv::norm(det_eye_l_,det_eye_r_,cv::NORM_L2);
+  cv::Vec3f dummy=det_eye_l_+(a*0.5*base);
+
+  double b =cv::norm(dummy,det_nose_,cv::NORM_L2);
+  double c=cv::norm(det_nose_,det_mouth_,cv::NORM_L2);
 
   double s1=a/b;
   double s2=b/c;
 
-
-  std::cout<<"SCALE 1"<<s1<<std::endl;
-  std::cout<<"SCALE 2"<<s2<<std::endl;
   //norm values
-  norm_nose_[1]=(norm_eye_r_[0]-norm_eye_l_[0])/s1;
-  norm_mouth_[1]=(norm_nose_[1]-norm_eye_l_[1])/s2;
+  norm_nose_[1]=norm_eye_l_[1]+(norm_eye_r_[0]-norm_eye_l_[0])/s1;
+  norm_mouth_[1]=norm_nose_[1]+(norm_nose_[1]-norm_eye_l_[1])/s2;
+
+
+  return;
 }
 
 int main(int argc, const char *argv[])
 {
   FaceNormalizer fn;
   cv::Mat img;
-  img=cv::imread("/home/goa-tz/debug/test_imgs/orig0.jpg",CV_LOAD_IMAGE_COLOR);
+  std::string f_path="/home/goa-tz/debug/test_imgs/";
+  std::string temp=f_path;
+  temp.append(argv[1]);
+  std::cout<<temp<<std::endl;
+  img=cv::imread(temp,CV_LOAD_IMAGE_COLOR);
+  cv::cvtColor(img,img,CV_RGB2BGR);
   int rows=160;
   fn.normalizeFace(img,rows);
   return 0;
