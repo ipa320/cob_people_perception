@@ -179,11 +179,11 @@ void FaceNormalizer::dct(cv::Mat& img)
   img.at<float>(0,0)=C_00;
   img.at<float>(0,1)=0;
   //--------------------------------------
-  
+
   cv::idct(img,img);
   cv::exp(img,img);
   img.convertTo(img,CV_8UC1);
-  
+
 }
 
 
@@ -412,7 +412,8 @@ int main(int argc, const char *argv[])
 {
   FaceNormalizer fn;
   cv::Mat img;
-  std::string f_path="/home/goa-tz/data/CroppedYale/";
+  //std::string f_path="/home/goa-tz/data/CroppedYale/";
+  std::string f_path="/home/goa-tz/debug/test_imgs/";
   std::string temp=f_path;
   temp.append(argv[1]);
   std::cout<<"using image from: "<<temp<<std::endl;
