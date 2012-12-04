@@ -5,7 +5,7 @@
   <rosparam command="load" ns="/cob_people_detection/head_detector" file="$(find cob_people_detection)/ros/launch/head_detector_params.yaml"/>
   <node name="head_detector" pkg="cob_people_detection" ns="/cob_people_detection/head_detector" type="head_detector_node" output="screen">
     <!--remap from="pointcloud_rgb" to="/cam3d/depth/upright/points"/-->
-    <remap from="pointcloud_rgb" to="/cob_people_detection/sensor_message_gateway/pointcloud_rgb_out"/>
+    <remap from="pointcloud_rgb" to="/cob_people_detection/image_flip/pointcloud_rgb_out"/>
 	
     <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/"/>
   </node>

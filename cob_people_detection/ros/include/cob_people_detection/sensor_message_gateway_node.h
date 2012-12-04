@@ -70,11 +70,19 @@
 #include <ros/package.h>		// use as: directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
 
 // ROS message includes
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
+
+// image transport
+#include <image_transport/image_transport.h>
+#include <image_transport/subscriber_filter.h>
 
 // dynamic reconfigure
 #include <dynamic_reconfigure/server.h>
 #include <cob_people_detection/sensorMessageGatewayConfig.h>
+
+// boost
+#include <boost/thread/mutex.hpp>
 
 class SensorMessageGatewayNode
 {
@@ -91,6 +99,8 @@ protected:
 	/// Callback for incoming point clouds
 	void pointcloudCallback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
 
+	void imageCallback(const sensor_msgs::ImageConstPtr& color_image_msg);
+
 	void reconfigureCallback(cob_people_detection::sensorMessageGatewayConfig &config, uint32_t level);
 
 	dynamic_reconfigure::Server<cob_people_detection::sensorMessageGatewayConfig> reconfigure_server_;
@@ -98,8 +108,17 @@ protected:
 	ros::NodeHandle node_handle_;
 
 	ros::Subscriber pointcloud_sub_;	///< subscribes to a colored point cloud
-
 	ros::Publisher pointcloud_pub_;		///< publisher for the colored point cloud
+
+	image_transport::ImageTransport* it_;
+	image_transport::SubscriberFilter color_image_sub_;	///< Color camera image input topic
+	image_transport::Publisher color_image_pub_;		///< Color camera image output topic
+
+	// image message buffer
+	sensor_msgs::Image image_buffer_;		// stores the received color image until the corresponding pointcloud is received and published
+
+	// mutex
+	boost::mutex image_buffer_mutex_;		///< secures the access to the image buffer
 
 	// parameters
 	double target_publishing_rate_;		///< rate at which the input messages are published (in Hz)
