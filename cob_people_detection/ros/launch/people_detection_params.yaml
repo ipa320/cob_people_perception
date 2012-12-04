@@ -1,6 +1,6 @@
 # display the results if true
 # bool
-display: true
+display: false
 
 # timespan during which a face is preserved in the list of tracked faces although it is currently not visible
 # double

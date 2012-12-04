@@ -11,8 +11,8 @@
   </node>
 
   <!-- Image viewer display -->
-  <node name="people_detection_viewer" pkg="image_view" type="image_view" respawn="false" output="screen">
+  <!--node name="people_detection_viewer" pkg="image_view" type="image_view" respawn="false" output="screen">
     <remap from="image" to="/cob_people_detection/people_detection_display/face_position_image"/>
-  </node>
+  </node-->
 
 </launch>

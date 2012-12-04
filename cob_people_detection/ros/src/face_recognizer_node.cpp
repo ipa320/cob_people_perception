@@ -75,6 +75,9 @@
 // Boost
 #include <boost/shared_ptr.hpp>
 
+// timer
+#include <cob_people_detection/timer.h>
+
 
 using namespace ipa_PeopleDetector;
 
@@ -146,6 +149,9 @@ void voidDeleter(const sensor_msgs::Image* const) {}
 
 void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions)
 {
+	Timer tim;
+	tim.start();
+
 	// receive head and face positions and recognize faces in the face region, finally publish detected and recognized faces
 
 	// --- convert color image patches of head regions and contained face bounding boxes ---
@@ -286,6 +292,8 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 
 	// publish message
 	face_recognition_publisher_.publish(detection_msg);
+
+	ROS_INFO("Face recognition took %f ms", tim.getElapsedTimeInMilliSec());
 }
 
 

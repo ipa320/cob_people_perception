@@ -32,4 +32,4 @@ metric: 0
 
 # enables some debug outputs
 # bool
-debug: true
+debug: false

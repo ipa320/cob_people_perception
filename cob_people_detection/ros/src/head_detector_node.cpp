@@ -75,6 +75,9 @@
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 
+// timer
+#include <cob_people_detection/timer.h>
+
 using namespace ipa_PeopleDetector;
 
 HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
@@ -118,6 +121,9 @@ HeadDetectorNode::~HeadDetectorNode(void)
 
 void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
 {
+	Timer tim;
+	tim.start();
+
 	// convert incoming colored point cloud to cv::Mat images
 	cv::Mat depth_image;
 	cv::Mat color_image;
@@ -148,6 +154,8 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 		image_array.head_detections[i].color_image = *(cv_ptr.toImageMsg());
 	}
 	head_position_publisher_.publish(image_array);
+
+	ROS_INFO("Head Detection took %f ms.", tim.getElapsedTimeInMilliSec());
 }
 
 unsigned long HeadDetectorNode::convertPclMessageToMat(const sensor_msgs::PointCloud2::ConstPtr& pointcloud, cv::Mat& depth_image, cv::Mat& color_image)
