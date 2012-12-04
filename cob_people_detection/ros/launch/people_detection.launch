@@ -10,8 +10,6 @@
   <include file="$(find cob_people_detection)/ros/launch/sensor_message_gateway.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/coordinator.launch"/>
 
-
-
   <!-- Openni people segmentation and tracker - adapted to publish the segmented image (does not work upside down, i.e. when robot is watching backwards) (comment out if you do not use the openni-tracker) -->
   <!-- <node pkg="cob_people_detection" ns="cob_people_detection/openni_tracker" type="openni_tracker" name="openniTrackerNode" output="screen"/> -->
 

@@ -92,7 +92,7 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 
 	// subscribers
 //	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
-//	it_ = new image_transport::ImageTransport(node_handle_);
+	it_ = new image_transport::ImageTransport(node_handle_);
 //	color_image_sub_.subscribe(*it_, "color_image", 1);
 	face_recognition_subscriber_.subscribe(node_handle_, "face_position_array", 1);
 	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
@@ -144,14 +144,14 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	pcl::PointCloud<pcl::PointXYZRGB> point_cloud_src;
 	pcl::fromROSMsg(*pointcloud_msg, point_cloud_src);
 
-	cv::Mat color_image = cv::Mat::zeros(point_cloud_src.height, point_cloud_src.width, CV_8UC1);
+	cv::Mat color_image = cv::Mat::zeros(point_cloud_src.height, point_cloud_src.width, CV_8UC3);
 	for (unsigned int v=0; v<point_cloud_src.height; v++)
 	{
 		for (unsigned int u=0; u<point_cloud_src.width; u++)
 		{
-			pcl::PointXYZRGB point = point_cloud_src[v*point_cloud_src.height + u];
+			pcl::PointXYZRGB point = point_cloud_src(u,v);
 			if (isnan_(point.z) == false)
-				color_image.at<cv::Point3_<unsigned char> >(v,u) = cv::Point3_<unsigned char>(point.r, point.g, point.b);
+				color_image.at<cv::Point3_<unsigned char> >(v,u) = cv::Point3_<unsigned char>(point.b, point.g, point.r);
 		}
 	}
 
