@@ -12,6 +12,13 @@
 #define PP_MOUTH 4
 
 using namespace cv;
+
+struct FaceFeatures{
+                    cv::Vec3f lefteye;
+                    cv::Vec3f righteye;
+                    cv::Vec3f nose;
+                    cv::Vec3f mouth;
+                  };
 class FaceNormalizer{
 
   public:
@@ -29,6 +36,9 @@ class FaceNormalizer{
     void resetNormFeatures();
     void transformPerspective(cv::Mat& trafo);
 
+    bool normalizeFace( cv::Mat & img,cv::Mat& depth,int& rows);
+    bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
+    bool features_from_depth(cv::Mat& depth);
 
     // Methods for geometric normalization
     bool normalize_radiometry(cv::Mat& img);
@@ -59,14 +69,8 @@ class FaceNormalizer{
   CvHaarClassifierCascade* mouth_cascade_;
   CvMemStorage*            mouth_storage_;
 
-  cv::Vec3f det_eye_l_;
-  cv::Vec3f det_eye_r_;
-  cv::Vec3f det_mouth_;
-  cv::Vec3f det_nose_;
-  cv::Vec3f norm_eye_l_;
-  cv::Vec3f norm_eye_r_;
-  cv::Vec3f norm_mouth_;
-  cv::Vec3f norm_nose_;
+
+  FaceFeatures f_det_img_, f_norm_img_,f_det_xyz_;
   cv::Size  norm_size_;
 
 
