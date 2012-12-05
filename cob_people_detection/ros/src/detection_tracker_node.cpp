@@ -97,6 +97,8 @@
 // external includes
 #include "cob_vision_utils/GlobalDefines.h"
 
+// Timer
+#include "cob_people_detection/timer.h"
 
 #include <sstream>
 #include <string>
@@ -352,6 +354,9 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 {
 	// todo: make update rates time dependent!
 
+	Timer tim;
+	tim.start();
+
 	// convert segmentation image to cv::Mat
 	cv_bridge::CvImageConstPtr people_segmentation_image_ptr;
 	cv::Mat people_segmentation_image;
@@ -553,6 +558,8 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 //	cv_ptr.encoding = "bgr8";
 //	people_detection_image_pub_.publish(cv_ptr.toImageMsg());
 //  }
+
+	ROS_INFO("Detection Tracker took %f ms.", tim.getElapsedTimeInMilliSec());
 }
 
 

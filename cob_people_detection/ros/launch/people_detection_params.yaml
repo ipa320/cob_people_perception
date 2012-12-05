@@ -1,3 +1,9 @@
+# ATTENTION:
+# ----------
+# this file is deprecated and has no effect on the people detection software anymore!
+# -----------------------------------------------------------------------------------
+
+
 # display the results if true
 # bool
 display: false

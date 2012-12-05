@@ -10,13 +10,13 @@ faces_increase_search_scale: 1.1
 # int
 faces_drop_groups: 3
 
-# minimum search scale x
+# width of smallest search rectangle (default: 20)
 # int
-faces_min_search_scale_x: 20
+faces_min_search_scale_x: 30
 
-# minimum search scale y
+# height of smallest search rectangle (default: 20)
 # int
-faces_min_search_scale_y: 20
+faces_min_search_scale_y: 30
 
 # when this flag is activated, the 3d size of a face is determined and only reasonable sizes may continue in the processing pipeline
 # bool

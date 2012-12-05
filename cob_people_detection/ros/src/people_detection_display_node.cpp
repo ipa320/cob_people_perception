@@ -71,24 +71,8 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 
 	// parameters
 	std::cout << "\n---------------------------\nPeople Detection Display Parameters:\n---------------------------\n";
-//	node_handle_.param("display", display_, true);
-//	std::cout << "display = " << display_ << "\n";
-//	node_handle_.param("face_redetection_time", face_redetection_time_, 2.0);
-//	std::cout << "face_redetection_time = " << face_redetection_time_ << "\n";
-//	node_handle_.param("min_segmented_people_ratio_color", min_segmented_people_ratio_color_, 0.7);
-//	std::cout << "min_segmented_people_ratio_color = " << min_segmented_people_ratio_color_ << "\n";
-//	node_handle_.param("min_segmented_people_ratio_range", min_segmented_people_ratio_range_, 0.2);
-//	std::cout << "min_segmented_people_ratio_range = " << min_segmented_people_ratio_range_ << "\n";
-//	node_handle_.param("use_people_segmentation", use_people_segmentation_, true);
-//	std::cout << "use_people_segmentation = " << use_people_segmentation_ << "\n";
-//	node_handle_.param("tracking_range_m", tracking_range_m_, 0.3);
-//	std::cout << "tracking_range_m = " << tracking_range_m_ << "\n";
-//	node_handle_.param("face_identification_score_decay_rate", face_identification_score_decay_rate_, 0.9);
-//	std::cout << "face_identification_score_decay_rate = " << face_identification_score_decay_rate_ << "\n";
-//	node_handle_.param("min_face_identification_score_to_publish", min_face_identification_score_to_publish_, 0.9);
-//	std::cout << "min_face_identification_score_to_publish = " << min_face_identification_score_to_publish_ << "\n";
-//	node_handle_.param("fall_back_to_unknown_identification", fall_back_to_unknown_identification_, true);
-//	std::cout << "fall_back_to_unknown_identification = " << fall_back_to_unknown_identification_ << "\n";
+	node_handle_.param("display", display_, false);
+	std::cout << "display = " << display_ << "\n";
 
 	// subscribers
 //	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
@@ -198,8 +182,11 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	}
 
 	// display image
-	cv::imshow("Detections and Recognitions", color_image);
-	cv::waitKey(10);
+	if (display_ == true)
+	{
+		cv::imshow("Detections and Recognitions", color_image);
+		cv::waitKey(10);
+	}
 
 	// publish image
 	cv_bridge::CvImage cv_ptr;
