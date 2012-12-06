@@ -122,8 +122,6 @@ unsigned long PeopleDetectionDisplayNode::convertColorImageMessageToMat(const se
 //void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg)
 void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& colorimage_msg)
 {
-	ROS_INFO("Time stamp of image message: %f. Delay: %f.",colorimage_msg->header.stamp.toSec(), ros::Time::now().toSec()-colorimage_msg->header.stamp.toSec());
-
 	// convert color image to cv::Mat
 	cv_bridge::CvImageConstPtr color_image_ptr;
 	cv::Mat color_image;
@@ -195,6 +193,8 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	cv_ptr.image = color_image;
 	cv_ptr.encoding = "bgr8";
 	people_detection_image_pub_.publish(cv_ptr.toImageMsg());
+
+	ROS_INFO("%d Display: Time stamp of image message: %f. Delay: %f.", colorimage_msg->header.seq, colorimage_msg->header.stamp.toSec(), ros::Time::now().toSec()-colorimage_msg->header.stamp.toSec());
 }
 
 

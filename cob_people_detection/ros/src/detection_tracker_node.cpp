@@ -354,8 +354,8 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 {
 	// todo: make update rates time dependent!
 
-	Timer tim;
-	tim.start();
+//	Timer tim;
+//	tim.start();
 
 	// convert segmentation image to cv::Mat
 	cv_bridge::CvImageConstPtr people_segmentation_image_ptr;
@@ -559,7 +559,8 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 //	people_detection_image_pub_.publish(cv_ptr.toImageMsg());
 //  }
 
-	ROS_INFO("Detection Tracker took %f ms.", tim.getElapsedTimeInMilliSec());
+	ROS_INFO("%d DetectionTracker: Time stamp of pointcloud message: %f. Delay: %f.", face_position_msg_in->header.seq, face_position_msg_in->header.stamp.toSec(), ros::Time::now().toSec()-face_position_msg_in->header.stamp.toSec());
+//	ROS_INFO("Detection Tracker took %f ms.", tim.getElapsedTimeInMilliSec());
 }
 
 

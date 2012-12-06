@@ -137,8 +137,8 @@ void voidDeleter(const sensor_msgs::Image* const) {}
 
 void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions)
 {
-	Timer tim;
-	tim.start();
+//	Timer tim;
+//	tim.start();
 
 	// receive head positions and detect faces in the head region, finally publish detected faces
 
@@ -195,7 +195,9 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 
 	face_position_publisher_.publish(image_array);
 
-	ROS_INFO("Face detection took %f ms.", tim.getElapsedTimeInMilliSec());
+
+	ROS_INFO("%d FaceDetection: Time stamp of pointcloud message: %f. Delay: %f.", head_positions->header.seq, head_positions->header.stamp.toSec(), ros::Time::now().toSec()-head_positions->header.stamp.toSec());
+//	ROS_INFO("Face detection took %f ms.", tim.getElapsedTimeInMilliSec());
 }
 
 

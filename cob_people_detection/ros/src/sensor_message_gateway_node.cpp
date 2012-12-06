@@ -117,6 +117,7 @@ void SensorMessageGatewayNode::pointcloudCallback(const sensor_msgs::PointCloud2
 	{
 		pointcloud_pub_.publish(*pointcloud);
 		color_image_pub_.publish(image_buffer_);
+		ROS_INFO("%d MessageGateway: Time stamp of pointcloud message: %f. Delay: %f.", pointcloud->header.seq, pointcloud->header.stamp.toSec(), ros::Time::now().toSec()-pointcloud->header.stamp.toSec());
 		//std::cout << "published: " << (ros::Time::now()-last_publishing_time_).toSec() << std::endl;
 		last_publishing_time_ = ros::Time::now();
 	}

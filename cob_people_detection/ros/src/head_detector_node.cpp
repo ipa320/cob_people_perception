@@ -121,8 +121,8 @@ HeadDetectorNode::~HeadDetectorNode(void)
 
 void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
 {
-	Timer tim;
-	tim.start();
+//	Timer tim;
+//	tim.start();
 
 	// convert incoming colored point cloud to cv::Mat images
 	cv::Mat depth_image;
@@ -155,7 +155,8 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 	}
 	head_position_publisher_.publish(image_array);
 
-	ROS_INFO("Head Detection took %f ms.", tim.getElapsedTimeInMilliSec());
+	ROS_INFO("%d HeadDetection: Time stamp of pointcloud message: %f. Delay: %f.", pointcloud->header.seq, pointcloud->header.stamp.toSec(), ros::Time::now().toSec()-pointcloud->header.stamp.toSec());
+//	ROS_INFO("Head Detection took %f ms.", tim.getElapsedTimeInMilliSec());
 }
 
 unsigned long HeadDetectorNode::convertPclMessageToMat(const sensor_msgs::PointCloud2::ConstPtr& pointcloud, cv::Mat& depth_image, cv::Mat& color_image)

@@ -198,14 +198,17 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 	if (capture_image_ == true)
 	{
 		// check number of detected faces -> accept only exactly one
-		if (face_detection_msg->head_detections.size() != 1)
+		int numberFaces = 0;
+		int headIndex = 0;
+		for (unsigned int i=0; i<face_detection_msg->head_detections.size(); i++)
+		{
+			numberFaces += face_detection_msg->head_detections[i].face_detections.size();
+			if (face_detection_msg->head_detections[i].face_detections.size() == 1)
+				headIndex = i;
+		}
+		if (numberFaces != 1)
 		{
 			ROS_WARN("Either no head or more than one head detected. Discarding image.");
-			return;
-		}
-		if (face_detection_msg->head_detections[0].face_detections.size() != 1)
-		{
-			ROS_WARN("Either no face or more than one face detected. Discarding image.");
 			return;
 		}
 
@@ -215,8 +218,8 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
 
 		// store image and label
-		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
-		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
+		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[headIndex].face_detections[0];
+		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[headIndex].head_detection;
 		cv::Rect face_bounding_box(head_rect.x+face_rect.x, head_rect.y+face_rect.y, face_rect.width, face_rect.height);
 		cv::Mat img = color_image.clone();
 		face_recognizer_trainer_.addFace(img, face_bounding_box, current_label_, face_images_);
