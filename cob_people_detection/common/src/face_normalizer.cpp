@@ -3,9 +3,8 @@ using namespace cv;
 FaceNormalizer::FaceNormalizer():scale_(1.0),
                                 epoch_ctr(0),
                                 debug_path_("/home/goa-tz/debug/"),
-                                debug_(true)
+                                debug_(false)
 {
-
   std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
   nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
   nose_storage_=cvCreateMemStorage(0);
@@ -15,14 +14,13 @@ FaceNormalizer::FaceNormalizer():scale_(1.0),
               eye_storage_=cvCreateMemStorage(0);
 
  //std::string eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-  std::string eye_l_path="/home/goa-tz/data/haarcascade_lefteye2splits.xml";
+  std::string eye_l_path="/home/goa-tz/data/haarcascade_lefteye_2splits.xml";
  //std::string eye_l_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/common/files/haarcascades/haarcascade_eye_tree_eyeglasses.xml";
               eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
               eye_l_storage_=cvCreateMemStorage(0);
 
   //std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
-  std::string eye_r_path="/home/goa-tz/data/haarcascade_righteye2splits.xml";
-              eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
+  std::string eye_r_path="/home/goa-tz/data/haarcascade_righteye_2splits.xml";
               eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
               eye_r_storage_=cvCreateMemStorage(0);
 
