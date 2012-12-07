@@ -2,9 +2,9 @@
 # string
 # data_directory: path_to_data -> please change this parameter in the launch file
 
-# the factor by which the search window is scaled between the subsequent scans
+# the factor by which the search window is scaled between the subsequent scans (default: 1.1)
 # double
-faces_increase_search_scale: 1.1
+faces_increase_search_scale: 1.2
 
 # minimum number (minus 1) of neighbor rectangles that makes up an object.
 # int
