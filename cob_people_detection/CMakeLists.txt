@@ -97,7 +97,11 @@ rosbuild_add_executable(face_capture_node
 rosbuild_link_boost(face_capture_node filesystem system)
 
 rosbuild_add_executable(sensor_message_gateway_node
-			ros/src/sensor_message_gateway_node.cpp)
+			ros/src/sensor_message_gateway_node.cpp
+			ros/src/sensor_message_gateway_main.cpp)
+rosbuild_add_library(sensor_message_gateway_nodelet
+			ros/src/sensor_message_gateway_node.cpp
+			ros/src/sensor_message_gateway_nodelet.cpp)
 
 rosbuild_add_executable(coordinator_node
 			ros/src/coordinator_node.cpp)
@@ -126,6 +130,7 @@ rosbuild_add_compile_flags(detection_tracker_node -D__LINUX__)
 rosbuild_add_compile_flags(people_detection_display_node -D__LINUX__)
 rosbuild_add_compile_flags(face_capture_node -D__LINUX__)
 rosbuild_add_compile_flags(sensor_message_gateway_node -D__LINUX__)
+rosbuild_add_compile_flags(sensor_message_gateway_nodelet -D__LINUX__)
 rosbuild_add_compile_flags(coordinator_node -D__LINUX__)
 
 # rostest

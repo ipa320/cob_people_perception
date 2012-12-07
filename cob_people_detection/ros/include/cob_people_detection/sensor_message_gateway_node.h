@@ -84,6 +84,8 @@
 // boost
 #include <boost/thread/mutex.hpp>
 
+namespace cob_people_detection
+{
 class SensorMessageGatewayNode
 {
 public:
@@ -92,7 +94,6 @@ public:
 	/// @param nh ROS node handle
 	SensorMessageGatewayNode(ros::NodeHandle nh);
 	~SensorMessageGatewayNode(void); ///< Destructor
-
 
 protected:
 
@@ -114,6 +115,8 @@ protected:
 	image_transport::SubscriberFilter color_image_sub_;	///< Color camera image input topic
 	image_transport::Publisher color_image_pub_;		///< Color camera image output topic
 
+	ros::Duration target_publishing_delay_;		///< computed from target_publishing_rate_
+
 	// image message buffer
 	sensor_msgs::Image image_buffer_;		// stores the received color image until the corresponding pointcloud is received and published
 
@@ -122,8 +125,10 @@ protected:
 
 	// parameters
 	double target_publishing_rate_;		///< rate at which the input messages are published (in Hz)
-	ros::Time last_publishing_time_;	///< time of the last publishing activity
+	ros::Time last_publishing_time_pcl_;	///< time of the last publishing activity
+	ros::Time last_publishing_time_image_;	///< time of the last publishing activity
 };
 
+}
 
 #endif // __SENSOR_MESSAGE_GATEWAY_NODE_H__
