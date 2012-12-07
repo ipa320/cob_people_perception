@@ -63,8 +63,8 @@ rosbuild_check_for_sse()
 
 
 rosbuild_add_executable(face_normalizer_node
+      common/src/face_normalizer.cpp
       ros/src/face_normalizer_node.cpp)
-target_link_libraries(face_normalizer_node face_normalizer)    
 
 
 rosbuild_add_executable(people_detection_client
@@ -111,8 +111,8 @@ rosbuild_add_library(face_normalizer
 
 
     # SANDBOX EXE
-rosbuild_add_executable(impre common/src/sandbox.cpp)    
-rosbuild_add_executable(FN common/src/face_normalizer.cpp)
+    #rosbuild_add_executable(impre common/src/sandbox.cpp)    
+    #rosbuild_add_executable(FN common/src/face_normalizer.cpp)
 
 # modified openni tracker
 #rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp

@@ -160,12 +160,16 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	}
 
   for (int i = 0; i <heads_depth_images.size(); i++) {
-    cv::namedWindow("win",CV_WINDOW_AUTOSIZE);
-  std::cout<<" # faces = "<<face_bounding_boxes[i].size()<<std::endl;
+  //cv::namedWindow("win",CV_WINDOW_AUTOSIZE);
+  //std::cout<<" # faces = "<<face_bounding_boxes[i].size()<<std::endl;
   for(int j=0;j<face_bounding_boxes[i].size();j++)
   {
-    cv::imshow("win",heads_color_images[i](face_bounding_boxes[i][j]));
-    cv::waitKey(100);
+    //cv::imshow("win",heads_color_images[i](face_bounding_boxes[i][j]));
+    //cv::waitKey(100);
+    int dim=160;
+    cv::Mat bgr_crop=heads_color_images[i](face_bounding_boxes[i][j]);
+    cv::Mat xyz_crop=heads_depth_images[i](face_bounding_boxes[i][j]);
+    bool is_norm=face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim);
   }
  }
 //

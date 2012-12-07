@@ -13,12 +13,34 @@
 
 using namespace cv;
 
-struct FaceFeatures{
-                    cv::Vec3f lefteye;
-                    cv::Vec3f righteye;
-                    cv::Vec3f nose;
-                    cv::Vec3f mouth;
-                  };
+template <class T>
+class FaceFeatures{
+                    public:
+                    T lefteye;
+                    T righteye;
+                    T nose;
+                    T mouth;
+                    FaceFeatures<T>(){};
+                    ~FaceFeatures<T>(){};
+                    void as_vector(std::vector<T>& vec)
+                    {
+                     vec.push_back(lefteye);
+                     vec.push_back(righteye);
+                     vec.push_back(nose);
+                     vec.push_back(mouth);
+                    };
+                    bool valid()
+                    {
+                      if(std::isnan(lefteye.x)|| std::isnan(lefteye.y)) return false;
+                      if(std::isnan(righteye.x)|| std::isnan(righteye.y)) return false;
+                      if(std::isnan(nose.x)|| std::isnan(nose.y)) return false;
+                      if(std::isnan(mouth.x)|| std::isnan(mouth.y)) return false;
+                      else return true;
+                    }
+};
+
+
+
 class FaceNormalizer{
 
   public:
@@ -31,7 +53,7 @@ class FaceNormalizer{
     bool normalize_geometry(cv::Mat& img);
     void get_transform_affine(cv::Mat& trafo);
     bool features_from_color(cv::Mat& img);
-    bool detect_feature(cv::Mat& img,cv::Vec3f& coords,int code);
+    bool detect_feature(cv::Mat& img,cv::Point2f& coords,int code);
     void dyn_norm_face();
     void resetNormFeatures();
     void transformPerspective(cv::Mat& trafo);
@@ -70,7 +92,8 @@ class FaceNormalizer{
   CvMemStorage*            mouth_storage_;
 
 
-  FaceFeatures f_det_img_, f_norm_img_,f_det_xyz_;
+  FaceFeatures<cv::Point2f> f_det_img_, f_norm_img_;
+  FaceFeatures<cv::Point3f> f_det_xyz_;
   cv::Size  norm_size_;
 
 

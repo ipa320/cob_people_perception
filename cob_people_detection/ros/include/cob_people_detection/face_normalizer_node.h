@@ -81,6 +81,7 @@
 #include <actionlib/server/simple_action_server.h>
 #include <cob_people_detection/loadModelAction.h>
 
+#include "cob_people_detection/face_normalizer.h"
 
 namespace ipa_PeopleDetector{
 
@@ -106,7 +107,7 @@ protected:
 
 	ros::Publisher norm_face_publisher_;		///< publisher for normalized faces
 
-//	FaceNormalizer face_normalizer_;		///< implementation of the face recognizer
+	FaceNormalizer face_normalizer_;		///< implementation of the face recognizer
 
 
 	// parameters

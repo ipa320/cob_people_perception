@@ -2,7 +2,7 @@
 
 <launch>
   <!-- face detection node (detects faces in color image and publishes their positions) -->
-  <node name="face_normalizer" pkg="cob_people_detection" ns="/cob_people_detection/face_normalizer" type="face_normalizer_node" output="screen">
+  <node name="face_normalizer" pkg="cob_people_detection" ns="/cob_people_detection/face_normalizer" type="face_normalizer_node" output="screen" launch-prefix="gdb -ex run --args">
     <remap from="face_positions" to="/cob_people_detection/face_detector/face_positions"/>
 	
     <param name="debug_directory" type="string" value="~/debug/fn_node/"/>
