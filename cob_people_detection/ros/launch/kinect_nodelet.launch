@@ -42,7 +42,9 @@
   <!-- Nodelet manager, lives in top-level namespace -->
   <arg name="manager" value="$(arg camera)_nodelet_manager" />
   <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager"
-        output="screen" launch-prefix="$(arg launch_prefix)" />
+        output="screen" launch-prefix="$(arg launch_prefix)" >
+    <remap from="cam3d/depth_registered/points" to="cam3d/rgb/points" />
+  </node>
 
   <!-- Push down all topics/nodelets into "camera" namespace -->
   <group ns="$(arg camera)">
