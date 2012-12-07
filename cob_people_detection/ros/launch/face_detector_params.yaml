@@ -37,3 +37,7 @@ max_face_z_m: 8.0
 # enables some debug outputs
 # bool
 debug: false
+
+# display timing information
+# bool
+display_timing: false

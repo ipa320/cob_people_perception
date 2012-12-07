@@ -103,6 +103,7 @@ protected:
 
 	// parameters
 	std::string data_directory_;	///< path to the classifier model
+	bool display_timing_;
 };
 
 } // end namespace

@@ -116,6 +116,8 @@ FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh)
 	std::cout << "max_face_z_m = " << max_face_z_m << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
+	node_handle_.param("display_timing", display_timing_, false);
+	std::cout << "display_timing = " << display_timing_ << "\n";
 
 	// initialize face detector
 	face_detector_.init(data_directory_, faces_increase_search_scale, faces_drop_groups, faces_min_search_scale_x, faces_min_search_scale_y,
@@ -195,8 +197,8 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 
 	face_position_publisher_.publish(image_array);
 
-
-	ROS_INFO("%d FaceDetection: Time stamp of pointcloud message: %f. Delay: %f.", head_positions->header.seq, head_positions->header.stamp.toSec(), ros::Time::now().toSec()-head_positions->header.stamp.toSec());
+	if (display_timing_ == true)
+		ROS_INFO("%d FaceDetection: Time stamp of pointcloud message: %f. Delay: %f.", head_positions->header.seq, head_positions->header.stamp.toSec(), ros::Time::now().toSec()-head_positions->header.stamp.toSec());
 //	ROS_INFO("Face detection took %f ms.", tim.getElapsedTimeInMilliSec());
 }
 

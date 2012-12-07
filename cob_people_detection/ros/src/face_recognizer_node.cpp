@@ -111,6 +111,8 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	std::cout << "metric = " << metric << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
+	node_handle_.param("display_timing", display_timing_, false);
+	std::cout << "display_timing = " << display_timing_ << "\n";
 	std::cout << "identification_labels_to_recognize: \n";
 	XmlRpc::XmlRpcValue identification_labels_to_recognize_list;
 	node_handle_.getParam("identification_labels_to_recognize", identification_labels_to_recognize_list);
@@ -293,7 +295,8 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	// publish message
 	face_recognition_publisher_.publish(detection_msg);
 
-	ROS_INFO("%d FaceRecognition: Time stamp of pointcloud message: %f. Delay: %f.", face_positions->header.seq, face_positions->header.stamp.toSec(), ros::Time::now().toSec()-face_positions->header.stamp.toSec());
+	if (display_timing_ == true)
+		ROS_INFO("%d FaceRecognition: Time stamp of pointcloud message: %f. Delay: %f.", face_positions->header.seq, face_positions->header.stamp.toSec(), ros::Time::now().toSec()-face_positions->header.stamp.toSec());
 //	ROS_INFO("Face recognition took %f ms", tim.getElapsedTimeInMilliSec());
 }
 

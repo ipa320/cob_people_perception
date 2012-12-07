@@ -115,7 +115,7 @@ DetectionTrackerNode::DetectionTrackerNode(ros::NodeHandle nh)
 
 	// parameters
 	std::cout << "\n---------------------------\nPeople Detection Parameters:\n---------------------------\n";
-	node_handle_.param("debug", debug_, true);
+	node_handle_.param("debug", debug_, false);
 	std::cout << "debug = " << debug_ << "\n";
 	node_handle_.param("use_people_segmentation", use_people_segmentation_, true);
 	std::cout << "use_people_segmentation = " << use_people_segmentation_ << "\n";
@@ -133,6 +133,9 @@ DetectionTrackerNode::DetectionTrackerNode(ros::NodeHandle nh)
 	std::cout << "min_face_identification_score_to_publish = " << min_face_identification_score_to_publish_ << "\n";
 	node_handle_.param("fall_back_to_unknown_identification", fall_back_to_unknown_identification_, true);
 	std::cout << "fall_back_to_unknown_identification = " << fall_back_to_unknown_identification_ << "\n";
+	node_handle_.param("display_timing", display_timing_, false);
+	std::cout << "display_timing = " << display_timing_ << "\n";
+
 
 	// subscribers
 	it_ = new image_transport::ImageTransport(node_handle_);
@@ -559,7 +562,8 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 //	people_detection_image_pub_.publish(cv_ptr.toImageMsg());
 //  }
 
-	ROS_INFO("%d DetectionTracker: Time stamp of pointcloud message: %f. Delay: %f.", face_position_msg_in->header.seq, face_position_msg_in->header.stamp.toSec(), ros::Time::now().toSec()-face_position_msg_in->header.stamp.toSec());
+	if (display_timing_ == true)
+		ROS_INFO("%d DetectionTracker: Time stamp of pointcloud message: %f. Delay: %f.", face_position_msg_in->header.seq, face_position_msg_in->header.stamp.toSec(), ros::Time::now().toSec()-face_position_msg_in->header.stamp.toSec());
 //	ROS_INFO("Detection Tracker took %f ms.", tim.getElapsedTimeInMilliSec());
 }
 

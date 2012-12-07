@@ -122,6 +122,7 @@ protected:
 
 	// parameters
 	bool display_; ///< if on, several debug outputs are activated
+	bool display_timing_;
 
 public:
 

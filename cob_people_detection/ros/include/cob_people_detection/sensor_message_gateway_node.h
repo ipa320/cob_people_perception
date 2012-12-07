@@ -127,6 +127,7 @@ protected:
 	double target_publishing_rate_;		///< rate at which the input messages are published (in Hz)
 	ros::Time last_publishing_time_pcl_;	///< time of the last publishing activity
 	ros::Time last_publishing_time_image_;	///< time of the last publishing activity
+	bool display_timing_;	///< displays runtimes
 };
 
 }

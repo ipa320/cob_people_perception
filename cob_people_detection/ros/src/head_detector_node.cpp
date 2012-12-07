@@ -103,6 +103,8 @@ HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
 	std::cout << "depth_min_search_scale_x = " << depth_min_search_scale_x << "\n";
 	node_handle_.param("depth_min_search_scale_y", depth_min_search_scale_y, 20);
 	std::cout << "depth_min_search_scale_y = " << depth_min_search_scale_y << "\n";
+	node_handle_.param("display_timing", display_timing_, false);
+	std::cout << "display_timing = " << display_timing_ << "\n";
 
 	// initialize head detector
 	head_detector_.init(data_directory_, depth_increase_search_scale, depth_drop_groups, depth_min_search_scale_x, depth_min_search_scale_y);
@@ -155,7 +157,8 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 	}
 	head_position_publisher_.publish(image_array);
 
-	ROS_INFO("%d HeadDetection: Time stamp of pointcloud message: %f. Delay: %f.", pointcloud->header.seq, pointcloud->header.stamp.toSec(), ros::Time::now().toSec()-pointcloud->header.stamp.toSec());
+	if (display_timing_ == true)
+		ROS_INFO("%d HeadDetection: Time stamp of pointcloud message: %f. Delay: %f.", pointcloud->header.seq, pointcloud->header.stamp.toSec(), ros::Time::now().toSec()-pointcloud->header.stamp.toSec());
 //	ROS_INFO("Head Detection took %f ms.", tim.getElapsedTimeInMilliSec());
 }
 

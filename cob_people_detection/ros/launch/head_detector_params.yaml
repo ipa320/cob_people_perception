@@ -23,3 +23,6 @@ depth_min_search_scale_x: 30
 # int
 depth_min_search_scale_y: 30
 
+# display timing information
+# bool
+display_timing: false

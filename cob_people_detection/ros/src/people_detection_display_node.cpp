@@ -73,6 +73,8 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 	std::cout << "\n---------------------------\nPeople Detection Display Parameters:\n---------------------------\n";
 	node_handle_.param("display", display_, false);
 	std::cout << "display = " << display_ << "\n";
+	node_handle_.param("display_timing", display_timing_, false);
+	std::cout << "display_timing = " << display_timing_ << "\n";
 
 	// subscribers
 //	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
@@ -194,7 +196,8 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	cv_ptr.encoding = "bgr8";
 	people_detection_image_pub_.publish(cv_ptr.toImageMsg());
 
-	ROS_INFO("%d Display: Time stamp of image message: %f. Delay: %f.", colorimage_msg->header.seq, colorimage_msg->header.stamp.toSec(), ros::Time::now().toSec()-colorimage_msg->header.stamp.toSec());
+	if (display_timing_ == true)
+		ROS_INFO("%d Display: Time stamp of image message: %f. Delay: %f.", colorimage_msg->header.seq, colorimage_msg->header.stamp.toSec(), ros::Time::now().toSec()-colorimage_msg->header.stamp.toSec());
 }
 
 

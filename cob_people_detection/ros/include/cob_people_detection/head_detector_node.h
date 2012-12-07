@@ -106,6 +106,7 @@ protected:
 	// parameters
 	std::string data_directory_;	///< path to the classifier model
 	bool fill_unassigned_depth_values_;	///< fills the unassigned depth values in the depth image, must be true for a kinect sensor
+	bool display_timing_;
 };
 
 } // end namespace

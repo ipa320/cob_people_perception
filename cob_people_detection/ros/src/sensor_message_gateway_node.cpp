@@ -84,6 +84,8 @@ SensorMessageGatewayNode::SensorMessageGatewayNode(ros::NodeHandle nh)
 	node_handle_.param("target_publishing_rate", target_publishing_rate_, 100.0);
 	std::cout << "target_publishing_rate = " << target_publishing_rate_ << std::endl;
 	target_publishing_delay_ = ros::Duration(1.0/target_publishing_rate_);
+	node_handle_.param("display_timing", display_timing_, false);
+	std::cout << "display_timing = " << display_timing_ << std::endl;
 
 	// reconfigure server
 //	dynamic_reconfigure::Server<cob_people_detection::sensorMessageGatewayConfig>::CallbackType f;
@@ -121,7 +123,8 @@ void SensorMessageGatewayNode::pointcloudCallback(const sensor_msgs::PointCloud2
 	{
 		pointcloud_pub_.publish(*pointcloud);
 		//color_image_pub_.publish(image_buffer_);
-		ROS_INFO("%d MessageGateway: Time stamp of pointcloud message: %f. Delay: %f.", pointcloud->header.seq, pointcloud->header.stamp.toSec(), ros::Time::now().toSec()-pointcloud->header.stamp.toSec());
+		if (display_timing_ == true)
+			ROS_INFO("%d MessageGateway: Time stamp of pointcloud message: %f. Delay: %f.", pointcloud->header.seq, pointcloud->header.stamp.toSec(), ros::Time::now().toSec()-pointcloud->header.stamp.toSec());
 		//std::cout << "published: " << (ros::Time::now()-last_publishing_time_).toSec() << std::endl;
 		last_publishing_time_pcl_ = ros::Time::now();
 	}
