@@ -3,7 +3,7 @@ using namespace cv;
 FaceNormalizer::FaceNormalizer():scale_(1.0),
                                 epoch_ctr(0),
                                 debug_path_("/home/goa-tz/debug/"),
-                                debug_(false)
+                                debug_(true)
 {
   std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
   nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
@@ -278,6 +278,19 @@ bool FaceNormalizer::features_from_color(cv::Mat& img_color)
 
 bool FaceNormalizer::features_from_depth(cv::Mat& depth)
 {
+
+  //pick 3D points from pointcloud
+  f_det_xyz_.nose=depth.at<cv::Vec3f>(f_det_img_.nose[0],f_det_img_.nose[1]);
+  f_det_xyz_.mouth=depth.at<cv::Vec3f>(f_det_img_.mouth[0],f_det_img_.mouth[1]);
+  f_det_xyz_.lefteye=depth.at<cv::Vec3f>(f_det_img_.lefteye[0],f_det_img_.lefteye[1]);
+  f_det_xyz_.righteye=depth.at<cv::Vec3f>(f_det_img_.righteye[0],f_det_img_.righteye[1]);
+  if(debug_)
+  {
+    std::cout<<"Nose: "<<f_det_xyz_.nose[0]<<" "<<f_det_xyz_.nose[1]<<" "<<f_det_xyz_.nose[2]<<std::endl;
+    std::cout<<"Mouth: "<<f_det_xyz_.mouth[0]<<" "<<f_det_xyz_.mouth[1]<<" "<<f_det_xyz_.mouth[2]<<std::endl;
+    std::cout<<"LEFTEYE: "<<f_det_xyz_.lefteye[0]<<" "<<f_det_xyz_.lefteye[1]<<" "<<f_det_xyz_.lefteye[2]<<std::endl;
+    std::cout<<"RIGTHEYE: "<<f_det_xyz_.righteye[0]<<" "<<f_det_xyz_.righteye[1]<<" "<<f_det_xyz_.righteye[2]<<std::endl;
+  }
 
 
   return true;

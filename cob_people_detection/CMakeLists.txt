@@ -62,6 +62,11 @@ rosbuild_check_for_sse()
 #add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 
+rosbuild_add_executable(face_normalizer_node
+      ros/src/face_normalizer_node.cpp)
+target_link_libraries(face_normalizer_node face_normalizer)    
+
+
 rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)
 
@@ -93,6 +98,7 @@ rosbuild_add_executable(face_capture_node
 			common/src/face_recognizer.cpp
 			ros/src/face_capture_node.cpp)
 target_link_libraries(face_capture_node face_normalizer)    
+
 
 rosbuild_add_executable(sensor_message_gateway_node
 			ros/src/sensor_message_gateway_node.cpp)
