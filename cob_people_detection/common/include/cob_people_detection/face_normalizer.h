@@ -55,6 +55,7 @@ class FaceNormalizer{
     bool features_from_color(cv::Mat& img);
     bool detect_feature(cv::Mat& img,cv::Point2f& coords,int code);
     void dyn_norm_face();
+    void ident_face();
     void resetNormFeatures();
     void transformPerspective(cv::Mat& trafo);
 
@@ -69,13 +70,19 @@ class FaceNormalizer{
     void eqHist(cv::Mat& img);
     void dct(cv::Mat& img);
 
+    void calcPnP(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& trans);
+    void resample_direct(cv::Mat& cam_mat,cv::Mat& depth,cv::Mat& img,cv::Mat& res);
     // Debug/Output methods
     void dump_features(cv::Mat& img);
     void dump_img(cv::Mat& data,std::string name);
     void showImg(cv::Mat& img,std::string window_name);
+    bool save_scene(cv::Mat& depth,cv::Mat& color,std::string path);
+    bool read_scene(cv::Mat& depth,cv::Mat& color,std::string path);
 //---------------------------------------------------------
 
   protected:
+
+    cv::Mat img_,depth_;
   CvHaarClassifierCascade* nose_cascade_;
   CvMemStorage* nose_storage_;
 

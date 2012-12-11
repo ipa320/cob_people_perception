@@ -39,10 +39,10 @@ void FaceNormalizer::set_norm_face(int& size)
   norm_size_.width=size;
 
 
-  f_norm_img_.lefteye.x=0.25*norm_size_.width;
+  f_norm_img_.lefteye.x=0.4*norm_size_.width;
   f_norm_img_.lefteye.y=0.3*norm_size_.height;
 
-  f_norm_img_.righteye.x=0.75*norm_size_.width;
+  f_norm_img_.righteye.x=0.6*norm_size_.width;
   f_norm_img_.righteye.y=0.3*norm_size_.height;
 
   f_norm_img_.mouth.x=0.5*norm_size_.width;
@@ -71,6 +71,8 @@ void FaceNormalizer::set_norm_face(int& size)
 
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows)
 {
+  img.copyTo(img_);
+  depth.copyTo(depth_);
   epoch_ctr++;
   //norm size ffrom input image
   set_norm_face(rows);
@@ -209,8 +211,16 @@ void FaceNormalizer::dct(cv::Mat& img)
 bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 {
 
+
+
   // detect features
-  if(!features_from_color(img))return false;
+  if(!features_from_color(img))
+  {
+    std::cout<<" NO COLOR FEATS"<<std::endl;
+    return false;
+  }
+
+   //ident_face();
 
    dyn_norm_face();
 
@@ -220,80 +230,168 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
   //calculate transformation
 
+
+   cv::Mat trans,rot;
+
+
+   //camera matrix
+   double fx=255;
+   double fy=255;
+   double cy=img_.rows/2;
+   double cx=img_.cols/2;
+   cv::Mat cam_mat=(cv::Mat_<double>(3,3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
+
+   calcPnP(cam_mat,rot,trans);
+
+   cv::Mat img_res;
+   cv::Mat rot_dummy=(cv::Mat_<double>(3,1)<<0,0,0);
+   cv::Mat trans_dummy=(cv::Mat_<double>(3,1)<<0,0,0);
+   //resample_direct(cam_mat,rot_dummy,trans_dummy,img_res);
+   resample_direct(cam_mat,rot,trans,img_res);
+
+   return false;
+}
+void FaceNormalizer::calcPnP(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& trans)
+{
    std::vector<cv::Point3f> object_points;
    std::vector<cv::Point2f> img_points;
    f_norm_img_.as_vector(img_points);
    f_det_xyz_.as_vector(object_points);
 
-   cv::Mat trans,rot;
-
-
-   std::cout<<"size o-points="<<object_points.size();
-   std::cout<<"size img-points="<<img_points.size();
-    // pass camera model through launch file
-
-   double fx=255;
-   double fy=255;
-   double cy=img.rows/2;
-   double cx=img.cols/2;
-   cv::Mat cam_mat=(cv::Mat_<double>(3,3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
-
    std::vector<double> dist_coeffs;
+   // calculate object pose
    cv::solvePnP(object_points,img_points,cam_mat,dist_coeffs,rot,trans);
+}
 
-   std::vector<cv::Point3f> depth_vec;
-   //std::vector<cv::Point2f> img_proj;
-   cv::Mat img_proj;
-   for(int i=0;i<depth.rows;++i)
+void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& trans,cv::Mat& res)
+{
+   std::vector<cv::Point3f> object_vec;
+   int nan_ctr=0;
+   for(int i=0;i<depth_.rows;++i)
    {
-     for(int j=0;j<depth.cols;++j)
+     for(int j=0;j<depth_.cols;++j)
      {
-       depth_vec.push_back((cv::Point3f)depth.at<cv::Vec3f>(i,j));
+       object_vec.push_back((cv::Point3f)depth_.at<cv::Vec3f>(i,j));
+      if(isnan(depth_.at<cv::Vec3f>(i,j)[0])) nan_ctr++;
      }
    }
+   std::cout<<"[FaceNormalizer] # nan before"<<nan_ctr<<std::endl;
 
+
+
+   //project 3d points to virtual camera
    cv::Mat coeff2;
    coeff2=cv::Mat::zeros(1,8,CV_32F);
-   //cv::projectPoints(object_points,rot,trans,cam_mat,coeff2,img_proj);
-   cv::projectPoints(depth_vec,rot,trans,cam_mat,coeff2,img_proj);
+   cv::Mat object_proj;
+   //std::vector<cv::Vec2f> reproj_feat;
+   // calc reprojection diffs
+   //cv::projectPoints(object_points,rot,trans,cam_mat,coeff2,reproj_feat);
+   cv::projectPoints(object_vec,rot,trans,cam_mat,coeff2,object_proj);
 
-  //for(int k=0;k<img_proj.size();++k)
-  //{
-  //cv::Point2f res=img_proj[k]-img_points[k];
-  //std::cout<<"res pt="<<res.x<<" "<<res.y<<std::endl;
-  //}
-   cv::Mat img_proj_rgb;
+   bool i_debug = true;
+   if(i_debug){
+
+   std::vector<cv::Point2f> img_points;
+   std::vector<cv::Point3f> object_points;
+   f_norm_img_.as_vector(img_points);
+   f_det_xyz_.as_vector(object_points);
+   std::vector<cv::Vec2f> reproj_feat;
+   cv::projectPoints(object_points,rot,trans,cam_mat,coeff2,reproj_feat);
+    std::cout<<"reprojection results"<<std::endl;
+    std::cout<< "c: "<<img_points[0].x<<" - "<<reproj_feat[0][0]<<std::endl;
+    std::cout<< "r: "<<img_points[0].y<<" - "<<reproj_feat[0][1]<<std::endl;
+    std::cout<<"-----------------------------------------------------"<<std::endl;
+    std::cout<<"reprojection results"<<std::endl;
+    std::cout<< "c: "<<img_points[1].x<<" - "<<reproj_feat[1][0]<<std::endl;
+    std::cout<< "r: "<<img_points[1].y<<" - "<<reproj_feat[1][1]<<std::endl;
+    std::cout<<"-----------------------------------------------------"<<std::endl;
+    std::cout<<"reprojection results"<<std::endl;
+    std::cout<< "c: "<<img_points[2].x<<" - "<<reproj_feat[2][0]<<std::endl;
+    std::cout<< "r: "<<img_points[2].y<<" - "<<reproj_feat[2][1]<<std::endl;
+    std::cout<<"-----------------------------------------------------"<<std::endl;
+    std::cout<<"reprojection results"<<std::endl;
+    std::cout<< "c: "<<img_points[3].x<<" - "<<reproj_feat[3][0]<<std::endl;
+    std::cout<< "r: "<<img_points[3].y<<" - "<<reproj_feat[3][1]<<std::endl;
+    std::cout<<"-----------------------------------------------------"<<std::endl;
 
 
-   cv::Vec3f dummy;
-   cv::Vec3f* img_ptr=img.ptr<cv::Vec3f>(0,0);
-   int tr,tc;
-   for(int r=0;r<img_proj.rows;++r)
-      for(int c=0;c<img_proj.cols;++c)
-     {
-       tr=(int)ceil(img_proj.at<cv::Vec2f>(r,c)[0]);
-       tc=(int)ceil(img_proj.at<cv::Vec2f>(r,c)[1]);
-       //std::cout<<" tr="<<tr<<std::endl;
-       //std::cout<<" tc="<<tc<<std::endl;
-       std::cout<<" error at" <<r<<" "<<c<<std::endl;
-       if(tr>0 && tc>0)
-       {
-       img_proj_rgb.at<cv::Vec3i>(tr,tc)=img.at<cv::Vec3i>(r,c);
-       }
-       //img_proj_rgb.at<cv::Vec3f>(tr,tc)[0]=dummy[0];
-       //img_proj_rgb.at<cv::Vec3f>(tr,tc)[1]=dummy[1];
-       //img_proj_rgb.at<cv::Vec3f>(tr,tc)[2]=dummy[2];
+   //cv::namedWindow("orig",CV_WINDOW_AUTOSIZE);
+   //cv::imshow("orig",img_);
 
-       //img_proj_rgb.at<cv::Vec3f>(tr,tc)=img.at<cv::Vec3f>(i,j);
+
+   //std::vector<cv::Mat> channels;
+   //cv::split(depth_,channels);
+   //cv::namedWindow("depth",CV_WINDOW_AUTOSIZE);
+   //cv::Mat depth_output;
+   //cv::imshow("depth",channels[2]);
    }
 
-   cv::namedWindow("reproj",CV_WINDOW_AUTOSIZE);
-   cv::imshow("reproj",img_proj_rgb);
-   cv::waitKey(0);
 
-  return true;
+
+   // assign color values to calculated image coordinates
+   cv::Vec2f* img_ptr=object_proj.ptr<cv::Vec2f>(0,0);
+   int r,c,tr,tc;
+
+   cv::Mat img_proj=cv::Mat::ones(img_.rows,img_.cols,CV_8UC1)*255;
+   cv::Mat depth_proj=cv::Mat::ones(img_.rows,img_.cols,CV_32FC1)*1000;
+   cv::Mat occ_grid=cv::Mat::zeros(img_.rows,img_.cols,CV_8UC1);
+
+   cv::Mat img_gray;
+   cv::cvtColor(img_,img_gray,CV_BGR2GRAY);
+
+  nan_ctr=0;
+   for(int i=0;i<object_proj.rows;++i)
+     {
+       cv::Vec2f trtc=*img_ptr;
+       tr=(int)round(trtc[0]);
+       tc=(int)round(trtc[1]);
+
+        //calculate row and column
+        r=floor(i/img_.cols);
+        c=i % img_.cols;
+
+       if (tr>0 && tc>0 && tr<img_.rows && tc<img_.cols)
+       {
+         //img_proj.at<cv::Vec3f>(tr,tc)=img.at<cv::Vec3f>(r,c);
+         //std::cout<<"tr="<<tr<<" tc="<<tc<<" - "<<"r="<<r<<" c="<<c<<std::endl;
+        //if(occ_grid.at<int>(tr,tc)<1 )
+        if(occ_grid.at<int>(tr,tc)<1 && depth_proj.at<float>(tr,tc)> depth_.at<cv::Vec3f>(r,c)[2])
+        {
+          img_proj.at<int>(tr,tc)=img_gray.at<int>(r,c);
+          depth_proj.at<float>(tr,tc)=depth_.at<cv::Vec3f>(r,c)[2];
+          occ_grid.at<int>(tr,tc)+=50;
+
+          //cv::Mat temp;
+          //cv::resize(img_proj,temp,cv::Size(500,500));
+          //cv::imshow("reproj",temp   );
+          //cv::waitKey(20);
+        }
+       }
+       else
+       {
+        //std::cout<<"ERROR: "<<tr<<" - "<<tc<<std::endl;
+        nan_ctr++;
+       }
+
+       img_ptr++;
+      }
+
+   std::cout<<"[FaceNormalizer] # nan after"<<nan_ctr<<std::endl;
+
+
+   if(i_debug){
+   cv::namedWindow("occ",CV_WINDOW_AUTOSIZE);
+   cv::namedWindow("depth",CV_WINDOW_AUTOSIZE);
+   cv::namedWindow("reproj",CV_WINDOW_AUTOSIZE);
+   cv::imshow("occ",occ_grid   );
+   cv::imshow("depth",depth_proj   );
+   cv::imshow("reproj",img_proj   );
+   cv::waitKey(0);
+   }
 
 }
+
+
 bool FaceNormalizer::normalize_geometry(cv::Mat& img)
 {
 
@@ -335,7 +433,11 @@ bool FaceNormalizer::features_from_color(cv::Mat& img_color)
     if(debug_)std::cout<<"no eye_r"<<std::endl;
      return false;
   }
-  detect_feature(img_color,f_det_img_.mouth,PP_MOUTH) ;
+  if(!detect_feature(img_color,f_det_img_.mouth,PP_MOUTH))
+  {
+    if(debug_)std::cout<<"no mouth"<<std::endl;
+     return false;
+  }
 
   return true;
 }
@@ -443,6 +545,14 @@ void FaceNormalizer::dyn_norm_face()
   return;
 }
 
+void FaceNormalizer::ident_face()
+{
+  f_norm_img_.lefteye=f_det_img_.lefteye;
+  f_norm_img_.righteye=f_det_img_.righteye;
+  f_norm_img_.mouth=f_det_img_.mouth;
+  f_norm_img_.nose=f_det_img_.nose;
+}
+
 
 
 
@@ -513,19 +623,32 @@ void FaceNormalizer::dump_features(cv::Mat& img)
    dump_img(img2,"3_features");
 }
 
+bool FaceNormalizer::save_scene(cv::Mat& depth,cv::Mat& color,std::string path)
+{
+  cv::FileStorage fs(path,FileStorage::WRITE);
+  fs << "depth"<<depth;
+  fs << "color"<<color;
+}
 
-//int main(int argc, const char *argv[])
-//{
-//  FaceNormalizer fn;
-//  cv::Mat img;
-//  //std::string f_path="/home/goa-tz/data/CroppedYale/";
-//  std::string f_path="/home/goa-tz/debug/test_imgs/";
-//  std::string temp=f_path;
-//  temp.append(argv.y);
-//  std::cout<<"using image from: "<<temp<<std::endl;
-//  img=cv::imread(temp,CV_LOAD_IMAGE_COLOR);
-//  cv::cvtColor(img,img,CV_RGB2BGR);
-//  int rows=160;
-//  fn.normalizeFace(img,rows);
-//  return 0;
-//}
+bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,std::string path)
+{
+  cv::FileStorage fs(path,FileStorage::READ);
+  fs["depth"]>> depth;
+  fs["color"]>> color;
+}
+
+
+int main(int argc, const char *argv[])
+{
+  FaceNormalizer fn;
+  cv::Mat depth,img;
+  std::string i_path="/share/goa-tz/people_detection/debug/scene.xml";
+
+  std::cout<<"[FaceNormalizer] reading scene..."<<std::endl;
+  fn.read_scene(depth,img,i_path);
+
+  std::cout<<"[FaceNormalizer] normalizing face..."<<std::endl;
+  int rows =114;
+  fn.normalizeFace(img,depth,rows);
+  return 0;
+}
