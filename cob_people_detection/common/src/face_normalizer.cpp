@@ -237,8 +237,8 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //camera matrix
    double fx=255;
    double fy=255;
-   double cy=img_.rows/2;
-   double cx=img_.cols/2;
+   double cy=img_.rows;
+   double cx=img_.cols;
    cv::Mat cam_mat=(cv::Mat_<double>(3,3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
 
    calcPnP(cam_mat,rot,trans);
