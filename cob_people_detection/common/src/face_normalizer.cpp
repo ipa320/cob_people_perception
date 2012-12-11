@@ -271,7 +271,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
    {
      for(int j=0;j<depth_.cols;++j)
      {
-       object_vec.push_back((cv::Point3f)depth_.at<cv::Vec3f>(i,j));
+       object_vec.push_back((cv::Point3f)depth_.at<cv::Point3f>(i,j));
       if(isnan(depth_.at<cv::Vec3f>(i,j)[0])) nan_ctr++;
      }
    }
@@ -287,6 +287,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
    // calc reprojection diffs
    //cv::projectPoints(object_points,rot,trans,cam_mat,coeff2,reproj_feat);
    cv::projectPoints(object_vec,rot,trans,cam_mat,coeff2,object_proj);
+
 
    bool i_debug = true;
    if(i_debug){
@@ -343,12 +344,14 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
    for(int i=0;i<object_proj.rows;++i)
      {
        cv::Vec2f trtc=*img_ptr;
+       //cv::Vec2f trtc=object_proj.at<cv::Vec2f>(i,0);
        tr=(int)round(trtc[0]);
        tc=(int)round(trtc[1]);
 
         //calculate row and column
         r=floor(i/img_.cols);
         c=i % img_.cols;
+       std::cout<<trtc[0]<<" "<<trtc[1]<<" "<<r<<" "<<c<<std::endl;
 
        if (tr>0 && tc>0 && tr<img_.rows && tc<img_.cols)
        {
