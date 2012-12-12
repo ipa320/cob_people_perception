@@ -66,7 +66,7 @@ rosbuild_check_for_sse()
 #      common/src/face_normalizer.cpp
 #      ros/src/face_normalizer_node.cpp)
 
-rosbuild_add_executable(face_normalizer_test
+    rosbuild_add_executable(face_normalizer_test
       common/src/face_normalizer.cpp
       )
     target_link_libraries(face_normalizer_test opencv_core opencv_highgui)

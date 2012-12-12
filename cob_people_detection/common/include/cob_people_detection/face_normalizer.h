@@ -22,6 +22,29 @@ class FaceFeatures{
                     T mouth;
                     FaceFeatures<T>(){};
                     ~FaceFeatures<T>(){};
+
+                    void sub_offset(int ox,int oy)
+                    {
+                      this->lefteye.x-=ox;
+                      this->lefteye.y-=oy;
+                      this->righteye.x-=ox;
+                      this->righteye.y-=oy;
+                      this->mouth.x-=ox;
+                      this->mouth.y-=oy;
+                      this->nose.x-=ox;
+                      this->nose.y-=oy;
+                    }
+                    void add_offset(int ox,int oy)
+                    {
+                      this->lefteye.x+=ox;
+                      this->lefteye.y+=oy;
+                      this->righteye.x+=ox; 
+                      this->righteye.y+=oy;
+                      this->mouth.x+=ox;
+                      this->mouth.y+=oy;
+                      this->nose.x+=ox;
+                      this->nose.y+=oy;
+                    }
                     void as_vector(std::vector<T>& vec)
                     {
                      vec.push_back(lefteye);
@@ -59,7 +82,7 @@ class FaceNormalizer{
     void resetNormFeatures();
     void transformPerspective(cv::Mat& trafo);
 
-    bool normalizeFace( cv::Mat & img,cv::Mat& depth,int& rows);
+    bool normalizeFace( cv::Mat & img,cv::Mat& depth,int& rows,cv::Vec2f& offset);
     bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
     bool features_from_depth(cv::Mat& depth);
 
@@ -76,13 +99,15 @@ class FaceNormalizer{
     void dump_features(cv::Mat& img);
     void dump_img(cv::Mat& data,std::string name);
     void showImg(cv::Mat& img,std::string window_name);
-    bool save_scene(cv::Mat& depth,cv::Mat& color,std::string path);
-    bool read_scene(cv::Mat& depth,cv::Mat& color,std::string path);
+    bool save_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
+    bool read_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
 //---------------------------------------------------------
 
   protected:
 
     cv::Mat img_,depth_;
+
+    cv::Vec2f offset_;
   CvHaarClassifierCascade* nose_cascade_;
   CvMemStorage* nose_storage_;
 

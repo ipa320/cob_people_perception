@@ -169,7 +169,10 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
     int dim=160;
     cv::Mat bgr_crop=heads_color_images[i](face_bounding_boxes[i][j]);
     cv::Mat xyz_crop=heads_depth_images[i](face_bounding_boxes[i][j]);
-    bool is_norm=face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim);
+    cv::Vec2f offset;
+     offset[0]=head_bounding_boxes[i].x + face_bounding_boxes[i][j].x;
+     offset[1]=head_bounding_boxes[i].y + face_bounding_boxes[i][j].y;
+    bool is_norm=face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim,offset);
   }
  }
 //
