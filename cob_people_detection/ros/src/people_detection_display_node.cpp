@@ -94,7 +94,7 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 	// publishers
 	people_detection_image_pub_ = it_->advertise("face_position_image", 1);
 
-	std::cout << "PeopleDetectionDisplay initialized.\n";
+	std::cout << "PeopleDetectionDisplay initialized." << std::endl;
 }
     
 PeopleDetectionDisplayNode::~PeopleDetectionDisplayNode()

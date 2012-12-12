@@ -139,6 +139,8 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	// launch LoadModel server
 	load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
 	load_model_server_->start();
+
+	std::cout << "FaceRecognizerNode initialized." << std::endl;
 }
 
 FaceRecognizerNode::~FaceRecognizerNode(void)

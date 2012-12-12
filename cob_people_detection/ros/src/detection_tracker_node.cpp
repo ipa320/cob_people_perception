@@ -157,6 +157,8 @@ DetectionTrackerNode::DetectionTrackerNode(ros::NodeHandle nh)
 
 	// publishers
 	face_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_position_array", 1);
+
+	std::cout << "DetectionTrackerNode initialized." << std::endl;
 }
 
 DetectionTrackerNode::~DetectionTrackerNode()
@@ -217,7 +219,7 @@ unsigned long DetectionTrackerNode::copyDetection(const cob_people_detection_msg
 		dest.label = src.label;
 		for (std::map<std::string, double>::iterator face_identification_votes_it=face_identification_votes_[updateIndex].begin(); face_identification_votes_it!=face_identification_votes_[updateIndex].end(); face_identification_votes_it++)
 		{
-			// todo: make the decay time-dependend - otherwise faster computing = faster decay
+			// todo: make the decay time-dependend - otherwise faster computing = faster decay. THIS IS ACTUALLY WRONG as true detections occur with same rate as decay -> so computing power only affects response time to a changed situation
 			face_identification_votes_it->second *= face_identification_score_decay_rate_;
 			std::string label = face_identification_votes_it->first;
 			if (face_identification_votes_it->second > max_score && (fall_back_to_unknown_identification_==true || (label!="Unknown" && fall_back_to_unknown_identification_==false)) && label!="UnknownHead" /*&& label!="No face"*/)
@@ -356,6 +358,7 @@ unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_people_detect
 void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg)
 {
 	// todo: make update rates time dependent!
+	// NOT USEFUL, as true detections occur with same rate as decay -> so computing power only affects response time to a changed situation
 
 //	Timer tim;
 //	tim.start();

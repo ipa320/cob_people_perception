@@ -115,6 +115,7 @@ HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
 	// subscribe to sensor topic
 	pointcloud_sub_ = nh.subscribe("pointcloud_rgb", 1, &HeadDetectorNode::pointcloud_callback, this);
 
+	std::cout << "HeadDetectorNode initialized." << std::endl;
 }
 
 HeadDetectorNode::~HeadDetectorNode(void)

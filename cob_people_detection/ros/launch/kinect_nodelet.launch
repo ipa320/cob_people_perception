@@ -68,7 +68,14 @@
 
   </group> <!-- camera -->
 
-  <param name="camera/driver/depth_registration" type="bool" value="true" />
+  <param name="$(arg camera)/driver/depth_registration" type="bool" value="true" />
+  <param name="$(arg camera)/driver/use_indices" value="false" />
+  <param name="$(arg camera)/driver/image_mode" value="3" />
+  <param name="$(arg camera)/driver/depth_mode" value="3" />
+  <!--param name="$(arg camera)/driver/debayering" value="2" /-->
+  <!--param name="$(arg camera)/driver/depth_time_offset" value="0" /-->
+  <!--param name="$(arg camera)/driver/image_time_offset" value="0" /-->
+
   <!-- Load reasonable defaults for the relative pose between cameras -->
   <include file="$(find openni_launch)/launch/kinect_frames.launch">
     <arg name="camera" value="$(arg camera)" />

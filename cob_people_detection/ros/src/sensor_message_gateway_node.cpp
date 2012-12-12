@@ -74,6 +74,8 @@ namespace cob_people_detection
 SensorMessageGatewayNode::SensorMessageGatewayNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
+	ros::Duration(5.0).sleep();
+
 	it_ = 0;
 
 	last_publishing_time_pcl_ = ros::Time::now();
@@ -102,6 +104,8 @@ SensorMessageGatewayNode::SensorMessageGatewayNode(ros::NodeHandle nh)
 	pointcloud_sub_ = node_handle_.subscribe("pointcloud_rgb_in", 1, &SensorMessageGatewayNode::pointcloudCallback, this);
 	color_image_sub_.subscribe(*it_, "colorimage_in", 1);
 	color_image_sub_.registerCallback(boost::bind(&SensorMessageGatewayNode::imageCallback, this, _1));
+
+	std::cout << "SensorMessageGatewayNode initialized." << std::endl;
 }
 
 SensorMessageGatewayNode::~SensorMessageGatewayNode(void)

@@ -82,7 +82,7 @@ CoordinatorNode::CoordinatorNode(ros::NodeHandle nh)
 	service_server_start_recognition_ = node_handle_.advertiseService("start_recognition", &CoordinatorNode::startRecognitionCallback, this);
 	service_server_stop_recognition_ = node_handle_.advertiseService("stop_recognition", &CoordinatorNode::stopRecognitionCallback, this);
 
-	std::cout << "CoordinatorNode initialized.\n";
+	std::cout << "CoordinatorNode initialized." << std::endl;
 }
 
 CoordinatorNode::~CoordinatorNode()
