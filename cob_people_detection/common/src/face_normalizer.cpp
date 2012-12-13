@@ -271,7 +271,10 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    calcPnP(cam_mat,rot,trans);
 
    cv::Mat img_res;
-   resample_direct(cam_mat,rot,trans,img_res);
+   //resample_direct(cam_mat,rot,trans,img_res);
+   cv::Mat rot_test=(cv::Mat_<double>(3,1) << 0 , 0 , 0);
+   cv::Mat trans_test=(cv::Mat_<double>(3,1) << 0 , 0 , 0);
+   resample_direct(cam_mat,rot_test,trans_test,img_res);
 
    return true;
 }
