@@ -61,6 +61,19 @@ class FaceFeatures{
                       if(std::isnan(mouth.x)|| std::isnan(mouth.y)) return false;
                       else return true;
                     }
+                    void print()
+                    {
+                      std::cout<<"--------------------"<<std::endl;
+                      std::cout<<"lefteye:\n";
+                      std::cout<<lefteye.x<<" , "<<lefteye.y<<std::endl;
+                      std::cout<<"righteye:\n";
+                      std::cout<<righteye.x<<" , "<<righteye.y<<std::endl;
+                      std::cout<<"nose:\n";
+                      std::cout<<nose.x<<" , "<<nose.y<<std::endl;
+                      std::cout<<"mouth:\n";
+                      std::cout<<mouth.x<<" , "<<mouth.y<<std::endl;
+                      std::cout<<"--------------------"<<std::endl;
+                    }
 };
 
 
@@ -102,6 +115,7 @@ class FaceNormalizer{
     void showImg(cv::Mat& img,std::string window_name);
     bool save_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
     bool read_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
+    void kin2xyz(cv::Point3f& vec);
 //---------------------------------------------------------
 
   protected:
