@@ -30,7 +30,16 @@ FaceNormalizer::FaceNormalizer():scale_(1.0),
 }
 
 
-FaceNormalizer::~FaceNormalizer(){};
+FaceNormalizer::~FaceNormalizer(){
+	cvReleaseHaarClassifierCascade(&mouth_cascade_);
+	cvReleaseMemStorage(&mouth_storage_);
+	cvReleaseHaarClassifierCascade(&nose_cascade_);
+	cvReleaseMemStorage(&nose_storage_);
+	cvReleaseHaarClassifierCascade(&eye_l_cascade_);
+	cvReleaseMemStorage(&eye_l_storage_);
+	cvReleaseHaarClassifierCascade(&eye_r_cascade_);
+	cvReleaseMemStorage(&eye_r_storage_);
+};
 
 void FaceNormalizer::set_norm_face(int& size)
 
@@ -74,9 +83,13 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
 
   img.copyTo(img_);
   depth.copyTo(depth_);
-  offset_=offset;
+
+  offset_[0]=offset[0];
+  offset_[1]=offset[1];
+
   epoch_ctr++;
-  //norm size ffrom input image
+  //
+  //norm size from input image
   set_norm_face(rows);
 
   if(debug_)
@@ -236,8 +249,10 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    if(!features_from_depth(depth_)) return false;
 
 
-  f_det_img_.add_offset((int)offset_[0],(int)offset_[1]);
-  f_norm_img_.add_offset((int)offset_[0],(int)offset_[1]);
+   int coloffset=round(offset_[0]);
+   int rowoffset=round(offset_[1]);
+  if(!f_det_img_.add_offset (coloffset,rowoffset)) std::cout<<"NEGATIVE COORD"<<std::endl;
+  if(!f_norm_img_.add_offset (coloffset,rowoffset)) std::cout<<"NEGATIVE COORD"<<std::endl;
 
   //calculate transformation
 
@@ -338,7 +353,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
    cv::Vec2f* img_ptr=object_proj.ptr<cv::Vec2f>(0,0);
    int r,c,tr,tc;
 
-   cv::Mat img_proj=cv::Mat::ones(img_.rows,img_.cols,CV_8UC1)*240;
+   cv::Mat img_proj=cv::Mat::ones(img_.rows,img_.cols,CV_8UC1)*255;
    cv::Mat depth_proj=cv::Mat::ones(img_.rows,img_.cols,CV_32FC1)*1000;
    cv::Mat occ_grid=cv::Mat::zeros(img_.rows,img_.cols,CV_8UC1);
 
@@ -350,32 +365,28 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
      {
        cv::Vec2f trtc=*img_ptr;
        //cv::Vec2f trtc=object_proj.at<cv::Vec2f>(i,0);
-       tr=(int)round(trtc[0]);
-       tc=(int)round(trtc[1]);
-       tr-=offset_[0];
-       tc-=offset_[1];
+       tr=(int)round(trtc[1]);
+       tc=(int)round(trtc[0]);
+       tr-=offset_[1];
+       tc-=offset_[0];
+
 
         //calculate row and column
         r=floor(i/img_.cols);
         c=i % img_.cols;
-       //std::cout<<trtc[0]<<" "<<trtc[1]<<" "<<r<<" "<<c<<std::endl;
 
-       if (tr>0 && tc>0 && tr<img_.rows && tc<img_.cols)
+       if (tr>0 && tc>0 && tr<img_.rows && tc<img_.cols && !isnan(tr) && !isnan(tc))
        {
          //img_proj.at<cv::Vec3f>(tr,tc)=img.at<cv::Vec3f>(r,c);
          //std::cout<<"tr="<<tr<<" tc="<<tc<<" - "<<"r="<<r<<" c="<<c<<std::endl;
-        //if(occ_grid.at<int>(tr,tc)<1 )
+        if(occ_grid.at<unsigned char>(tr,tc)<1 )
         //if((occ_grid.at<int>(tr,tc)<1) || (depth_proj.at<float>(tr,tc)> depth_.at<cv::Vec3f>(r,c)[2]))
-        {
-          img_proj.at<int>(tr,tc)=img_gray.at<int>(r,c);
+       //std::cout<<tr<<" "<<tc<<" "<<r<<" "<<c<<std::endl;
+       {
+          img_proj.at<unsigned char>(tr,tc)=img_gray.at<unsigned char>(r,c);
           depth_proj.at<float>(tr,tc)=depth_.at<cv::Vec3f>(r,c)[2];
-          occ_grid.at<int>(tr,tc)+=50;
-
-          //cv::Mat temp;
-          //cv::resize(img_proj,temp,cv::Size(500,500));
-          //cv::imshow("reproj",temp   );
-          //cv::waitKey(20);
-        }
+          occ_grid.at<unsigned char>(tr,tc)+=50;
+       }
        }
        else
        {
@@ -387,6 +398,10 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
       }
 
    std::cout<<"[FaceNormalizer] # nan after"<<nan_ctr<<std::endl;
+
+   dump_img(img_proj,"projected");
+   dump_img(occ_grid,"occ grid");
+   dump_img(depth_proj,"depth proj");
 
    return;
 
@@ -668,15 +683,15 @@ int main(int argc, const char *argv[])
   FaceNormalizer fn;
   cv::Mat depth,img;
   cv::Vec2f offset;
-  std::string i_path="/share/goa-tz/people_detection/debug/scenes/";
+  std::string i_path="/share/goa-tz/people_detection/debug/scenes/scene";
   i_path.append(argv[1]);
+  i_path.append(".xml");
 
   std::cout<<"[FaceNormalizer] reading scene..."<<std::endl;
   fn.read_scene(depth,img,offset,i_path);
 
   std::cout<<"[FaceNormalizer] normalizing face..."<<std::endl;
-  int rows =114;
-  fn.normalizeFace(img,depth,rows,offset);
+  fn.normalizeFace(img,depth,img.rows,offset);
 
   return 0;
 }

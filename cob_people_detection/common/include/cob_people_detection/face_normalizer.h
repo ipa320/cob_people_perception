@@ -23,7 +23,7 @@ class FaceFeatures{
                     FaceFeatures<T>(){};
                     ~FaceFeatures<T>(){};
 
-                    void sub_offset(int ox,int oy)
+                    bool sub_offset(int& ox,int& oy)
                     {
                       this->lefteye.x-=ox;
                       this->lefteye.y-=oy;
@@ -33,8 +33,11 @@ class FaceFeatures{
                       this->mouth.y-=oy;
                       this->nose.x-=ox;
                       this->nose.y-=oy;
+                      bool check=true;
+                      if( lefteye.x *lefteye.y *righteye.x*righteye.y*mouth.x*mouth.y* nose.x*nose.y <0) return false;
+                      else return true;
                     }
-                    void add_offset(int ox,int oy)
+                    bool add_offset(int& ox,int& oy)
                     {
                       this->lefteye.x+=ox;
                       this->lefteye.y+=oy;
@@ -44,6 +47,9 @@ class FaceFeatures{
                       this->mouth.y+=oy;
                       this->nose.x+=ox;
                       this->nose.y+=oy;
+                      bool check=true;
+                      if( lefteye.x *lefteye.y *righteye.x*righteye.y*mouth.x*mouth.y* nose.x*nose.y <0) return false;
+                      else return true;
                     }
                     void as_vector(std::vector<T>& vec)
                     {
