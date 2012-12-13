@@ -385,7 +385,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
        //std::cout<<tr<<" "<<tc<<" "<<r<<" "<<c<<std::endl;
        {
           img_proj.at<unsigned char>(tr,tc)=img_gray.at<unsigned char>(r,c);
-          img_proj_rgb.at<cv::Vec3f>(tr,tc)=img_.at<cv::Vec3f>(r,c);
+          img_proj_rgb.at<cv::Vec3b>(tr,tc)=img_.at<cv::Vec3b>(r,c);
           depth_proj.at<float>(tr,tc)=depth_.at<cv::Vec3f>(r,c)[2];
           occ_grid.at<unsigned char>(tr,tc)+=50;
        }
@@ -402,6 +402,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
    std::cout<<"[FaceNormalizer] # nan after"<<nan_ctr<<std::endl;
 
    dump_img(img_proj,"projected");
+   dump_img(img_proj_rgb,"projected RGB");
    dump_img(occ_grid,"occ grid");
    dump_img(depth_proj,"depth proj");
 
