@@ -97,6 +97,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
   cv::Mat temp_mat;
    cv::cvtColor(img,temp_mat,CV_BGR2RGB);
     dump_img(temp_mat,"0_original");
+
   }
 
   //geometric normalization
@@ -242,17 +243,17 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   //path.append(boost::lexical_cast<std::string>(epoch_ctr));
   //save_scene(depth_,img_,offset_,path);
   //return false;
+  
    ident_face();
 
-   //dyn_norm_face();
-
    if(!features_from_depth(depth_)) return false;
+   //dyn_norm_face();
 
 
    int coloffset=round(offset_[0]);
    int rowoffset=round(offset_[1]);
-  if(!f_det_img_.add_offset (coloffset,rowoffset)) std::cout<<"NEGATIVE COORD"<<std::endl;
-  if(!f_norm_img_.add_offset (coloffset,rowoffset)) std::cout<<"NEGATIVE COORD"<<std::endl;
+  f_det_img_.add_offset (coloffset,rowoffset);
+  f_norm_img_.add_offset (coloffset,rowoffset);
 
   //calculate transformation
 
@@ -261,12 +262,10 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
 
    //camera matrix
-   double fx=526;
-   double fy=526;
-   //double cy=img_.rows/2;
-   //double cx=img_.cols/2;
-   double cy=259;
-   double cx=313;
+   double fx=526.37013657;
+   double fy=526.37013657;
+   double cy=259.01834898;
+   double cx=313.68782938;
    cv::Mat cam_mat=(cv::Mat_<double>(3,3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
 
    calcPnP(cam_mat,rot,trans);
@@ -283,10 +282,9 @@ void FaceNormalizer::calcPnP(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& trans)
    f_norm_img_.as_vector(img_points);
    f_det_xyz_.as_vector(object_points);
 
-   cv::Mat coeff2;
-   coeff2=cv::Mat::zeros(1,8,CV_32F);
    // calculate object pose
-   cv::solvePnP(object_points,img_points,cam_mat,coeff2,rot,trans);
+   cv::Mat dist_coeffs=(cv::Mat_<double>(5,1)<< 0.00000000, 0.00000000, 0.00000000, 0.00000000, 0.00000000);
+   cv::solvePnP(object_points,img_points,cam_mat,dist_coeffs,rot,trans);
    return;
 
 
@@ -309,13 +307,11 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
 
 
    //project 3d points to virtual camera
-   cv::Mat coeff2;
-   coeff2=cv::Mat::zeros(1,8,CV_32F);
+   cv::Mat dist_coeffs=(cv::Mat_<double>(5,1)<< 0.00000000, 0.00000000, 0.00000000, 0.00000000, 0.00000000);
    cv::Mat object_proj;
    //std::vector<cv::Vec2f> reproj_feat;
    // calc reprojection diffs
-   //cv::projectPoints(object_points,rot,trans,cam_mat,coeff2,reproj_feat);
-   cv::projectPoints(object_vec,rot,trans,cam_mat,coeff2,object_proj);
+   cv::projectPoints(object_vec,rot,trans,cam_mat,dist_coeffs,object_proj);
 
 
    bool i_debug = true;
@@ -326,7 +322,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
    f_norm_img_.as_vector(img_points);
    f_det_xyz_.as_vector(object_points);
    std::vector<cv::Vec2f> reproj_feat;
-   cv::projectPoints(object_points,rot,trans,cam_mat,coeff2,reproj_feat);
+   cv::projectPoints(object_points,rot,trans,cam_mat,dist_coeffs,reproj_feat);
     std::cout<<"reprojection results"<<std::endl;
     std::cout<< "c: "<<img_points[0].x<<" - "<<reproj_feat[0][0]<<std::endl;
     std::cout<< "r: "<<img_points[0].y<<" - "<<reproj_feat[0][1]<<std::endl;
@@ -366,10 +362,10 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
      {
        cv::Vec2f trtc=*img_ptr;
        //cv::Vec2f trtc=object_proj.at<cv::Vec2f>(i,0);
-       tr=(int)round(trtc[1]);
-       tc=(int)round(trtc[0]);
-       tr-=offset_[1];
-       tc-=offset_[0];
+       tr=(int)round(trtc[0]);
+       tc=(int)round(trtc[1]);
+       tr-=offset_[0];
+       tc-=offset_[1];
 
 
         //calculate row and column
