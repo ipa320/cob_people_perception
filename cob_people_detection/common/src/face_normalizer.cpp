@@ -354,6 +354,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
    int r,c,tr,tc;
 
    cv::Mat img_proj=cv::Mat::ones(img_.rows,img_.cols,CV_8UC1)*255;
+   cv::Mat img_proj_rgb=cv::Mat::zeros(img_.rows,img_.cols,CV_8UC3);
    cv::Mat depth_proj=cv::Mat::ones(img_.rows,img_.cols,CV_32FC1)*1000;
    cv::Mat occ_grid=cv::Mat::zeros(img_.rows,img_.cols,CV_8UC1);
 
@@ -384,6 +385,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
        //std::cout<<tr<<" "<<tc<<" "<<r<<" "<<c<<std::endl;
        {
           img_proj.at<unsigned char>(tr,tc)=img_gray.at<unsigned char>(r,c);
+          img_proj_rgb.at<cv::Vec3f>(tr,tc)=img_.at<cv::Vec3f>(r,c);
           depth_proj.at<float>(tr,tc)=depth_.at<cv::Vec3f>(r,c)[2];
           occ_grid.at<unsigned char>(tr,tc)+=50;
        }
