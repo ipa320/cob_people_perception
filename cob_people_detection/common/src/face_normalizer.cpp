@@ -3,7 +3,7 @@ using namespace cv;
 FaceNormalizer::FaceNormalizer():scale_(1.0),
                                 epoch_ctr(0),
                                 debug_path_("/share/goa-tz/people_detection/debug/"),
-                                debug_(true)
+                                debug_(false)
 {
   std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
   nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
@@ -48,10 +48,10 @@ void FaceNormalizer::set_norm_face(int& size)
   norm_size_.width=size;
 
 
-  f_norm_img_.lefteye.x=0.4*norm_size_.width;
+  f_norm_img_.lefteye.x=0.25*norm_size_.width;
   f_norm_img_.lefteye.y=0.3*norm_size_.height;
 
-  f_norm_img_.righteye.x=0.6*norm_size_.width;
+  f_norm_img_.righteye.x=0.75*norm_size_.width;
   f_norm_img_.righteye.y=0.3*norm_size_.height;
 
   f_norm_img_.mouth.x=0.5*norm_size_.width;
@@ -96,12 +96,19 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
   {
   cv::Mat temp_mat;
    cv::cvtColor(img,temp_mat,CV_BGR2RGB);
-    dump_img(temp_mat,"0_original");
+    dump_img(temp_mat,"originalRGBD");
 
   }
 
   //geometric normalization
   if(!normalize_geometry_depth(img,depth)) return false;
+  dump_img(img,"geometryRGBD");
+
+  cv::Mat img_fg;
+  despeckle(img,img_fg,2);
+
+  dump_img(img_fg,"despeckle");
+
   //if(debug_)dump_img(img,"4_geometry");
   ////resizing
   //cv::resize(img,img,norm_size_,0,0);
@@ -127,18 +134,18 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
     dump_img(img,"0_original");
   }
 
-  //resizing
-  cv::resize(img,img,norm_size_,0,0);
-  if(debug_)dump_img(img,"1_resized");
+  ////resizing
+  //cv::resize(img,img,norm_size_,0,0);
+  //if(debug_)dump_img(img,"1_resized");
 
-  // radiometric normalization
-  if(!normalize_radiometry(img)) return false;
-  dump_img(img,"2_radiometry");
+  //// radiometric normalization
+  //if(!normalize_radiometry(img)) return false;
+  //dump_img(img,"2_radiometry");
 
 
   //geometric normalization
   if(!normalize_geometry(img)) return false;
-  if(debug_)dump_img(img,"4_geometry");
+  dump_img(img,"geometryRGB");
 
 
   epoch_ctr++;
@@ -244,10 +251,10 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   //save_scene(depth_,img_,offset_,path);
   //return false;
 
-   ident_face();
+   //ident_face();
+   dyn_norm_face();
 
    if(!features_from_depth(depth_)) return false;
-   //dyn_norm_face();
 
 
    int xoffset=round(offset_[0]);
@@ -255,9 +262,12 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
 
 
+   if(debug_)
+   {
   f_det_img_.print();
   f_norm_img_.print();
   f_det_xyz_.print();
+   }
 
   f_det_img_.add_offset  (xoffset,yoffset);
   f_norm_img_.add_offset (xoffset,yoffset);
@@ -285,8 +295,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
      std::cout<<trans.at<double>(0,0)<<" , "<<trans.at<double>(0,1)<<" , "<<trans.at<double>(0,2)<<std::endl;
    }
 
-   cv::Mat img_res;
-   resample_direct(cam_mat,rot,trans,img_res);
+  resample_direct(cam_mat,rot,trans,img);
   //cv::Mat rot_test=(cv::Mat_<double>(3,1) << 0 , 0 , 0);
   //cv::Mat trans_test=(cv::Mat_<double>(3,1) << 0 , -0.03 , 0);
   //resample_direct(cam_mat,rot_test,trans_test,img_res);
@@ -324,7 +333,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
       if(isnan(depth_.at<cv::Vec3f>(i,j)[0])) nan_ctr++;
      }
    }
-   std::cout<<"[FaceNormalizer] # nan before"<<nan_ctr<<std::endl;
+   if(debug_)std::cout<<"[FaceNormalizer] # nan before"<<nan_ctr<<std::endl;
 
 
 
@@ -418,13 +427,18 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
        img_ptr++;
       }
 
-   std::cout<<"[FaceNormalizer] # nan after"<<nan_ctr<<std::endl;
+   if(debug_)
+   {
+    std::cout<<"[FaceNormalizer] # nan after"<<nan_ctr<<std::endl;
 
    dump_img(img_proj,"projected");
    dump_img(img_proj_rgb,"projected RGB");
    dump_img(occ_grid,"occ grid");
    dump_img(depth_proj,"depth proj");
 
+   }
+
+   img_proj_rgb.copyTo(res);
    return;
 
 
@@ -719,9 +733,71 @@ void FaceNormalizer::kin2xyz(cv::Point3f& vec)
   vec.z=temp;
 }
 
+void FaceNormalizer::despeckle(cv::Mat& src,cv::Mat& dst,int filter_dimension)
+{
+
+  cv::cvtColor(src,dst,CV_BGR2GRAY);
+  if(filter_dimension==1)
+  {
+  unsigned char* lptr=dst.ptr<unsigned char>(0,0);
+  unsigned char* rptr=dst.ptr<unsigned char>(0,2);
+  unsigned char* mptr=dst.ptr<unsigned char>(0,1);
+  int normalizer;
+  for(int px=2;px<(dst.rows*src.cols);++px)
+  {
+    if(*mptr==0)
+    {
+    normalizer=2;
+    if(*lptr==0) normalizer-=1;
+    if(*rptr==0) normalizer-=1;
+    if(normalizer>0)*mptr=round((*lptr + *rptr)/normalizer);
+    }
+    ++lptr;
+    ++rptr;
+    ++mptr;
+  }
+  }
+
+  if(filter_dimension==2)
+  {
+  unsigned char* lptr=dst.ptr<unsigned char>(1,0);
+  unsigned char* rptr=dst.ptr<unsigned char>(1,2);
+  unsigned char* mptr=dst.ptr<unsigned char>(1,1);
+  unsigned char* uptr=dst.ptr<unsigned char>(0,1);
+  unsigned char* dptr=dst.ptr<unsigned char>(2,1);
+
+  int normalizer=4;
+  for(int px=2*src.cols+2;px<(dst.rows*src.cols);++px)
+  {
+    if(*mptr==0)
+    {
+    normalizer=4;
+    if(*lptr==0) normalizer-=1;
+    if(*rptr==0) normalizer-=1;
+    if(*uptr==0) normalizer-=1;
+    if(*dptr==0) normalizer-=1;
+    if(normalizer>0)*mptr=round((*lptr + *rptr + *uptr +*dptr)/normalizer);
+    }
+    ++lptr;
+    ++rptr;
+    ++mptr;
+    ++uptr;
+    ++dptr;
+  }
+  }
+
+  if(filter_dimension!=1 && filter_dimension!=2) std::cout<<"filter dimension 1 or 2\n";
+
+  //cv::blur(dst,dst,cv::Size(3,3),cv::Point(0,0),0);
+  //cv::equalizeHist(dst,dst);
+
+
+}
+
 
 int main(int argc, const char *argv[])
 {
+  std::cout<<"[FaceNormalizer] running scene no. "<<argv[1]<<"...";
   FaceNormalizer fn;
   cv::Mat depth,img;
   cv::Vec2f offset;
@@ -729,11 +805,15 @@ int main(int argc, const char *argv[])
   i_path.append(argv[1]);
   i_path.append(".xml");
 
-  std::cout<<"[FaceNormalizer] reading scene..."<<std::endl;
   fn.read_scene(depth,img,offset,i_path);
 
-  std::cout<<"[FaceNormalizer] normalizing face..."<<std::endl;
-  fn.normalizeFace(img,depth,img.rows,offset);
+  cv::Mat wmat1,wmat2;
+  img.copyTo(wmat1);
+  img.copyTo(wmat2);
+  fn.dump_img(wmat1,"original");
+  fn.normalizeFace(wmat1,depth,img.rows,offset);
+  //fn.normalizeFace(wmat2,img.rows);
 
+  std::cout<<"..done\n";
   return 0;
 }

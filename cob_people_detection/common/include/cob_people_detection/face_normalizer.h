@@ -116,6 +116,7 @@ class FaceNormalizer{
     bool save_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
     bool read_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
     void kin2xyz(cv::Point3f& vec);
+    void despeckle(cv::Mat& src,cv::Mat& dst,int filter_dimension);
 //---------------------------------------------------------
 
   protected:
