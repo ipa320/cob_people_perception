@@ -102,12 +102,12 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
 
   //geometric normalization
   if(!normalize_geometry_depth(img,depth)) return false;
-  dump_img(img,"geometryRGBD");
+  if(debug_)dump_img(img,"geometryRGBD");
 
   cv::Mat img_fg;
-  despeckle(img,img_fg,2);
+  despeckle(img,img_fg);
 
-  dump_img(img_fg,"despeckle");
+  if(debug_)dump_img(img_fg,"despeckle");
 
   //if(debug_)dump_img(img,"4_geometry");
   ////resizing
@@ -125,6 +125,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
 }
 bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
 {
+  img.copyTo(img_);
   //norm size ffrom input image
   set_norm_face(rows);
 
@@ -733,63 +734,69 @@ void FaceNormalizer::kin2xyz(cv::Point3f& vec)
   vec.z=temp;
 }
 
-void FaceNormalizer::despeckle(cv::Mat& src,cv::Mat& dst,int filter_dimension)
+void FaceNormalizer::despeckle(cv::Mat& src,cv::Mat& dst)
 {
 
-  cv::cvtColor(src,dst,CV_BGR2GRAY);
-  if(filter_dimension==1)
+
+  if(src.channels()==1)
   {
-  unsigned char* lptr=dst.ptr<unsigned char>(0,0);
-  unsigned char* rptr=dst.ptr<unsigned char>(0,2);
-  unsigned char* mptr=dst.ptr<unsigned char>(0,1);
-  int normalizer;
-  for(int px=2;px<(dst.rows*src.cols);++px)
-  {
-    if(*mptr==0)
+    unsigned char* lptr=dst.ptr<unsigned char>(1,0);
+    unsigned char* rptr=dst.ptr<unsigned char>(1,2);
+    unsigned char* mptr=dst.ptr<unsigned char>(1,1);
+    unsigned char* uptr=dst.ptr<unsigned char>(0,1);
+    unsigned char* dptr=dst.ptr<unsigned char>(2,1);
+
+    int normalizer=4;
+    for(int px=2*src.cols+2;px<(dst.rows*src.cols);++px)
     {
-    normalizer=2;
-    if(*lptr==0) normalizer-=1;
-    if(*rptr==0) normalizer-=1;
-    if(normalizer>0)*mptr=round((*lptr + *rptr)/normalizer);
+      if(*mptr==0)
+      {
+      normalizer=4;
+      if(*lptr==0) normalizer-=1;
+      if(*rptr==0) normalizer-=1;
+      if(*uptr==0) normalizer-=1;
+      if(*dptr==0) normalizer-=1;
+      if(normalizer>0)*mptr=round((*lptr + *rptr + *uptr +*dptr)/normalizer);
+      }
+      ++lptr;
+      ++rptr;
+      ++mptr;
+      ++uptr;
+      ++dptr;
     }
-    ++lptr;
-    ++rptr;
-    ++mptr;
-  }
   }
 
-  if(filter_dimension==2)
+  if(src.channels()==3)
   {
-  unsigned char* lptr=dst.ptr<unsigned char>(1,0);
-  unsigned char* rptr=dst.ptr<unsigned char>(1,2);
-  unsigned char* mptr=dst.ptr<unsigned char>(1,1);
-  unsigned char* uptr=dst.ptr<unsigned char>(0,1);
-  unsigned char* dptr=dst.ptr<unsigned char>(2,1);
+    src.copyTo(dst);
+    cv::Vec3b* lptr=dst.ptr<cv::Vec3b>(1,0);
+    cv::Vec3b* rptr=dst.ptr<cv::Vec3b>(1,2);
+    cv::Vec3b* mptr=dst.ptr<cv::Vec3b>(1,1);
+    cv::Vec3b* uptr=dst.ptr<cv::Vec3b>(0,1);
+    cv::Vec3b* dptr=dst.ptr<cv::Vec3b>(2,1);
 
-  int normalizer=4;
-  for(int px=2*src.cols+2;px<(dst.rows*src.cols);++px)
-  {
-    if(*mptr==0)
+    int normalizer=4;
+    for(int px=2*src.cols+2;px<(dst.rows*src.cols);++px)
     {
-    normalizer=4;
-    if(*lptr==0) normalizer-=1;
-    if(*rptr==0) normalizer-=1;
-    if(*uptr==0) normalizer-=1;
-    if(*dptr==0) normalizer-=1;
-    if(normalizer>0)*mptr=round((*lptr + *rptr + *uptr +*dptr)/normalizer);
+      if((*mptr)[0]==0)
+      {
+      normalizer=4;
+      if((*lptr)[0]==0) normalizer-=1;
+      if((*rptr)[0]==0) normalizer-=1;
+      if((*uptr)[0]==0) normalizer-=1;
+      if((*dptr)[0]==0) normalizer-=1;
+      if(normalizer>0)cv::divide((*lptr + *rptr + *uptr +*dptr),normalizer,*mptr);
+      }
+      ++lptr;
+      ++rptr;
+      ++mptr;
+      ++uptr;
+      ++dptr;
     }
-    ++lptr;
-    ++rptr;
-    ++mptr;
-    ++uptr;
-    ++dptr;
-  }
   }
 
-  if(filter_dimension!=1 && filter_dimension!=2) std::cout<<"filter dimension 1 or 2\n";
 
-  //cv::blur(dst,dst,cv::Size(3,3),cv::Point(0,0),0);
-  //cv::equalizeHist(dst,dst);
+  cv::blur(dst,dst,cv::Size(3,3),cv::Point(0,0),0);
 
 
 }

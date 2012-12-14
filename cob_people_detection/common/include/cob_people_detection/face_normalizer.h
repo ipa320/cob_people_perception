@@ -99,6 +99,8 @@ class FaceNormalizer{
     bool normalizeFace( cv::Mat & img,cv::Mat& depth,int& rows,cv::Vec2f& offset);
     bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
     bool features_from_depth(cv::Mat& depth);
+    void kin2xyz(cv::Point3f& vec);
+    void despeckle(cv::Mat& src,cv::Mat& dst);
 
     // Methods for geometric normalization
     bool normalize_radiometry(cv::Mat& img);
@@ -115,8 +117,6 @@ class FaceNormalizer{
     void showImg(cv::Mat& img,std::string window_name);
     bool save_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
     bool read_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
-    void kin2xyz(cv::Point3f& vec);
-    void despeckle(cv::Mat& src,cv::Mat& dst,int filter_dimension);
 //---------------------------------------------------------
 
   protected:
