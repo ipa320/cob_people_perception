@@ -86,7 +86,7 @@ class FaceNormalizer{
 
 
     bool normalizeFace( cv::Mat & img,int& rows);
-    void set_norm_face(int& size);
+    void set_norm_face(int& rows,int& cols);
     bool normalize_geometry(cv::Mat& img);
     void get_transform_affine(cv::Mat& trafo);
     bool features_from_color(cv::Mat& img);

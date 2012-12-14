@@ -41,24 +41,22 @@ FaceNormalizer::~FaceNormalizer(){
 	cvReleaseMemStorage(&eye_r_storage_);
 };
 
-void FaceNormalizer::set_norm_face(int& size)
+void FaceNormalizer::set_norm_face(int& rows,int& cols)
 
 {
-  norm_size_.height=size;
-  norm_size_.width=size;
 
 
-  f_norm_img_.lefteye.x=0.25*norm_size_.width;
-  f_norm_img_.lefteye.y=0.3*norm_size_.height;
+  f_norm_img_.lefteye.x=0.25     *cols     ;
+  f_norm_img_.lefteye.y=0.3      *rows     ;
 
-  f_norm_img_.righteye.x=0.75*norm_size_.width;
-  f_norm_img_.righteye.y=0.3*norm_size_.height;
+  f_norm_img_.righteye.x=0.75    *cols     ;
+  f_norm_img_.righteye.y=0.3     *rows     ;
 
-  f_norm_img_.mouth.x=0.5*norm_size_.width;
-  f_norm_img_.mouth.y=0.85*norm_size_.height;
+  f_norm_img_.mouth.x=0.5        *cols     ;
+  f_norm_img_.mouth.y=0.85       *rows     ;
 
-  f_norm_img_.nose.x=0.5*norm_size_.width;
-  f_norm_img_.nose.y=0.4*norm_size_.height;
+  f_norm_img_.nose.x=0.5         *cols     ;
+  f_norm_img_.nose.y=0.4         *rows     ;
 
 
   // reset detections
@@ -90,7 +88,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
   epoch_ctr++;
   //
   //norm size from input image
-  set_norm_face(rows);
+  set_norm_face(img.rows,img.cols);
 
   if(debug_)
   {
@@ -105,18 +103,17 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
   if(debug_)dump_img(img,"geometryRGBD");
 
   cv::Mat img_fg;
-  despeckle(img,img_fg);
+  despeckle(img,img);
 
   if(debug_)dump_img(img_fg,"despeckle");
 
-  //if(debug_)dump_img(img,"4_geometry");
-  ////resizing
-  //cv::resize(img,img,norm_size_,0,0);
-  //if(debug_)dump_img(img,"1_resized");
+  //resizing
+  cv::resize(img,img,cv::Size(rows,rows),0,0);
+  if(debug_)dump_img(img,"1_resized");
 
-  //// radiometric normalization
-  //if(!normalize_radiometry(img)) return false;
-  //dump_img(img,"2_radiometry");
+  // radiometric normalization
+  if(!normalize_radiometry(img)) return false;
+  if(debug_)dump_img(img,"2_radiometry");
 
 
 
@@ -127,7 +124,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
 {
   img.copyTo(img_);
   //norm size ffrom input image
-  set_norm_face(rows);
+  set_norm_face(img.rows,img.cols);
 
   if(debug_)
   {
@@ -135,18 +132,21 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
     dump_img(img,"0_original");
   }
 
-  ////resizing
-  //cv::resize(img,img,norm_size_,0,0);
-  //if(debug_)dump_img(img,"1_resized");
-
-  //// radiometric normalization
-  //if(!normalize_radiometry(img)) return false;
-  //dump_img(img,"2_radiometry");
-
 
   //geometric normalization
   if(!normalize_geometry(img)) return false;
-  dump_img(img,"geometryRGB");
+  if(debug_)dump_img(img,"geometryRGB");
+
+  //resizing
+  cv::resize(img,img,cv::Size(rows,rows),0,0);
+  if(debug_)dump_img(img,"1_resized");
+
+  // radiometric normalization
+  if(!normalize_radiometry(img)) return false;
+  if(debug_)dump_img(img,"2_radiometry");
+
+
+
 
 
   epoch_ctr++;
@@ -818,8 +818,11 @@ int main(int argc, const char *argv[])
   img.copyTo(wmat1);
   img.copyTo(wmat2);
   fn.dump_img(wmat1,"original");
-  fn.normalizeFace(wmat1,depth,img.rows,offset);
-  //fn.normalizeFace(wmat2,img.rows);
+  int rows=200;
+  fn.normalizeFace(wmat1,depth,rows,offset);
+  fn.dump_img(wmat1,"processedRGBD");
+  fn.normalizeFace(wmat2,rows);
+  fn.dump_img(wmat2,"processedRGB");
 
   std::cout<<"..done\n";
   return 0;
