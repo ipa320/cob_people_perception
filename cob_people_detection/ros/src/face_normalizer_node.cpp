@@ -172,93 +172,10 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
     cv::Vec2f offset;
      offset[0]=head_bounding_boxes[i].x + face_bounding_boxes[i][j].x;
      offset[1]=head_bounding_boxes[i].y + face_bounding_boxes[i][j].y;
-    bool is_norm=face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim,offset);
+    face_normalizer_.captureScene(bgr_crop,xyz_crop,offset);
+    //bool is_norm=face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim,offset);
   }
  }
-//
-//	// --- face recognition ---
-//	std::vector< std::vector<std::string> > identification_labels;
-//	bool identification_failed = false;
-//	if (enable_face_recognition_ == true)
-//	{
-//		// recognize faces
-//		unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
-//		if (result_state == ipa_Utils::RET_FAILED)
-//		{
-//			ROS_ERROR("FaceNormalizerNode::face_positions_callback: Please load a face recognition model at first.");
-//			identification_failed = true;
-//		}
-//	}
-//	if (enable_face_recognition_ == false || identification_failed == true)
-//	{
-//		// label all image unknown if face recognition disabled
-//		identification_labels.resize(face_positions->head_detections.size());
-//		for (uint i=0; i<identification_labels.size(); i++)
-//		{
-//			identification_labels[i].resize(face_positions->head_detections[i].face_detections.size());
-//			for (uint j=0; j<identification_labels[i].size(); j++)
-//				identification_labels[i][j] = "Unknown";
-//		}
-//	}
-//
-//	// --- publish detection message ---
-//	cob_people_detection_msgs::DetectionArray detection_msg;
-//	detection_msg.header = face_positions->header;
-//
-//	// prepare message
-//	for (int head=0; head<(int)head_bounding_boxes.size(); head++)
-//	{
-//		if (face_bounding_boxes[head].size() == 0)
-//		{
-//			// no faces detected in head region -> publish head position
-//			cob_people_detection_msgs::Detection det;
-//			cv::Rect& head_bb = head_bounding_boxes[head];
-//			// set 3d position of head's center
-//			bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], 0.5*(float)head_bb.width, 0.5*(float)head_bb.height, det.pose.pose.position, 6);
-//			if (valid_3d_position==false)
-//				continue;
-//			// write bounding box
-//			det.mask.roi.x = head_bb.x;           det.mask.roi.y = head_bb.y;
-//			det.mask.roi.width = head_bb.width;   det.mask.roi.height = head_bb.height;
-//			// set label
-//			det.label="UnknownHead";
-//			// set origin of detection
-//			det.detector = "head";
-//			// header
-//			det.header = face_positions->header;
-//			// add to message
-//			detection_msg.detections.push_back(det);
-//		}
-//		else
-//		{
-//			// process all faces in head region
-//			for (int face=0; face<(int)face_bounding_boxes[head].size(); face++)
-//			{
-//				cob_people_detection_msgs::Detection det;
-//				cv::Rect& head_bb = head_bounding_boxes[head];
-//				cv::Rect& face_bb = face_bounding_boxes[head][face];
-//				// set 3d position of head's center
-//				bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], face_bb.x+0.5*(float)face_bb.width, face_bb.y+0.5*(float)face_bb.height, det.pose.pose.position, 6);
-//				if (valid_3d_position==false)
-//					continue;
-//				// write bounding box
-//				det.mask.roi.x = head_bb.x+face_bb.x; det.mask.roi.y = head_bb.y+face_bb.y;
-//				det.mask.roi.width = face_bb.width;   det.mask.roi.height = face_bb.height;
-//				// set label
-//				det.label=identification_labels[head][face];
-//				// set origin of detection
-//				det.detector = "face";
-//				// header
-//				det.header = face_positions->header;
-//				// add to message
-//				detection_msg.detections.push_back(det);
-//			}
-//		}
-//	}
-//
-//	// publish message
-//	face_recognition_publisher_.publish(detection_msg);
-//}
   }
 
 

@@ -121,6 +121,7 @@ class FaceNormalizer{
     void showImg(cv::Mat& img,std::string window_name);
     bool save_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
     bool read_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
+    bool captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset);
 //---------------------------------------------------------
 
   protected:

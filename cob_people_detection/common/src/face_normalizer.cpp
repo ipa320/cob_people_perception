@@ -77,6 +77,21 @@ void FaceNormalizer::set_norm_face(int& rows,int& cols)
 }
 
 
+bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset)
+{
+
+
+  if(!features_from_color(img)) return false;
+
+  std::cout<<"SAVING SCENE"<<std::endl;
+  std::string path_root="/share/goa-tz/people_detection/debug/scene";
+  std::string path= path_root;
+  path.append(boost::lexical_cast<std::string>(epoch_ctr));
+  save_scene(depth,img,offset,path);
+  epoch_ctr++;
+
+  return true;
+}
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::Vec2f& offset)
 {
 
@@ -246,11 +261,6 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   }
    if(debug_)dump_features(img_);
 
-  //std::string path_root="/share/goa-tz/people_detection/debug/scenes/scene";
-  //std::string path= path_root;
-  //path.append(boost::lexical_cast<std::string>(epoch_ctr));
-  //save_scene(depth_,img_,offset_,path);
-  //return false;
 
    //ident_face();
    dyn_norm_face();
@@ -811,28 +821,28 @@ void FaceNormalizer::despeckle(cv::Mat& src,cv::Mat& dst)
 }
 
 
-int main(int argc, const char *argv[])
-{
-  std::cout<<"[FaceNormalizer] running scene no. "<<argv[1]<<"...";
-  FaceNormalizer fn;
-  cv::Mat depth,img;
-  cv::Vec2f offset;
-  std::string i_path="/share/goa-tz/people_detection/debug/scenes/scene";
-  i_path.append(argv[1]);
-  i_path.append(".xml");
-
-  fn.read_scene(depth,img,offset,i_path);
-
-  cv::Mat wmat1,wmat2;
-  img.copyTo(wmat1);
-  img.copyTo(wmat2);
-  fn.dump_img(wmat1,"original");
-  int rows=200;
-  fn.normalizeFace(wmat1,depth,rows,offset);
-  fn.dump_img(wmat1,"processedRGBD");
-  fn.normalizeFace(wmat2,rows);
-  fn.dump_img(wmat2,"processedRGB");
-
-  std::cout<<"..done\n";
-  return 0;
-}
+//int main(int argc, const char *argv[])
+//{
+//  std::cout<<"[FaceNormalizer] running scene no. "<<argv[1]<<"...";
+//  FaceNormalizer fn;
+//  cv::Mat depth,img;
+//  cv::Vec2f offset;
+//  std::string i_path="/share/goa-tz/people_detection/debug/scenes/scene";
+//  i_path.append(argv[1]);
+//  i_path.append(".xml");
+//
+//  fn.read_scene(depth,img,offset,i_path);
+//
+//  cv::Mat wmat1,wmat2;
+//  img.copyTo(wmat1);
+//  img.copyTo(wmat2);
+//  fn.dump_img(wmat1,"original");
+//  int rows=200;
+//  fn.normalizeFace(wmat1,depth,rows,offset);
+//  fn.dump_img(wmat1,"processedRGBD");
+//  fn.normalizeFace(wmat2,rows);
+//  fn.dump_img(wmat2,"processedRGB");
+//
+//  std::cout<<"..done\n";
+//  return 0;
+//}
