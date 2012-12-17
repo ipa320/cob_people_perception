@@ -71,6 +71,10 @@ rosbuild_check_for_sse()
       )
     target_link_libraries(face_normalizer_test opencv_core opencv_highgui)
 
+rosbuild_add_library(virtual_camera
+  common/src/virtual_camera.cpp)
+target_link_libraries(virtual_camera  opencv_core )
+
 rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)
 

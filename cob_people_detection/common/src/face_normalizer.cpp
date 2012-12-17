@@ -1,9 +1,10 @@
 #include<cob_people_detection/face_normalizer.h>
+
 using namespace cv;
 FaceNormalizer::FaceNormalizer():scale_(1.0),
                                 epoch_ctr(0),
                                 debug_path_("/share/goa-tz/people_detection/debug/"),
-                                debug_(false)
+                                debug_(true)
 {
   std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
   nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
@@ -102,10 +103,9 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
   if(!normalize_geometry_depth(img,depth)) return false;
   if(debug_)dump_img(img,"geometryRGBD");
 
-  cv::Mat img_fg;
   despeckle(img,img);
 
-  if(debug_)dump_img(img_fg,"despeckle");
+  if(debug_)dump_img(img,"despeckle");
 
   //resizing
   cv::resize(img,img,cv::Size(rows,rows),0,0);
@@ -343,6 +343,9 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
    cv::Mat object_proj;
    //std::vector<cv::Vec2f> reproj_feat;
    // calc reprojection diffs
+   cv::Mat tempo;
+   depth_.copyTo(tempo);
+   tempo=tempo.reshape(3,depth_.cols*depth_.rows);
    cv::projectPoints(object_vec,rot,trans,cam_mat,dist_coeffs,object_proj);
 
 
