@@ -1,14 +1,36 @@
 #include"cob_people_detection/virtual_camera.h"
 
 
+VirtualCamera::VirtualCamera()
+{
+  focal_length= 526.37013657;
+  sensor_size=cv::Size(640,480);
+  pixel_dim=cv::Size(0,0);
+  dist_coeffs=(cv::Mat_<double>(1,5) << 0.0 , 0.0 , 0.0 , 0.0 ,0.0);
+
+
+
+  //calculation of intrinsics
+  //pp=cv::Point(round(sensor_size.width*0.5),round(sensor_size.height*0.5));
+  //temporary overrides
+   pp.x=313.68782938;
+   pp.y=259.01834898;
+
+  cam_mat=(cv::Mat_<double>(3,3) << focal_length , 0.0 , pp.x  , 0.0 , focal_length , pp.y  , 0.0 , 0.0 , 1);
+
+
+  //initialization of extrinsics
+  rot=cv::Vec3f(0.0,0.0,0.0);
+  trans=cv::Vec3f(0.0,0.0,0.0);
+}
+
+
+
 VirtualCamera::VirtualCamera(int camera_type)
 {
   // SENSOR PROPERTIES --KINECT
   if(camera_type==0){
-  focal_length= 526;
-  sensor_size=cv::Size(640,480);
-  pixel_dim=cv::Size(0,0);
-  dist_coeffs=(cv::Mat_<double>(1,5) << 0.0 , 0.0 , 0.0 , 0.0 ,0.0);
+    VirtualCamera();
   }
 
   if(camera_type!=0)
@@ -38,24 +60,42 @@ VirtualCamera::VirtualCamera(int camera_type)
 //}
 
 
-void VirtualCamera::calc_extrinsics(std::vector<cv::Point2f> img_pts, std::vector<cv::Point3f> obj_pts)
+bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vector<cv::Point2f> img_pts,bool check_model)
 {
    // calculate object pose
-   cv::solvePnP(obj_pts,img_pts,cam_mat,dist_coeffs,rot,trans);
-   return;
+  cv::Mat temp_rot,temp_trans;
+  cv::solvePnP(obj_pts,img_pts,cam_mat,dist_coeffs,temp_rot,temp_trans);
+
+  if(check_model==true)
+  {
+    if (!validity_check(obj_pts,img_pts,temp_rot,temp_trans))
+    {
+      std::cout<<"\n[VIRTUAL CAMERA] invalid extrinsics\n"<<std::endl;
+      return false;
+    }
+  }
+
+    rot=temp_rot;
+    trans=temp_trans;
+   return true;
 }
 
 
 
 void VirtualCamera::sample_pc(cv::Mat& pc_xyz,cv::Mat& pc_rgb,cv::Mat& img)
 {
+
+  //std::cout<<"\n[VIRTUAL CAMERA] sampling pointcloud with extrinsics:\n";
+  //std::cout<<" rot: \n"<<rot[0]<<" , "<<rot[1]<<" , "<<rot[2]<<std::endl;
+  //std::cout<<" trans: \n"<<trans[0]<<" , "<<trans[1]<<" , "<<trans[2]<<std::endl<<std::endl;
+
   if(pc_xyz.rows>1 && pc_xyz.cols >1)
   {
     pc_xyz=pc_xyz.reshape(3,1);
   }
 
    //project 3d points to virtual camera
-   cv::Mat pc_proj(pc_xyz.size(),1,CV_32FC2);
+   cv::Mat pc_proj(pc_xyz.rows*pc_xyz.cols,1,CV_32FC2);
 
    // calc reprojection diffs
    cv::projectPoints(pc_xyz,rot,trans,cam_mat,dist_coeffs,pc_proj);
@@ -85,4 +125,23 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyz,cv::Mat& pc_rgb,cv::Mat& img)
       }
 
    return;
+}
+
+
+bool VirtualCamera::validity_check(std::vector<cv::Point3f>& obj_pts,std::vector<cv::Point2f>& img_pts,cv::Mat& rot,cv::Mat& trans)
+{
+
+  double val_limit=3.0;
+  cv::Mat proj_pts;
+  cv::projectPoints(obj_pts,rot,trans,cam_mat,dist_coeffs,proj_pts);
+  cv::Point2f* proj_pts_ptr=proj_pts.ptr<cv::Point2f>(0,0);
+
+  for(int i=0;i<img_pts.size();++i)
+  {
+    if(img_pts[i].x- (*proj_pts_ptr).x >val_limit || img_pts[i].y - (*proj_pts_ptr).y > val_limit) return false;
+    proj_pts_ptr++;
+  }
+
+  return true;
+
 }

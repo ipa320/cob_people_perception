@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+
+#include <cob_people_detection/virtual_camera.h>
 #include <boost/lexical_cast.hpp>
 #define PP_NOSE 1
 #define PP_EYE_L 2
@@ -46,12 +48,14 @@ class FaceFeatures{
                       this->nose.y+=oy;
                     }
 
-                    void as_vector(std::vector<T>& vec)
+                    std::vector<T> as_vector()
                     {
+                     std::vector<T> vec;
                      vec.push_back(lefteye);
                      vec.push_back(righteye);
                      vec.push_back(nose);
                      vec.push_back(mouth);
+                     return vec;
                     };
                     bool valid()
                     {
@@ -152,4 +156,6 @@ class FaceNormalizer{
 
   int epoch_ctr;
   std::string debug_path_;
+
+  VirtualCamera kinect;
 };

@@ -47,10 +47,10 @@ void FaceNormalizer::set_norm_face(int& rows,int& cols)
 {
 
 
-  f_norm_img_.lefteye.x=0.25     *cols     ;
+  f_norm_img_.lefteye.x=0.3     *cols     ;
   f_norm_img_.lefteye.y=0.3      *rows     ;
 
-  f_norm_img_.righteye.x=0.75    *cols     ;
+  f_norm_img_.righteye.x=0.7    *cols     ;
   f_norm_img_.righteye.y=0.3     *rows     ;
 
   f_norm_img_.mouth.x=0.5        *cols     ;
@@ -80,6 +80,7 @@ void FaceNormalizer::set_norm_face(int& rows,int& cols)
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::Vec2f& offset)
 {
 
+  bool valid = true; // Flag only returned true if all steps have been completed successfully
   img.copyTo(img_);
   depth.copyTo(depth_);
 
@@ -100,9 +101,10 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
   }
 
   //geometric normalization
-  if(!normalize_geometry_depth(img,depth)) return false;
+  if(!normalize_geometry_depth(img,depth)) valid=false ;
   if(debug_)dump_img(img,"geometryRGBD");
 
+  cv::cvtColor(img,img,CV_BGR2GRAY);
   despeckle(img,img);
 
   if(debug_)dump_img(img,"despeckle");
@@ -112,16 +114,17 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
   if(debug_)dump_img(img,"1_resized");
 
   // radiometric normalization
-  if(!normalize_radiometry(img)) return false;
+  if(!normalize_radiometry(img)) valid=false;
   if(debug_)dump_img(img,"2_radiometry");
 
 
 
 
-  return true;
+  return valid;
 }
 bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
 {
+  bool valid = true; // Flag only returned true if all steps have been completed successfully
   img.copyTo(img_);
   //norm size ffrom input image
   set_norm_face(img.rows,img.cols);
@@ -134,7 +137,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
 
 
   //geometric normalization
-  if(!normalize_geometry(img)) return false;
+  if(!normalize_geometry(img)) valid= false;
   if(debug_)dump_img(img,"geometryRGB");
 
   //resizing
@@ -142,19 +145,16 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
   if(debug_)dump_img(img,"1_resized");
 
   // radiometric normalization
-  if(!normalize_radiometry(img)) return false;
+  if(!normalize_radiometry(img)) valid= false;
   if(debug_)dump_img(img,"2_radiometry");
 
-
-
-
-
   epoch_ctr++;
-  return true;
+  return valid;
 }
 
 bool FaceNormalizer::normalize_radiometry(cv::Mat& img)
 {
+  return false;
   cv::Mat v_channel;
   extractVChannel(img,v_channel);
 
@@ -273,42 +273,54 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   f_det_img_.add_offset  (xoffset,yoffset);
   f_norm_img_.add_offset (xoffset,yoffset);
 
-  //calculate transformation
 
 
-   cv::Mat trans,rot;
+  if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_norm_img_.as_vector(),true))  return false;
 
 
-   //camera matrix
-   double fx=526.37013657;
-   double fy=526.37013657;
-   double cy=259.01834898;
-   double cx=313.68782938;
-   cv::Mat cam_mat=(cv::Mat_<double>(3,3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
+  cv::Mat res=cv::Mat::zeros(480,640,CV_8UC3);
+  kinect.sample_pc(depth,img,res);
 
-   calcPnP(cam_mat,rot,trans);
 
-   if(debug_)
-   {
-     std::cout<<"Rotation:\n"<<std::endl;
-     std::cout<<rot.at<double>(0,0)<<" , "<<rot.at<double>(0,1)<<" , "<<rot.at<double>(0,2)<<std::endl;
-     std::cout<<"Translation:\n"<<std::endl;
-     std::cout<<trans.at<double>(0,0)<<" , "<<trans.at<double>(0,1)<<" , "<<trans.at<double>(0,2)<<std::endl;
-   }
+  cv::Rect crop(xoffset,yoffset,img.cols,img.rows);
+  res(crop).copyTo(img);
+  if(debug_)dump_img(res,"virtual_full");
 
-  resample_direct(cam_mat,rot,trans,img);
-  //cv::Mat rot_test=(cv::Mat_<double>(3,1) << 0 , 0 , 0);
-  //cv::Mat trans_test=(cv::Mat_<double>(3,1) << 0 , -0.03 , 0);
-  //resample_direct(cam_mat,rot_test,trans_test,img_res);
+
+  ////calculate transformation
+
+
+  // cv::Mat trans,rot;
+
+
+  // //camera matrix
+  // double fx=526.37013657;
+  // double fy=526.37013657;
+  // double cy=259.01834898;
+  // double cx=313.68782938;
+  // cv::Mat cam_mat=(cv::Mat_<double>(3,3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
+
+  // calcPnP(cam_mat,rot,trans);
+
+  // if(debug_)
+  // {
+  //   std::cout<<"Rotation:\n"<<std::endl;
+  //   std::cout<<rot.at<double>(0,0)<<" , "<<rot.at<double>(0,1)<<" , "<<rot.at<double>(0,2)<<std::endl;
+  //   std::cout<<"Translation:\n"<<std::endl;
+  //   std::cout<<trans.at<double>(0,0)<<" , "<<trans.at<double>(0,1)<<" , "<<trans.at<double>(0,2)<<std::endl;
+  // }
+
+  //resample_direct(cam_mat,rot,trans,img);
+  ////cv::Mat rot_test=(cv::Mat_<double>(3,1) << 0 , 0 , 0);
+  ////cv::Mat trans_test=(cv::Mat_<double>(3,1) << 0 , -0.03 , 0);
+  ////resample_direct(cam_mat,rot_test,trans_test,img_res);
 
    return true;
 }
 void FaceNormalizer::calcPnP(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& trans)
 {
-   std::vector<cv::Point3f> object_points;
-   std::vector<cv::Point2f> img_points;
-   f_norm_img_.as_vector(img_points);
-   f_det_xyz_.as_vector(object_points);
+   std::vector<cv::Point3f> object_points=f_det_xyz_.as_vector();
+   std::vector<cv::Point2f> img_points=f_norm_img_.as_vector();
 
    // calculate object pose
    cv::Mat dist_coeffs=(cv::Mat_<double>(5,1)<< 0.00000000, 0.00000000, 0.00000000, 0.00000000, 0.00000000);
@@ -328,7 +340,7 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
      for(int j=0;j<depth_.cols;++j)
      {
          temp = (cv::Point3f)depth_.at<cv::Point3f>(i,j);
-         kin2xyz(temp);
+         //kin2xyz(temp);
 
        object_vec.push_back(temp);
       if(isnan(depth_.at<cv::Vec3f>(i,j)[0])) nan_ctr++;
@@ -352,10 +364,8 @@ void FaceNormalizer::resample_direct(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& tran
    bool i_debug = true;
    if(debug_){
 
-   std::vector<cv::Point2f> img_points;
-   std::vector<cv::Point3f> object_points;
-   f_norm_img_.as_vector(img_points);
-   f_det_xyz_.as_vector(object_points);
+   std::vector<cv::Point2f> img_points=f_norm_img_.as_vector();
+   std::vector<cv::Point3f> object_points=f_det_xyz_.as_vector();
    std::vector<cv::Vec2f> reproj_feat;
    cv::projectPoints(object_points,rot,trans,cam_mat,dist_coeffs,reproj_feat);
     std::cout<<"reprojection results"<<std::endl;
@@ -511,19 +521,14 @@ bool FaceNormalizer::features_from_depth(cv::Mat& depth)
 {
 
   //pick 3D points from pointcloud
-  //cv::Vec3f m=depth.at<cv::Vec3f>((int)depth.rows/2,(int)depth.cols/2);
   f_det_xyz_.nose=      depth.at<cv::Vec3f>(f_det_img_.nose.y,f_det_img_.nose.x)               ;
   f_det_xyz_.mouth=     depth.at<cv::Vec3f>(f_det_img_.mouth.y,f_det_img_.mouth.x)            ;
   f_det_xyz_.lefteye=   depth.at<cv::Vec3f>(f_det_img_.lefteye.y,f_det_img_.lefteye.x)      ;
   f_det_xyz_.righteye=  depth.at<cv::Vec3f>(f_det_img_.righteye.y,f_det_img_.righteye.x)   ;
-  //f_det_xyz_.nose=depth.at<cv::Vec3f>(f_det_img_.nose.x,f_det_img_.nose.y)               ;
-  //f_det_xyz_.mouth=depth.at<cv::Vec3f>(f_det_img_.mouth.x,f_det_img_.mouth.y)            ;
-  //f_det_xyz_.lefteye=depth.at<cv::Vec3f>(f_det_img_.lefteye.x,f_det_img_.lefteye.y)      ;
-  //f_det_xyz_.righteye=depth.at<cv::Vec3f>(f_det_img_.righteye.x,f_det_img_.righteye.y)   ;
-  kin2xyz(f_det_xyz_.nose);
-  kin2xyz(f_det_xyz_.mouth);
-  kin2xyz(f_det_xyz_.lefteye);
-  kin2xyz(f_det_xyz_.righteye);
+  //kin2xyz(f_det_xyz_.nose);
+  //kin2xyz(f_det_xyz_.mouth);
+  //kin2xyz(f_det_xyz_.lefteye);
+  //kin2xyz(f_det_xyz_.righteye);
 
 
 
@@ -798,8 +803,9 @@ void FaceNormalizer::despeckle(cv::Mat& src,cv::Mat& dst)
     }
   }
 
+  cv::medianBlur(src,src,3);
 
-  cv::blur(dst,dst,cv::Size(3,3),cv::Point(0,0),0);
+  //cv::blur(dst,dst,cv::Size(3,3),cv::Point(0,0),0);
 
 
 }

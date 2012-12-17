@@ -7,14 +7,15 @@
 class VirtualCamera {
 public:
   VirtualCamera (int camera_type);
-  virtual ~VirtualCamera ();
+  VirtualCamera ();
+  virtual ~VirtualCamera (){};
 
 
  inline void set_extrinsics(cv::Vec3f& irot,cv::Vec3f& itrans){ rot=irot ; trans=itrans;};
  inline void rotate_cam(cv::Vec3f& irot){rot+=irot;};
  inline void translate_cam(cv::Vec3f& itrans){trans+=itrans;};
 
-  void calc_extrinsics(std::vector<cv::Point2f> img_pts, std::vector<cv::Point3f> obj_pts);
+  bool calc_extrinsics(std::vector<cv::Point3f> obj_pts,std::vector<cv::Point2f> img_pts, bool validity_check);
   void calc_intrinsics();
 
   void sample_pc(cv::Mat& pc,cv::Mat& img);
@@ -28,7 +29,8 @@ public:
 
 
 private:
-  /* data */
+
+  bool validity_check(std::vector<cv::Point3f>& obj_pts,std::vector<cv::Point2f>& img_pts,cv::Mat& rot,cv::Mat& trans);
 
   //intrinsics
 
