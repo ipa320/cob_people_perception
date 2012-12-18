@@ -105,6 +105,7 @@ rosbuild_link_boost(sensor_message_gateway_node signals)
 rosbuild_add_library(sensor_message_gateway_nodelet
 			ros/src/sensor_message_gateway_node.cpp
 			ros/src/sensor_message_gateway_nodelet.cpp)
+rosbuild_link_boost(sensor_message_gateway_nodelet signals)
 
 rosbuild_add_executable(coordinator_node
 			ros/src/coordinator_node.cpp)

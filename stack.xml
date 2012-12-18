@@ -7,7 +7,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/cob_people_perception</url>
   <depend stack="cob_perception_common" /> <!-- cob_image_flip, cob_vision_utils -->
-  <depend stack="common" /> <!-- actionlib, tinyxml -->
+  <depend stack="common" /> <!-- actionlib -->
   <depend stack="common_msgs" /> <!-- sensor_msgs, actionlib_msgs, geometry_msgs, stereo_msgs -->
   <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
   <depend stack="geometry" /> <!-- tf -->
