@@ -89,7 +89,7 @@ FaceNormalizerNode::FaceNormalizerNode(ros::NodeHandle nh)
 
 
 	// advertise topics
-	norm_face_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("norm_faces", 1);
+	norm_face_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageCropArray>("norm_faces", 1);
 
 	// subscribe to head detection topic
 	face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceNormalizerNode::facePositionsCallback, this);
@@ -159,24 +159,50 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
 		head_bounding_boxes[i] = rect;
 	}
 
+
+
+
+  std::vector<cv::Mat> crops;
   for (int i = 0; i <heads_depth_images.size(); i++) {
-  //cv::namedWindow("win",CV_WINDOW_AUTOSIZE);
-  //std::cout<<" # faces = "<<face_bounding_boxes[i].size()<<std::endl;
+
   for(int j=0;j<face_bounding_boxes[i].size();j++)
   {
-    //cv::imshow("win",heads_color_images[i](face_bounding_boxes[i][j]));
-    //cv::waitKey(100);
     int dim=160;
-    cv::Mat bgr_crop=heads_color_images[i](face_bounding_boxes[i][j]);
-    cv::Mat xyz_crop=heads_depth_images[i](face_bounding_boxes[i][j]);
+  //  cv::Mat bgr_crop=heads_color_images[i](face_bounding_boxes[i][j]);
+  //  cv::Mat xyz_crop=heads_depth_images[i](face_bounding_boxes[i][j]);
+    cv::Mat bgr_crop,xyz_crop;
+    heads_color_images[i](face_bounding_boxes[i][j]).copyTo(bgr_crop);
+    heads_depth_images[i](face_bounding_boxes[i][j]).copyTo(xyz_crop);
     cv::Vec2f offset;
      offset[0]=head_bounding_boxes[i].x + face_bounding_boxes[i][j].x;
      offset[1]=head_bounding_boxes[i].y + face_bounding_boxes[i][j].y;
     //face_normalizer_.captureScene(bgr_crop,xyz_crop,offset);
     bool is_norm=face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim,offset);
+    crops.push_back(bgr_crop);
+
+
   }
  }
-  }
+
+	cob_people_detection_msgs::ColorDepthImageCropArray image_array;
+  image_array.cdia=*face_positions;
+  image_array.crops.resize(crops.size());
+	for (unsigned int i=0; i<crops.size(); i++)
+	{
+      cv_bridge::CvImage cv_ptr;
+      cv_ptr.image = crops[i];
+      std::cout<<"before size="<<crops[i].rows<<","<<crops[i].cols<<std::endl;
+      cv_ptr.encoding = sensor_msgs::image_encodings::BGR8;
+      image_array.crops[i]= *(cv_ptr.toImageMsg());
+
+	}
+
+
+
+  norm_face_publisher_.publish(image_array);
+
+
+}
 
 
 

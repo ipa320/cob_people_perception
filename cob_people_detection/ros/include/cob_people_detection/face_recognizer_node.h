@@ -76,6 +76,7 @@
 #include <geometry_msgs/Point.h>
 #include <cob_people_detection_msgs/DetectionArray.h>
 #include <cob_people_detection_msgs/ColorDepthImageArray.h>
+#include <cob_people_detection_msgs/ColorDepthImageCropArray.h>
 
 // Actions
 #include <actionlib/server/simple_action_server.h>
@@ -98,7 +99,8 @@ public:
 protected:
 
 	/// Callback for incoming head detections
-	void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions);
+	//void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions);
+	void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageCropArray::ConstPtr& face_positions);
 
 	/// Computes the 3D coordinate of a detected face.
 	/// @param depth_image Coordinate image in format CV32FC3

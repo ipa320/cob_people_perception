@@ -1,4 +1,5 @@
 #include"cob_people_detection/virtual_camera.h"
+#include<opencv/highgui.h>
 
 
 VirtualCamera::VirtualCamera()

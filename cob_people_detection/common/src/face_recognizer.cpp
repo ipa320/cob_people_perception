@@ -145,7 +145,6 @@ unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Rect& face_bound
 	cv::Mat roi = color_image(face_bounding_box);
 
 
-  if(!face_normalizer_.normalizeFace(roi,m_eigenface_size))return ipa_Utils::RET_FAILED;
 
 	// Save image
 	face_images.push_back(roi);
@@ -792,12 +791,10 @@ cv::Mat FaceRecognizer::preprocessImage(cv::Mat& input_image)
 unsigned long FaceRecognizer::convertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face, cv::Size new_size)
 {
 
-	cv::Mat temp;
-  img.copyTo(temp);
-  temp=temp(face);
-  if(face_normalizer_.normalizeFace(temp,m_eigenface_size))std::cout<<"NORMALIZED\n";
+  resized=img(face);
+  cv::resize(resized,resized,new_size);
 
-	cv::cvtColor(temp, resized, CV_BGR2GRAY);
+	cv::cvtColor(resized, resized, CV_BGR2GRAY);
 
 	return ipa_Utils::RET_OK;
 }

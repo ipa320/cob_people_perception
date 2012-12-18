@@ -76,6 +76,7 @@
 #include <geometry_msgs/Point.h>
 #include <cob_people_detection_msgs/DetectionArray.h>
 #include <cob_people_detection_msgs/ColorDepthImageArray.h>
+#include <cob_people_detection_msgs/ColorDepthImageCropArray.h>
 
 // Actions
 #include <actionlib/server/simple_action_server.h>

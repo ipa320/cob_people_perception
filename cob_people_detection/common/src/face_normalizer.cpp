@@ -4,7 +4,7 @@ using namespace cv;
 FaceNormalizer::FaceNormalizer():scale_(1.0),
                                 epoch_ctr(0),
                                 debug_path_("/share/goa-tz/people_detection/debug/"),
-                                debug_(true)
+                                debug_(false)
 {
   std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
   nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
@@ -122,7 +122,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
   if(!normalize_geometry_depth(img,depth)) valid=false ;
   if(debug_)dump_img(img,"geometryRGBD");
 
-  cv::cvtColor(img,img,CV_BGR2GRAY);
+  //cv::cvtColor(img,img,CV_BGR2GRAY);
   despeckle(img,img);
 
   if(debug_)dump_img(img,"despeckle");
@@ -259,7 +259,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   // detect features
   if(!features_from_color(img_))
   {
-    std::cout<<" NO COLOR FEATS"<<std::endl;
+    //std::cout<<" NO COLOR FEATS"<<std::endl;
     return false;
   }
    if(debug_)dump_features(img_);
