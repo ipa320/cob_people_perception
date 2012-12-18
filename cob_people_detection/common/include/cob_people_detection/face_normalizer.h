@@ -48,6 +48,14 @@ class FaceFeatures{
                       this->nose.y+=oy;
                     }
 
+                    void scale(double scale)
+                    {
+                      lefteye*=scale;
+                      righteye*=scale;
+                      nose*=scale;
+                      mouth*=scale;
+                    }
+
                     std::vector<T> as_vector()
                     {
                      std::vector<T> vec;

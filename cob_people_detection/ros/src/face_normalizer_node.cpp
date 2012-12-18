@@ -172,8 +172,8 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
     cv::Vec2f offset;
      offset[0]=head_bounding_boxes[i].x + face_bounding_boxes[i][j].x;
      offset[1]=head_bounding_boxes[i].y + face_bounding_boxes[i][j].y;
-    face_normalizer_.captureScene(bgr_crop,xyz_crop,offset);
-    //bool is_norm=face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim,offset);
+    //face_normalizer_.captureScene(bgr_crop,xyz_crop,offset);
+    bool is_norm=face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim,offset);
   }
  }
   }

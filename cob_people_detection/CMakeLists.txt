@@ -72,10 +72,10 @@ rosbuild_add_library(virtual_camera
   common/src/virtual_camera.cpp)
 target_link_libraries(virtual_camera  opencv_core )
 
-#rosbuild_add_executable(face_normalizer_test
-#      common/src/face_normalizer.cpp
-#      )
-#    target_link_libraries(face_normalizer_test virtual_camera opencv_core opencv_highgui )
+rosbuild_add_executable(face_normalizer_test
+      common/src/test/fn_test.cpp
+      )
+    target_link_libraries(face_normalizer_test face_normalizer virtual_camera opencv_core opencv_highgui )
 
 rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)
@@ -121,9 +121,6 @@ rosbuild_add_library(face_normalizer
     target_link_libraries(face_normalizer virtual_camera)
 
 
-    # SANDBOX EXE
-    #rosbuild_add_executable(impre common/src/sandbox.cpp)    
-    #rosbuild_add_executable(FN common/src/face_normalizer.cpp)
 
 # modified openni tracker
 #rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp

@@ -46,6 +46,7 @@ void FaceNormalizer::set_norm_face(int& rows,int& cols)
 
 {
 
+  norm_size_=cv::Size(cols,rows);
 
   f_norm_img_.lefteye.x=0.3     *cols     ;
   f_norm_img_.lefteye.y=0.3      *rows     ;
@@ -81,6 +82,8 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset
 {
 
 
+  int dim=200;
+  set_norm_face(dim,dim);
   if(!features_from_color(img)) return false;
 
   std::cout<<"SAVING SCENE"<<std::endl;
@@ -495,27 +498,30 @@ bool FaceNormalizer::normalize_geometry(cv::Mat& img)
 
 bool FaceNormalizer::features_from_color(cv::Mat& img_color)
 {
-  if(!detect_feature(img_color,f_det_img_.nose,PP_NOSE))
+  cv::Mat temp;
+  cv::resize(img_color,temp,norm_size_) ;
+  if(!detect_feature(temp,f_det_img_.nose,PP_NOSE))
   {
     if(debug_)std::cout<<"no nose"<<std::endl;
      return false;
   }
-  if(!detect_feature(img_color,f_det_img_.lefteye,PP_EYE_L))
+  if(!detect_feature(temp,f_det_img_.lefteye,PP_EYE_L))
   {
     if(debug_)std::cout<<"no eye_l"<<std::endl;
      return false;
   }
-  if(!detect_feature(img_color,f_det_img_.righteye,PP_EYE_R))
+  if(!detect_feature(temp,f_det_img_.righteye,PP_EYE_R))
   {
     if(debug_)std::cout<<"no eye_r"<<std::endl;
      return false;
   }
-  if(!detect_feature(img_color,f_det_img_.mouth,PP_MOUTH))
+  if(!detect_feature(temp,f_det_img_.mouth,PP_MOUTH))
   {
     if(debug_)std::cout<<"no mouth"<<std::endl;
      return false;
   }
 
+  f_det_img_.scale((double)img_color.rows/norm_size_.height);
 
   if(debug_)
   {
@@ -820,29 +826,3 @@ void FaceNormalizer::despeckle(cv::Mat& src,cv::Mat& dst)
 
 }
 
-
-//int main(int argc, const char *argv[])
-//{
-//  std::cout<<"[FaceNormalizer] running scene no. "<<argv[1]<<"...";
-//  FaceNormalizer fn;
-//  cv::Mat depth,img;
-//  cv::Vec2f offset;
-//  std::string i_path="/share/goa-tz/people_detection/debug/scenes/scene";
-//  i_path.append(argv[1]);
-//  i_path.append(".xml");
-//
-//  fn.read_scene(depth,img,offset,i_path);
-//
-//  cv::Mat wmat1,wmat2;
-//  img.copyTo(wmat1);
-//  img.copyTo(wmat2);
-//  fn.dump_img(wmat1,"original");
-//  int rows=200;
-//  fn.normalizeFace(wmat1,depth,rows,offset);
-//  fn.dump_img(wmat1,"processedRGBD");
-//  fn.normalizeFace(wmat2,rows);
-//  fn.dump_img(wmat2,"processedRGB");
-//
-//  std::cout<<"..done\n";
-//  return 0;
-//}
