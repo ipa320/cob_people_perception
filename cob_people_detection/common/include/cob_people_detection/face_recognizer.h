@@ -108,6 +108,7 @@ public:
 	/// @param face_images Vector containing all trained images
 	/// @return Return code
 	virtual unsigned long addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
+	virtual unsigned long addFace(cv::Mat& color_image,cv::Mat& depth_image,cv::Rect& face_bounding_box, cv::Rect& head_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
 
 	/// Updates the labels of a stored person.
 	/// @param old_label The label in the database which shall be replaced by the new label

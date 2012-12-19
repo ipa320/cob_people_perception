@@ -83,13 +83,16 @@ bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vecto
 
 
 
-void VirtualCamera::sample_pc(cv::Mat& pc_xyz,cv::Mat& pc_rgb,cv::Mat& img)
+void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img)
 {
 
   //std::cout<<"\n[VIRTUAL CAMERA] sampling pointcloud with extrinsics:\n";
   //std::cout<<" rot: \n"<<rot[0]<<" , "<<rot[1]<<" , "<<rot[2]<<std::endl;
   //std::cout<<" trans: \n"<<trans[0]<<" , "<<trans[1]<<" , "<<trans[2]<<std::endl<<std::endl;
 
+  cv::Mat pc_xyz,pc_rgb;
+  pc_xyzPtr.copyTo(pc_xyz);
+  pc_rgbPtr.copyTo(pc_rgb);
   if(pc_xyz.rows>1 && pc_xyz.cols >1)
   {
     pc_xyz=pc_xyz.reshape(3,1);

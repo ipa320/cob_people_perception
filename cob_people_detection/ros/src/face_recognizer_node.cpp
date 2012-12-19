@@ -144,205 +144,32 @@ FaceRecognizerNode::~FaceRecognizerNode(void)
 // Prevent deleting memory twice, when using smart pointer
 void voidDeleter(const sensor_msgs::Image* const) {}
 
-void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageCropArray::ConstPtr& face_positions)
-{
-	// receive head and face positions and recognize faces in the face region, finally publish detected and recognized faces
-
-	// --- convert color image patches of head regions and contained face bounding boxes ---
-	cv_bridge::CvImageConstPtr cv_ptr;
-	std::vector<cv::Mat> heads_color_images;
-	heads_color_images.resize(face_positions->cdia.head_detections.size());
-	std::vector<cv::Mat> heads_depth_images;
-	heads_depth_images.resize(face_positions->cdia.head_detections.size());
-
-	std::vector< std::vector<cv::Rect> > face_bounding_boxes;
-	std::vector< std::vector<cv::Rect> > crop_bounding_boxes;
-	face_bounding_boxes.resize(face_positions->cdia.head_detections.size());
-	crop_bounding_boxes.resize(face_positions->cdia.head_detections.size());
-  cv::Rect bb=cv::Rect(0,0,160,160);
-
-	std::vector<cv::Rect> head_bounding_boxes;
-	head_bounding_boxes.resize(face_positions->cdia.head_detections.size());
-
-	for (unsigned int i=0; i<face_positions->cdia.head_detections.size(); i++)
-	{
-		// color image
-		if (enable_face_recognition_ == true)
-		{
-			sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->cdia.head_detections[i].color_image), voidDeleter);
-			try
-			{
-				cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
-			}
-			catch (cv_bridge::Exception& e)
-			{
-				ROS_ERROR("cv_bridge exception: %s", e.what());
-				return;
-			}
-			heads_color_images[i] = cv_ptr->image;
-		}
-
-		// depth image
-		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->cdia.head_detections[i].depth_image), voidDeleter);
-		try
-		{
-			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::TYPE_32FC3);
-		}
-		catch (cv_bridge::Exception& e)
-		{
-			ROS_ERROR("cv_bridge exception: %s", e.what());
-			return;
-		}
-		heads_depth_images[i] = cv_ptr->image;
-
-		// face bounding boxes
-		face_bounding_boxes[i].resize(face_positions->cdia.head_detections[i].face_detections.size());
-		crop_bounding_boxes[i].resize(face_positions->cdia.head_detections[i].face_detections.size());
-		for (uint j=0; j<face_bounding_boxes[i].size(); j++)
-		{
-			const cob_people_detection_msgs::Rect& source_rect = face_positions->cdia.head_detections[i].face_detections[j];
-			cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
-			face_bounding_boxes[i][j] = rect;
-			crop_bounding_boxes[i][j] = bb;
-		}
-
-		// head bounding box
-		const cob_people_detection_msgs::Rect& source_rect = face_positions->cdia.head_detections[i].head_detection;
-		cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
-		head_bounding_boxes[i] = rect;
-	}
-
-//--------------------------------------------------------------------
-//--------------------------------------------------------------------
-	std::vector<cv::Mat> crops;
-	//std::vector<std::vector<cv::Rect> > crop_bounding_boxes;
-	crops.resize(face_positions->crops.size());
-    for(int k=0;k<face_positions->crops.size();k++)
-    {
-      //tenpora TODO:
-			sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->crops[k]), voidDeleter);
-			try
-			{
-				cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
-			}
-			catch (cv_bridge::Exception& e)
-			{
-				ROS_ERROR("cv_bridge exception: %s", e.what());
-				return;
-			}
-			crops[k]= cv_ptr->image;
-      //temporary TODO
-      //crop_bounding_boxes[k][0]=bb;
-
-    }
-//--------------------------------------------------------------------
-//--------------------------------------------------------------------
-
-
-	// --- face recognition ---
-	std::vector< std::vector<std::string> > identification_labels;
-	bool identification_failed = false;
-	if (enable_face_recognition_ == true)
-	{
-		// recognize faces
-		//unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
-		unsigned long result_state = face_recognizer_.recognizeFaces(crops,crop_bounding_boxes, identification_labels);
-		if (result_state == ipa_Utils::RET_FAILED)
-		{
-			ROS_ERROR("FaceRecognizerNode::face_positions_callback: Please load a face recognition model at first.");
-			identification_failed = true;
-		}
-	}
-	if (enable_face_recognition_ == false || identification_failed == true)
-	{
-		// label all image unknown if face recognition disabled
-		identification_labels.resize(face_positions->cdia.head_detections.size());
-		for (uint i=0; i<identification_labels.size(); i++)
-		{
-			identification_labels[i].resize(face_positions->cdia.head_detections[i].face_detections.size());
-			for (uint j=0; j<identification_labels[i].size(); j++)
-				identification_labels[i][j] = "Unknown";
-		}
-	}
-
-	// --- publish detection message ---
-	cob_people_detection_msgs::DetectionArray detection_msg;
-	detection_msg.header = face_positions->header;
-
-	// prepare message
-	for (int head=0; head<(int)head_bounding_boxes.size(); head++)
-	{
-		if (face_bounding_boxes[head].size() == 0)
-		{
-			// no faces detected in head region -> publish head position
-			cob_people_detection_msgs::Detection det;
-			cv::Rect& head_bb = head_bounding_boxes[head];
-			// set 3d position of head's center
-			bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], 0.5*(float)head_bb.width, 0.5*(float)head_bb.height, det.pose.pose.position, 6);
-			if (valid_3d_position==false)
-				continue;
-			// write bounding box
-			det.mask.roi.x = head_bb.x;           det.mask.roi.y = head_bb.y;
-			det.mask.roi.width = head_bb.width;   det.mask.roi.height = head_bb.height;
-			// set label
-			det.label="UnknownHead";
-			// set origin of detection
-			det.detector = "head";
-			// header
-			det.header = face_positions->header;
-			// add to message
-			detection_msg.detections.push_back(det);
-		}
-		else
-		{
-			// process all faces in head region
-			for (int face=0; face<(int)face_bounding_boxes[head].size(); face++)
-			{
-				cob_people_detection_msgs::Detection det;
-				cv::Rect& head_bb = head_bounding_boxes[head];
-				cv::Rect& face_bb = face_bounding_boxes[head][face];
-				// set 3d position of head's center
-				bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], face_bb.x+0.5*(float)face_bb.width, face_bb.y+0.5*(float)face_bb.height, det.pose.pose.position, 6);
-				if (valid_3d_position==false)
-					continue;
-				// write bounding box
-				det.mask.roi.x = head_bb.x+face_bb.x; det.mask.roi.y = head_bb.y+face_bb.y;
-				det.mask.roi.width = face_bb.width;   det.mask.roi.height = face_bb.height;
-				// set label
-				det.label=identification_labels[head][face];
-				// set origin of detection
-				det.detector = "face";
-				// header
-				det.header = face_positions->header;
-				// add to message
-				detection_msg.detections.push_back(det);
-			}
-		}
-	}
-
-	// publish message
-	face_recognition_publisher_.publish(detection_msg);
-}
-//void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions)
+//void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageCropArray::ConstPtr& face_positions)
 //{
 //	// receive head and face positions and recognize faces in the face region, finally publish detected and recognized faces
 //
 //	// --- convert color image patches of head regions and contained face bounding boxes ---
 //	cv_bridge::CvImageConstPtr cv_ptr;
 //	std::vector<cv::Mat> heads_color_images;
-//	heads_color_images.resize(face_positions->head_detections.size());
+//	heads_color_images.resize(face_positions->cdia.head_detections.size());
 //	std::vector<cv::Mat> heads_depth_images;
-//	heads_depth_images.resize(face_positions->head_detections.size());
+//	heads_depth_images.resize(face_positions->cdia.head_detections.size());
+//
 //	std::vector< std::vector<cv::Rect> > face_bounding_boxes;
-//	face_bounding_boxes.resize(face_positions->head_detections.size());
+//	std::vector< std::vector<cv::Rect> > crop_bounding_boxes;
+//	face_bounding_boxes.resize(face_positions->cdia.head_detections.size());
+//	crop_bounding_boxes.resize(face_positions->cdia.head_detections.size());
+//  cv::Rect bb=cv::Rect(0,0,160,160);
+//
 //	std::vector<cv::Rect> head_bounding_boxes;
-//	head_bounding_boxes.resize(face_positions->head_detections.size());
-//	for (unsigned int i=0; i<face_positions->head_detections.size(); i++)
+//	head_bounding_boxes.resize(face_positions->cdia.head_detections.size());
+//
+//	for (unsigned int i=0; i<face_positions->cdia.head_detections.size(); i++)
 //	{
 //		// color image
 //		if (enable_face_recognition_ == true)
 //		{
-//			sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->head_detections[i].color_image), voidDeleter);
+//			sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->cdia.head_detections[i].color_image), voidDeleter);
 //			try
 //			{
 //				cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
@@ -356,7 +183,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 //		}
 //
 //		// depth image
-//		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->head_detections[i].depth_image), voidDeleter);
+//		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->cdia.head_detections[i].depth_image), voidDeleter);
 //		try
 //		{
 //			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::TYPE_32FC3);
@@ -369,19 +196,48 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 //		heads_depth_images[i] = cv_ptr->image;
 //
 //		// face bounding boxes
-//		face_bounding_boxes[i].resize(face_positions->head_detections[i].face_detections.size());
+//		face_bounding_boxes[i].resize(face_positions->cdia.head_detections[i].face_detections.size());
+//		crop_bounding_boxes[i].resize(face_positions->cdia.head_detections[i].face_detections.size());
 //		for (uint j=0; j<face_bounding_boxes[i].size(); j++)
 //		{
-//			const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].face_detections[j];
+//			const cob_people_detection_msgs::Rect& source_rect = face_positions->cdia.head_detections[i].face_detections[j];
 //			cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 //			face_bounding_boxes[i][j] = rect;
+//			crop_bounding_boxes[i][j] = bb;
 //		}
 //
 //		// head bounding box
-//		const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].head_detection;
+//		const cob_people_detection_msgs::Rect& source_rect = face_positions->cdia.head_detections[i].head_detection;
 //		cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 //		head_bounding_boxes[i] = rect;
 //	}
+//
+////--------------------------------------------------------------------
+////--------------------------------------------------------------------
+//	std::vector<cv::Mat> crops;
+//	//std::vector<std::vector<cv::Rect> > crop_bounding_boxes;
+//	crops.resize(face_positions->crops.size());
+//    for(int k=0;k<face_positions->crops.size();k++)
+//    {
+//      //tenpora TODO:
+//			sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->crops[k]), voidDeleter);
+//			try
+//			{
+//				cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
+//			}
+//			catch (cv_bridge::Exception& e)
+//			{
+//				ROS_ERROR("cv_bridge exception: %s", e.what());
+//				return;
+//			}
+//			crops[k]= cv_ptr->image;
+//      //temporary TODO
+//      //crop_bounding_boxes[k][0]=bb;
+//
+//    }
+////--------------------------------------------------------------------
+////--------------------------------------------------------------------
+//
 //
 //	// --- face recognition ---
 //	std::vector< std::vector<std::string> > identification_labels;
@@ -389,7 +245,8 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 //	if (enable_face_recognition_ == true)
 //	{
 //		// recognize faces
-//		unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
+//		//unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
+//		unsigned long result_state = face_recognizer_.recognizeFaces(crops,crop_bounding_boxes, identification_labels);
 //		if (result_state == ipa_Utils::RET_FAILED)
 //		{
 //			ROS_ERROR("FaceRecognizerNode::face_positions_callback: Please load a face recognition model at first.");
@@ -399,10 +256,10 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 //	if (enable_face_recognition_ == false || identification_failed == true)
 //	{
 //		// label all image unknown if face recognition disabled
-//		identification_labels.resize(face_positions->head_detections.size());
+//		identification_labels.resize(face_positions->cdia.head_detections.size());
 //		for (uint i=0; i<identification_labels.size(); i++)
 //		{
-//			identification_labels[i].resize(face_positions->head_detections[i].face_detections.size());
+//			identification_labels[i].resize(face_positions->cdia.head_detections[i].face_detections.size());
 //			for (uint j=0; j<identification_labels[i].size(); j++)
 //				identification_labels[i][j] = "Unknown";
 //		}
@@ -466,6 +323,149 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 //	// publish message
 //	face_recognition_publisher_.publish(detection_msg);
 //}
+void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions)
+{
+	// receive head and face positions and recognize faces in the face region, finally publish detected and recognized faces
+
+	// --- convert color image patches of head regions and contained face bounding boxes ---
+	cv_bridge::CvImageConstPtr cv_ptr;
+	std::vector<cv::Mat> heads_color_images;
+	heads_color_images.resize(face_positions->head_detections.size());
+	std::vector<cv::Mat> heads_depth_images;
+	heads_depth_images.resize(face_positions->head_detections.size());
+	std::vector< std::vector<cv::Rect> > face_bounding_boxes;
+	face_bounding_boxes.resize(face_positions->head_detections.size());
+	std::vector<cv::Rect> head_bounding_boxes;
+	head_bounding_boxes.resize(face_positions->head_detections.size());
+	for (unsigned int i=0; i<face_positions->head_detections.size(); i++)
+	{
+		// color image
+		if (enable_face_recognition_ == true)
+		{
+			sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->head_detections[i].color_image), voidDeleter);
+			try
+			{
+				cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
+			}
+			catch (cv_bridge::Exception& e)
+			{
+				ROS_ERROR("cv_bridge exception: %s", e.what());
+				return;
+			}
+			heads_color_images[i] = cv_ptr->image;
+		}
+
+		// depth image
+		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_positions->head_detections[i].depth_image), voidDeleter);
+		try
+		{
+			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::TYPE_32FC3);
+		}
+		catch (cv_bridge::Exception& e)
+		{
+			ROS_ERROR("cv_bridge exception: %s", e.what());
+			return;
+		}
+		heads_depth_images[i] = cv_ptr->image;
+
+		// face bounding boxes
+		face_bounding_boxes[i].resize(face_positions->head_detections[i].face_detections.size());
+		for (uint j=0; j<face_bounding_boxes[i].size(); j++)
+		{
+			const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].face_detections[j];
+			cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
+			face_bounding_boxes[i][j] = rect;
+		}
+
+		// head bounding box
+		const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].head_detection;
+		cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
+		head_bounding_boxes[i] = rect;
+	}
+
+	// --- face recognition ---
+	std::vector< std::vector<std::string> > identification_labels;
+	bool identification_failed = false;
+	if (enable_face_recognition_ == true)
+	{
+		// recognize faces
+		unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
+		if (result_state == ipa_Utils::RET_FAILED)
+		{
+			ROS_ERROR("FaceRecognizerNode::face_positions_callback: Please load a face recognition model at first.");
+			identification_failed = true;
+		}
+	}
+	if (enable_face_recognition_ == false || identification_failed == true)
+	{
+		// label all image unknown if face recognition disabled
+		identification_labels.resize(face_positions->head_detections.size());
+		for (uint i=0; i<identification_labels.size(); i++)
+		{
+			identification_labels[i].resize(face_positions->head_detections[i].face_detections.size());
+			for (uint j=0; j<identification_labels[i].size(); j++)
+				identification_labels[i][j] = "Unknown";
+		}
+	}
+
+	// --- publish detection message ---
+	cob_people_detection_msgs::DetectionArray detection_msg;
+	detection_msg.header = face_positions->header;
+
+	// prepare message
+	for (int head=0; head<(int)head_bounding_boxes.size(); head++)
+	{
+		if (face_bounding_boxes[head].size() == 0)
+		{
+			// no faces detected in head region -> publish head position
+			cob_people_detection_msgs::Detection det;
+			cv::Rect& head_bb = head_bounding_boxes[head];
+			// set 3d position of head's center
+			bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], 0.5*(float)head_bb.width, 0.5*(float)head_bb.height, det.pose.pose.position, 6);
+			if (valid_3d_position==false)
+				continue;
+			// write bounding box
+			det.mask.roi.x = head_bb.x;           det.mask.roi.y = head_bb.y;
+			det.mask.roi.width = head_bb.width;   det.mask.roi.height = head_bb.height;
+			// set label
+			det.label="UnknownHead";
+			// set origin of detection
+			det.detector = "head";
+			// header
+			det.header = face_positions->header;
+			// add to message
+			detection_msg.detections.push_back(det);
+		}
+		else
+		{
+			// process all faces in head region
+			for (int face=0; face<(int)face_bounding_boxes[head].size(); face++)
+			{
+				cob_people_detection_msgs::Detection det;
+				cv::Rect& head_bb = head_bounding_boxes[head];
+				cv::Rect& face_bb = face_bounding_boxes[head][face];
+				// set 3d position of head's center
+				bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], face_bb.x+0.5*(float)face_bb.width, face_bb.y+0.5*(float)face_bb.height, det.pose.pose.position, 6);
+				if (valid_3d_position==false)
+					continue;
+				// write bounding box
+				det.mask.roi.x = head_bb.x+face_bb.x; det.mask.roi.y = head_bb.y+face_bb.y;
+				det.mask.roi.width = face_bb.width;   det.mask.roi.height = face_bb.height;
+				// set label
+				det.label=identification_labels[head][face];
+				// set origin of detection
+				det.detector = "face";
+				// header
+				det.header = face_positions->header;
+				// add to message
+				detection_msg.detections.push_back(det);
+			}
+		}
+	}
+
+	// publish message
+	face_recognition_publisher_.publish(detection_msg);
+}
 
 
 bool FaceRecognizerNode::determine3DFaceCoordinates(cv::Mat& depth_image, int center2Dx, int center2Dy, geometry_msgs::Point& center3D, int search_radius)

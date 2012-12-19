@@ -8,16 +8,27 @@
 
 #include <cob_people_detection/virtual_camera.h>
 #include <boost/lexical_cast.hpp>
-#define PP_NOSE 1
-#define PP_EYE_L 2
-#define PP_EYE_R 3
-#define PP_MOUTH 4
+
 
 using namespace cv;
+
+namespace FACE{
+                      enum TYPE
+                      {
+                        LEFTEYE,
+                        RIGHTEYE,
+                        NOSE,
+                        MOUTH,
+                      };
+
 
 template <class T>
 class FaceFeatures{
                     public:
+
+
+
+
                     T lefteye;
                     T righteye;
                     T nose;
@@ -89,6 +100,7 @@ class FaceFeatures{
 };
 
 
+};
 
 class FaceNormalizer{
 
@@ -96,17 +108,23 @@ class FaceNormalizer{
     FaceNormalizer();
     ~FaceNormalizer();
 
+      enum MOD
+      {
+        AFFINE,
+        PERSPECTIVE,
+      };
+
 
     bool normalizeFace( cv::Mat & img,int& rows);
     void set_norm_face(int& rows,int& cols);
-    bool normalize_geometry(cv::Mat& img);
+    bool normalize_geometry(cv::Mat& img,MOD model);
     void get_transform_affine(cv::Mat& trafo);
+    void get_transform_perspective(cv::Mat& trafo);
     bool features_from_color(cv::Mat& img);
-    bool detect_feature(cv::Mat& img,cv::Point2f& coords,int code);
+    bool detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE type);
     void dyn_norm_face();
     void ident_face();
     void resetNormFeatures();
-    void transformPerspective(cv::Mat& trafo);
 
     bool normalizeFace( cv::Mat & img,cv::Mat& depth,int& rows,cv::Vec2f& offset);
     bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
@@ -134,9 +152,10 @@ class FaceNormalizer{
 
   protected:
 
-    cv::Mat img_,depth_;
+  cv::Mat img_,depth_;
 
-    cv::Vec2f offset_;
+  cv::Vec2f offset_;
+
   CvHaarClassifierCascade* nose_cascade_;
   CvMemStorage* nose_storage_;
 
@@ -153,9 +172,11 @@ class FaceNormalizer{
   CvMemStorage*            mouth_storage_;
 
 
-  FaceFeatures<cv::Point2f> f_det_img_, f_norm_img_;
-  FaceFeatures<cv::Point3f> f_det_xyz_;
+  FACE::FaceFeatures<cv::Point2f> f_det_img_, f_norm_img_;
+  FACE::FaceFeatures<cv::Point3f> f_det_xyz_;
+
   cv::Size  norm_size_;
+  cv::Size  detect_size_;
 
 
   bool debug_;

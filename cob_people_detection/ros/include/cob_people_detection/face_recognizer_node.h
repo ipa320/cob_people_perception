@@ -99,8 +99,8 @@ public:
 protected:
 
 	/// Callback for incoming head detections
-	//void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions);
-	void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageCropArray::ConstPtr& face_positions);
+	void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions);
+	//void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageCropArray::ConstPtr& face_positions);
 
 	/// Computes the 3D coordinate of a detected face.
 	/// @param depth_image Coordinate image in format CV32FC3

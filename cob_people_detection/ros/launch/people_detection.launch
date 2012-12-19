@@ -3,7 +3,7 @@
 <launch>
   <include file="$(find cob_people_detection)/ros/launch/head_detector.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/face_detector.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/face_normalizer.launch"/>
+  <!--include file="$(find cob_people_detection)/ros/launch/face_normalizer.launch"/-->
   <include file="$(find cob_people_detection)/ros/launch/face_recognizer.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/detection_tracker.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/people_detection_display.launch"/>

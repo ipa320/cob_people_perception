@@ -61,6 +61,9 @@
 
 using namespace ipa_PeopleDetector;
 
+// Prevent deleting memory twice, when using smart pointer
+void voidDeleter(const sensor_msgs::Image* const) {}
+
 FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
@@ -211,16 +214,22 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 
 		// convert color image to cv::Mat
 		cv_bridge::CvImageConstPtr color_image_ptr;
-		cv::Mat color_image;
+		cv::Mat color_image,depth_image;
 		convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
+
+    sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_detection_msg->head_detections[0].depth_image), voidDeleter);
+		convertDepthImageMessageToMat(msgPtr, color_image_ptr, depth_image);
 
 		// store image and label
 		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
 		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
-		cv::Rect face_bounding_box(head_rect.x+face_rect.x, head_rect.y+face_rect.y, face_rect.width, face_rect.height);
-		cv::Mat img = color_image.clone();
+		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
+		cv::Rect head_bounding_box(head_rect.x, head_rect.y, head_rect.width, head_rect.height);
+		cv::Mat img_color = color_image.clone();
+		cv::Mat img_depth = depth_image.clone();
     // normalize face
-		if (face_recognizer_trainer_.addFace(img, face_bounding_box, current_label_, face_images_)==ipa_Utils::RET_FAILED)
+		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_)==ipa_Utils::RET_FAILED)
+		//if (face_recognizer_trainer_.addFace(img_color, face_bounding_box, current_label_, face_images_)==ipa_Utils::RET_FAILED)
      {
       ROS_WARN("Normalizing failed");
      return;
@@ -240,6 +249,23 @@ unsigned long FaceCaptureNode::convertColorImageMessageToMat(const sensor_msgs::
 	try
 	{
 		image_ptr = cv_bridge::toCvShare(image_msg, sensor_msgs::image_encodings::BGR8);
+	}
+	catch (cv_bridge::Exception& e)
+	{
+		ROS_ERROR("PeopleDetection: cv_bridge exception: %s", e.what());
+		return ipa_Utils::RET_FAILED;
+	}
+	image = image_ptr->image;
+
+	return ipa_Utils::RET_OK;
+}
+
+/// Converts a depth image message to cv::Mat format.
+unsigned long FaceCaptureNode::convertDepthImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image)
+{
+	try
+	{
+		image_ptr = cv_bridge::toCvShare(image_msg, sensor_msgs::image_encodings::TYPE_32FC3);
 	}
 	catch (cv_bridge::Exception& e)
 	{
