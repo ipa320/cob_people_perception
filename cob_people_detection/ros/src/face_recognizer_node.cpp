@@ -154,8 +154,13 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	heads_color_images.resize(face_positions->cdia.head_detections.size());
 	std::vector<cv::Mat> heads_depth_images;
 	heads_depth_images.resize(face_positions->cdia.head_detections.size());
+
 	std::vector< std::vector<cv::Rect> > face_bounding_boxes;
+	std::vector< std::vector<cv::Rect> > crop_bounding_boxes;
 	face_bounding_boxes.resize(face_positions->cdia.head_detections.size());
+	crop_bounding_boxes.resize(face_positions->cdia.head_detections.size());
+  cv::Rect bb=cv::Rect(0,0,160,160);
+
 	std::vector<cv::Rect> head_bounding_boxes;
 	head_bounding_boxes.resize(face_positions->cdia.head_detections.size());
 
@@ -192,11 +197,13 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 
 		// face bounding boxes
 		face_bounding_boxes[i].resize(face_positions->cdia.head_detections[i].face_detections.size());
+		crop_bounding_boxes[i].resize(face_positions->cdia.head_detections[i].face_detections.size());
 		for (uint j=0; j<face_bounding_boxes[i].size(); j++)
 		{
 			const cob_people_detection_msgs::Rect& source_rect = face_positions->cdia.head_detections[i].face_detections[j];
 			cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 			face_bounding_boxes[i][j] = rect;
+			crop_bounding_boxes[i][j] = bb;
 		}
 
 		// head bounding box
@@ -208,11 +215,8 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 //--------------------------------------------------------------------
 //--------------------------------------------------------------------
 	std::vector<cv::Mat> crops;
-	std::vector<std::vector<cv::Rect> > crop_bounding_boxes;
-  cv::Rect bb=cv::Rect(0,0,160,160);
+	//std::vector<std::vector<cv::Rect> > crop_bounding_boxes;
 	crops.resize(face_positions->crops.size());
-	crop_bounding_boxes.resize(face_positions->crops.size());
-std::cout<<"size crops"<<crops.size()<<std::endl;
     for(int k=0;k<face_positions->crops.size();k++)
     {
       //tenpora TODO:
@@ -228,7 +232,7 @@ std::cout<<"size crops"<<crops.size()<<std::endl;
 			}
 			crops[k]= cv_ptr->image;
       //temporary TODO
-      crop_bounding_boxes[k][0]=bb;
+      //crop_bounding_boxes[k][0]=bb;
 
     }
 //--------------------------------------------------------------------

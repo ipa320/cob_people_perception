@@ -191,7 +191,6 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	{
       cv_bridge::CvImage cv_ptr;
       cv_ptr.image = crops[i];
-      std::cout<<"before size="<<crops[i].rows<<","<<crops[i].cols<<std::endl;
       cv_ptr.encoding = sensor_msgs::image_encodings::BGR8;
       image_array.crops[i]= *(cv_ptr.toImageMsg());
 
