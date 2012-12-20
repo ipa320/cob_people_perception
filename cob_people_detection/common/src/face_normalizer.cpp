@@ -41,24 +41,20 @@ FaceNormalizer::~FaceNormalizer(){
 	cvReleaseMemStorage(&eye_r_storage_);
 };
 
-void FaceNormalizer::set_norm_face(int& rows,int& cols)
-
+void FaceNormalizer::set_norm_face(cv::Size& input_size)
 {
 
-  norm_size_=cv::Size(cols,rows);
-  detect_size_=cv::Size(160,160);
+  f_norm_img_.lefteye.x=0.3     *input_size.width     ;
+  f_norm_img_.lefteye.y=0.3      *input_size.height     ;
 
-  f_norm_img_.lefteye.x=0.3     *cols     ;
-  f_norm_img_.lefteye.y=0.3      *rows     ;
+  f_norm_img_.righteye.x=0.7    *input_size.width     ;
+  f_norm_img_.righteye.y=0.3     *input_size.height     ;
 
-  f_norm_img_.righteye.x=0.7    *cols     ;
-  f_norm_img_.righteye.y=0.3     *rows     ;
+  f_norm_img_.mouth.x=0.5        *input_size.width     ;
+  f_norm_img_.mouth.y=0.85       *input_size.height     ;
 
-  f_norm_img_.mouth.x=0.5        *cols     ;
-  f_norm_img_.mouth.y=0.85       *rows     ;
-
-  f_norm_img_.nose.x=0.5         *cols     ;
-  f_norm_img_.nose.y=0.4         *rows     ;
+  f_norm_img_.nose.x=0.5         *input_size.width     ;
+  f_norm_img_.nose.y=0.4         *input_size.height     ;
 
 
   // reset detections
@@ -83,7 +79,7 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset
 
 
   int dim=200;
-  set_norm_face(dim,dim);
+  set_norm_face(cv::Size(img.cols,img.rows));
   if(!features_from_color(img)) return false;
 
   std::cout<<"SAVING SCENE"<<std::endl;
@@ -95,8 +91,12 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset
 
   return true;
 }
-bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::Vec2f& offset)
+bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_size,cv::Vec2f& offset)
 {
+  // set members to current values
+  norm_size_=norm_size;
+  input_size_=cv::Size(img.cols,img.rows);
+
 
   bool valid = true; // Flag only returned true if all steps have been completed successfully
 
@@ -104,9 +104,9 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
   offset_[1]=offset[1];
 
   epoch_ctr++;
-  //
+
   //norm size from input image
-  set_norm_face(img.rows,img.cols);
+  set_norm_face(norm_size_);
 
   if(debug_)
   {
@@ -144,9 +144,15 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,int & rows,cv::V
 }
 bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
 {
+  // set members to current values
+  norm_size_=norm_size;
+  input_size_=cv::Size(img.cols,img.rows);
+
+
   bool valid = true; // Flag only returned true if all steps have been completed successfully
+
   //norm size ffrom input image
-  set_norm_face(img.rows,img.cols);
+  set_norm_face(norm_size_);
 
   if(debug_)
   {
@@ -341,30 +347,27 @@ bool FaceNormalizer::normalize_geometry(cv::Mat& img,FaceNormalizer::TRAFO model
 
 bool FaceNormalizer::features_from_color(cv::Mat& img_color)
 {
-  cv::Mat temp;
-  cv::resize(img_color,temp,detect_size_) ;
-  if(!detect_feature(temp,f_det_img_.nose,FACE::NOSE))
+  if(!detect_feature(img_color,f_det_img_.nose,FACE::NOSE))
   {
     if(debug_)std::cout<<"no nose"<<std::endl;
      return false;
   }
-  if(!detect_feature(temp,f_det_img_.lefteye,FACE::LEFTEYE))
+  if(!detect_feature(img_color,f_det_img_.lefteye,FACE::LEFTEYE))
   {
     if(debug_)std::cout<<"no eye_l"<<std::endl;
      return false;
   }
-  if(!detect_feature(temp,f_det_img_.righteye,FACE::RIGHTEYE))
+  if(!detect_feature(img_color,f_det_img_.righteye,FACE::RIGHTEYE))
   {
     if(debug_)std::cout<<"no eye_r"<<std::endl;
      return false;
   }
-  if(!detect_feature(temp,f_det_img_.mouth,FACE::MOUTH))
+  if(!detect_feature(img_color,f_det_img_.mouth,FACE::MOUTH))
   {
     if(debug_)std::cout<<"no mouth"<<std::endl;
      return false;
   }
 
-  f_det_img_.scale((double)img_color.rows/detect_size_.height);
 
   if(debug_)
   {
@@ -404,6 +407,9 @@ bool FaceNormalizer::features_from_depth(cv::Mat& depth)
 bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE type)
 {
 
+  //  determine scale of search pattern
+  double scale=norm_size_.width/160.0;
+
   CvSeq* seq;
   cv::Vec2f offset;
 
@@ -414,7 +420,7 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE 
   {
     offset =cv::Vec2f(0,0);
     IplImage ipl_img=(IplImage)img;
-     seq=cvHaarDetectObjects(&ipl_img,nose_cascade_,nose_storage_,1.3,2,CV_HAAR_DO_CANNY_PRUNING,cvSize(15,15));
+     seq=cvHaarDetectObjects(&ipl_img,nose_cascade_,nose_storage_,1.3,2,CV_HAAR_DO_CANNY_PRUNING,cvSize(15,15)*scale);
      break;
   }
 
