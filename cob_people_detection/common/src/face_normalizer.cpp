@@ -76,10 +76,9 @@ void FaceNormalizer::set_norm_face(cv::Size& input_size)
 
 bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset)
 {
+  input_size_=cv::Size(img.cols,img.rows);
 
 
-  int dim=200;
-  set_norm_face(cv::Size(img.cols,img.rows));
   if(!features_from_color(img)) return false;
 
   std::cout<<"SAVING SCENE"<<std::endl;
@@ -128,7 +127,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(debug_ && valid)std::cout<<"2 - filtered"<<std::endl;
 
   //resizing
-  cv::resize(img,img,cv::Size(rows,rows),0,0);
+  cv::resize(img,img,norm_size_,0,0);
   if(debug_)dump_img(img,"3_resized");
   if(debug_)std::cout<<"3 - resized"<<std::endl;
 
@@ -142,7 +141,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
 
   return valid;
 }
-bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
+bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
 {
   // set members to current values
   norm_size_=norm_size;
@@ -166,7 +165,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,int & rows)
   if(debug_)dump_img(img,"1_geometryRGB");
 
   //resizing
-  cv::resize(img,img,cv::Size(rows,rows),0,0);
+  cv::resize(img,img,norm_size_,0,0);
   if(debug_)dump_img(img,"2_resized");
 
   // radiometric normalization
@@ -409,6 +408,7 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE 
 
   //  determine scale of search pattern
   double scale=norm_size_.width/160.0;
+  
 
   CvSeq* seq;
   cv::Vec2f offset;
@@ -420,7 +420,8 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE 
   {
     offset =cv::Vec2f(0,0);
     IplImage ipl_img=(IplImage)img;
-     seq=cvHaarDetectObjects(&ipl_img,nose_cascade_,nose_storage_,1.3,2,CV_HAAR_DO_CANNY_PRUNING,cvSize(15,15)*scale);
+     seq=cvHaarDetectObjects(&ipl_img,nose_cascade_,nose_storage_,1.3,2,CV_HAAR_DO_CANNY_PRUNING,cv::Size(15*scale,15*scale));
+     //seq=cvHaarDetectObjects(&ipl_img,nose_cascade_,nose_storage_,1.3,2,CV_HAAR_DO_CANNY_PRUNING,cv::Size(15*scale,15*scale));
      break;
   }
 
@@ -432,7 +433,7 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE 
     cv::Mat sub_img=img.clone();
     sub_img=sub_img(cvRect(0,0,f_det_img_.nose.x,f_det_img_.nose.y));
     IplImage ipl_img=(IplImage)sub_img;
-     seq=cvHaarDetectObjects(&ipl_img,eye_l_cascade_,eye_l_storage_,1.1,1,0,cvSize(5,5));
+     seq=cvHaarDetectObjects(&ipl_img,eye_l_cascade_,eye_l_storage_,1.1,1,0,cvSize(20*scale,10*scale));
      break;
 
   }
@@ -444,7 +445,7 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE 
     cv::Mat sub_img=img.clone();
     sub_img=sub_img(cvRect(f_det_img_.nose.x,0,img.cols-f_det_img_.nose.x-1,f_det_img_.nose.y));
     IplImage ipl_img=(IplImage)sub_img;
-     seq=cvHaarDetectObjects(&ipl_img,eye_r_cascade_,eye_r_storage_,1.1,1,0,cvSize(5,5));
+     seq=cvHaarDetectObjects(&ipl_img,eye_r_cascade_,eye_r_storage_,1.1,1,0,cvSize(20*scale,10*scale));
      break;
 
   }
@@ -456,7 +457,7 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE 
     cv::Mat sub_img=img.clone();
     sub_img=sub_img(cvRect(0,f_det_img_.nose.y,img.cols,img.rows-f_det_img_.nose.y-1));
     IplImage ipl_img=(IplImage)sub_img;
-     seq=cvHaarDetectObjects(&ipl_img,mouth_cascade_,mouth_storage_,1.3,4,CV_HAAR_DO_CANNY_PRUNING,cvSize(15,15));
+     seq=cvHaarDetectObjects(&ipl_img,mouth_cascade_,mouth_storage_,1.3,4,CV_HAAR_DO_CANNY_PRUNING,cvSize(30*scale,15*scale));
      break;
 
   }

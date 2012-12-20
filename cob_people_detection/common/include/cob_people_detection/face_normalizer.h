@@ -115,8 +115,8 @@ class FaceNormalizer{
       };
 
 
-    bool normalizeFace( cv::Mat & img,int& rows);
-    void set_norm_face(int& rows,int& cols);
+    bool normalizeFace( cv::Mat & img,cv::Size& norm_size);
+    void set_norm_face(cv::Size& input_size);
     bool normalize_geometry(cv::Mat& img,TRAFO model);
     void get_transform_affine(cv::Mat& trafo);
     void get_transform_perspective(cv::Mat& trafo);
@@ -125,7 +125,7 @@ class FaceNormalizer{
     void dyn_norm_face();
     void ident_face();
 
-    bool normalizeFace( cv::Mat & img,cv::Mat& depth,int& rows,cv::Vec2f& offset);
+    bool normalizeFace( cv::Mat & img,cv::Mat& depth,cv::Size& norm_size,cv::Vec2f& offset);
     bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
     bool features_from_depth(cv::Mat& depth);
     void despeckle(cv::Mat& src,cv::Mat& dst);
@@ -173,7 +173,7 @@ class FaceNormalizer{
   FACE::FaceFeatures<cv::Point3f> f_det_xyz_;
 
   cv::Size  norm_size_;
-  cv::Size  detect_size_;
+  cv::Size  input_size_;
 
   VirtualCamera kinect;
 };

@@ -19,8 +19,8 @@ int main(int argc, const char *argv[])
   img.copyTo(wmat1);
   img.copyTo(wmat2);
   fn.dump_img(wmat1,"original");
-  int rows=200;
-  fn.normalizeFace(wmat1,depth,rows,offset);
+  cv::Size norm_size=cv::Size(160,160);
+  fn.normalizeFace(wmat1,depth,norm_size,offset);
   fn.dump_img(wmat1,"processedRGBD");
  // fn.normalizeFace(wmat2,rows);
  // fn.dump_img(wmat2,"processedRGB");
