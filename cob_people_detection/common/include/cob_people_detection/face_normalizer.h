@@ -108,7 +108,7 @@ class FaceNormalizer{
     FaceNormalizer();
     ~FaceNormalizer();
 
-      enum MOD
+      enum TRAFO
       {
         AFFINE,
         PERSPECTIVE,
@@ -117,30 +117,26 @@ class FaceNormalizer{
 
     bool normalizeFace( cv::Mat & img,int& rows);
     void set_norm_face(int& rows,int& cols);
-    bool normalize_geometry(cv::Mat& img,MOD model);
+    bool normalize_geometry(cv::Mat& img,TRAFO model);
     void get_transform_affine(cv::Mat& trafo);
     void get_transform_perspective(cv::Mat& trafo);
     bool features_from_color(cv::Mat& img);
     bool detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE type);
     void dyn_norm_face();
     void ident_face();
-    void resetNormFeatures();
 
     bool normalizeFace( cv::Mat & img,cv::Mat& depth,int& rows,cv::Vec2f& offset);
     bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
     bool features_from_depth(cv::Mat& depth);
-    void kin2xyz(cv::Point3f& vec);
     void despeckle(cv::Mat& src,cv::Mat& dst);
 
-    // Methods for geometric normalization
+    // Methods for radiometric normalization
     bool normalize_radiometry(cv::Mat& img);
     void extractVChannel(cv::Mat& img,cv::Mat& V);
     void subVChannel(cv::Mat& img,cv::Mat& V);
     void eqHist(cv::Mat& img);
     void dct(cv::Mat& img);
 
-    void calcPnP(cv::Mat& cam_mat,cv::Mat& rot,cv::Mat& trans);
-    void resample_direct(cv::Mat& cam_mat,cv::Mat& depth,cv::Mat& img,cv::Mat& res);
     // Debug/Output methods
     void dump_features(cv::Mat& img);
     void dump_img(cv::Mat& data,std::string name);
@@ -151,8 +147,9 @@ class FaceNormalizer{
 //---------------------------------------------------------
 
   protected:
-
-  cv::Mat img_,depth_;
+  int epoch_ctr;
+  bool debug_;
+  std::string debug_path_;
 
   cv::Vec2f offset_;
 
@@ -177,15 +174,6 @@ class FaceNormalizer{
 
   cv::Size  norm_size_;
   cv::Size  detect_size_;
-
-
-  bool debug_;
-  double scale_;
-
-
-
-  int epoch_ctr;
-  std::string debug_path_;
 
   VirtualCamera kinect;
 };

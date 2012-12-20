@@ -160,12 +160,10 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	}
 
 
-
-
   std::vector<cv::Mat> crops;
-  for (int i = 0; i <heads_depth_images.size(); i++) {
+  for (size_t i = 0; i <heads_depth_images.size(); i++) {
 
-  for(int j=0;j<face_bounding_boxes[i].size();j++)
+  for(size_t j=0;j<face_bounding_boxes[i].size();j++)
   {
     int dim=160;
   //  cv::Mat bgr_crop=heads_color_images[i](face_bounding_boxes[i][j]);
@@ -177,9 +175,8 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
      offset[0]=head_bounding_boxes[i].x + face_bounding_boxes[i][j].x;
      offset[1]=head_bounding_boxes[i].y + face_bounding_boxes[i][j].y;
     //face_normalizer_.captureScene(bgr_crop,xyz_crop,offset);
-    bool is_norm=face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim,offset);
+    face_normalizer_.normalizeFace(bgr_crop,xyz_crop,dim,offset);
     crops.push_back(bgr_crop);
-
 
   }
  }
@@ -193,19 +190,10 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
       cv_ptr.image = crops[i];
       cv_ptr.encoding = sensor_msgs::image_encodings::BGR8;
       image_array.crops[i]= *(cv_ptr.toImageMsg());
-
-
-
 	}
 
-
-
   norm_face_publisher_.publish(image_array);
-
-
 }
-
-
 
 //#######################
 //#### main programm ####
