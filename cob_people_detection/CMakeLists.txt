@@ -62,10 +62,13 @@ rosbuild_check_for_sse()
 #add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 
-rosbuild_add_executable(face_normalizer_node
-      common/src/face_normalizer.cpp
-      ros/src/face_normalizer_node.cpp)
-    target_link_libraries(face_normalizer_node virtual_camera)
+##FUERTE MODIFICATION
+rosbuild_add_boost_directories()
+
+#rosbuild_add_executable(face_normalizer_node
+#      common/src/face_normalizer.cpp
+#      ros/src/face_normalizer_node.cpp)
+#    target_link_libraries(face_normalizer_node virtual_camera)
 
 
 rosbuild_add_library(virtual_camera
@@ -95,26 +98,39 @@ rosbuild_add_executable(face_recognizer_node
 			common/src/face_recognizer.cpp
 			ros/src/face_recognizer_node.cpp)
 target_link_libraries(face_recognizer_node face_normalizer)    
+## FUERTE MIGRATION
+rosbuild_link_boost(face_recognizer_node filesystem system)
 add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 rosbuild_add_executable(detection_tracker_node
 			ros/src/detection_tracker_node.cpp)
 
+## FUERTE MIGRATION
+rosbuild_link_boost(detection_tracker_node signals)
+
 rosbuild_add_executable(people_detection_display_node
 			ros/src/people_detection_display_node.cpp)
+## FUERTE MIGRATION
+rosbuild_link_boost(people_detection_display_node signals)
 
 rosbuild_add_executable(face_capture_node
 			common/src/abstract_face_recognizer.cpp
 			common/src/face_recognizer.cpp
 			ros/src/face_capture_node.cpp)
 target_link_libraries(face_capture_node face_normalizer)    
+## FUERTE MIGRATION
+rosbuild_link_boost(face_capture_node signals filesystem system) 
 
 
 rosbuild_add_executable(sensor_message_gateway_node
 			ros/src/sensor_message_gateway_node.cpp)
+## FUERTE MIGRATION
+rosbuild_link_boost(sensor_message_gateway_node signals)
 
 rosbuild_add_executable(coordinator_node
 			ros/src/coordinator_node.cpp)
+## FUERTE MIGRATION
+rosbuild_link_boost(coordinator_node signals)
 
 rosbuild_add_library(face_normalizer
 			common/src/face_normalizer.cpp)
