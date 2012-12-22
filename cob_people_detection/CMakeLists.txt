@@ -79,6 +79,14 @@ rosbuild_add_executable(face_normalizer_test
       common/src/test/fn_test.cpp
       )
     target_link_libraries(face_normalizer_test face_normalizer virtual_camera opencv_core opencv_highgui )
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+rosbuild_add_executable(virtual_camera_test
+      common/src/test/vc_test.cpp
+      )
+    target_link_libraries(virtual_camera_test face_normalizer virtual_camera opencv_core opencv_highgui )
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
 
 rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)
