@@ -17,21 +17,24 @@ int main(int argc, const char *argv[])
   fn.read_scene(depth,img,offset,i_path);
 
 
-  VirtualCamera vc=VirtualCamera(KINECT);
+  VirtualCamera vc;
 
   std::vector<cv::Point2f> img_pts;
   std::vector<cv::Point3f> obj_pts;
   fn.get_feature_correspondences(img,depth,img_pts,obj_pts);
-  cv.calc_extrinsics(img_pts,obj_pts);
+  vc.calc_extrinsics(obj_pts,img_pts,true);
 
 
-  cv::Mat res;
   for (int i = 0;  i < 200;  i++)
   {
+  cv::Mat res=cv::Mat::zeros(480,640,CV_8UC3);
     vc.sample_pc(depth,img,res);
+    cv::Vec3f rotation=cv::Vec3f(i*0.02,0,0);
+
+
     cv::imshow("trans",res);
     cv::waitKey(100);
-    cv::Vec3f rotation=cv::Vec3f(0,0,i)
+
     vc.rotate_cam(rotation);
 
   }

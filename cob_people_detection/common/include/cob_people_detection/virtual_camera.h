@@ -1,10 +1,12 @@
-
+#ifndef VIRTUALCAMERA_H_
+#define VIRTUALCAMERA_H_
 #include<opencv/cv.h>
 #include<iostream>
 
 
 #define KINECT 0
 class VirtualCamera {
+
 public:
   VirtualCamera (int camera_type);
   VirtualCamera ();
@@ -45,3 +47,4 @@ private:
 
 
 };
+#endif 

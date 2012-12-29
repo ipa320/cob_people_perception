@@ -147,12 +147,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
 
 	cv::Mat roi_color = color_image(combined_face_bounding_box);
 	cv::Mat roi_depth = depth_image(face_bounding_box);
-  std::cout<<"image color"<<roi_color.rows<<","<<roi_color.cols<<std::endl;
-  std::cout<<"image depth"<<roi_depth.rows<<","<<roi_depth.cols<<std::endl;
   cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
-  //if(!face_normalizer_.normalizeFace(roi_color,roi_depth,m_eigenface_size,offset)) return ipa_Utils::RET_FAILED;
-  if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
+  if(!face_normalizer_.normalizeFace(roi_color,roi_depth,norm_size,offset)) return ipa_Utils::RET_FAILED;
+  //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
   cv::imshow("FACE TO ADD",roi_color);
   cv::waitKey(50);
 

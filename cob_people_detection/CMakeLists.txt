@@ -85,6 +85,12 @@ rosbuild_add_executable(virtual_camera_test
       common/src/test/vc_test.cpp
       )
     target_link_libraries(virtual_camera_test face_normalizer virtual_camera opencv_core opencv_highgui )
+
+
+rosbuild_add_library(subspace_analysis
+  common/src/SSA.cpp)
+target_link_libraries(subspace_analysis  opencv_core )
+
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 
