@@ -1,16 +1,14 @@
 #include"cob_people_detection/SSA.h"
 
 
-
-
-SSA::SSA(std::vector<cv::Mat>& input_data,int& ss_dim):dimension(ss_dim)
+ssa::SSA::SSA(std::vector<cv::Mat>& input_data,int& ss_dim):dimension(ss_dim)
 {
   data=cv::Mat(input_data.size(),input_data[0].total(),CV_64FC1);
   calcDataMat(input_data,data);
   calcDataMatMean(data,mean);
 }
 
-void SSA::calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat)
+void ssa::SSA::calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat)
 {
 
   // convert input to data matrix,with images as rows
@@ -31,7 +29,7 @@ void SSA::calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat)
   return;
 }
 
-void SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean)
+void ssa::SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean)
 {
   cv::Mat row_cum=cv::Mat::zeros(1,data.cols,CV_64FC1);
   for(int i=0;i<data.rows;++i)
@@ -46,23 +44,25 @@ void SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean)
 }
 
 
-void SSA::decomposeModel()
+void ssa::SSA::decomposeModel()
 {
- //TODO include EigenvalueDecomposition of non symmetric matrices 
+  EigenvalueDecomposition evd(model);
+  eigenvals=evd.eigenvalues();
+  eigenvecs=evd.eigenvectors();
 }
 
 
 //---------------------------------------------------------------------------------
 // LDA
 //---------------------------------------------------------------------------------
-LDA::LDA(std::vector<cv::Mat>& input_data,std::vector<int>& input_labels,int& ss_dim): SSA(input_data,ss_dim)
+ssa::LDA::LDA(std::vector<cv::Mat>& input_data,std::vector<int>& input_labels,int& ss_dim): SSA(input_data,ss_dim)
 {
 
   calcClassMean(data,input_labels,class_means);
   calcModelMatrix(input_labels,model);
 
 }
-void LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec)
+void ssa::LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec)
 {
 
 //TODO  get number of unique classes
@@ -95,7 +95,7 @@ void LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vecto
   }
 }
 
-void LDA::calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M)
+void ssa::LDA::calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M)
 {
  //reduce data matrix with class means and compute inter class scatter
   // inter class scatter
@@ -131,16 +131,16 @@ void LDA::calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M)
 // PCA
 //---------------------------------------------------------------------------------
 //
-void PCA::PCA(std::vector<cv::Mat>& input_data,int& ss_dim):SSA(input_data,ss_dim)
+ssa::PCA::PCA(std::vector<cv::Mat>& input_data,int& ss_dim):SSA(input_data,ss_dim)
 {
-
-  calcModelMatrix(model);
   model=cv::Mat(data.rows,data.cols,CV_64FC1);
+  calcModelMatrix(model);
 }
 
-void PCA::calcModelMatrix(cv::Mat& M)
+void ssa::PCA::calcModelMatrix(cv::Mat& M)
 {
 
+  cv::Mat data_row,model_row;
   for(int i=0;i<data.rows;++i)
   {
     //reduce data matrix - total Scatter matrix
