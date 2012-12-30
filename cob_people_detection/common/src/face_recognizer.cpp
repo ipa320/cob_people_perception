@@ -79,6 +79,12 @@
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/convenience.hpp"
 #include "boost/filesystem/path.hpp"
+
+
+
+//INCLUDE  subspace analysis
+#include "cob_people_detection/subspace_analysis.h"
+
 namespace fs = boost::filesystem;
 
 
@@ -150,7 +156,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth,norm_size,offset)) return ipa_Utils::RET_FAILED;
-  //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
+  if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
   cv::imshow("FACE TO ADD",roi_color);
   cv::waitKey(50);
 
@@ -251,6 +257,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	// PCA
 	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size()-1);
 	bool return_value = PCA(number_eigenvectors, face_images);
+
+  //SubspaceAnalysis::PCA pca(face_images,number_eigenvectors);
+
 	if (return_value == ipa_Utils::RET_FAILED)
 		return ipa_Utils::RET_FAILED;
 

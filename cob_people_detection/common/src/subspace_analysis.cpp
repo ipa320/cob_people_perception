@@ -1,14 +1,14 @@
-#include"cob_people_detection/SSA.h"
+#include"cob_people_detection/subspace_analysis.h"
 
 
-ssa::SSA::SSA(std::vector<cv::Mat>& input_data,int& ss_dim):dimension(ss_dim)
+SubspaceAnalysis::SSA::SSA(std::vector<cv::Mat>& input_data,int& ss_dim):dimension(ss_dim)
 {
   data=cv::Mat(input_data.size(),input_data[0].total(),CV_64FC1);
   calcDataMat(input_data,data);
   calcDataMatMean(data,mean);
 }
 
-void ssa::SSA::calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat)
+void SubspaceAnalysis::SSA::calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat)
 {
 
   // convert input to data matrix,with images as rows
@@ -29,7 +29,7 @@ void ssa::SSA::calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat)
   return;
 }
 
-void ssa::SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean)
+void SubspaceAnalysis::SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean)
 {
   cv::Mat row_cum=cv::Mat::zeros(1,data.cols,CV_64FC1);
   for(int i=0;i<data.rows;++i)
@@ -44,30 +44,68 @@ void ssa::SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean)
 }
 
 
-void ssa::SSA::decomposeModel()
+void SubspaceAnalysis::SSA::decomposeModel()
 {
   EigenvalueDecomposition evd(model);
-  eigenvals=evd.eigenvalues();
-  eigenvecs=evd.eigenvectors();
+  cv::Mat eigenvals_unsorted,eigenvecs_unsorted;
+  eigenvals_unsorted=evd.eigenvalues();
+  eigenvals.reshape(1,1);
+  eigenvecs_unsorted=evd.eigenvectors();
+
+  //sort eigenvals and eigenvecs
+
+  cv::Mat sort_indices;
+  cv::sortIdx(eigenvals_unsorted,sort_indices,CV_SORT_DESCENDING);//TODO: are flags just right
+
+  cv::Mat temp;
+  for(size_t i=0;i<sort_indices.total();i++)
+  {
+    temp = eigenvals_unsorted.col(sort_indices.at<int>(i));
+    temp.copyTo(eigenvals.col(i));
+    temp = eigenvecs_unsorted.col(sort_indices.at<int>(i));
+    temp.copyTo(eigenvecs.col(i));
+  }
+
+  eigenvals=Mat(eigenvals,cv::Range::all(),cv::Range(0,dimension));
+  eigenvecs=Mat(eigenvecs,cv::Range::all(),cv::Range(0,dimension));
+
 }
 
 
 //---------------------------------------------------------------------------------
 // LDA
 //---------------------------------------------------------------------------------
-ssa::LDA::LDA(std::vector<cv::Mat>& input_data,std::vector<int>& input_labels,int& ss_dim): SSA(input_data,ss_dim)
+SubspaceAnalysis::LDA::LDA(std::vector<cv::Mat>& input_data,std::vector<int>& input_labels,int& ss_dim): SSA(input_data,ss_dim)
 {
+
+  //class labels have to be in a vector in ascending order - duplicates are
+  //removed internally
+  //{0,0,1,2,3,3,4,5}
 
   calcClassMean(data,input_labels,class_means);
   calcModelMatrix(input_labels,model);
+  decomposeModel();
 
 }
-void ssa::LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec)
+void SubspaceAnalysis::LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec)
 {
 
-//TODO  get number of unique classes
+  std::vector<int> distinct_vec;
+  bool unique=true;
+  for(int i=0;i<label_vec.size();++i)
+  {
+    if(i==0)distinct_vec.push_back(label_vec[i]);continue;
 
-  num_classes=0;
+    unique=true;
+    for(int j=0;j<distinct_vec.size();j++)
+    {
+      if(label_vec[i]==distinct_vec[j]) unique =false;
+    }
+    if(unique==true)distinct_vec.push_back(label_vec[i]);
+  }
+  num_classes=distinct_vec.size();
+
+
 
   std::vector<cv::Mat> mean_of_class(num_classes);
   std::vector<int>     samples_per_class(num_classes);
@@ -95,7 +133,7 @@ void ssa::LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::
   }
 }
 
-void ssa::LDA::calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M)
+void SubspaceAnalysis::LDA::calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M)
 {
  //reduce data matrix with class means and compute inter class scatter
   // inter class scatter
@@ -131,13 +169,14 @@ void ssa::LDA::calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M)
 // PCA
 //---------------------------------------------------------------------------------
 //
-ssa::PCA::PCA(std::vector<cv::Mat>& input_data,int& ss_dim):SSA(input_data,ss_dim)
+SubspaceAnalysis::PCA::PCA(std::vector<cv::Mat>& input_data,int& ss_dim):SSA(input_data,ss_dim)
 {
   model=cv::Mat(data.rows,data.cols,CV_64FC1);
   calcModelMatrix(model);
+  decomposeModel();
 }
 
-void ssa::PCA::calcModelMatrix(cv::Mat& M)
+void SubspaceAnalysis::PCA::calcModelMatrix(cv::Mat& M)
 {
 
   cv::Mat data_row,model_row;

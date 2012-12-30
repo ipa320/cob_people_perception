@@ -8,7 +8,7 @@
 // Base class for SubSpace Analysis(SSA)
 //
 //
-namespace ssa{
+namespace SubspaceAnalysis{
   class SSA
   {
 
@@ -23,7 +23,7 @@ namespace ssa{
       cv::Mat data;
       cv::Mat model;
       cv::Mat eigenvals;
-      std::vector<cv::Mat> eigenvecs;
+      cv::Mat eigenvecs;
       cv::Mat mean;
       int dimension;
   };
@@ -48,6 +48,7 @@ namespace ssa{
 
   class PCA:public SSA
   {
+    public:
     PCA(std::vector<cv::Mat>& input_data,int& ss_dim);
     virtual ~PCA(){};
     void calcModelMatrix(cv::Mat& M);

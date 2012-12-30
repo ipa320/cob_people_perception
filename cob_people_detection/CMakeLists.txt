@@ -88,7 +88,9 @@ rosbuild_add_executable(virtual_camera_test
 
 
 rosbuild_add_library(subspace_analysis
-  common/src/SSA.cpp)
+  common/src/subspace_analysis.cpp
+  common/include/thirdparty/decomposition.cpp
+  common/include/thirdparty/helper.cpp)
 target_link_libraries(subspace_analysis  opencv_core )
 
 #-----------------------------------------------------------------------
@@ -111,7 +113,7 @@ rosbuild_add_executable(face_recognizer_node
 			common/src/abstract_face_recognizer.cpp
 			common/src/face_recognizer.cpp
 			ros/src/face_recognizer_node.cpp)
-target_link_libraries(face_recognizer_node face_normalizer)    
+target_link_libraries(face_recognizer_node face_normalizer subspace_analysis)    
 ## FUERTE MIGRATION
 rosbuild_link_boost(face_recognizer_node filesystem system)
 add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
@@ -131,7 +133,7 @@ rosbuild_add_executable(face_capture_node
 			common/src/abstract_face_recognizer.cpp
 			common/src/face_recognizer.cpp
 			ros/src/face_capture_node.cpp)
-target_link_libraries(face_capture_node face_normalizer)    
+target_link_libraries(face_capture_node face_normalizer subspace_analysis)    
 ## FUERTE MIGRATION
 rosbuild_link_boost(face_capture_node signals filesystem system) 
 
