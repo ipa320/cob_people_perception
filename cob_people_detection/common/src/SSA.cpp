@@ -46,6 +46,10 @@ void SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean)
 }
 
 
+void SSA::decomposeModel()
+{
+ //TODO include EigenvalueDecomposition of non symmetric matrices 
+}
 
 
 //---------------------------------------------------------------------------------
@@ -55,21 +59,15 @@ LDA::LDA(std::vector<cv::Mat>& input_data,std::vector<int>& input_labels,int& ss
 {
 
   calcClassMean(data,input_labels,class_means);
+  calcModelMatrix(input_labels,model);
 
 }
 void LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec)
 {
 
 //TODO  get number of unique classes
-  
-  int num_classes=0;
-  std::vector<int> unique_classes;
-  for(int i=0;i<label_vec.size();++i)
-  {
-    if(i==0)unique_classes.push_back(label_vec[i]);
-    // TODO GET UNIQUE ELEMENTS
-  }
-  
+
+  num_classes=0;
 
   std::vector<cv::Mat> mean_of_class(num_classes);
   std::vector<int>     samples_per_class(num_classes);
@@ -93,7 +91,63 @@ void LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vecto
 
   for (int i = 0; i < num_classes; i++) {
   mean_of_class[i].convertTo(mean_vec[i],CV_64FC1,1.0/static_cast<double>(samples_per_class[i]));
+
+  }
+}
+
+void LDA::calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M)
+{
+ //reduce data matrix with class means and compute inter class scatter
+  // inter class scatter
+  cv::Mat S_inter=cv::Mat::zeros(data.rows,data.rows,CV_64FC1);
+  cv::Mat temp;
+
+  int class_index;
+  cv::Mat data_row;
+  for(int i=0;i<num_classes;++i)
+  {
+    //reduce data matrix
+    class_index=label_vec[i];
+    data_row =data.row(i);
+    cv::subtract(data_row,class_means[class_index],data_row);
+    //compute interclass scatte
+    cv::subtract(class_means[class_index],mean,temp);
+    cv::mulTransposed(temp,temp,true);
+    cv::add(S_inter,temp,S_inter);
   }
 
+  //intra-class scatter
+  cv::Mat S_intra=cv::Mat::zeros(data.rows,data.rows,CV_64FC1);
+  mulTransposed(data,S_intra,true);
+  cv::Mat S_intra_inv=S_intra.inv();
+
+  gemm(S_intra_inv,S_inter,1.0,cv::Mat(),0.0,M);
+
+  return;
+
 }
+
+//---------------------------------------------------------------------------------
+// PCA
+//---------------------------------------------------------------------------------
+//
+void PCA::PCA(std::vector<cv::Mat>& input_data,int& ss_dim):SSA(input_data,ss_dim)
+{
+
+  calcModelMatrix(model);
+  model=cv::Mat(data.rows,data.cols,CV_64FC1);
+}
+
+void PCA::calcModelMatrix(cv::Mat& M)
+{
+
+  for(int i=0;i<data.rows;++i)
+  {
+    //reduce data matrix - total Scatter matrix
+    data_row =data.row(i);
+    model_row=model.row(i);
+    cv::subtract(data_row,mean,model_row);
+  }
+}
+
 

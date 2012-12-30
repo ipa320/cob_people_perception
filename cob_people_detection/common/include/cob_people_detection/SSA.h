@@ -17,8 +17,10 @@ class SSA
     virtual ~SSA(){};
     void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
     void calcDataMatMean(cv::Mat& data,cv::Mat& mean);
+    void decomposeModel();
 
     cv::Mat data;
+    cv::Mat model;
     cv::Mat eigenvals;
     std::vector<cv::Mat> eigenvecs;
     cv::Mat mean;
@@ -35,8 +37,19 @@ class LDA:public SSA
     virtual ~LDA(){};
 
     void calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec);
+    void calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M);
 
+    int num_classes;
     std::vector<cv::Mat> class_means;
+
+};
+
+
+class PCA:public SSA
+{
+  PCA(std::vector<cv::Mat>& input_data,int& ss_dim);
+  virtual ~PCA(){};
+  void calcModelMatrix(cv::Mat& M);
 };
 
 
