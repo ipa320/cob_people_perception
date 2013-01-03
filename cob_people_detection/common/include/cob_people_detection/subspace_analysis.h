@@ -9,6 +9,30 @@
 //
 //
 namespace SubspaceAnalysis{
+
+  void project(cv::Mat& data_mat,cv::Mat& coeffs);
+
+  class Eigenfaces
+  {
+    public:
+    Eigenfaces(std::vector<cv::mat>& img_vec,std::vector<int>label_vec,int& red_dim)
+    virtual ~Eigenfaces(){};
+
+
+    protected:
+    SubspaceAnalysis::PCA pca_;
+    cv::Mat proj_;
+    cv::Mat avg_;
+    cv::Mat model_data_;
+    cv::Mat proj_model_data_;
+
+
+
+
+
+  }
+
+
   class SSA
   {
 
@@ -18,7 +42,7 @@ namespace SubspaceAnalysis{
       virtual ~SSA(){};
       void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
       void calcDataMatMean(cv::Mat& data,cv::Mat& mean);
-      void decomposeModel();
+      void decompose();
 
       cv::Mat data;
       cv::Mat model;
@@ -49,9 +73,9 @@ namespace SubspaceAnalysis{
   class PCA:public SSA
   {
     public:
-    PCA(std::vector<cv::Mat>& input_data,int& ss_dim);
+    PCA(cv::Mat& input_data,int& ss_dim);
     virtual ~PCA(){};
-    void calcModelMatrix(cv::Mat& M);
+    void calcProjMatrix();
   };
 
 
