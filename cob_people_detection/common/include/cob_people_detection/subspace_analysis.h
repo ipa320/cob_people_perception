@@ -10,27 +10,12 @@
 //
 namespace SubspaceAnalysis{
 
-  void project(cv::Mat& data_mat,cv::Mat& coeffs);
-
-  class Eigenfaces
-  {
-    public:
-    Eigenfaces(std::vector<cv::mat>& img_vec,std::vector<int>label_vec,int& red_dim)
-    virtual ~Eigenfaces(){};
+  void project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,cv::Mat& coeff_mat);
+  void reconstruct(cv::Mat& coeffs,cv::Mat& proj_mat,cv::Mat& avg,cv::Mat& rec_im);
+  void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
+  void DFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS);
 
 
-    protected:
-    SubspaceAnalysis::PCA pca_;
-    cv::Mat proj_;
-    cv::Mat avg_;
-    cv::Mat model_data_;
-    cv::Mat proj_model_data_;
-
-
-
-
-
-  }
 
 
   class SSA
@@ -38,11 +23,12 @@ namespace SubspaceAnalysis{
 
     public:
       SSA(){};
-      SSA(std::vector<cv::Mat>& input_data,int& ss_dim);
+      SSA(cv::Mat& input_data,int& ss_dim);
       virtual ~SSA(){};
       void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
       void calcDataMatMean(cv::Mat& data,cv::Mat& mean);
       void decompose();
+      void decompose(cv::Mat& data_mat);
 
       cv::Mat data;
       cv::Mat model;
@@ -58,7 +44,7 @@ namespace SubspaceAnalysis{
 
     public:
       LDA(){};
-      LDA(std::vector<cv::Mat>& input_data,std::vector<int>& input_labels,int& ss_dim);
+      LDA(Mat& input_data,std::vector<int>& input_labels,int& ss_dim);
       virtual ~LDA(){};
 
       void calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec);
@@ -73,9 +59,32 @@ namespace SubspaceAnalysis{
   class PCA:public SSA
   {
     public:
+    PCA(){};
     PCA(cv::Mat& input_data,int& ss_dim);
     virtual ~PCA(){};
-    void calcProjMatrix();
+    void calcProjMatrix(cv::Mat& data);
+  };
+
+  class Eigenfaces
+  {
+    public:
+    Eigenfaces(std::vector<cv::Mat>& img_vec,std::vector<int>label_vec,int& red_dim);
+    virtual ~Eigenfaces(){};
+
+    void projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,std::vector<double>& DFFS);
+    void meanCoeffs(cv::Mat& coeffs,std::vector<int> label_vec,cv::Mat& mean_coeffs);
+
+    protected:
+    SubspaceAnalysis::PCA pca_;
+    cv::Mat proj_;
+    cv::Mat avg_;
+    cv::Mat model_data_;
+    cv::Mat proj_model_data_;
+
+
+
+
+
   };
 
 

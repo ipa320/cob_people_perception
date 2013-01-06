@@ -41,11 +41,11 @@ FaceNormalizer::~FaceNormalizer(){
 void FaceNormalizer::set_norm_face(cv::Size& input_size)
 {
 
-  f_norm_img_.lefteye.x=0.3     *input_size.width     ;
-  f_norm_img_.lefteye.y=0.3      *input_size.height     ;
+  f_norm_img_.lefteye.x=0.2     *input_size.width     ;
+  f_norm_img_.lefteye.y=0.25      *input_size.height     ;
 
-  f_norm_img_.righteye.x=0.7    *input_size.width     ;
-  f_norm_img_.righteye.y=0.3     *input_size.height     ;
+  f_norm_img_.righteye.x=0.8    *input_size.width     ;
+  f_norm_img_.righteye.y=0.25     *input_size.height     ;
 
   f_norm_img_.mouth.x=0.5        *input_size.width     ;
   f_norm_img_.mouth.y=0.85       *input_size.height     ;
