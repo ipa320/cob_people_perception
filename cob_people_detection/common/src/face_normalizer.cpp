@@ -2,28 +2,33 @@
 
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
-                                  debug_(false),
+                                  debug_(true),
                                   debug_path_("/share/goa-tz/people_detection/debug/"),
                                   kinect(VirtualCamera::KINECT)
 {
   //std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
-  std::string eye_r_path="/home/goa-tz/data/haarcascade_righteye_2splits.xml";
+  //std::string eye_r_path="/home/goa-tz/data/haarcascade_righteye_2splits.xml";
+  std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
               eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
               eye_r_storage_=cvCreateMemStorage(0);
 
-  std::string eye_path="/usr/local/share/OpenCV/haarcascades/haarcascade_eye.xml";
+  //std::string eye_path="/usr/local/share/OpenCV/haarcascades/haarcascade_eye.xml";
+  std::string eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
               eye_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_path.c_str(),0,0,0);
               eye_storage_=cvCreateMemStorage(0);
 
-  std::string eye_l_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
+  //std::string eye_l_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
+  std::string eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
               eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
               eye_l_storage_=cvCreateMemStorage(0);
 
-  std::string nose_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
+  //std::string nose_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
+  std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
   nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
   nose_storage_=cvCreateMemStorage(0);
 
-  std::string mouth_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
+  //std::string mouth_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
+  std::string mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
               mouth_cascade_=(CvHaarClassifierCascade*) cvLoad(mouth_path.c_str(),0,0,0);
               mouth_storage_=cvCreateMemStorage(0);
 }
@@ -289,6 +294,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
   f_det_img_.add_offset  (xoffset,yoffset);
   f_norm_img_.add_offset (xoffset,yoffset);
+
 
 
 

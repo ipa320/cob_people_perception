@@ -217,10 +217,12 @@ void SubspaceAnalysis::SSA::decompose(cv::Mat& data_mat)
   cv::Mat temp;
   for(size_t i=0;i<sort_indices.total();i++)
   {
+    cv::Mat eigenvals_curr_col=eigenvals.col(i);
+    cv::Mat eigenvecs_curr_col=eigenvecs.col(i);
     temp = eigenvals_unsorted.col(sort_indices.at<int>(i));
-    temp.copyTo(eigenvals.col(i));
+    temp.copyTo(eigenvals_curr_col);
     temp = eigenvecs_unsorted.col(sort_indices.at<int>(i));
-    temp.copyTo(eigenvecs.col(i));
+    temp.copyTo(eigenvecs_curr_col);
   }
 
   eigenvals=Mat(eigenvals,cv::Range::all(),cv::Range(0,dimension));
