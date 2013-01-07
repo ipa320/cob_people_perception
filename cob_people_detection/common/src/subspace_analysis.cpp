@@ -1,4 +1,5 @@
 #include"cob_people_detection/subspace_analysis.h"
+#include<opencv/highgui.h>
 
 void SubspaceAnalysis::DFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS)
 {
@@ -67,7 +68,7 @@ void SubspaceAnalysis::calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& dat
 //---------------------------------------------------------------------------------
 //
 //
-SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vector<int>label_vec,int& dim_ss)
+SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& dim_ss)
 {
   //check if input has the same size
   if(img_vec.size()!=label_vec.size())
@@ -86,13 +87,20 @@ SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vect
 
   SubspaceAnalysis::calcDataMat(img_vec,model_data_);
 
+  cv::Mat dummy;
+  model_data_.row(1).copyTo(dummy);
+  dummy=dummy.reshape(1,120);
+  img_vec[1].convertTo(dummy,CV_8UC1);
+  cv::imshow("dummy",img_vec[1]);
+  cv::waitKey(0);
+
   //initiate PCA
   pca_=SubspaceAnalysis::PCA(model_data_,dim_ss);
-  proj_=pca_.eigenvecs.clone();
-  avg_=pca_.mean.clone();
+  pca_.eigenvecs.copyTo(proj_);
+  pca_.mean.copyTo(avg_);
 
   std::vector<double> DFFS;
-  projectToSubspace(model_data_,proj_model_data_,DFFS);
+  //projectToSubspace(model_data_,proj_model_data_,DFFS);
 }
 
 
@@ -105,7 +113,7 @@ void SubspaceAnalysis::Eigenfaces::projectToSubspace(cv::Mat& src_mat,cv::Mat& d
   SubspaceAnalysis::reconstruct(dst_mat,proj_,avg_,rec_mat);
   SubspaceAnalysis::DFFS(src_mat,rec_mat,avg_,DFFS);
 }
-void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int> label_vec,cv::Mat& mean_coeffs)
+void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs)
 {
   std::vector<int> distinct_vec;
   bool unique=true;
@@ -230,6 +238,13 @@ void SubspaceAnalysis::SSA::decompose(cv::Mat& data_mat)
 
 }
 
+void SubspaceAnalysis::SSA::decompose2(cv::Mat& data_mat)
+{
+  cv::PCA pca(data_mat,Mat(),CV_PCA_DATA_AS_ROW,dimension);
+  pca.eigenvalues.copyTo(eigenvals);
+  pca.eigenvectors.copyTo(eigenvecs);
+  pca.mean.copyTo(mean);
+}
 
 //---------------------------------------------------------------------------------
 // LDA
@@ -332,19 +347,25 @@ SubspaceAnalysis::PCA::PCA(cv::Mat& input_data,int& ss_dim):SSA(input_data,ss_di
 {
   data=input_data;
   calcProjMatrix(input_data);
+
+  std::cout<<"EIGENVALS="<<eigenvals.at<double>(0)<<std::endl;
+
+  mean=mean.reshape(1,120);
+  cv::imshow("mean",mean);
+  cv::waitKey(0);
 }
 
 void SubspaceAnalysis::PCA::calcProjMatrix(cv::Mat& data)
 {
 
   cv::Mat data_row;
-  for(int i=0;i<data.rows;++i)
-  {
-    //reduce data matrix - total Scatter matrix
-    data_row =data.row(i);
-    cv::subtract(data_row,mean,data_row);
-  }
-    decompose(data);
+  //for(int i=0;i<data.rows;++i)
+  //{
+  //  //reduce data matrix - total Scatter matrix
+  //  data_row =data.row(i);
+  //  cv::subtract(data_row,mean,data_row);
+  //}
+    decompose2(data);
 }
 
 

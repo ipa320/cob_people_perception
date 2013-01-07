@@ -31,23 +31,23 @@ public:
   cv::Mat dist_coeffs;
 
 
+  //extrinsics
+  cv::Vec3f rot;
+  cv::Vec3f trans;
 
 
 
-private:
 
   bool validity_check(std::vector<cv::Point3f>& obj_pts,std::vector<cv::Point2f>& img_pts,cv::Mat& rot,cv::Mat& trans);
 
   //intrinsics
 
+private:
   cv::Size sensor_size;
   cv::Size pixel_dim;
   cv::Point2f pp;
   double focal_length;
 
-  //extrinsics
-  cv::Vec3f rot;
-  cv::Vec3f trans;
 
 
 };

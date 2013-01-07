@@ -88,9 +88,9 @@ bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vecto
 void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img)
 {
 
-  std::cout<<"\n[VIRTUAL CAMERA] sampling pointcloud with extrinsics:\n";
-  std::cout<<" rot: \n"<<rot[0]<<" , "<<rot[1]<<" , "<<rot[2]<<std::endl;
-  std::cout<<" trans: \n"<<trans[0]<<" , "<<trans[1]<<" , "<<trans[2]<<std::endl<<std::endl;
+  //std::cout<<"\n[VIRTUAL CAMERA] sampling pointcloud with extrinsics:\n";
+  //std::cout<<" rot: \n"<<rot[0]<<" , "<<rot[1]<<" , "<<rot[2]<<std::endl;
+  //std::cout<<" trans: \n"<<trans[0]<<" , "<<trans[1]<<" , "<<trans[2]<<std::endl<<std::endl;
 
   cv::Mat pc_xyz,pc_rgb;
   pc_xyzPtr.copyTo(pc_xyz);
@@ -138,7 +138,7 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
 bool VirtualCamera::validity_check(std::vector<cv::Point3f>& obj_pts,std::vector<cv::Point2f>& img_pts,cv::Mat& rot,cv::Mat& trans)
 {
 
-  double val_limit=3.0;
+  double val_limit=5.0;
   cv::Mat proj_pts;
   cv::projectPoints(obj_pts,rot,trans,cam_mat,dist_coeffs,proj_pts);
   cv::Point2f* proj_pts_ptr=proj_pts.ptr<cv::Point2f>(0,0);

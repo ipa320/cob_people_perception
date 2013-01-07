@@ -2,7 +2,7 @@
 
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
-                                  debug_(true),
+                                  debug_(false),
                                   debug_path_("/share/goa-tz/people_detection/debug/"),
                                   kinect(VirtualCamera::KINECT)
 {
@@ -124,7 +124,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(debug_)dump_img(img,"1_geometryRGBD");
   if(debug_)std::cout<<"1 - normalized geometry"<<std::endl;
 
-  //cv::cvtColor(img,img,CV_BGR2GRAY);
+  cv::cvtColor(img,img,CV_BGR2GRAY);
   if(valid)despeckle(img,img);
 
   if(debug_ && valid)dump_img(img,"2_despeckle");
@@ -182,6 +182,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
 
 bool FaceNormalizer::normalize_radiometry(cv::Mat& img)
 {
+  //cv::equalizeHist(img,img);
   //TODO: temporary switch off
   return true;
   cv::Mat v_channel;
@@ -211,7 +212,7 @@ void FaceNormalizer::extractVChannel( cv::Mat& img,cv::Mat& V)
 
 void FaceNormalizer::subVChannel(cv::Mat& img,cv::Mat& V)
 {
-  
+ 
   if(debug_)cv::cvtColor(img,img,CV_RGB2HSV);
   else cv::cvtColor(img,img,CV_BGR2HSV);
 
@@ -298,7 +299,17 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
 
 
+  //calculate difference in PnP
+  cv::Vec3f rot_orig, rot_norm;
+
+  if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_det_img_.as_vector(),true))  return false;
+  rot_orig=kinect.rot;
+
   if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_norm_img_.as_vector(),true))  return false;
+  rot_norm=kinect.rot;
+
+  std::cout<<"ROT ORIG= "<<rot_orig[0]<<" , "<<rot_orig[1]<<" , "<<rot_orig[2]<<" , "<<std::endl;
+  std::cout<<"ROT NORM= "<<rot_norm[0]<<" , "<<rot_norm[1]<<" , "<<rot_norm[2]<<" , "<<std::endl;
 
 
   cv::Mat res=cv::Mat::zeros(480,640,CV_8UC3);
