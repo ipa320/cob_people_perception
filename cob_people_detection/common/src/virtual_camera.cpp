@@ -27,7 +27,7 @@ VirtualCamera::VirtualCamera(VirtualCamera::TYPE cam_type)
   }
 
   //calculation of intrinsics
-  pp=cv::Point(round(sensor_size.width),round(sensor_size.height));
+  //pp=cv::Point(round(sensor_size.width),round(sensor_size.height));
   cam_mat=(cv::Mat_<double>(3,3) << focal_length , 0.0 , pp.x  , 0.0 , focal_length , pp.y  , 0.0 , 0.0 , 1);
 
   //initialization of extrinsics
@@ -51,6 +51,22 @@ bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vecto
 {
    // calculate object pose
   cv::Mat temp_rot,temp_trans;
+
+  
+//  double* ptr=cam_mat.ptr<double>(0,0);
+//  for(int i=0;i<9;i++)
+//  {
+//    std::cout<<"CAM "<<*ptr<<std::endl;
+//    ++ptr;
+//  }
+//
+//  for(int j =0;j<4;j++)
+//  {
+//    std::cout<<"OBJ"<<obj_pts[j].x<<" , "<<obj_pts[j].y<<" , "<<obj_pts[j].z<<std::endl;
+//    std::cout<<"IMG"<<img_pts[j].x<<" , "<<img_pts[j].y<<std::endl;
+//  }
+
+
   cv::solvePnP(obj_pts,img_pts,cam_mat,dist_coeffs,temp_rot,temp_trans);
 
   if(check_model==true)
@@ -72,9 +88,9 @@ bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vecto
 void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img)
 {
 
-  //std::cout<<"\n[VIRTUAL CAMERA] sampling pointcloud with extrinsics:\n";
-  //std::cout<<" rot: \n"<<rot[0]<<" , "<<rot[1]<<" , "<<rot[2]<<std::endl;
-  //std::cout<<" trans: \n"<<trans[0]<<" , "<<trans[1]<<" , "<<trans[2]<<std::endl<<std::endl;
+  std::cout<<"\n[VIRTUAL CAMERA] sampling pointcloud with extrinsics:\n";
+  std::cout<<" rot: \n"<<rot[0]<<" , "<<rot[1]<<" , "<<rot[2]<<std::endl;
+  std::cout<<" trans: \n"<<trans[0]<<" , "<<trans[1]<<" , "<<trans[2]<<std::endl<<std::endl;
 
   cv::Mat pc_xyz,pc_rgb;
   pc_xyzPtr.copyTo(pc_xyz);
@@ -105,15 +121,16 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
        ty=(int)round(txty[1]);
 
 
-       if (ty>0 && tx>0 && ty<sensor_size.height && tx<sensor_size.width && !isnan(ty) && !isnan(tx) && occ_grid.at<unsigned char>(ty,tx)<1)
+       if (ty>0 && tx>0 && ty<sensor_size.height && tx<sensor_size.width && !isnan(ty) && !isnan(tx) )
        {
-          img.at<cv::Vec3b>(ty,tx)=(*pc_rgb_ptr);
-          occ_grid.at<unsigned char>(ty,tx)+=50;
+         if(occ_grid.at<unsigned char>(ty,tx)>0) img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
+         else                  img.at<cv::Vec3b>(ty,tx)=(*pc_rgb_ptr);
+         occ_grid.at<unsigned char>(ty,tx)+=50;
        }
        pc_rgb_ptr++;
        pc_proj_ptr++;
       }
-
+   
    return;
 }
 

@@ -1,9 +1,11 @@
-
+#ifndef VIRTUALCAMERA_H_
+#define VIRTUALCAMERA_H_
 #include<opencv/cv.h>
 #include<iostream>
 
 
 class VirtualCamera {
+
 public:
 
   enum TYPE
@@ -49,3 +51,4 @@ private:
 
 
 };
+#endif 

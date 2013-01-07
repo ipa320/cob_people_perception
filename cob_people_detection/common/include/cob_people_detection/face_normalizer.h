@@ -144,6 +144,7 @@ class FaceNormalizer{
     bool save_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
     bool read_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
     bool captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset);
+    bool get_feature_correspondences( cv::Mat& img,  cv::Mat& depth, std::vector<cv::Point2f>& img_pts,std::vector<cv::Point3f>& obj_pts);
 //---------------------------------------------------------
 
   protected:
