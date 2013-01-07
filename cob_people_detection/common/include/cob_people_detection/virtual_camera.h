@@ -3,11 +3,15 @@
 #include<iostream>
 
 
-#define KINECT 0
 class VirtualCamera {
 public:
-  VirtualCamera (int camera_type);
-  VirtualCamera ();
+
+  enum TYPE
+  {
+    KINECT
+  };
+
+  VirtualCamera (TYPE cam_type);
   virtual ~VirtualCamera (){};
 
 

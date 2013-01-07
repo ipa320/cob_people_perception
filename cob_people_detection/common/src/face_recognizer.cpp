@@ -151,8 +151,8 @@ unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Mat& depth_image
   std::cout<<"image depth"<<roi_depth.rows<<","<<roi_depth.cols<<std::endl;
   cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
-  //if(!face_normalizer_.normalizeFace(roi_color,roi_depth,m_eigenface_size,offset)) return ipa_Utils::RET_FAILED;
-  if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
+  if(!face_normalizer_.normalizeFace(roi_color,roi_depth,norm_size,offset)) return ipa_Utils::RET_FAILED;
+  //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
   cv::imshow("FACE TO ADD",roi_color);
   cv::waitKey(50);
 

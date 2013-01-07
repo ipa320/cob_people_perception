@@ -2,52 +2,38 @@
 #include<opencv/highgui.h>
 
 
-VirtualCamera::VirtualCamera()
-{
-  focal_length= 526.37013657;
-  sensor_size=cv::Size(640,480);
-  pixel_dim=cv::Size(0,0);
-  dist_coeffs=(cv::Mat_<double>(1,5) << 0.0 , 0.0 , 0.0 , 0.0 ,0.0);
 
-
-
-  //calculation of intrinsics
-  //pp=cv::Point(round(sensor_size.width*0.5),round(sensor_size.height*0.5));
-  //temporary overrides
-   pp.x=313.68782938;
-   pp.y=259.01834898;
-
-  cam_mat=(cv::Mat_<double>(3,3) << focal_length , 0.0 , pp.x  , 0.0 , focal_length , pp.y  , 0.0 , 0.0 , 1);
-
-
-  //initialization of extrinsics
-  rot=cv::Vec3f(0.0,0.0,0.0);
-  trans=cv::Vec3f(0.0,0.0,0.0);
-}
-
-
-
-VirtualCamera::VirtualCamera(int camera_type)
+VirtualCamera::VirtualCamera(VirtualCamera::TYPE cam_type)
 {
   // SENSOR PROPERTIES --KINECT
-  if(camera_type==0){
-    VirtualCamera();
-  }
-
-  if(camera_type!=0)
+  switch(cam_type)
   {
-    std::cout<<"[VIRTUAL CAMERA] camera type not implemented - use KINECT\n";
-  }
+    case VirtualCamera::KINECT:
+      {
+        focal_length= 526.37013657;
+        sensor_size=cv::Size(640,480);
+        pixel_dim=cv::Size(0,0);
+        dist_coeffs=(cv::Mat_<double>(1,5) << 0.0 , 0.0 , 0.0 , 0.0 ,0.0);
+        pp.x=313.68782938;
+        pp.y=259.01834898;
+      break;
+      }
+    default:
+      {
+        std::cout<<"[VIRTUAL CAMERA] camera type not implemented - use KINECT\n";
+        break;
+      }
 
+  }
 
   //calculation of intrinsics
   pp=cv::Point(round(sensor_size.width),round(sensor_size.height));
   cam_mat=(cv::Mat_<double>(3,3) << focal_length , 0.0 , pp.x  , 0.0 , focal_length , pp.y  , 0.0 , 0.0 , 1);
 
-
   //initialization of extrinsics
   rot=cv::Vec3f(0.0,0.0,0.0);
   trans=cv::Vec3f(0.0,0.0,0.0);
+  std::cout<<"KINECT INITIALIZED\n";
 }
 
 

@@ -3,7 +3,8 @@
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(false),
-                                  debug_path_("/share/goa-tz/people_detection/debug/")
+                                  debug_path_("/share/goa-tz/people_detection/debug/"),
+                                  kinect(VirtualCamera::KINECT)
 {
   //std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
   std::string eye_r_path="/home/goa-tz/data/haarcascade_righteye_2splits.xml";
