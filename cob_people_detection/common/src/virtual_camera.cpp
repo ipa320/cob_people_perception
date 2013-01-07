@@ -105,15 +105,16 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
        ty=(int)round(txty[1]);
 
 
-       if (ty>0 && tx>0 && ty<sensor_size.height && tx<sensor_size.width && !isnan(ty) && !isnan(tx) && occ_grid.at<unsigned char>(ty,tx)<1)
+       if (ty>0 && tx>0 && ty<sensor_size.height && tx<sensor_size.width && !isnan(ty) && !isnan(tx) )
        {
-          img.at<cv::Vec3b>(ty,tx)=(*pc_rgb_ptr);
-          occ_grid.at<unsigned char>(ty,tx)+=50;
+         if(occ_grid.at<unsigned char>(ty,tx)>0) img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
+         else                  img.at<cv::Vec3b>(ty,tx)=(*pc_rgb_ptr);
+         occ_grid.at<unsigned char>(ty,tx)+=50;
        }
        pc_rgb_ptr++;
        pc_proj_ptr++;
       }
-
+   
    return;
 }
 

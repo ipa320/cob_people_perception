@@ -62,10 +62,13 @@ rosbuild_check_for_sse()
 #add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 
-rosbuild_add_executable(face_normalizer_node
-      common/src/face_normalizer.cpp
-      ros/src/face_normalizer_node.cpp)
-    target_link_libraries(face_normalizer_node virtual_camera)
+##FUERTE MODIFICATION
+rosbuild_add_boost_directories()
+
+#rosbuild_add_executable(face_normalizer_node
+#      common/src/face_normalizer.cpp
+#      ros/src/face_normalizer_node.cpp)
+#    target_link_libraries(face_normalizer_node virtual_camera)
 
 
 rosbuild_add_library(virtual_camera
@@ -76,6 +79,26 @@ rosbuild_add_executable(face_normalizer_test
       common/src/test/fn_test.cpp
       )
     target_link_libraries(face_normalizer_test face_normalizer virtual_camera opencv_core opencv_highgui )
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+rosbuild_add_executable(virtual_camera_test
+      common/src/test/vc_test.cpp
+      )
+    target_link_libraries(virtual_camera_test face_normalizer virtual_camera opencv_core opencv_highgui )
+
+rosbuild_add_executable(ssa_test
+      common/src/test/ssa_test.cpp
+      )
+    target_link_libraries(ssa_test subspace_analysis opencv_core opencv_highgui )
+
+rosbuild_add_library(subspace_analysis
+  common/src/subspace_analysis.cpp
+  common/include/thirdparty/decomposition.cpp
+  common/include/thirdparty/helper.cpp)
+target_link_libraries(subspace_analysis  opencv_core )
+
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
 
 rosbuild_add_executable(people_detection_client
 			ros/src/people_detection_action_client.cpp)
@@ -94,27 +117,40 @@ rosbuild_add_executable(face_recognizer_node
 			common/src/abstract_face_recognizer.cpp
 			common/src/face_recognizer.cpp
 			ros/src/face_recognizer_node.cpp)
-target_link_libraries(face_recognizer_node face_normalizer)    
+target_link_libraries(face_recognizer_node face_normalizer subspace_analysis)    
+## FUERTE MIGRATION
+rosbuild_link_boost(face_recognizer_node filesystem system)
 add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 rosbuild_add_executable(detection_tracker_node
 			ros/src/detection_tracker_node.cpp)
 
+## FUERTE MIGRATION
+rosbuild_link_boost(detection_tracker_node signals)
+
 rosbuild_add_executable(people_detection_display_node
 			ros/src/people_detection_display_node.cpp)
+## FUERTE MIGRATION
+rosbuild_link_boost(people_detection_display_node signals)
 
 rosbuild_add_executable(face_capture_node
 			common/src/abstract_face_recognizer.cpp
 			common/src/face_recognizer.cpp
 			ros/src/face_capture_node.cpp)
-target_link_libraries(face_capture_node face_normalizer)    
+target_link_libraries(face_capture_node face_normalizer subspace_analysis)    
+## FUERTE MIGRATION
+rosbuild_link_boost(face_capture_node signals filesystem system) 
 
 
 rosbuild_add_executable(sensor_message_gateway_node
 			ros/src/sensor_message_gateway_node.cpp)
+## FUERTE MIGRATION
+rosbuild_link_boost(sensor_message_gateway_node signals)
 
 rosbuild_add_executable(coordinator_node
 			ros/src/coordinator_node.cpp)
+## FUERTE MIGRATION
+rosbuild_link_boost(coordinator_node signals)
 
 rosbuild_add_library(face_normalizer
 			common/src/face_normalizer.cpp)

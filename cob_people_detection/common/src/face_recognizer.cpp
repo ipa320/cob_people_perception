@@ -79,17 +79,23 @@
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/convenience.hpp"
 #include "boost/filesystem/path.hpp"
+
+
+
+//INCLUDE  subspace analysis
+#include "cob_people_detection/subspace_analysis.h"
+
 namespace fs = boost::filesystem;
 
 
 using namespace ipa_PeopleDetector;
 
-FaceRecognizer::FaceRecognizer(void)
+ipa_PeopleDetector::FaceRecognizer::FaceRecognizer(void)
 {
 	m_eigenvectors_ipl = 0;
 }
 
-FaceRecognizer::~FaceRecognizer(void)
+ipa_PeopleDetector::FaceRecognizer::~FaceRecognizer(void)
 {
 	if (m_eigenvectors_ipl != 0)
 	{
@@ -99,7 +105,7 @@ FaceRecognizer::~FaceRecognizer(void)
 	}
 }
 
-unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize)
+unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize)
 {
 	// parameters
 	m_data_directory = data_directory;
@@ -116,7 +122,7 @@ unsigned long FaceRecognizer::init(std::string data_directory, int eigenface_siz
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images)
 {
 	// parameters
 	m_data_directory = data_directory;
@@ -131,7 +137,7 @@ unsigned long FaceRecognizer::initTraining(std::string data_directory, int eigen
 }
 
 
-unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Mat& depth_image,cv::Rect& face_bounding_box,cv::Rect& head_bounding_box,std::string label, std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, cv::Mat& depth_image,cv::Rect& face_bounding_box,cv::Rect& head_bounding_box,std::string label, std::vector<cv::Mat>& face_images)
 {
 
 	// secure this function with a mutex
@@ -147,8 +153,6 @@ unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Mat& depth_image
 
 	cv::Mat roi_color = color_image(combined_face_bounding_box);
 	cv::Mat roi_depth = depth_image(face_bounding_box);
-  std::cout<<"image color"<<roi_color.rows<<","<<roi_color.cols<<std::endl;
-  std::cout<<"image depth"<<roi_depth.rows<<","<<roi_depth.cols<<std::endl;
   cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth,norm_size,offset)) return ipa_Utils::RET_FAILED;
@@ -164,7 +168,7 @@ unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Mat& depth_image
 
 	return ipa_Utils::RET_OK;
 }
-unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images)
 {
 
 	// secure this function with a mutex
@@ -185,7 +189,7 @@ unsigned long FaceRecognizer::addFace(cv::Mat& color_image, cv::Rect& face_bound
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::updateFaceLabels(std::string old_label, std::string new_label)
+unsigned long ipa_PeopleDetector::FaceRecognizer::updateFaceLabels(std::string old_label, std::string new_label)
 {
 	for (int i=0; i<(int)m_face_labels.size(); i++)
 	{
@@ -195,13 +199,13 @@ unsigned long FaceRecognizer::updateFaceLabels(std::string old_label, std::strin
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::updateFaceLabel(int index, std::string new_label)
+unsigned long ipa_PeopleDetector::FaceRecognizer::updateFaceLabel(int index, std::string new_label)
 {
 	m_face_labels[index] = new_label;
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::deleteFaces(std::string label, std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFaces(std::string label, std::vector<cv::Mat>& face_images)
 {
 	for (int i=0; i<(int)m_face_labels.size(); i++)
 	{
@@ -215,14 +219,14 @@ unsigned long FaceRecognizer::deleteFaces(std::string label, std::vector<cv::Mat
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::deleteFace(int index, std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vector<cv::Mat>& face_images)
 {
 	m_face_labels.erase(m_face_labels.begin()+index);
 	face_images.erase(face_images.begin()+index);
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& identification_labels_to_train)
+unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vector<std::string>& identification_labels_to_train)
 {
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
@@ -253,6 +257,9 @@ unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& id
 	// PCA
 	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size()-1);
 	bool return_value = PCA(number_eigenvectors, face_images);
+
+  //SubspaceAnalysis::PCA pca(face_images,number_eigenvectors);
+
 	if (return_value == ipa_Utils::RET_FAILED)
 		return ipa_Utils::RET_FAILED;
 
@@ -274,7 +281,7 @@ unsigned long FaceRecognizer::trainRecognitionModel(std::vector<std::string>& id
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::saveRecognitionModel()
+unsigned long ipa_PeopleDetector::FaceRecognizer::saveRecognitionModel()
 {
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "rdata.xml";
@@ -359,7 +366,7 @@ unsigned long FaceRecognizer::saveRecognitionModel()
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& identification_labels_to_recognize)
+unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vector<std::string>& identification_labels_to_recognize)
 {
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex>* lock = new boost::lock_guard<boost::mutex>(m_data_mutex);
@@ -498,7 +505,7 @@ unsigned long FaceRecognizer::loadRecognitionModel(std::vector<std::string>& ide
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::recognizeFace(cv::Mat& color_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels)
+unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels)
 {
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
@@ -582,7 +589,7 @@ unsigned long FaceRecognizer::recognizeFace(cv::Mat& color_image, std::vector<cv
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::classifyFace(float *eigen_vector_weights, std::string& face_label, int number_eigenvectors)
+unsigned long ipa_PeopleDetector::FaceRecognizer::classifyFace(float *eigen_vector_weights, std::string& face_label, int number_eigenvectors)
 {
 	double least_dist_sqared = DBL_MAX;
 
@@ -647,7 +654,7 @@ unsigned long FaceRecognizer::classifyFace(float *eigen_vector_weights, std::str
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::PCA(int number_eigenvectors, std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::PCA(int number_eigenvectors, std::vector<cv::Mat>& face_images)
 {
 	if(face_images.size() < 2)
 	{
@@ -711,7 +718,7 @@ unsigned long FaceRecognizer::PCA(int number_eigenvectors, std::vector<cv::Mat>&
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::computeAverageFaceProjections()
+unsigned long ipa_PeopleDetector::FaceRecognizer::computeAverageFaceProjections()
 {
 	int number_eigenvectors = m_eigenvectors.size();
 
@@ -771,7 +778,7 @@ unsigned long FaceRecognizer::computeAverageFaceProjections()
 	return ipa_Utils::RET_OK;
 }
 
-cv::Mat FaceRecognizer::preprocessImage(cv::Mat& input_image)
+cv::Mat ipa_PeopleDetector::FaceRecognizer::preprocessImage(cv::Mat& input_image)
 {
 
   //TODO:
@@ -820,7 +827,7 @@ cv::Mat FaceRecognizer::preprocessImage(cv::Mat& input_image)
 	return output;
 }
 
-unsigned long FaceRecognizer::convertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face, cv::Size new_size)
+unsigned long ipa_PeopleDetector::FaceRecognizer::convertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face, cv::Size new_size)
 {
 
   resized=img(face);
@@ -831,7 +838,7 @@ unsigned long FaceRecognizer::convertAndResize(cv::Mat& img, cv::Mat& resized, c
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::convertEigenvectorsToIpl(int old_number_eigenvectors)
+unsigned long ipa_PeopleDetector::FaceRecognizer::convertEigenvectorsToIpl(int old_number_eigenvectors)
 {
 	int new_number_eigenvectors = m_eigenvectors.size();
 
@@ -854,7 +861,7 @@ unsigned long FaceRecognizer::convertEigenvectorsToIpl(int old_number_eigenvecto
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images)
 {
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "tdata.xml";
@@ -904,7 +911,7 @@ unsigned long FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<std::string>& identification_labels_to_train)
+unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<std::string>& identification_labels_to_train)
 {
 	bool use_all_data = false;
 	if (identification_labels_to_train.size() == 0)
