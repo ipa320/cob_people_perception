@@ -62,10 +62,10 @@ rosbuild_check_for_sse()
 #add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 
-rosbuild_add_executable(face_normalizer_node
-      common/src/face_normalizer.cpp
-      ros/src/face_normalizer_node.cpp)
-    target_link_libraries(face_normalizer_node virtual_camera)
+#rosbuild_add_executable(face_normalizer_node
+#      common/src/face_normalizer.cpp
+#      ros/src/face_normalizer_node.cpp)
+#    target_link_libraries(face_normalizer_node virtual_camera)
 
 
 rosbuild_add_library(virtual_camera
