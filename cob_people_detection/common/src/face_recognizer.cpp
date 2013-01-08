@@ -258,7 +258,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size()-1);
 	bool return_value = PCA(number_eigenvectors, face_images);
 
-  //SubspaceAnalysis::PCA pca(face_images,number_eigenvectors);
+//--------------------------------------------
+//--------------------------------------------
+//--------------------------------------------
+  std::vector<int>label_vec(face_images.size());
+  int ss_dim = 10;
+  SubspaceAnalysis::Eigenfaces EF(face_images,label_vec,ss_dim);
+//--------------------------------------------
+//--------------------------------------------
 
 	if (return_value == ipa_Utils::RET_FAILED)
 		return ipa_Utils::RET_FAILED;
