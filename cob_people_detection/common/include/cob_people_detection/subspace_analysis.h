@@ -53,7 +53,6 @@ namespace SubspaceAnalysis{
 
       void calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec);
       void calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M);
-    void retrieve(cv::Mat& proj,cv::Mat& avg,cv::Mat& proj_model_data);
 
       int num_classes;
       std::vector<cv::Mat> class_means;
@@ -73,18 +72,20 @@ namespace SubspaceAnalysis{
   class Eigenfaces
   {
     public:
-    Eigenfaces(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
+    Eigenfaces(std::vector<cv::Mat>& img_vec,int& red_dim);
     virtual ~Eigenfaces(){};
 
     void projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,std::vector<double>& DFFS);
     void meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs);
+    void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
 
     protected:
     SubspaceAnalysis::PCA pca_;
-    cv::Mat proj_;
-    cv::Mat avg_;
-    cv::Mat model_data_;
-    cv::Mat proj_model_data_;
+    cv::Mat eigenvector_arr_;
+    cv::Mat eigenvalue_arr_;
+    cv::Mat avg_arr_;
+    cv::Mat model_data_arr_;
+    cv::Mat proj_model_data_arr_;
 
 
 

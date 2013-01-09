@@ -134,27 +134,29 @@ void SubspaceAnalysis::dump_matrix(cv::Mat& mat,std::string filename)
 //---------------------------------------------------------------------------------
 //
 //
-SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& dim_ss)
+SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,int& dim_ss)
 {
   //check if input has the same size
-  if(img_vec.size()!=label_vec.size())
+  if(img_vec.size()<dim_ss+1)
   {
     //TODO: ROS ERROR
-    std::cout<<"EIGFACE: input has to be the same sie\n";
+    std::cout<<"EIGFACE: Invalid subspace dimension\n";
     return;
   }
 
   //initialize all matrices
-  model_data_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
-  avg_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
-  proj_model_data_=cv::Mat(img_vec.size(),dim_ss,CV_64FC1);
+  model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
+  avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
+  proj_model_data_arr_=cv::Mat(img_vec.size(),dim_ss,CV_64FC1);
+  eigenvector_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
+  eigenvalue_arr_=cv::Mat(dim_ss,dim_ss,CV_64FC1);
 
   std::cout<<"[EF]-->calc data mat"<<std::endl;
-  SubspaceAnalysis::calcDataMat(img_vec,model_data_);
+  SubspaceAnalysis::calcDataMat(img_vec,model_data_arr_);
   std::cout<<"[EF]-->done"<<std::endl;
 
   cv::Mat dummy;
-  model_data_.copyTo(dummy);
+  model_data_arr_.copyTo(dummy);
   dummy.convertTo(dummy,CV_8UC1);
   dummy =dummy.reshape(1,dummy.rows*160);
   cv::imshow("reconstuction",dummy);
@@ -163,11 +165,12 @@ SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vect
 
   //initiate PCA
   std::cout<<"[EF]-->calc PCA"<<std::endl;
-  pca_=SubspaceAnalysis::PCA(model_data_,dim_ss);
+  pca_=SubspaceAnalysis::PCA(model_data_arr_,dim_ss);
   std::cout<<"[EF]-->done"<<std::endl;
 
-  proj_=pca_.eigenvecs;
-  avg_=pca_.mean;
+  eigenvector_arr_=pca_.eigenvecs;
+  eigenvalue_arr_=pca_.eigenvals;
+  avg_arr_=pca_.mean;
 
   std::vector<double> DFFS;
 
@@ -180,16 +183,9 @@ SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vect
  // projectToSubspace(ss2,proj_model_data_,DFFS);
  // dump_matrix(proj_model_data_,"projection2");
 
-  cv::Mat mean_coeffs=cv::Mat(2,3,CV_64FC1);
   std::cout<<"[EF]-->projecting to subspace"<<std::endl;
-  projectToSubspace(model_data_,proj_model_data_,DFFS);
+  projectToSubspace(model_data_arr_,proj_model_data_arr_,DFFS);
   std::cout<<"[EF]-->done"<<std::endl;
-
-  std::cout<<"[EF]-->calculating meand coeffs"<<std::endl;
-  meanCoeffs(proj_model_data_,label_vec,mean_coeffs);
-  std::cout<<"[EF]-->done"<<std::endl;
-
-
 
 }
 
@@ -197,12 +193,12 @@ SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vect
 
 void SubspaceAnalysis::Eigenfaces::projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,std::vector<double>& DFFS)
 {
-  SubspaceAnalysis::project(src_mat,proj_,avg_,dst_mat);
+  SubspaceAnalysis::project(src_mat,eigenvector_arr_,avg_arr_,dst_mat);
 
   cv::Mat rec_mat;
-  SubspaceAnalysis::reconstruct(dst_mat,proj_,avg_,rec_mat);
+  SubspaceAnalysis::reconstruct(dst_mat,eigenvector_arr_,avg_arr_,rec_mat);
 
-  SubspaceAnalysis::DFFS(src_mat,rec_mat,avg_,DFFS);
+  SubspaceAnalysis::DFFS(src_mat,rec_mat,avg_arr_,DFFS);
 
   cv::Mat dummy;
   rec_mat.copyTo(dummy);
@@ -260,25 +256,32 @@ void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& 
   }
 }
 
+void SubspaceAnalysis::Eigenfaces::retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data)
+{
+  avg_arr_.copyTo(out_avg);
+  proj_model_data_arr_.copyTo(out_proj_model_data);
 
-//TODO:
-//provide interface for recosntruction and projection
-//with autmatic generation of DFFS and DIFS rspectively
-//
-//
-//SubspaceAnalysis::Fisherfaces::Fisherfaces()
-//{
-//  //TODO:
-//  //initiate PCA
-//  //forward truncated data to LDA
-//  //get projection matrixw
-//}
-////TODO:
-////provide interface for recosntruction and projection
-////with autmatic generation of DFFS and DIFS rspectively
-////
-////MAKE Sure every matrix is transformed to one image per row matrix"!!!!!!
-////
+  for(int r=0;r<eigenvector_arr_.rows;r++)
+  {
+    cv::Mat curr_row=eigenvector_arr_.row(r);
+    //TODO: works only for square images
+    curr_row.clone().reshape(1,sqrt(curr_row.cols));
+    curr_row.convertTo(curr_row,CV_32FC1);
+    //TODO:THE NEXT LINE BREAKS THE ALGORITHM ! FIX IT!!!!!!!!!!!!1111111111
+    curr_row.copyTo(out_eigenvectors[r]);
+    //out_eigenvectors[r]=curr_row;
+  }
+
+  eigenvalue_arr_.copyTo(out_eigenvalues);
+  //double* ev_ptr=out_eigenvalues.ptr<double>(0);
+  //for(int rc=0;rc<eigenvector_arr_.cols;rc++)
+  //{
+  //  *ev_ptr=eigenvalue_arr_.at<double>(rc,rc);
+  //  std::cout<<"EV"<<*ev_ptr<<std::endl;
+  //}
+
+}
+
 
 
 
@@ -333,7 +336,6 @@ void SubspaceAnalysis::SSA::decompose2(cv::Mat& data_mat)
   eigenvecs=pca.eigenvectors;
   //pca.eigenvectors.copyTo(eigenvecs);
 }
-
 
 
 
@@ -438,8 +440,9 @@ SubspaceAnalysis::PCA::PCA(cv::Mat& input_data,int& ss_dim):SSA(input_data,ss_di
 {
   data=input_data;
   calcProjMatrix(input_data);
-  //truncate eigenvectors
+  //truncate eigenvectors and eigenvals
   eigenvecs=eigenvecs(cv::Rect(0,0,input_data.cols,dimension));
+  eigenvals=eigenvals(cv::Rect(0,0,1,dimension)).t();
   cv::normalize(eigenvecs,eigenvecs);
 
   cv::Mat dummy;

@@ -256,13 +256,12 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
 	// PCA
 	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size()-1);
-	bool return_value = PCA(number_eigenvectors, face_images);
 
 //--------------------------------------------
 //--------------------------------------------
 //--------------------------------------------
   std::vector<int>label_vec;
-  int ss_dim = 10;
+  int ss_dim =number_eigenvectors;
 
   for(int li=0;li<m_face_labels.size();li++)
   {
@@ -281,15 +280,18 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
     temp.convertTo(temp,CV_64FC1);
     in_vec.push_back(temp);
   }
-  SubspaceAnalysis::Eigenfaces EF(in_vec,label_vec,ss_dim);
+  SubspaceAnalysis::Eigenfaces EF(in_vec,ss_dim);
+  EF.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
+  EF.meanCoeffs(m_projected_training_faces,label_vec,m_face_class_average_projections);
 //--------------------------------------------
 //--------------------------------------------
 
-	if (return_value == ipa_Utils::RET_FAILED)
-		return ipa_Utils::RET_FAILED;
-
-	// compute average face projections per class
-	computeAverageFaceProjections();
+//  bool return_value = PCA(number_eigenvectors, face_images);
+//	if (return_value == ipa_Utils::RET_FAILED)
+//		return ipa_Utils::RET_FAILED;
+//
+//	// compute average face projections per class
+//	computeAverageFaceProjections();
 
 	// save new model
 	saveRecognitionModel();
