@@ -149,13 +149,22 @@ SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vect
   avg_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
   proj_model_data_=cv::Mat(img_vec.size(),dim_ss,CV_64FC1);
 
+  std::cout<<"[EF]-->calc data mat"<<std::endl;
   SubspaceAnalysis::calcDataMat(img_vec,model_data_);
+  std::cout<<"[EF]-->done"<<std::endl;
+
+  cv::Mat dummy;
+  model_data_.copyTo(dummy);
+  dummy.convertTo(dummy,CV_8UC1);
+  dummy =dummy.reshape(1,dummy.rows*160);
+  cv::imshow("reconstuction",dummy);
+  cv::imwrite("/home/goa-tz/Desktop/model_data_.jpg",dummy);
 
 
   //initiate PCA
+  std::cout<<"[EF]-->calc PCA"<<std::endl;
   pca_=SubspaceAnalysis::PCA(model_data_,dim_ss);
-  //pca_.eigenvecs.copyTo(proj_);
-  //pca_.mean.copyTo(avg_);
+  std::cout<<"[EF]-->done"<<std::endl;
 
   proj_=pca_.eigenvecs;
   avg_=pca_.mean;
@@ -172,12 +181,14 @@ SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vect
  // dump_matrix(proj_model_data_,"projection2");
 
   cv::Mat mean_coeffs=cv::Mat(2,3,CV_64FC1);
+  std::cout<<"[EF]-->projecting to subspace"<<std::endl;
   projectToSubspace(model_data_,proj_model_data_,DFFS);
-  dump_matrix(proj_model_data_,"projection");
+  std::cout<<"[EF]-->done"<<std::endl;
 
+  std::cout<<"[EF]-->calculating meand coeffs"<<std::endl;
   meanCoeffs(proj_model_data_,label_vec,mean_coeffs);
+  std::cout<<"[EF]-->done"<<std::endl;
 
-  dump_matrix(mean_coeffs,"mean");
 
 
 }
@@ -196,9 +207,8 @@ void SubspaceAnalysis::Eigenfaces::projectToSubspace(cv::Mat& src_mat,cv::Mat& d
   cv::Mat dummy;
   rec_mat.copyTo(dummy);
   dummy.convertTo(dummy,CV_8UC1);
-  dummy =dummy.reshape(1,dummy.rows*120);
+  dummy =dummy.reshape(1,dummy.rows*160);
   cv::imshow("reconstuction",dummy);
-  cv::waitKey(0);
   cv::imwrite("/home/goa-tz/Desktop/reconstructed.jpg",dummy);
 
 }
@@ -221,12 +231,6 @@ void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& 
   }
   int num_classes=distinct_vec.size();
 
-
-  std::cout<<"DSCT VEC=\n";
-  for(int i=0;i<distinct_vec.size();i++)
-  {
-    std::cout<<distinct_vec[i]<<std::endl;
-  }
 
   mean_coeffs=cv::Mat::zeros(num_classes,coeffs.cols,CV_64FC1);
   std::vector<int>     samples_per_class(num_classes);
@@ -255,6 +259,7 @@ void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& 
 
   }
 }
+
 
 //TODO:
 //provide interface for recosntruction and projection
@@ -328,6 +333,9 @@ void SubspaceAnalysis::SSA::decompose2(cv::Mat& data_mat)
   eigenvecs=pca.eigenvectors;
   //pca.eigenvectors.copyTo(eigenvecs);
 }
+
+
+
 
 //---------------------------------------------------------------------------------
 // LDA
@@ -437,8 +445,9 @@ SubspaceAnalysis::PCA::PCA(cv::Mat& input_data,int& ss_dim):SSA(input_data,ss_di
   cv::Mat dummy;
   eigenvecs.copyTo(dummy);
   dummy.convertTo(dummy,CV_8UC1,1000);
-  dummy =dummy.reshape(1,dummy.rows*120);
-  cv::imwrite("/home/goa-tz/Desktop/eigenfacesSVD.jpg",dummy);
+  dummy =dummy.reshape(1,dummy.rows*160);
+  cv::equalizeHist(dummy,dummy);
+  cv::imwrite("/home/goa-tz/Desktop/eigenfaces.jpg",dummy);
 
 
 }

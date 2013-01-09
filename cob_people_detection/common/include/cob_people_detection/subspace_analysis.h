@@ -31,6 +31,8 @@ namespace SubspaceAnalysis{
       void decompose();
       void decompose(cv::Mat& data_mat);
       void decompose2(cv::Mat& data_mat);
+      //Interface methods
+      void retrieve(cv::Mat& proj,cv::Mat& avg,cv::Mat& proj_model_data);
 
       cv::Mat data;
       cv::Mat model;
@@ -51,6 +53,7 @@ namespace SubspaceAnalysis{
 
       void calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec);
       void calcModelMatrix(std::vector<int>& label_vec,cv::Mat& M);
+    void retrieve(cv::Mat& proj,cv::Mat& avg,cv::Mat& proj_model_data);
 
       int num_classes;
       std::vector<cv::Mat> class_means;

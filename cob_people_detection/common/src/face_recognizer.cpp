@@ -261,9 +261,27 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 //--------------------------------------------
 //--------------------------------------------
 //--------------------------------------------
-  std::vector<int>label_vec(face_images.size());
+  std::vector<int>label_vec;
   int ss_dim = 10;
-  SubspaceAnalysis::Eigenfaces EF(face_images,label_vec,ss_dim);
+
+  for(int li=0;li<m_face_labels.size();li++)
+  {
+    for(int lj=0;lj<identification_labels_to_train.size();lj++)
+    {
+      if(identification_labels_to_train[lj].compare(m_face_labels[li])==0) label_vec.push_back(lj);
+    }
+  }
+
+
+  std::vector<cv::Mat> in_vec;
+  for(int i=0;i<face_images.size();i++)
+  {
+    cv::Mat temp=cv::Mat(face_images[i].rows,face_images[i].cols,CV_8UC1);
+    temp=face_images[i];
+    temp.convertTo(temp,CV_64FC1);
+    in_vec.push_back(temp);
+  }
+  SubspaceAnalysis::Eigenfaces EF(in_vec,label_vec,ss_dim);
 //--------------------------------------------
 //--------------------------------------------
 
