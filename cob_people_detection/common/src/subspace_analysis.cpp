@@ -154,9 +154,11 @@ SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vect
 
   //initiate PCA
   pca_=SubspaceAnalysis::PCA(model_data_,dim_ss);
-  pca_.eigenvecs.copyTo(proj_);
-  pca_.mean.copyTo(avg_);
+  //pca_.eigenvecs.copyTo(proj_);
+  //pca_.mean.copyTo(avg_);
 
+  proj_=pca_.eigenvecs;
+  avg_=pca_.mean;
 
   std::vector<double> DFFS;
 
@@ -310,9 +312,11 @@ void SubspaceAnalysis::SSA::decompose(cv::Mat& data_mat)
 
   data_mat.convertTo(data_mat,CV_64F,1/sqrt(3));
   cv::SVD svd(data_mat.t());
-  svd.u.copyTo(eigenvecs);
+  eigenvecs=svd.u;
+  //svd.u.copyTo(eigenvecs);
   eigenvecs=eigenvecs.t();
-  svd.w.copyTo(eigenvals);
+  //svd.w.copyTo(eigenvals);
+  eigenvals=svd.w;
 
 
 }
@@ -321,7 +325,8 @@ void SubspaceAnalysis::SSA::decompose2(cv::Mat& data_mat)
 {
   cv::Mat zero_mean=cv::Mat::zeros(1,data_mat.cols,CV_64FC1);
   cv::PCA pca(data_mat,zero_mean,CV_PCA_DATA_AS_ROW,dimension);
-  pca.eigenvectors.copyTo(eigenvecs);
+  eigenvecs=pca.eigenvectors;
+  //pca.eigenvectors.copyTo(eigenvecs);
 }
 
 //---------------------------------------------------------------------------------
