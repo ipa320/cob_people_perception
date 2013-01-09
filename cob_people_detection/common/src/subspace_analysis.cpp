@@ -1,5 +1,23 @@
 #include"cob_people_detection/subspace_analysis.h"
 #include<opencv/highgui.h>
+#include<fstream>
+#include<ostream>
+
+
+void SubspaceAnalysis:: mat_info(cv::Mat& mat)
+{
+  //for(int r=0;r<mat.rows;r++)
+  //{
+  //  for(int c=0;c<mat.cols;c++)
+  //  {
+  //    std::cout<<mat.at<double>(r,c)<<std::endl;
+  //  }
+  //}
+  std::cout<<"Matrix info:\n";
+  std::cout<<"rows= "<<mat.rows<<"  cols= "<<mat.cols<<std::endl;
+  std::cout<<"Type = "<<mat.type()<<std::endl;
+  std::cout<<"Channels = "<<mat.depth()<<std::endl;
+}
 
 void SubspaceAnalysis::DFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS)
 {
@@ -28,13 +46,13 @@ void SubspaceAnalysis::project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_m
 
   //calculate coefficients
 
-  cv::gemm(src_mat,proj_mat,1.0,cv::Mat(),0.0,coeff_mat);
+  cv::gemm(src_mat,proj_mat,1.0,cv::Mat(),0.0,coeff_mat,cv::GEMM_2_T);
 
 }
 
 void SubspaceAnalysis::reconstruct(cv::Mat& coeffs,cv::Mat& proj_mat,cv::Mat& avg,cv::Mat& rec_im)
 {
-  cv::gemm(coeffs,proj_mat,1.0,Mat(),0.0,rec_im,GEMM_2_T);
+  cv::gemm(coeffs,proj_mat,1.0,cv::Mat(),0.0,rec_im);
   for(int i=0;i<rec_im.rows;i++)
   {
     cv::Mat curr_row=rec_im.row(i);
@@ -95,6 +113,22 @@ void SubspaceAnalysis::calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& dat
   return;
 }
 
+void SubspaceAnalysis::dump_matrix(cv::Mat& mat,std::string filename)
+{
+  std::string path = "/share/goa-tz/people_detection/debug/data/";
+  path.append(filename.c_str());
+  std::ofstream os(path.c_str() );
+  for(int r=0;r<mat.rows;r++)
+  {
+    for(int c=0;c<mat.cols;c++)
+    {
+    os<<mat.at<double>(r,c)<<" ";
+    }
+    os<<"\n";
+  }
+  os.close();
+}
+
 //---------------------------------------------------------------------------------
 // EIGENFACES
 //---------------------------------------------------------------------------------
@@ -114,26 +148,36 @@ SubspaceAnalysis::Eigenfaces::Eigenfaces(std::vector<cv::Mat>& img_vec,std::vect
   model_data_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
   avg_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
   proj_model_data_=cv::Mat(img_vec.size(),dim_ss,CV_64FC1);
-  avg_=cv::Mat(dim_ss,img_vec[0].total(),CV_64FC1);
-
 
   SubspaceAnalysis::calcDataMat(img_vec,model_data_);
 
-  cv::Mat dummy;
-  model_data_.copyTo(dummy);
-  dummy.convertTo(dummy,CV_8UC1);
-  dummy =dummy.reshape(1,img_vec.size()*120);
-  cv::imshow("model_data",dummy);
-  cv::imwrite("/home/goa-tz/Desktop/model_data.jpg",dummy);
-  cv::waitKey(0);
 
   //initiate PCA
   pca_=SubspaceAnalysis::PCA(model_data_,dim_ss);
   pca_.eigenvecs.copyTo(proj_);
   pca_.mean.copyTo(avg_);
 
+
   std::vector<double> DFFS;
+
+
+ // cv::Mat ss=model_data_(cv::Rect(0,0,120*120,3));
+ // projectToSubspace(ss,proj_model_data_,DFFS);
+ // dump_matrix(proj_model_data_,"projection1");
+
+ // cv::Mat ss2=model_data_(cv::Rect(0,2,120*120,3));
+ // projectToSubspace(ss2,proj_model_data_,DFFS);
+ // dump_matrix(proj_model_data_,"projection2");
+
+  cv::Mat mean_coeffs=cv::Mat(2,3,CV_64FC1);
   projectToSubspace(model_data_,proj_model_data_,DFFS);
+  dump_matrix(proj_model_data_,"projection");
+
+  meanCoeffs(proj_model_data_,label_vec,mean_coeffs);
+
+  dump_matrix(mean_coeffs,"mean");
+
+
 }
 
 
@@ -145,17 +189,16 @@ void SubspaceAnalysis::Eigenfaces::projectToSubspace(cv::Mat& src_mat,cv::Mat& d
   cv::Mat rec_mat;
   SubspaceAnalysis::reconstruct(dst_mat,proj_,avg_,rec_mat);
 
-  cv::Mat dummy;
+  SubspaceAnalysis::DFFS(src_mat,rec_mat,avg_,DFFS);
 
-  std::cout<<"RECMAT"<<rec_mat.rows<<","<<rec_mat.cols<<std::endl;
+  cv::Mat dummy;
   rec_mat.copyTo(dummy);
   dummy.convertTo(dummy,CV_8UC1);
-  dummy =dummy.reshape(1,rec_mat.rows*120);
-  cv::imshow("recon",dummy);
-  cv::imwrite("/home/goa-tz/Desktop/recon.jpg",dummy);
+  dummy =dummy.reshape(1,dummy.rows*120);
+  cv::imshow("reconstuction",dummy);
   cv::waitKey(0);
+  cv::imwrite("/home/goa-tz/Desktop/reconstructed.jpg",dummy);
 
-  SubspaceAnalysis::DFFS(src_mat,rec_mat,avg_,DFFS);
 }
 void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs)
 {
@@ -163,26 +206,32 @@ void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& 
   bool unique=true;
   for(int i=0;i<label_vec.size();++i)
   {
-    if(i==0)distinct_vec.push_back(label_vec[i]);continue;
 
+    if(i!=0)
+    {
     unique=true;
     for(int j=0;j<distinct_vec.size();j++)
     {
       if(label_vec[i]==distinct_vec[j]) unique =false;
+    }
     }
     if(unique==true)distinct_vec.push_back(label_vec[i]);
   }
   int num_classes=distinct_vec.size();
 
 
+  std::cout<<"DSCT VEC=\n";
+  for(int i=0;i<distinct_vec.size();i++)
+  {
+    std::cout<<distinct_vec[i]<<std::endl;
+  }
 
-  std::vector<cv::Mat> mean_coeffs_mat(num_classes);
+  mean_coeffs=cv::Mat::zeros(num_classes,coeffs.cols,CV_64FC1);
   std::vector<int>     samples_per_class(num_classes);
 
   //initialize vectors with zeros
   for( int i =0;i<num_classes;i++)
   {
-   mean_coeffs_mat[i]=cv::Mat::zeros(1,coeffs.cols,CV_64FC1);
    samples_per_class[i]=0;
   }
 
@@ -192,18 +241,19 @@ void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& 
     cv::Mat curr_row=coeffs.row(i);
     class_index=label_vec[i];
 
-    add(mean_coeffs_mat[class_index],curr_row,mean_coeffs_mat[class_index]);
+    cv::Mat mean_row=mean_coeffs.row(class_index);
+
+    add(mean_row,curr_row,mean_row);
     samples_per_class[class_index]++;
   }
 
   for (int i = 0; i < num_classes; i++) {
-  cv::Mat curr_row=mean_coeffs.row(i);
-  mean_coeffs_mat[i].convertTo(curr_row,CV_64FC1,1.0/static_cast<double>(samples_per_class[i]));
-
+  cv::Mat mean_row=mean_coeffs.row(i);
+  mean_row.convertTo(mean_row,CV_64FC1,1.0/static_cast<double>(samples_per_class[i]));
 
   }
-
 }
+
 //TODO:
 //provide interface for recosntruction and projection
 //with autmatic generation of DFFS and DIFS rspectively
@@ -258,56 +308,20 @@ void SubspaceAnalysis::SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean)
 void SubspaceAnalysis::SSA::decompose(cv::Mat& data_mat)
 {
 
-  EigenvalueDecomposition evd(data_mat);
+  data_mat.convertTo(data_mat,CV_64F,1/sqrt(3));
+  cv::SVD svd(data_mat.t());
+  svd.u.copyTo(eigenvecs);
+  eigenvecs=eigenvecs.t();
+  svd.w.copyTo(eigenvals);
 
-  cv::Mat eigenvals_unsorted,eigenvecs_unsorted;
-  eigenvals_unsorted=evd.eigenvalues();
-  eigenvals.clone().reshape(1,1);
-  eigenvecs_unsorted=evd.eigenvectors();
-
-  //sort eigenvals and eigenvecs
-
-  cv::Mat sort_indices;
-  cv::sortIdx(eigenvals_unsorted,sort_indices,CV_SORT_DESCENDING);//TODO: are flags just right
-
-  cv::Mat temp;
-  for(size_t i=0;i<sort_indices.total();i++)
-  {
-    cv::Mat eigenvals_curr_col=eigenvals.col(i);
-    cv::Mat eigenvecs_curr_col=eigenvecs.col(i);
-    temp = eigenvals_unsorted.col(sort_indices.at<int>(i));
-    temp.copyTo(eigenvals_curr_col);
-    temp = eigenvecs_unsorted.col(sort_indices.at<int>(i));
-    temp.copyTo(eigenvecs_curr_col);
-  }
-
-  eigenvals=Mat(eigenvals,cv::Range::all(),cv::Range(0,dimension));
-  eigenvecs=Mat(eigenvecs,cv::Range::all(),cv::Range(0,dimension));
 
 }
 
 void SubspaceAnalysis::SSA::decompose2(cv::Mat& data_mat)
 {
-  
-  data_mat.convertTo(data_mat,CV_64F,1/sqrt(3));
-  cv::SVD svd(data_mat.t());
-  svd.u.copyTo(eigenvecs);
-  svd.w.copyTo(eigenvals);
-
-  eigenvecs.t();
-
-  cv::Mat dummy;
-  std::cout<<"EV:"<<eigenvecs.rows<<","<<eigenvecs.cols<<std::endl;
-  eigenvecs.copyTo(dummy);
-  dummy.convertTo(dummy,CV_8UC1,1000);
-  dummy=dummy.t();
-  dummy =dummy.reshape(1,eigenvecs.cols*120);
-  cv::equalizeHist(dummy,dummy);
-  cv::imshow("eigenfaces",dummy);
-  cv::imwrite("/home/goa-tz/Desktop/eigenfaces.jpg",dummy);
-  cv::waitKey(0);
-
-
+  cv::Mat zero_mean=cv::Mat::zeros(1,data_mat.cols,CV_64FC1);
+  cv::PCA pca(data_mat,zero_mean,CV_PCA_DATA_AS_ROW,dimension);
+  pca.eigenvectors.copyTo(eigenvecs);
 }
 
 //---------------------------------------------------------------------------------
@@ -411,22 +425,30 @@ SubspaceAnalysis::PCA::PCA(cv::Mat& input_data,int& ss_dim):SSA(input_data,ss_di
 {
   data=input_data;
   calcProjMatrix(input_data);
-  eigenvecs=eigenvecs(cv::Rect(0,0,dimension-1,input_data.cols));
+  //truncate eigenvectors
+  eigenvecs=eigenvecs(cv::Rect(0,0,input_data.cols,dimension));
+  cv::normalize(eigenvecs,eigenvecs);
+
+  cv::Mat dummy;
+  eigenvecs.copyTo(dummy);
+  dummy.convertTo(dummy,CV_8UC1,1000);
+  dummy =dummy.reshape(1,dummy.rows*120);
+  cv::imwrite("/home/goa-tz/Desktop/eigenfacesSVD.jpg",dummy);
 
 
 }
 
 void SubspaceAnalysis::PCA::calcProjMatrix(cv::Mat& data)
 {
+     cv::Mat data_row;
+     for(int i=0;i<data.rows;++i)
+     {
+       //reduce data matrix - total Scatter matrix
+       data_row =data.row(i);
+       cv::subtract(data_row,mean,data_row);
+     }
 
-  cv::Mat data_row;
-  for(int i=0;i<data.rows;++i)
-  {
-    //reduce data matrix - total Scatter matrix
-    data_row =data.row(i);
-    cv::subtract(data_row,mean,data_row);
-  }
-    decompose2(data);
+     decompose(data);
 }
 
 

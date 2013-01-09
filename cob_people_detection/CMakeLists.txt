@@ -90,9 +90,7 @@ rosbuild_add_executable(ssa_test
 #-----------------------------------------------------------------------
 
 rosbuild_add_library(subspace_analysis
-  common/src/subspace_analysis.cpp
-  common/include/thirdparty/decomposition.cpp
-  common/include/thirdparty/helper.cpp)
+  common/src/subspace_analysis.cpp)
 target_link_libraries(subspace_analysis  opencv_core )
 
 #-----------------------------------------------------------------------

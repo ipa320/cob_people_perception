@@ -3,7 +3,6 @@
 
 
 #include<opencv/cv.h>
-#include"thirdparty/decomposition.hpp"
 
 // Base class for SubSpace Analysis(SSA)
 //
@@ -14,6 +13,8 @@ namespace SubspaceAnalysis{
   void reconstruct(cv::Mat& coeffs,cv::Mat& proj_mat,cv::Mat& avg,cv::Mat& rec_im);
   void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
   void DFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS);
+  void dump_matrix(cv::Mat& mat,std::string filename);
+  void  mat_info(cv::Mat& mat);
 
 
 
@@ -45,7 +46,7 @@ namespace SubspaceAnalysis{
 
     public:
       LDA(){};
-      LDA(Mat& input_data,std::vector<int>& input_labels,int& ss_dim);
+      LDA(cv::Mat& input_data,std::vector<int>& input_labels,int& ss_dim);
       virtual ~LDA(){};
 
       void calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,std::vector<cv::Mat>&  mean_vec);
