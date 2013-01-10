@@ -10,9 +10,8 @@ int main(int argc, const char *argv[])
 
 
   int probe_img=atoi(argv[1]);
-
-
   std::cout<<"Probe INDEX="<<probe_img<<std::endl;
+  
   std::string im1="/share/goa-tz/people_detection/debug/test_files/0.bmp";
   std::string im2="/share/goa-tz/people_detection/debug/test_files/1.bmp";
   std::string im3="/share/goa-tz/people_detection/debug/test_files/2.bmp";
@@ -73,17 +72,32 @@ int main(int argc, const char *argv[])
   //std::cout<<b.rows<<" ---- "<<b.cols<<"...."<<a.type()<<std::endl;
 
 
-  SubspaceAnalysis::Eigenfaces EF;
-   EF.init(img_vec,ss_dim);
-  std::vector<cv::Mat> eigenvecs(ss_dim);
+  //SubspaceAnalysis::Eigenfaces EF;
+  // EF.init(img_vec,ss_dim);
+  //std::vector<cv::Mat> eigenvecs(ss_dim);
+  //cv::Mat eigenvals,avg,projs;
+  //EF.retrieve(eigenvecs,eigenvals,avg,projs);
+
+  //double DFFS;
+  //cv::Mat feats;
+  //int c;
+  //EF.classify(img_vec[probe_img],c);
+  //std::cout<<"class="<<c<<std::endl;
+
+  SubspaceAnalysis::Fisherfaces FF;
+   FF.init(img_vec,label_vec);
+
+  std::vector<cv::Mat> eigenvecs(1);
   cv::Mat eigenvals,avg,projs;
-  EF.retrieve(eigenvecs,eigenvals,avg,projs);
+  FF.retrieve(eigenvecs,eigenvals,avg,projs);
 
   double DFFS;
   cv::Mat feats;
   int c;
-  EF.classify(img_vec[probe_img],c);
+  FF.classify(img_vec[probe_img],c);
   std::cout<<"class="<<c<<std::endl;
 
+
+  std::cout<<"avg_arr_ 1.5="<<avg.rows<<","<<avg.cols<<std::endl;
   return 0;
 }
