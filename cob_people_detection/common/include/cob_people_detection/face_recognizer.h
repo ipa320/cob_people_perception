@@ -76,6 +76,7 @@
 // boost
 #include <boost/thread/mutex.hpp>
 
+#include"cob_people_detection/subspace_analysis.h"
 namespace ipa_PeopleDetector {
 
 class FaceRecognizer : public AbstractFaceRecognizer
@@ -209,8 +210,15 @@ protected:
 	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
 	/// @return Return code
 	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<std::string>& identification_labels_to_train);
+//----------------------------------------------------
+//----------------------------------------------------
 
   FaceNormalizer face_normalizer_;
+
+  SubspaceAnalysis::Eigenfaces Eigenfaces_;
+//----------------------------------------------------
+//----------------------------------------------------
+
 	// data
 	std::vector<cv::Mat> m_eigenvectors;			///< Eigenvectors (spanning the face space)
 	IplImage** m_eigenvectors_ipl;					///< Eigenvalues stored in IplImage format (to avoid conversion each time the function is called)

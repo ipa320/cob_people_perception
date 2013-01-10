@@ -3,22 +3,36 @@
 
 
 #include<opencv/cv.h>
+#include<iostream>
+#include<opencv/highgui.h>
+#include<fstream>
+#include<ostream>
 
 // Base class for SubSpace Analysis(SSA)
 //
 //
 namespace SubspaceAnalysis{
 
-  void project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,cv::Mat& coeff_mat);
-  void reconstruct(cv::Mat& coeffs,cv::Mat& proj_mat,cv::Mat& avg,cv::Mat& rec_im);
-  void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
-  void DFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS);
   void dump_matrix(cv::Mat& mat,std::string filename);
   void  mat_info(cv::Mat& mat);
 
 
 
+  //Baseclass for Fisherfaces and Eigenfaces
+  class XFaces
+  {
+    public:
+    XFaces(){};
+    virtual ~XFaces(){};
+    protected:
+    void project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,cv::Mat& coeff_mat);
+    void reconstruct(cv::Mat& coeffs,cv::Mat& proj_mat,cv::Mat& avg,cv::Mat& rec_im);
+    void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
+    void calcDFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS);
+    void mat2arr(cv::Mat& src_mat,cv::Mat& dst_mat);
+  };
 
+  //Baseclass for PCA LDA
   class SSA
   {
 
@@ -69,13 +83,14 @@ namespace SubspaceAnalysis{
     void calcProjMatrix(cv::Mat& data);
   };
 
-  class Eigenfaces
+  class Eigenfaces:public XFaces
   {
     public:
-    Eigenfaces(std::vector<cv::Mat>& img_vec,int& red_dim);
+    Eigenfaces(){};
     virtual ~Eigenfaces(){};
 
-    void projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,std::vector<double>& DFFS);
+    void init(std::vector<cv::Mat>& img_vec,int& red_dim);
+    void projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,double& DFFS);
     void meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs);
     void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
 

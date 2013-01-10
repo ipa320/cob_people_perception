@@ -82,8 +82,6 @@
 
 
 
-//INCLUDE  subspace analysis
-#include "cob_people_detection/subspace_analysis.h"
 
 namespace fs = boost::filesystem;
 
@@ -280,9 +278,24 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
     temp.convertTo(temp,CV_64FC1);
     in_vec.push_back(temp);
   }
-  SubspaceAnalysis::Eigenfaces EF(in_vec,ss_dim);
-  EF.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
-  EF.meanCoeffs(m_projected_training_faces,label_vec,m_face_class_average_projections);
+
+  //alocate memory for eigenvectors
+  m_eigenvectors.clear();
+  m_eigenvectors.resize(number_eigenvectors,cv::Mat(face_images[0].rows,face_images[0].cols,CV_64FC1));
+
+  std::cout<<"calc EF"<<std::endl;
+  Eigenfaces_.init(in_vec,ss_dim);
+  std::cout<<"retrieve EF"<<std::endl;
+  Eigenfaces_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
+  std::cout<<"mean_proj with EF"<<std::endl;
+  Eigenfaces_.meanCoeffs(m_projected_training_faces,label_vec,m_face_class_average_projections);
+
+  //cv::Mat dummy;
+  //m_eigenvectors[0].copyTo(dummy);
+  //dummy.convertTo(dummy,CV_8UC1,1000);
+  //dummy =dummy.reshape(1,dummy.rows*160);
+  //cv::equalizeHist(dummy,dummy);
+
 //--------------------------------------------
 //--------------------------------------------
 
@@ -572,39 +585,30 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
 		// Project the test image onto the PCA subspace
 		IplImage resized_8U1Ipl = (IplImage)resized_8U1;
-		cvEigenDecomposite(&resized_8U1Ipl, number_eigenvectors, m_eigenvectors_ipl, 0, 0, &avg_image_ipl, eigen_vector_weights);
+		//cvEigenDecomposite(&resized_8U1Ipl, number_eigenvectors, m_eigenvectors_ipl, 0, 0, &avg_image_ipl, eigen_vector_weights);
 
-		// Calculate FaceSpace Distance
-		cv::Mat src_reconstruction = cv::Mat::zeros(resized_size, m_eigenvectors[0].type());
-		for(int i=0; i<number_eigenvectors; i++)
-			src_reconstruction += eigen_vector_weights[i]*m_eigenvectors[i];
 
-		// todo:
-//		cv::Mat reconstrTemp = src_reconstruction + m_average_image;
-//		cv::Mat reconstr(m_eigenvectors[0].size(), CV_8UC1);
-//		reconstrTemp.convertTo(reconstr, CV_8UC1, 1);
-//		cv::imshow("reconstruction", reconstr);
-//		cv::waitKey();
+     double DFFS;
+     resized_8U1.convertTo(resized_8U1,CV_64FC1);
 
-		cv::Mat temp;
-		resized_8U1.convertTo(temp, CV_32FC1, 1.0/255.0);
-		double distance = cv::norm((temp-m_average_image), src_reconstruction, cv::NORM_L2);
+     cv::Mat feature_vec;
+     Eigenfaces_.projectToSubspace(resized_8U1,feature_vec,DFFS );
 
-		//std::cout.precision( 10 );
-		if (m_debug) std::cout << "distance to face space: " << distance << std::endl;
+		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
 
 		// -2=distance to face space is too high
 		// -1=distance to face classes is too high
-		if(distance > m_threshold_facespace)
+		if(DFFS > m_threshold_facespace)
 		{
 			// no face
 			identification_labels.push_back("No face");
 		}
 		else
 		{
-			std::string face_label;
-			classifyFace(eigen_vector_weights, face_label, number_eigenvectors);
-			identification_labels.push_back(face_label);
+			identification_labels.push_back("FACE");
+			//std::string face_label;
+			//classifyFace(eigen_vector_weights, face_label, number_eigenvectors);
+			//identification_labels.push_back(face_label);
 		}
 	}
 

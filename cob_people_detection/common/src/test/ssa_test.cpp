@@ -68,14 +68,15 @@ int main(int argc, const char *argv[])
   //std::cout<<b.rows<<" ---- "<<b.cols<<"...."<<a.type()<<std::endl;
 
 
-  SubspaceAnalysis::Eigenfaces EF(img_vec,ss_dim);
+  SubspaceAnalysis::Eigenfaces EF;
+   EF.init(img_vec,ss_dim);
   std::vector<cv::Mat> eigenvecs(ss_dim);
   cv::Mat eigenvals,avg,projs;
   EF.retrieve(eigenvecs,eigenvals,avg,projs);
 
-  for(int i=0;i<eigenvals.cols;i++)
-  {
-    std::cout<<eigenvals.at<double>(i)<<std::endl;
-  }
+  double DFFS;
+  cv::Mat feats;
+  EF.projectToSubspace(img_vec[0],feats,DFFS);
+  std::cout<<"DFFS="<<DFFS<<std::endl;
   return 0;
 }
