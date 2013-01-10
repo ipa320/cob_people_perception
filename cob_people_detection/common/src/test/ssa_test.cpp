@@ -8,6 +8,11 @@
 int main(int argc, const char *argv[])
 {
 
+
+  int probe_img=atoi(argv[1]);
+
+
+  std::cout<<"Probe INDEX="<<probe_img<<std::endl;
   std::string im1="/share/goa-tz/people_detection/debug/test_files/0.bmp";
   std::string im2="/share/goa-tz/people_detection/debug/test_files/1.bmp";
   std::string im3="/share/goa-tz/people_detection/debug/test_files/2.bmp";
@@ -76,7 +81,9 @@ int main(int argc, const char *argv[])
 
   double DFFS;
   cv::Mat feats;
-  EF.projectToSubspace(img_vec[0],feats,DFFS);
-  std::cout<<"DFFS="<<DFFS<<std::endl;
+  int c;
+  EF.classify(img_vec[probe_img],c);
+  std::cout<<"class="<<c<<std::endl;
+
   return 0;
 }

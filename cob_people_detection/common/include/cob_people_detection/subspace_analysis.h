@@ -93,8 +93,11 @@ namespace SubspaceAnalysis{
     void projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,double& DFFS);
     void meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs);
     void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
+    void classify(cv::Mat& src_mat,int class_index);
 
     protected:
+    void calcDIFS(cv::Mat& probe_mat,std::vector<double>& DFFS);
+    int ss_dim_;
     SubspaceAnalysis::PCA pca_;
     cv::Mat eigenvector_arr_;
     cv::Mat eigenvalue_arr_;

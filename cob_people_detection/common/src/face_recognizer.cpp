@@ -605,7 +605,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		}
 		else
 		{
-			identification_labels.push_back("FACE");
+      int index;
+      Eigenfaces_.classify(resized_8U1,index);
+			identification_labels.push_back(m_current_label_set[index]);
 			//std::string face_label;
 			//classifyFace(eigen_vector_weights, face_label, number_eigenvectors);
 			//identification_labels.push_back(face_label);

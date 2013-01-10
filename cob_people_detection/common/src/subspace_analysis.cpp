@@ -53,6 +53,8 @@ void SubspaceAnalysis::XFaces::calcDFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv:
   return;
 }
 
+
+
 void SubspaceAnalysis::XFaces::mat2arr(cv::Mat& src_mat,cv::Mat& dst_mat)
 {
 
@@ -134,8 +136,6 @@ void SubspaceAnalysis::XFaces::calcDataMat(std::vector<cv::Mat>& input_data,cv::
     //dst_mat.convertTo(dst_mat,CV_8UC1);
     //cv::imshow("DST",dst_mat);
     //cv::waitKey(0);
-    
-    
 
   return;
 }
@@ -146,10 +146,13 @@ void SubspaceAnalysis::XFaces::calcDataMat(std::vector<cv::Mat>& input_data,cv::
 //---------------------------------------------------------------------------------
 //
 //
-void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,int& dim_ss)
+void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,int& red_dim)
 {
+
+  ss_dim_=red_dim;
+
   //check if input has the same size
-  if(img_vec.size()<dim_ss+1)
+  if(img_vec.size()<ss_dim_+1)
   {
     //TODO: ROS ERROR
     std::cout<<"EIGFACE: Invalid subspace dimension\n";
@@ -159,9 +162,9 @@ void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,int& dim_s
   //initialize all matrices
   model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
-  proj_model_data_arr_=cv::Mat(img_vec.size(),dim_ss,CV_64FC1);
+  proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
   eigenvector_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
-  eigenvalue_arr_=cv::Mat(dim_ss,dim_ss,CV_64FC1);
+  eigenvalue_arr_=cv::Mat(ss_dim_,ss_dim_,CV_64FC1);
 
   calcDataMat(img_vec,model_data_arr_);
 
@@ -174,7 +177,7 @@ void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,int& dim_s
 
 
   //initiate PCA
-  pca_=SubspaceAnalysis::PCA(model_data_arr_,dim_ss);
+  pca_=SubspaceAnalysis::PCA(model_data_arr_,ss_dim_);
 
   eigenvector_arr_=pca_.eigenvecs;
   eigenvalue_arr_=pca_.eigenvals;
@@ -280,25 +283,58 @@ void SubspaceAnalysis::Eigenfaces::retrieve(std::vector<cv::Mat>& out_eigenvecto
     //TODO: works only for square images
     curr_row.clone().reshape(1,sqrt(curr_row.cols));
     curr_row.convertTo(curr_row,CV_32FC1);
-    //TODO:THE NEXT LINE BREAKS THE ALGORITHM ! FIX IT!!!!!!!!!!!!1111111111
     curr_row.copyTo(out_eigenvectors[r]);
-    
-    //out_eigenvectors[r]=curr_row;
+
   }
 
   eigenvalue_arr_.copyTo(out_eigenvalues);
-  //double* ev_ptr=out_eigenvalues.ptr<double>(0);
-  //for(int rc=0;rc<eigenvector_arr_.cols;rc++)
-  //{
-  //  *ev_ptr=eigenvalue_arr_.at<double>(rc,rc);
-  //  std::cout<<"EV"<<*ev_ptr<<std::endl;
-  //}
 
 }
 
 
+void SubspaceAnalysis::Eigenfaces::classify(cv::Mat& src_mat,int class_index)
+{
+  cv::Mat src_arr=cv::Mat(1,src_mat.total(),CV_64FC1);
+  mat2arr(src_mat,src_arr);
+  std::vector<double> DIFS_vec;
+
+  cv::Mat coeff_mat=cv::Mat(src_arr.rows,ss_dim_,CV_64FC1);
+  project(src_arr,eigenvector_arr_,avg_arr_,coeff_mat);
+  calcDIFS(coeff_mat,DIFS_vec);
+
+  double min_val;
+  int   min_index;
+  for(int i=0;i<DIFS_vec.size();i++)
+  {
+    min_val=-1;
+    min_index=-1;
+    std::cout<<"DIFS="<<DIFS_vec[i]<<std::endl;
+    if(DIFS_vec[i] < min_val)
+    {
+      min_index=i;
+      min_val=DIFS_vec[i];
+    }
+  }
+
+  if(min_index != -1)
+  {
+    class_index=min_val;
+  }
+
+}
 
 
+void SubspaceAnalysis::Eigenfaces::calcDIFS(cv::Mat& probe_mat,std::vector<double>& DIFS)
+{
+    for(int r=0;r<proj_model_data_arr_.rows;r++)
+    {
+      cv::Mat model_mat=proj_model_data_arr_.row(r);
+      double temp;
+      temp=cv::norm(probe_mat,model_mat,cv::NORM_L2);
+      DIFS.push_back(temp);
+    }
+    return;
+}
 //---------------------------------------------------------------------------------
 // SSA
 //---------------------------------------------------------------------------------
