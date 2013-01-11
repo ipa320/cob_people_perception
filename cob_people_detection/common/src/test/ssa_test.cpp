@@ -98,6 +98,5 @@ int main(int argc, const char *argv[])
   std::cout<<"class="<<c<<std::endl;
 
 
-  std::cout<<"avg_arr_ 1.5="<<avg.rows<<","<<avg.cols<<std::endl;
   return 0;
 }

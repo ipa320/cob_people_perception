@@ -168,7 +168,6 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& src_mat,int class_index)
   std::vector<double> DIFS_vec;
 
   cv::Mat coeff_mat=cv::Mat(src_arr.rows,ss_dim_,CV_64FC1);
-  std::cout<<"avg_arr_ 2="<<avg_arr_.rows<<","<<avg_arr_.cols<<std::endl;
   project(src_arr,eigenvector_arr_,avg_arr_,coeff_mat);
   calcDIFS(coeff_mat,DIFS_vec);
 
@@ -366,12 +365,19 @@ void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
     }
     if(unique==true)distinct_vec.push_back(label_vec[i]);
   }
+
+  //number of classes
   num_classes_=distinct_vec.size();
+
+  //subspace dimension is num classes -1
+  ss_dim_=num_classes_ -1;
+  // pca dimension  is N- num classes
+  int pca_dim=model_data_arr_.rows-num_classes_;
+
 
   calcDataMat(img_vec,model_data_arr_);
 
   // Reduce dimension to  N - c via PCA
-  int pca_dim=model_data_arr_.rows-num_classes_;
   pca_=SubspaceAnalysis::PCA(model_data_arr_,pca_dim);
 
   cv::Mat proj_model_data_arr_PCA=cv::Mat(model_data_arr_.rows,pca_dim,CV_64FC1);
@@ -382,11 +388,10 @@ void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
   P_pca=pca_.eigenvecs;
   avg_arr_=pca_.mean;
 
-  std::cout<<"avg_arr_ 1="<<avg_arr_.rows<<","<<avg_arr_.cols<<std::endl;
 
   //perform lda
-  ss_dim_=num_classes_ -1;
   lda_=SubspaceAnalysis::LDA(proj_model_data_arr_PCA,label_vec,num_classes_,ss_dim_);
+
 
   // get projection matrix lda
   cv::Mat P_lda=cv::Mat(ss_dim_,pca_dim,CV_64FC1);

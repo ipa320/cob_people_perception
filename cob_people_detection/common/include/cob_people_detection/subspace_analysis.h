@@ -119,11 +119,6 @@ namespace SubspaceAnalysis{
     protected:
     //void calcDIFS(cv::Mat& probe_mat,std::vector<double>& DFFS);
     int num_classes_;
-    cv::Mat eigenvector_arr_;
-    cv::Mat eigenvalue_arr_;
-    cv::Mat avg_arr_;
-    cv::Mat model_data_arr_;
-    cv::Mat proj_model_data_arr_;
     SubspaceAnalysis::PCA pca_;
     SubspaceAnalysis::LDA lda_;
   };
