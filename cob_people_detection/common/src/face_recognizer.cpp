@@ -284,11 +284,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
   m_eigenvectors.resize(number_eigenvectors,cv::Mat(face_images[0].rows,face_images[0].cols,CV_64FC1));
 
   std::cout<<"calc EF"<<std::endl;
-  Eigenfaces_.init(in_vec,ss_dim);
+  Fisherfaces_.init(in_vec,label_vec);
   std::cout<<"retrieve EF"<<std::endl;
-  Eigenfaces_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
+  Fisherfaces_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
   std::cout<<"mean_proj with EF"<<std::endl;
-  Eigenfaces_.meanCoeffs(m_projected_training_faces,label_vec,m_face_class_average_projections);
+  //Fisherfaces_.meanCoeffs(m_projected_training_faces,label_vec,m_face_class_average_projections);
 
   //cv::Mat dummy;
   //m_eigenvectors[0].copyTo(dummy);
@@ -592,7 +592,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
      resized_8U1.convertTo(resized_8U1,CV_64FC1);
 
      cv::Mat feature_vec;
-     Eigenfaces_.projectToSubspace(resized_8U1,feature_vec,DFFS );
+     //Fisherfaces_.projectToSubspace(resized_8U1,feature_vec,DFFS );
+     //TODO: TEMP
+     DFFS=0;
 
 		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
 
@@ -606,8 +608,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		else
 		{
       int index;
-      Eigenfaces_.classify(resized_8U1,index);
-			identification_labels.push_back(m_current_label_set[index]);
+      Fisherfaces_.classify(resized_8U1,index);
+			identification_labels.push_back(m_face_labels[index]);
 			//std::string face_label;
 			//classifyFace(eigen_vector_weights, face_label, number_eigenvectors);
 			//identification_labels.push_back(face_label);

@@ -7,6 +7,7 @@
 #include<opencv/highgui.h>
 #include<fstream>
 #include<ostream>
+#include<limits>
 
 // Base class for SubSpace Analysis(SSA)
 //
@@ -25,7 +26,8 @@ namespace SubspaceAnalysis{
     XFaces(){};
     virtual ~XFaces(){};
     void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
-    void classify(cv::Mat& src_mat,int class_index);
+    void classify(cv::Mat& src_mat,int& class_index);
+    void classify(cv::Mat& src_mat,int& class_index,cv::Mat& coeff_mat);
     protected:
     void project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,cv::Mat& coeff_mat);
     void reconstruct(cv::Mat& coeffs,cv::Mat& proj_mat,cv::Mat& avg,cv::Mat& rec_im);
@@ -51,7 +53,7 @@ namespace SubspaceAnalysis{
       SSA(cv::Mat& input_data);
       virtual ~SSA(){};
       void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
-      void calcDataMatMean(cv::Mat& data,cv::Mat& mean);
+      void calcDataMatMean(cv::Mat& data,cv::Mat& mean_row);
       void decompose();
       void decompose(cv::Mat& data_mat);
       void decompose2(cv::Mat& data_mat);

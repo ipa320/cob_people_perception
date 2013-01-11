@@ -215,7 +215,7 @@ protected:
 
   FaceNormalizer face_normalizer_;
 
-  SubspaceAnalysis::Eigenfaces Eigenfaces_;
+  SubspaceAnalysis::Fisherfaces Fisherfaces_;
 //----------------------------------------------------
 //----------------------------------------------------
 
