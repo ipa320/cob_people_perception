@@ -50,7 +50,7 @@ int main(int argc, const char *argv[])
   in_vec.push_back(im1);
   in_vec.push_back(im2);
   in_vec.push_back(im3);
- // in_vec.push_back(im4);
+  in_vec.push_back(im4);
  // in_vec.push_back(im5);
  // in_vec.push_back(im6);
  // in_vec.push_back(im7);
@@ -59,7 +59,7 @@ int main(int argc, const char *argv[])
   in_vec.push_back(im10);
   in_vec.push_back(im11);
   in_vec.push_back(im12);
- // in_vec.push_back(im13);
+  in_vec.push_back(im13);
  // in_vec.push_back(im14);
  // in_vec.push_back(im15);
  // in_vec.push_back(im16);
@@ -84,6 +84,7 @@ int main(int argc, const char *argv[])
   int k = 0;
   for(int j=0;j<in_vec.size();j++)
   {
+    //if(1)
     if(j!=probe_img)
     {
       indices[k]=j;
@@ -93,7 +94,8 @@ int main(int argc, const char *argv[])
 
 
  //int  class_labels[]={0,0,1,1,2,2};
- int  class_labels[]={0,0,0,1,1,1};
+ int  class_labels[]={0,0,0,0,1,1,1,1};
+ //int  class_labels[]={0,0,0,1,1,1,2,2,2};
 
 
 

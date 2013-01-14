@@ -71,7 +71,7 @@ namespace SubspaceAnalysis{
 
     public:
       SSA(){};
-      SSA(cv::Mat& input_data);
+
       virtual ~SSA(){};
       void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
       void calcDataMatMean(cv::Mat& data,cv::Mat& mean_row);

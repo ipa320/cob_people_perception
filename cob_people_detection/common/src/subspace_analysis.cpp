@@ -23,7 +23,7 @@ void SubspaceAnalysis:: mat_info(cv::Mat& mat)
   {
     for(int c=0;c<mat.cols;c++)
     {
-      std::cout<<mat.at<float>(r,c)<<" ";
+      std::cout<<mat.at<double>(r,c)<<" ";
     }
     std::cout<<"\n";
   }
@@ -68,12 +68,6 @@ void SubspaceAnalysis::XFaces::project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Ma
 {
 
 
-  // reduce im mat by mean
-  for(int i=0;i<src_mat.rows;i++)
-  {
-    cv::Mat im=src_mat.row(i);
-    cv::subtract(im,avg_mat,im);
-  }
 
   //calculate coefficients
 
@@ -170,6 +164,14 @@ void SubspaceAnalysis::XFaces::projectToSubspace(cv::Mat& probe_mat,cv::Mat& coe
   cv::Mat src_arr;
   mat2arr(probe_mat,src_arr);
 
+  // TODO: LOOK UP IS THIS RIGHT????
+  // reduce im mat by mean
+  //for(int i=0;i<src_arr.rows;i++)
+  //{
+  //  cv::Mat im=src_arr.row(i);
+  //  cv::subtract(im,avg_arr_,im);
+  //}
+
   project(src_arr,eigenvector_arr_,avg_arr_,coeff_arr);
 
   cv::Mat rec_mat=cv::Mat(src_arr.rows,eigenvector_arr_.rows,CV_64FC1);
@@ -226,6 +228,7 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 
     case SubspaceAnalysis::CLASS_KNN:
     {
+      std::cout<<"WARNING dont use for more than 2 classes"<<std::endl;
       // train SVM when not already trained
       if(!knn_trained_)
       {
@@ -247,8 +250,7 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
     };
     case SubspaceAnalysis::CLASS_SVM:
     {
-      std::cout<<"Don't use yet, please"<<std::endl;
-      break;
+      std::cout<<"WARNING dont use for more than 2 classes"<<std::endl;
       // train SVM when not already trained
       if(!svm_trained_)
       {
@@ -443,6 +445,10 @@ void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& 
 void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec)
 {
 
+  if(img_vec.size()!=label_vec.size())
+  {
+    std::cout<<"ERROR :  image and label vectors have to be of same length"<<std::endl;
+  }
 
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32SC1);
   for(int i=0;i<label_vec.size();i++)
@@ -506,6 +512,7 @@ void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 
   // combine projection matrices
   cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
+  //cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
 
   eigenvector_arr_=eigenvector_arr_.t();
 
@@ -522,7 +529,6 @@ void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 
   project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
 
-
 }
 
 
@@ -532,11 +538,6 @@ void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 //---------------------------------------------------------------------------------
 
 
-SubspaceAnalysis::SSA::SSA(cv::Mat& data_mat)
-{
-  mean=cv::Mat::zeros(1,data_mat.cols,CV_64FC1);
-  calcDataMatMean(data_mat,mean);
-}
 
 
 void SubspaceAnalysis::SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean_row)
@@ -553,6 +554,18 @@ void SubspaceAnalysis::SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean_row)
 }
 
 
+void SubspaceAnalysis::SSA::decompose2(cv::Mat& data_mat)
+{
+
+  cv::Mat zero_mat=cv::Mat::zeros(1,data_mat.cols,CV_64FC1);
+  cv::PCA pca(data_mat,zero_mat,CV_PCA_DATA_AS_ROW,1);
+  eigenvecs=pca.eigenvectors;
+  //svd.u.copyTo(eigenvecs);
+  //svd.w.copyTo(eigenvals);
+  eigenvals=pca.eigenvalues;
+
+
+}
 void SubspaceAnalysis::SSA::decompose(cv::Mat& data_mat)
 {
 
@@ -573,10 +586,12 @@ void SubspaceAnalysis::SSA::decompose(cv::Mat& data_mat)
 //---------------------------------------------------------------------------------
 // LDA
 //---------------------mean_arr_row--------------------------------------------
-SubspaceAnalysis::LDA::LDA(cv::Mat& input_data,std::vector<int>& input_labels,int& num_classes,int& ss_dim): SSA(input_data)
+SubspaceAnalysis::LDA::LDA(cv::Mat& input_data,std::vector<int>& input_labels,int& num_classes,int& ss_dim) 
 {
 
   cv::Mat data_work=input_data.clone();
+  mean=cv::Mat::zeros(1,data_work.cols,CV_64FC1);
+  calcDataMatMean(data_work,mean);
   num_classes_=num_classes;
   //class labels have to be in a vector in ascending order - duplicates are
   //removed internally
@@ -706,9 +721,11 @@ void SubspaceAnalysis::LDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& l
 // PCA
 //---------------------------------------------------------------------------------
 //
-SubspaceAnalysis::PCA::PCA(cv::Mat& input_data,int& ss_dim):SSA(input_data)
+SubspaceAnalysis::PCA::PCA(cv::Mat& input_data,int& ss_dim)
 {
   cv::Mat data_work=input_data.clone();
+  mean=cv::Mat::zeros(1,data_work.cols,CV_64FC1);
+  calcDataMatMean(data_work,mean);
   calcProjMatrix(data_work);
   //truncate eigenvectors and eigenvals
   eigenvecs=eigenvecs(cv::Rect(0,0,input_data.cols,ss_dim));
