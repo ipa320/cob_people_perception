@@ -47,18 +47,18 @@ int main(int argc, const char *argv[])
 
 
   std::vector<std::string> in_vec;
- //// in_vec.push_back(im1);
- //// in_vec.push_back(im2);
- // in_vec.push_back(im3);
+  in_vec.push_back(im1);
+  in_vec.push_back(im2);
+  in_vec.push_back(im3);
  // in_vec.push_back(im4);
  // in_vec.push_back(im5);
  // in_vec.push_back(im6);
  // in_vec.push_back(im7);
  // in_vec.push_back(im8);
  // in_vec.push_back(im9);
- // in_vec.push_back(im10);
- // in_vec.push_back(im11);
- // in_vec.push_back(im12);
+  in_vec.push_back(im10);
+  in_vec.push_back(im11);
+  in_vec.push_back(im12);
  // in_vec.push_back(im13);
  // in_vec.push_back(im14);
  // in_vec.push_back(im15);
@@ -68,13 +68,13 @@ int main(int argc, const char *argv[])
  // in_vec.push_back(im19);
  // in_vec.push_back(im20);
  // in_vec.push_back(im21);
-  in_vec.push_back(imL1);
-  in_vec.push_back(imL2);
-  in_vec.push_back(imL3);
-  in_vec.push_back(imL4);
-  in_vec.push_back(imL5);
-  in_vec.push_back(imL6);
-  in_vec.push_back(imL7);
+ // in_vec.push_back(imL1);
+ // in_vec.push_back(imL2);
+ // in_vec.push_back(imL3);
+ // in_vec.push_back(imL4);
+ // in_vec.push_back(imL5);
+ // in_vec.push_back(imL6);
+ // in_vec.push_back(imL7);
 
   cv::Mat probe_mat=cv::imread(in_vec[probe_img],0);
   cv::resize(probe_mat,probe_mat,cv::Size(120,120));
@@ -92,9 +92,8 @@ int main(int argc, const char *argv[])
   }
 
 
- //int  class_labels[]={0,1};
- int  class_labels[]={0,0,0,1,1,1,1};
- //int  class_labels[]={0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1};
+ //int  class_labels[]={0,0,1,1,2,2};
+ int  class_labels[]={0,0,0,1,1,1};
 
 
 
@@ -124,7 +123,7 @@ int main(int argc, const char *argv[])
 
 
   SubspaceAnalysis::Eigenfaces EF;
-   EF.init(img_vec,ss_dim);
+   EF.init(img_vec,label_vec,ss_dim);
   std::vector<cv::Mat> eigenvecsEF(ss_dim);
   cv::Mat eigenvalsEF,avgEF,projsEF;
   EF.retrieve(eigenvecsEF,eigenvalsEF,avgEF,projsEF);
@@ -134,7 +133,13 @@ int main(int argc, const char *argv[])
   //cv::Mat feats_EF;
   int c_EF;
   cv::Mat coeff_EF;
-  EF.classify(probe_mat,c_EF,coeff_EF);
+  double DFFS_EF;
+  EF.projectToSubspace(probe_mat,coeff_EF,DFFS_EF);
+  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_KNN,c_EF);
+  std::cout<<"class EF KNN= "<<c_EF<<std::endl;
+  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EF);
+  std::cout<<"class EF DIFFS= "<<c_EF<<std::endl;
+
   SubspaceAnalysis::dump_matrix(coeff_EF,"sampleEF");
 
   SubspaceAnalysis::Fisherfaces FF;
@@ -149,11 +154,14 @@ int main(int argc, const char *argv[])
   //cv::Mat feats;
   cv::Mat coeff_FF;
   int c_FF;
-  FF.classify(probe_mat,c_FF,coeff_FF);
+  double DFFS_FF;
+  FF.projectToSubspace(probe_mat,coeff_FF,DFFS_FF);
+  FF.classify(coeff_FF,SubspaceAnalysis::CLASS_KNN,c_FF);
+  std::cout<<"class FF KNN= "<<c_FF<<std::endl;
+  FF.classify(coeff_FF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_FF);
+  std::cout<<"class FF DIFFS= "<<c_FF<<std::endl;
+
   SubspaceAnalysis::dump_matrix(coeff_FF,"sampleFF");
 
-  std::cout<<"class EF"<<label_vec[c_EF]<<std::endl;
-  std::cout<<"class FF"<<label_vec[c_FF]<<std::endl;
-
-  return 0;
+return 0;
 }

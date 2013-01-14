@@ -77,6 +77,7 @@
 #include <boost/thread/mutex.hpp>
 
 #include"cob_people_detection/subspace_analysis.h"
+#include<algorithm>
 namespace ipa_PeopleDetector {
 
 class FaceRecognizer : public AbstractFaceRecognizer
@@ -216,6 +217,7 @@ protected:
   FaceNormalizer face_normalizer_;
 
   SubspaceAnalysis::Fisherfaces Fisherfaces_;
+  std::vector<int> m_label_num;
 //----------------------------------------------------
 //----------------------------------------------------
 

@@ -258,14 +258,13 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 //--------------------------------------------
 //--------------------------------------------
 //--------------------------------------------
-  std::vector<int>label_vec;
   int ss_dim =number_eigenvectors;
 
   for(int li=0;li<m_face_labels.size();li++)
   {
     for(int lj=0;lj<identification_labels_to_train.size();lj++)
     {
-      if(identification_labels_to_train[lj].compare(m_face_labels[li])==0) label_vec.push_back(lj);
+      if(identification_labels_to_train[lj].compare(m_face_labels[li])==0) m_label_num.push_back(lj);
     }
   }
 
@@ -283,12 +282,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
   m_eigenvectors.clear();
   m_eigenvectors.resize(number_eigenvectors,cv::Mat(face_images[0].rows,face_images[0].cols,CV_64FC1));
 
-  std::cout<<"calc EF"<<std::endl;
-  Fisherfaces_.init(in_vec,label_vec);
-  std::cout<<"retrieve EF"<<std::endl;
+  Fisherfaces_.init(in_vec,m_label_num);
   Fisherfaces_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
-  std::cout<<"mean_proj with EF"<<std::endl;
-  //Fisherfaces_.meanCoeffs(m_projected_training_faces,label_vec,m_face_class_average_projections);
+  //Fisherfaces_.meanCoeffs(m_projected_training_faces,m_label_num,m_face_class_average_projections);
 
   //cv::Mat dummy;
   //m_eigenvectors[0].copyTo(dummy);
@@ -591,12 +587,12 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
      double DFFS;
      resized_8U1.convertTo(resized_8U1,CV_64FC1);
 
-     cv::Mat feature_vec;
-     //Fisherfaces_.projectToSubspace(resized_8U1,feature_vec,DFFS );
-     //TODO: TEMP
-     DFFS=0;
+      cv::Mat coeff_arr;
+      Fisherfaces_.projectToSubspace(resized_8U1,coeff_arr,DFFS);
 
 		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
+    //TODO temporary
+    DFFS=0;
 
 		// -2=distance to face space is too high
 		// -1=distance to face classes is too high
@@ -607,9 +603,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		}
 		else
 		{
-      int index;
-      Fisherfaces_.classify(resized_8U1,index);
-			identification_labels.push_back(m_face_labels[index]);
+      int res_label;
+      Fisherfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_KNN,res_label);
+      std::cout<<res_label<<" <-- res label"<<std::endl;
+			identification_labels.push_back(m_current_label_set[res_label]);
 			//std::string face_label;
 			//classifyFace(eigen_vector_weights, face_label, number_eigenvectors);
 			//identification_labels.push_back(face_label);

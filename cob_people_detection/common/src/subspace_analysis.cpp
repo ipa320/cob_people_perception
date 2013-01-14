@@ -19,22 +19,24 @@ void SubspaceAnalysis::dump_matrix(cv::Mat& mat,std::string filename)
 
 void SubspaceAnalysis:: mat_info(cv::Mat& mat)
 {
-  //for(int r=0;r<mat.rows;r++)
-  //{
-  //  for(int c=0;c<mat.cols;c++)
-  //  {
-  //    std::cout<<mat.at<double>(r,c)<<std::endl;
-  //  }
-  //}
+  for(int r=0;r<mat.rows;r++)
+  {
+    for(int c=0;c<mat.cols;c++)
+    {
+      std::cout<<mat.at<float>(r,c)<<" ";
+    }
+    std::cout<<"\n";
+  }
   std::cout<<"Matrix info:\n";
   std::cout<<"rows= "<<mat.rows<<"  cols= "<<mat.cols<<std::endl;
   std::cout<<"Type = "<<mat.type()<<std::endl;
-  std::cout<<"Channels = "<<mat.depth()<<std::endl;
+  std::cout<<"Channels = "<<mat.channels()<<std::endl;
 }
 
 //---------------------------------------------------------------------------------
 //  XFace XFaces
 //---------------------------------------------------------------------------------
+//
 //
 //
 void SubspaceAnalysis::XFaces::calcDFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS)
@@ -161,67 +163,157 @@ void SubspaceAnalysis::XFaces::retrieve(std::vector<cv::Mat>& out_eigenvectors,c
 }
 
 
-void SubspaceAnalysis::XFaces::classify(cv::Mat& src_mat,int& class_index,cv::Mat& coeff_mat)
+
+void SubspaceAnalysis::XFaces::projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS)
 {
-  cv::Mat src_arr=cv::Mat(1,src_mat.total(),CV_64FC1);
-  mat2arr(src_mat,src_arr);
-  std::vector<double> DIFS_vec;
 
-  project(src_arr,eigenvector_arr_,avg_arr_,coeff_mat);
-  calcDIFS(coeff_mat,DIFS_vec);
+  cv::Mat src_arr;
+  mat2arr(probe_mat,src_arr);
 
-  double min_val;
-  int   min_index;
-  min_val=std::numeric_limits<int>::max();
-  min_index=-1;
-  for(int i=0;i<DIFS_vec.size();i++)
+  project(src_arr,eigenvector_arr_,avg_arr_,coeff_arr);
+
+  cv::Mat rec_mat=cv::Mat(src_arr.rows,eigenvector_arr_.rows,CV_64FC1);
+  reconstruct(coeff_arr,eigenvector_arr_,avg_arr_,rec_mat);
+
+
+  std::vector<double> DFFS_vec;
+  DFFS_vec.push_back(DFFS);
+  calcDFFS(src_arr,rec_mat,avg_arr_,DFFS_vec);
+  DFFS=DFFS_vec[0];
+
+  //cv::Mat dummy;
+  //rec_mat.copyTo(dummy);
+  //dummy.convertTo(dummy,CV_8UC1);
+  //dummy =dummy.reshape(1,dummy.rows*160);
+  ////cv::imshow("reconstuction",dummy);
+  //cv::imwrite("/home/goa-tz/Desktop/reconstructed.jpg",dummy);
+}
+void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& class_index)
+{
+  if(coeff_arr.rows>1)
   {
-    //std::cout<<DIFS_vec[i]<<std::endl;
-    if(DIFS_vec[i] < min_val)
+    std::cout<<"[CLASSIFICATION] only implemented for single sample in single row"<<std::endl;
+    return;
+  }
+
+
+  switch(method)
+  {
+    case SubspaceAnalysis::CLASS_MIN_DIFFS:
     {
-      min_index=i;
-      min_val=DIFS_vec[i];
-    }
-  }
+      std::vector<double> DIFS_vec;
+      calcDIFS(coeff_arr,DIFS_vec);
 
-  if(min_index != -1)
-  {
-    class_index=min_index;
-  }
+      double min_val;
+      int   min_index;
+      min_val=std::numeric_limits<int>::max();
+      min_index=-1;
+      for(int i=0;i<DIFS_vec.size();i++)
+      {
+        if(DIFS_vec[i] < min_val)
+        {
+          min_index=i;
+          min_val=DIFS_vec[i];
+        }
+      }
 
+      if(min_index != -1)
+      {
+        class_index=(int)model_label_arr_.at<float>(min_index);
+      }
+      break;
+    };
+
+    case SubspaceAnalysis::CLASS_KNN:
+    {
+      // train SVM when not already trained
+      if(!knn_trained_)
+      {
+
+        cv::Mat data_float;
+        proj_model_data_arr_.convertTo(data_float,CV_32FC1);
+
+        knn_.train(data_float,model_label_arr_);
+        knn_trained_=true;
+      }
+
+      // predict using knn
+      cv::Mat sample;
+      coeff_arr.convertTo(sample,CV_32FC1);
+      //class_index=(int)svm_.predict(sample);
+      class_index=(int)knn_.find_nearest(sample,2);
+
+      break;
+    };
+    case SubspaceAnalysis::CLASS_SVM:
+    {
+      std::cout<<"Don't use yet, please"<<std::endl;
+      break;
+      // train SVM when not already trained
+      if(!svm_trained_)
+      {
+        //train svm with model data
+        CvSVMParams params;
+        params.svm_type = CvSVM::C_SVC;
+        params.kernel_type = CvSVM::LINEAR;
+        params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER,50,1e-5);
+
+        cv::Mat data_float;
+        proj_model_data_arr_.convertTo(data_float,CV_32FC1);
+
+        svm_.train(data_float,model_label_arr_,cv::Mat(),cv::Mat(),params);
+        svm_trained_=true;
+      }
+
+      // predict using svm
+      cv::Mat sample;
+      coeff_arr.convertTo(sample,CV_32FC1);
+      //class_index=(int)svm_.predict(sample);
+      class_index=(int)svm_.predict(sample);
+
+
+      break;
+    };
+
+    default:
+    {
+      std::cout<<"[CLASSIFICATION] method not implemented"<<std::endl;
+      break;
+    };
   return;
 }
-void SubspaceAnalysis::XFaces::classify(cv::Mat& src_mat,int& class_index)
-{
-  cv::Mat src_arr=cv::Mat(1,src_mat.total(),CV_64FC1);
-  mat2arr(src_mat,src_arr);
-  std::vector<double> DIFS_vec;
-
-  cv::Mat coeff_mat=cv::Mat(src_arr.rows,ss_dim_,CV_64FC1);
-  project(src_arr,eigenvector_arr_,avg_arr_,coeff_mat);
-  calcDIFS(coeff_mat,DIFS_vec);
-
-  double min_val;
-  int   min_index;
-  min_val=std::numeric_limits<int>::max();
-  min_index=-1;
-  for(int i=0;i<DIFS_vec.size();i++)
-  {
-    //std::cout<<DIFS_vec[i]<<std::endl;
-    if(DIFS_vec[i] < min_val)
-    {
-      min_index=i;
-      min_val=DIFS_vec[i];
-    }
-  }
-
-  if(min_index != -1)
-  {
-    class_index=min_index;
-  }
-
-  return;
 }
+//void SubspaceAnalysis::XFaces::classify(cv::Mat& src_mat,int& class_index)
+//{
+//  cv::Mat src_arr=cv::Mat(1,src_mat.total(),CV_64FC1);
+//  mat2arr(src_mat,src_arr);
+//  std::vector<double> DIFS_vec;
+//
+//  cv::Mat coeff_mat=cv::Mat(src_arr.rows,ss_dim_,CV_64FC1);
+//  project(src_arr,eigenvector_arr_,avg_arr_,coeff_mat);
+//  calcDIFS(coeff_mat,DIFS_vec);
+//
+//  double min_val;
+//  int   min_index;
+//  min_val=std::numeric_limits<int>::max();
+//  min_index=-1;
+//  for(int i=0;i<DIFS_vec.size();i++)
+//  {
+//    //std::cout<<DIFS_vec[i]<<std::endl;
+//    if(DIFS_vec[i] < min_val)
+//    {
+//      min_index=i;
+//      min_val=DIFS_vec[i];
+//    }
+//  }
+//
+//  if(min_index != -1)
+//  {
+//    class_index=min_index;
+//  }
+//
+//  return;
+//}
 
 
 void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,std::vector<double>& DIFS)
@@ -241,8 +333,14 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,std::vector<double>& 
 //---------------------------------------------------------------------------------
 //
 //
-void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,int& red_dim)
+void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
 {
+
+  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
+  for(int i=0;i<label_vec.size();i++)
+  {
+    model_label_arr_.at<float>(i)=(float)label_vec[i];
+  }
 
   ss_dim_=red_dim;
 
@@ -253,7 +351,7 @@ void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,int& red_d
     std::cout<<"EIGFACE: Invalid subspace dimension\n";
     return;
   }
-
+;
   //initialize all matrices
   model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
@@ -287,31 +385,6 @@ void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,int& red_d
 
 
 
-void SubspaceAnalysis::Eigenfaces::projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,double& DFFS)
-{
-
-  cv::Mat src_arr;
-  mat2arr(src_mat,src_arr);
-
-  project(src_arr,eigenvector_arr_,avg_arr_,dst_mat);
-
-  cv::Mat rec_mat=cv::Mat(src_arr.rows,eigenvector_arr_.rows,CV_64FC1);
-  reconstruct(dst_mat,eigenvector_arr_,avg_arr_,rec_mat);
-
-
-  std::vector<double> DFFS_vec;
-  DFFS_vec.push_back(DFFS);
-  calcDFFS(src_arr,rec_mat,avg_arr_,DFFS_vec);
-  DFFS=DFFS_vec[0];
-
-  //cv::Mat dummy;
-  //rec_mat.copyTo(dummy);
-  //dummy.convertTo(dummy,CV_8UC1);
-  //dummy =dummy.reshape(1,dummy.rows*160);
-  ////cv::imshow("reconstuction",dummy);
-  //cv::imwrite("/home/goa-tz/Desktop/reconstructed.jpg",dummy);
-
-}
 void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs)
 {
   std::vector<int> distinct_vec;
@@ -369,6 +442,14 @@ void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& 
 
 void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec)
 {
+
+
+  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32SC1);
+  for(int i=0;i<label_vec.size();i++)
+  {
+    model_label_arr_.at<float>(i)=(float)label_vec[i];
+  }
+
   //initialize all matrices
   model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
@@ -398,8 +479,6 @@ void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
   ss_dim_=num_classes_ -1;
   // pca dimension  is N- num classes
   int pca_dim=model_data_arr_.rows-num_classes_;
-  // TODO:: TEMP
-  pca_dim=2;
 
 
   calcDataMat(img_vec,model_data_arr_);

@@ -5,6 +5,7 @@
 #include<opencv/cv.h>
 #include<iostream>
 #include<opencv/highgui.h>
+#include<opencv/ml.h>
 #include<fstream>
 #include<ostream>
 #include<limits>
@@ -16,18 +17,29 @@ namespace SubspaceAnalysis{
 
   void dump_matrix(cv::Mat& mat,std::string filename);
   void  mat_info(cv::Mat& mat);
+  void  mat_info(cv::Mat& mat);
 
+
+  enum Classifier
+  {
+    CLASS_MIN_DIFFS,
+    CLASS_SVM,
+    CLASS_KNN,
+  };
 
 
   //Baseclass for Fisherfaces and Eigenfaces
   class XFaces
   {
     public:
-    XFaces(){};
+    XFaces():svm_trained_(false),knn_trained_(false){};
+
     virtual ~XFaces(){};
     void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
-    void classify(cv::Mat& src_mat,int& class_index);
-    void classify(cv::Mat& src_mat,int& class_index,cv::Mat& coeff_mat);
+    //void classify(cv::Mat& src_mat,int& class_index);
+    void classify(cv::Mat& coeff_arr,Classifier method,int& class_index);
+    void projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS);
+
     protected:
     void project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,cv::Mat& coeff_mat);
     void reconstruct(cv::Mat& coeffs,cv::Mat& proj_mat,cv::Mat& avg,cv::Mat& rec_im);
@@ -42,6 +54,15 @@ namespace SubspaceAnalysis{
     cv::Mat avg_arr_;
     cv::Mat model_data_arr_;
     cv::Mat proj_model_data_arr_;
+    cv::Mat model_label_arr_;
+
+
+    //classification flags
+    CvSVM svm_;
+    bool svm_trained_;
+
+    CvKNearest knn_;
+    bool knn_trained_;
   };
 
   //Baseclass for PCA LDA
@@ -98,8 +119,7 @@ namespace SubspaceAnalysis{
     Eigenfaces(){};
     virtual ~Eigenfaces(){};
 
-    void init(std::vector<cv::Mat>& img_vec,int& red_dim);
-    void projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,double& DFFS);
+    void init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
     void meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs);
 
     protected:
