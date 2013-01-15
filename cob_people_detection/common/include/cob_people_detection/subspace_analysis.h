@@ -16,9 +16,9 @@
 namespace SubspaceAnalysis{
 
   void dump_matrix(cv::Mat& mat,std::string filename);
-  void  mat_info(cv::Mat& mat);
-  void  mat_info(cv::Mat& mat);
 
+
+  void  mat_info(cv::Mat& mat);
 
   enum Classifier
   {

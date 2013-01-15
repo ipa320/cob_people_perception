@@ -17,14 +17,18 @@ void SubspaceAnalysis::dump_matrix(cv::Mat& mat,std::string filename)
   os.close();
 }
 
-void SubspaceAnalysis:: mat_info(cv::Mat& mat)
+
+void  SubspaceAnalysis::mat_info(cv::Mat& mat)
 {
+
+
   for(int r=0;r<mat.rows;r++)
   {
     for(int c=0;c<mat.cols;c++)
     {
-      std::cout<<mat.at<double>(r,c)<<" ";
+      std::cout<<mat.at<float>(r,c)<<" ";
     }
+
     std::cout<<"\n";
   }
   std::cout<<"Matrix info:\n";
@@ -32,7 +36,6 @@ void SubspaceAnalysis:: mat_info(cv::Mat& mat)
   std::cout<<"Type = "<<mat.type()<<std::endl;
   std::cout<<"Channels = "<<mat.channels()<<std::endl;
 }
-
 //---------------------------------------------------------------------------------
 //  XFace XFaces
 //---------------------------------------------------------------------------------
@@ -228,13 +231,13 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 
     case SubspaceAnalysis::CLASS_KNN:
     {
-      std::cout<<"WARNING dont use for more than 2 classes"<<std::endl;
       // train SVM when not already trained
       if(!knn_trained_)
       {
 
         cv::Mat data_float;
         proj_model_data_arr_.convertTo(data_float,CV_32FC1);
+
 
         knn_.train(data_float,model_label_arr_);
         knn_trained_=true;
@@ -244,13 +247,15 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
       cv::Mat sample;
       coeff_arr.convertTo(sample,CV_32FC1);
       //class_index=(int)svm_.predict(sample);
+      cv::Mat result;
+
       class_index=(int)knn_.find_nearest(sample,2);
+
 
       break;
     };
     case SubspaceAnalysis::CLASS_SVM:
     {
-      std::cout<<"WARNING dont use for more than 2 classes"<<std::endl;
       // train SVM when not already trained
       if(!svm_trained_)
       {
@@ -263,6 +268,7 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
         cv::Mat data_float;
         proj_model_data_arr_.convertTo(data_float,CV_32FC1);
 
+
         svm_.train(data_float,model_label_arr_,cv::Mat(),cv::Mat(),params);
         svm_trained_=true;
       }
@@ -271,8 +277,7 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
       cv::Mat sample;
       coeff_arr.convertTo(sample,CV_32FC1);
       //class_index=(int)svm_.predict(sample);
-      class_index=(int)svm_.predict(sample);
-
+     class_index=(int)svm_.predict(sample);
 
       break;
     };
@@ -285,37 +290,6 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
   return;
 }
 }
-//void SubspaceAnalysis::XFaces::classify(cv::Mat& src_mat,int& class_index)
-//{
-//  cv::Mat src_arr=cv::Mat(1,src_mat.total(),CV_64FC1);
-//  mat2arr(src_mat,src_arr);
-//  std::vector<double> DIFS_vec;
-//
-//  cv::Mat coeff_mat=cv::Mat(src_arr.rows,ss_dim_,CV_64FC1);
-//  project(src_arr,eigenvector_arr_,avg_arr_,coeff_mat);
-//  calcDIFS(coeff_mat,DIFS_vec);
-//
-//  double min_val;
-//  int   min_index;
-//  min_val=std::numeric_limits<int>::max();
-//  min_index=-1;
-//  for(int i=0;i<DIFS_vec.size();i++)
-//  {
-//    //std::cout<<DIFS_vec[i]<<std::endl;
-//    if(DIFS_vec[i] < min_val)
-//    {
-//      min_index=i;
-//      min_val=DIFS_vec[i];
-//    }
-//  }
-//
-//  if(min_index != -1)
-//  {
-//    class_index=min_index;
-//  }
-//
-//  return;
-//}
 
 
 void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,std::vector<double>& DIFS)
@@ -341,7 +315,7 @@ void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vecto
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
   for(int i=0;i<label_vec.size();i++)
   {
-    model_label_arr_.at<float>(i)=(float)label_vec[i];
+    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
   }
 
   ss_dim_=red_dim;
@@ -450,10 +424,10 @@ void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
     std::cout<<"ERROR :  image and label vectors have to be of same length"<<std::endl;
   }
 
-  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32SC1);
+  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
   for(int i=0;i<label_vec.size();i++)
   {
-    model_label_arr_.at<float>(i)=(float)label_vec[i];
+    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
   }
 
   //initialize all matrices

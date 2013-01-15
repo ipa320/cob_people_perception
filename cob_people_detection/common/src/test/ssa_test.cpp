@@ -93,9 +93,7 @@ int main(int argc, const char *argv[])
   }
 
 
- //int  class_labels[]={0,0,1,1,2,2};
  int  class_labels[]={0,0,0,0,1,1,1,1};
- //int  class_labels[]={0,0,0,1,1,1,2,2,2};
 
 
 
@@ -137,6 +135,8 @@ int main(int argc, const char *argv[])
   cv::Mat coeff_EF;
   double DFFS_EF;
   EF.projectToSubspace(probe_mat,coeff_EF,DFFS_EF);
+  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_SVM,c_EF);
+  std::cout<<"class EF SVM= "<<c_EF<<std::endl;
   EF.classify(coeff_EF,SubspaceAnalysis::CLASS_KNN,c_EF);
   std::cout<<"class EF KNN= "<<c_EF<<std::endl;
   EF.classify(coeff_EF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EF);
@@ -158,6 +158,8 @@ int main(int argc, const char *argv[])
   int c_FF;
   double DFFS_FF;
   FF.projectToSubspace(probe_mat,coeff_FF,DFFS_FF);
+  FF.classify(coeff_FF,SubspaceAnalysis::CLASS_SVM,c_FF);
+  std::cout<<"class FF SVM= "<<c_FF<<std::endl;
   FF.classify(coeff_FF,SubspaceAnalysis::CLASS_KNN,c_FF);
   std::cout<<"class FF KNN= "<<c_FF<<std::endl;
   FF.classify(coeff_FF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_FF);

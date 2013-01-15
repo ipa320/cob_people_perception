@@ -284,7 +284,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
   Fisherfaces_.init(in_vec,m_label_num);
   Fisherfaces_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
-  //Fisherfaces_.meanCoeffs(m_projected_training_faces,m_label_num,m_face_class_average_projections);
 
   //cv::Mat dummy;
   //m_eigenvectors[0].copyTo(dummy);
@@ -593,9 +592,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
     //TODO temporary
     DFFS=0;
-
-		// -2=distance to face space is too high
-		// -1=distance to face classes is too high
 		if(DFFS > m_threshold_facespace)
 		{
 			// no face
@@ -604,12 +600,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		else
 		{
       int res_label;
-      Fisherfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_KNN,res_label);
-      std::cout<<res_label<<" <-- res label"<<std::endl;
+      Fisherfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
 			identification_labels.push_back(m_current_label_set[res_label]);
-			//std::string face_label;
-			//classifyFace(eigen_vector_weights, face_label, number_eigenvectors);
-			//identification_labels.push_back(face_label);
 		}
 	}
 
