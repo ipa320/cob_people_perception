@@ -18,6 +18,8 @@ namespace SubspaceAnalysis{
   void dump_matrix(cv::Mat& mat,std::string filename);
 
 
+  int unique_elements(std::vector<int> & vec);
+
   void  mat_info(cv::Mat& mat);
 
   enum Classifier
@@ -39,6 +41,7 @@ namespace SubspaceAnalysis{
     //void classify(cv::Mat& src_mat,int& class_index);
     void classify(cv::Mat& coeff_arr,Classifier method,int& class_index);
     void projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS);
+    void releaseModel();
 
     protected:
     void project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,cv::Mat& coeff_mat);
@@ -55,6 +58,8 @@ namespace SubspaceAnalysis{
     cv::Mat model_data_arr_;
     cv::Mat proj_model_data_arr_;
     cv::Mat model_label_arr_;
+
+    int num_classes_;
 
 
     //classification flags
@@ -119,7 +124,7 @@ namespace SubspaceAnalysis{
     Eigenfaces(){};
     virtual ~Eigenfaces(){};
 
-    void init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
+    bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
     void meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs);
 
     protected:
@@ -132,7 +137,7 @@ namespace SubspaceAnalysis{
     Fisherfaces(){};
     virtual ~Fisherfaces(){};
 
-    void init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec);
+    bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec);
     //void projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,double& DFFS);
     //void meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs);
     //void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
@@ -140,7 +145,6 @@ namespace SubspaceAnalysis{
 
     protected:
     //void calcDIFS(cv::Mat& probe_mat,std::vector<double>& DFFS);
-    int num_classes_;
     SubspaceAnalysis::PCA pca_;
     SubspaceAnalysis::LDA lda_;
   };

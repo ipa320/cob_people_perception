@@ -36,6 +36,25 @@ void  SubspaceAnalysis::mat_info(cv::Mat& mat)
   std::cout<<"Type = "<<mat.type()<<std::endl;
   std::cout<<"Channels = "<<mat.channels()<<std::endl;
 }
+int SubspaceAnalysis::unique_elements(std::vector<int> & vec)
+{
+  std::vector<int> distinct_vec;
+  bool unique=true;
+  for(int i=0;i<vec.size();++i)
+  {
+
+    if(i!=0)
+    {
+    unique=true;
+    for(int j=0;j<distinct_vec.size();j++)
+    {
+      if(vec[i]==distinct_vec[j]) unique =false;
+    }
+    }
+    if(unique==true)distinct_vec.push_back(vec[i]);
+  }
+  return distinct_vec.size();
+}
 //---------------------------------------------------------------------------------
 //  XFace XFaces
 //---------------------------------------------------------------------------------
@@ -201,11 +220,18 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
     return;
   }
 
+  if(num_classes_<2)
+  {
+    std::cout<<"Only 1 class - Setting Classification method to MIN DIFFS"<<std::endl;
+    method = SubspaceAnalysis::CLASS_MIN_DIFFS;
+  }
+
 
   switch(method)
   {
     case SubspaceAnalysis::CLASS_MIN_DIFFS:
     {
+      std::cout<<"CLASS MIN DIFFS"<<std::endl;
       std::vector<double> DIFS_vec;
       calcDIFS(coeff_arr,DIFS_vec);
 
@@ -269,6 +295,8 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
         proj_model_data_arr_.convertTo(data_float,CV_32FC1);
 
 
+        std::cout<<proj_model_data_arr_.rows<<" "<< proj_model_data_arr_.cols<<" ,"<<model_label_arr_.rows<<" "<<model_label_arr_.cols<<std::endl;
+
         svm_.train(data_float,model_label_arr_,cv::Mat(),cv::Mat(),params);
         svm_trained_=true;
       }
@@ -295,6 +323,7 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,std::vector<double>& DIFS)
 {
      double temp;
+
     for(int r=0;r<proj_model_data_arr_.rows;r++)
     {
       cv::Mat model_mat=proj_model_data_arr_.row(r);
@@ -304,13 +333,39 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,std::vector<double>& 
     return;
 }
 
+
+
+void SubspaceAnalysis::XFaces::releaseModel()
+{
+      num_classes_ =-1;
+      ss_dim_ =-1;
+      svm_trained_=false;
+      knn_trained_=false;
+      eigenvector_arr_.release();
+      eigenvalue_arr_.release();
+      avg_arr_.release();
+      model_data_arr_.release();
+      proj_model_data_arr_.release();
+      model_label_arr_.release();;
+
+
+
+      //classification flags
+      CvSVM svm_;
+
+      CvKNearest knn_;
+
+}
 //---------------------------------------------------------------------------------
 // EIGENFACES
 //---------------------------------------------------------------------------------
 //
 //
-void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
+bool SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
 {
+  svm_trained_=false;
+  knn_trained_=false;
+  num_classes_=SubspaceAnalysis::unique_elements(label_vec);
 
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
   for(int i=0;i<label_vec.size();i++)
@@ -325,9 +380,9 @@ void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vecto
   {
     //TODO: ROS ERROR
     std::cout<<"EIGFACE: Invalid subspace dimension\n";
-    return;
+    return false;
   }
-;
+
   //initialize all matrices
   model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
@@ -352,40 +407,22 @@ void SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vecto
   eigenvalue_arr_=pca_.eigenvals;
   avg_arr_=pca_.mean;
 
-
-
-
   project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
 
+  return true;
 }
 
 
 
 void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs)
 {
-  std::vector<int> distinct_vec;
-  bool unique=true;
-  for(int i=0;i<label_vec.size();++i)
-  {
-
-    if(i!=0)
-    {
-    unique=true;
-    for(int j=0;j<distinct_vec.size();j++)
-    {
-      if(label_vec[i]==distinct_vec[j]) unique =false;
-    }
-    }
-    if(unique==true)distinct_vec.push_back(label_vec[i]);
-  }
-  int num_classes=distinct_vec.size();
 
 
-  mean_coeffs=cv::Mat::zeros(num_classes,coeffs.cols,CV_64FC1);
-  std::vector<int>     samples_per_class(num_classes);
+  mean_coeffs=cv::Mat::zeros(num_classes_,coeffs.cols,CV_64FC1);
+  std::vector<int>     samples_per_class(num_classes_);
 
   //initialize vectors with zeros
-  for( int i =0;i<num_classes;i++)
+  for( int i =0;i<num_classes_;i++)
   {
    samples_per_class[i]=0;
   }
@@ -402,7 +439,7 @@ void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& 
     samples_per_class[class_index]++;
   }
 
-  for (int i = 0; i < num_classes; i++) {
+  for (int i = 0; i < num_classes_; i++) {
   cv::Mat mean_row=mean_coeffs.row(i);
   mean_row.convertTo(mean_row,CV_64FC1,1.0/static_cast<double>(samples_per_class[i]));
 
@@ -416,13 +453,18 @@ void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& 
 //---------------------------------------------------------------------------------
 
 
-void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec)
+bool SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec)
 {
-
+  svm_trained_=false;
+  knn_trained_=false;
+  // check if input data is valid
   if(img_vec.size()!=label_vec.size())
   {
     std::cout<<"ERROR :  image and label vectors have to be of same length"<<std::endl;
+    return false;
   }
+
+
 
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
   for(int i=0;i<label_vec.size();i++)
@@ -435,25 +477,14 @@ void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
 
 
-  //get number of classes and distinct classes
-  std::vector<int> distinct_vec;
-  bool unique=true;
-  for(int i=0;i<label_vec.size();++i)
-  {
-
-    if(i!=0)
-    {
-    unique=true;
-    for(int j=0;j<distinct_vec.size();j++)
-    {
-      if(label_vec[i]==distinct_vec[j]) unique =false;
-    }
-    }
-    if(unique==true)distinct_vec.push_back(label_vec[i]);
-  }
-
   //number of classes
-  num_classes_=distinct_vec.size();
+  num_classes_=SubspaceAnalysis::unique_elements(label_vec);
+
+  if(num_classes_<2)
+  {
+    std::cout<<"FISHERFACES ERROR : More than one class is necessary"<<std::endl;
+    return false;
+  }
 
   //subspace dimension is num classes -1
   ss_dim_=num_classes_ -1;
@@ -502,6 +533,9 @@ void SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 
 
   project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
+
+
+  return true;
 
 }
 

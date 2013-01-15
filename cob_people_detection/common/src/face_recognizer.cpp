@@ -260,6 +260,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 //--------------------------------------------
   int ss_dim =number_eigenvectors;
 
+  m_label_num.clear();
   for(int li=0;li<m_face_labels.size();li++)
   {
     for(int lj=0;lj<identification_labels_to_train.size();lj++)
@@ -282,8 +283,36 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
   m_eigenvectors.clear();
   m_eigenvectors.resize(number_eigenvectors,cv::Mat(face_images[0].rows,face_images[0].cols,CV_64FC1));
 
-  Fisherfaces_.init(in_vec,m_label_num);
-  Fisherfaces_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
+  // TODO: m_rec_method rom yaml file
+  m_rec_method=1;
+  Fisherfaces_.releaseModel();
+  Eigenfaces_.releaseModel();
+  if(m_rec_method==1)
+  {
+    if(Fisherfaces_.init(in_vec,m_label_num))
+    {
+      std::cout<<"Fisherfaces initialized"<<std::endl;
+      Fisherfaces_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
+    }
+    else
+    {
+      std::cout<<"[FACEREC] Fisherfaces could not be initialized - fallback to Eigenfaces!"<<std::endl;
+      m_rec_method =0;
+    }
+  }
+  if (m_rec_method == 0)
+  {
+    if(Eigenfaces_.init(in_vec,m_label_num,ss_dim))
+    {
+      std::cout<<"Eigenfaces initialized"<<std::endl;
+      Eigenfaces_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
+    }
+    else
+    {
+      std::cout<<"[FACEREC] Eigenfaces could not be initialized ....!"<<std::endl;
+      return ipa_Utils::RET_FAILED;
+    }
+  }
 
   //cv::Mat dummy;
   //m_eigenvectors[0].copyTo(dummy);
@@ -587,7 +616,18 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
      resized_8U1.convertTo(resized_8U1,CV_64FC1);
 
       cv::Mat coeff_arr;
-      Fisherfaces_.projectToSubspace(resized_8U1,coeff_arr,DFFS);
+      if(m_rec_method==1)
+      {
+        Fisherfaces_.projectToSubspace(resized_8U1,coeff_arr,DFFS);
+      }
+      else if(m_rec_method==0)
+      {
+        Eigenfaces_.projectToSubspace(resized_8U1,coeff_arr,DFFS);
+      }
+      else
+      {
+        std::cout<<"[RECOGNIZER] method not implemented"<<std::endl;
+      }
 
 		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
     //TODO temporary
@@ -599,9 +639,21 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		}
 		else
 		{
+
       int res_label;
-      Fisherfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
-			identification_labels.push_back(m_current_label_set[res_label]);
+      if(m_rec_method==1)
+      {
+        Fisherfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
+      }
+      else if(m_rec_method==0)
+      {
+        Eigenfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
+      }
+      else
+      {
+        std::cout<<"[RECOGNIZER] method not implemented"<<std::endl;
+      }
+        identification_labels.push_back(m_current_label_set[res_label]);
 		}
 	}
 
