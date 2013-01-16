@@ -11,7 +11,7 @@ class dlg(wx.Frame):
     self.ts_dir_list = list()
     self.pf_list = list()
 
-    self.f=wx.Frame(None,title="Evaluation GUI",size=(200,500))
+    self.f=wx.Frame(None,title="Evaluation GUI",size=(300,500))
 
 
     self.makeLayout(self.f)
@@ -23,16 +23,26 @@ class dlg(wx.Frame):
     self.ok_btn.Bind(wx.EVT_BUTTON,self.OnProcess)
     self.reset_btn.Bind(wx.EVT_BUTTON,self.OnReset)
     self.vis_btn.Bind(wx.EVT_BUTTON,self.OnRunVis)
+
+
+    self.del_dir_btn.Bind(wx.EVT_BUTTON,lambda evt,l=self.ts_dir_list :self.OnResetList(evt,l))
+    self.del_pf_btn .Bind(wx.EVT_BUTTON,lambda evt,l=self.pf_list :self.OnResetList(evt,l))
   def makeLayout(self,parent):
-    sizer=wx.GridSizer(8,1,0,0)
+    sizer=wx.GridSizer(7,2,0,0)
 
     pf_btn_txt=wx.StaticText(parent,-1,"Select probe file")
     self.pf_btn=wx.Button(parent,-1,"Browse",(70,30))
 
-    dir_btn_txt=wx.StaticText(parent,-1,"Add directory to training set")
+    del_pf_btn_txt=wx.StaticText(parent,-1,"Delete probe file")
+    self.del_pf_btn=wx.Button(parent,-1,"Reset",(70,30))
+
+    dir_btn_txt=wx.StaticText(parent,-1,"Add training set")
     self.dir_btn=wx.Button(parent,-1,"Browse",(70,30))
 
-    reset_btn_txt=wx.StaticText(parent,-1,"Reset selections")
+    del_dir_btn_txt=wx.StaticText(parent,-1,"Delete Database")
+    self.del_dir_btn=wx.Button(parent,-1,"Reset",(70,30))
+
+    reset_btn_txt=wx.StaticText(parent,-1,"Delete Config")
     self.reset_btn=wx.Button(parent,-1,"Reset",(70,30))
 
     ok_btn_txt=wx.StaticText(parent,-1,"Process training set")
@@ -43,14 +53,26 @@ class dlg(wx.Frame):
 
 
     sizer.Add(dir_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
+    sizer.Add(del_dir_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
+
     sizer.Add(self.dir_btn,1)
+    sizer.Add(self.del_dir_btn,1)
+
+
     sizer.Add(pf_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
+    sizer.Add(del_pf_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
+
     sizer.Add(self.pf_btn,1)
-    sizer.Add(reset_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
-    sizer.Add(self.reset_btn,1)
+    sizer.Add(self.del_pf_btn,1)
+
+
     sizer.Add(ok_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(reset_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+
     sizer.Add(self.ok_btn,1)
-    sizer.Add(vis_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(self.reset_btn,1)
+
+    sizer.Add(vis_btn_txt,1,wx.BOTTOM | wx.EXPAND)
     sizer.Add(self.vis_btn,1)
 
     parent.SetSizer(sizer)
@@ -82,6 +104,12 @@ class dlg(wx.Frame):
 
   def OnReset(self,e):
       self.reset()
+
+
+  def OnResetList(self,e,l):
+    print l
+    del l[:]
+    print l
 
   def reset(self):
     os.chdir(self.base_path)
@@ -137,6 +165,7 @@ class dlg(wx.Frame):
     # fill probe file list
     for pf in self.pf_list:
         probe_file_stream.write(pf)
+        probe_file_stream.write("\n")
 
     os.chdir(self.cwd)
     print "[EVAL TOOL] done"

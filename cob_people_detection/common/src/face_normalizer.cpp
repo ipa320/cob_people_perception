@@ -2,7 +2,7 @@
 
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
-                                  debug_(false),
+                                  debug_(true),
                                   debug_path_("/share/goa-tz/people_detection/debug/"),
                                   kinect(VirtualCamera::KINECT)
 {

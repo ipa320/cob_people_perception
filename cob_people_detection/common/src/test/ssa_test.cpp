@@ -72,9 +72,15 @@ int main(int argc, const char *argv[])
 
  }
 
-  cv::Mat probe_mat=cv::imread(probe_file_vec[0],0);
+ std::vector<cv::Mat> probe_mat_vec;
+ for(int i =0 ;i<probe_file_vec.size();i++)
+ {
+  cv::Mat probe_mat=cv::imread(probe_file_vec[i],0);
   cv::resize(probe_mat,probe_mat,cv::Size(120,120));
   probe_mat.convertTo(probe_mat,CV_64FC1);
+  probe_mat_vec.push_back(probe_mat);
+ }
+
 
 
 
@@ -89,18 +95,6 @@ int main(int argc, const char *argv[])
   EF.retrieve(eigenvecsEF,eigenvalsEF,avgEF,projsEF,cv::Size(img_vec[0].cols,img_vec[0].rows));
   SubspaceAnalysis::dump_matrix(projsEF,"projEF");
 
-  int c_EF;
-  cv::Mat coeff_EF;
-  double DFFS_EF;
-  EF.projectToSubspace(probe_mat,coeff_EF,DFFS_EF);
-  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_SVM,c_EF);
-  std::cout<<"class EF SVM= "<<c_EF<<std::endl;
-  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_KNN,c_EF);
-  std::cout<<"class EF KNN= "<<c_EF<<std::endl;
-  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EF);
-  std::cout<<"class EF DIFFS= "<<c_EF<<std::endl;
-
-  SubspaceAnalysis::dump_matrix(coeff_EF,"sampleEF");
 
   SubspaceAnalysis::Fisherfaces FF;
    FF.init(img_vec,label_vec);
@@ -110,12 +104,15 @@ int main(int argc, const char *argv[])
   FF.retrieve(eigenvecsFF,eigenvalsFF,avgFF,projsFF);
   SubspaceAnalysis::dump_matrix(projsFF,"projFF");
 
+  for(int i=0;i<probe_mat_vec.size();i++)
+  {
+    cv::Mat probe = probe_mat_vec[i];
   //double DFFS;
   //cv::Mat feats;
   cv::Mat coeff_FF;
   int c_FF;
   double DFFS_FF;
-  FF.projectToSubspace(probe_mat,coeff_FF,DFFS_FF);
+  FF.projectToSubspace(probe,coeff_FF,DFFS_FF);
   FF.classify(coeff_FF,SubspaceAnalysis::CLASS_SVM,c_FF);
   std::cout<<"class FF SVM= "<<c_FF<<std::endl;
   FF.classify(coeff_FF,SubspaceAnalysis::CLASS_KNN,c_FF);
@@ -124,6 +121,20 @@ int main(int argc, const char *argv[])
   std::cout<<"class FF DIFFS= "<<c_FF<<std::endl;
 
   SubspaceAnalysis::dump_matrix(coeff_FF,"sampleFF");
+
+  int c_EF;
+  cv::Mat coeff_EF;
+  double DFFS_EF;
+  EF.projectToSubspace(probe,coeff_EF,DFFS_EF);
+  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_SVM,c_EF);
+  std::cout<<"class EF SVM= "<<c_EF<<std::endl;
+  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_KNN,c_EF);
+  std::cout<<"class EF KNN= "<<c_EF<<std::endl;
+  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EF);
+  std::cout<<"class EF DIFFS= "<<c_EF<<std::endl;
+
+  SubspaceAnalysis::dump_matrix(coeff_EF,"sampleEF");
+  }
 
 return 0;
 }

@@ -241,7 +241,6 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 
   if(num_classes_<2)
   {
-    std::cout<<"Only 1 class - Setting Classification method to MIN DIFFS"<<std::endl;
     method = SubspaceAnalysis::CLASS_MIN_DIFFS;
   }
 
@@ -250,7 +249,6 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
   {
     case SubspaceAnalysis::CLASS_MIN_DIFFS:
     {
-      std::cout<<"CLASS MIN DIFFS"<<std::endl;
       std::vector<double> DIFS_vec;
       calcDIFS(coeff_arr,DIFS_vec);
 
@@ -313,8 +311,6 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
         cv::Mat data_float;
         proj_model_data_arr_.convertTo(data_float,CV_32FC1);
 
-
-        std::cout<<proj_model_data_arr_.rows<<" "<< proj_model_data_arr_.cols<<" ,"<<model_label_arr_.rows<<" "<<model_label_arr_.cols<<std::endl;
 
         svm_.train(data_float,model_label_arr_,cv::Mat(),cv::Mat(),params);
         svm_trained_=true;

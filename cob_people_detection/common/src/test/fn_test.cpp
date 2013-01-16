@@ -20,7 +20,7 @@ int main(int argc, const char *argv[])
   img.copyTo(wmat2);
   fn.dump_img(wmat1,"original");
   cv::Size norm_size=cv::Size(160,160);
-  cv::cvtColor(wmat1,wmat1,CV_RGB2BGR);
+  //cv::cvtColor(wmat1,wmat1,CV_RGB2BGR);
   fn.normalizeFace(wmat1,depth,norm_size,offset);
   fn.dump_img(wmat1,"processedRGBD");
  // fn.normalizeFace(wmat2,rows);
