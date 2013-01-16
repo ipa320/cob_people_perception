@@ -643,11 +643,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
       int res_label;
       if(m_rec_method==1)
       {
-        Fisherfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
+        Fisherfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_KNN,res_label);
       }
       else if(m_rec_method==0)
       {
-        Eigenfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
+        Eigenfaces_.classify(coeff_arr,SubspaceAnalysis::CLASS_KNN,res_label);
       }
       else
       {

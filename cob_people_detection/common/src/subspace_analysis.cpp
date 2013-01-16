@@ -177,6 +177,25 @@ void SubspaceAnalysis::XFaces::retrieve(std::vector<cv::Mat>& out_eigenvectors,c
   eigenvalue_arr_.copyTo(out_eigenvalues);
 
 }
+void SubspaceAnalysis::XFaces::retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data,cv::Size output_dim)
+{
+
+  avg_arr_.copyTo(out_avg);
+  proj_model_data_arr_.copyTo(out_proj_model_data);
+
+  for(int r=0;r<eigenvector_arr_.rows;r++)
+  {
+    cv::Mat curr_row=eigenvector_arr_.row(r);
+    //TODO: works only for square images
+    curr_row.clone().reshape(1,output_dim.height);
+    curr_row.convertTo(curr_row,CV_32FC1);
+    curr_row.copyTo(out_eigenvectors[r]);
+
+  }
+
+  eigenvalue_arr_.copyTo(out_eigenvalues);
+
+}
 
 
 

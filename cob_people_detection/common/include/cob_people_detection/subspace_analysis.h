@@ -37,7 +37,9 @@ namespace SubspaceAnalysis{
     XFaces():svm_trained_(false),knn_trained_(false){};
 
     virtual ~XFaces(){};
+    // TODO: temporary fix - use this one for sqare sized input images
     void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
+    void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data,cv::Size output_dim);
     //void classify(cv::Mat& src_mat,int& class_index);
     void classify(cv::Mat& coeff_arr,Classifier method,int& class_index);
     void projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS);
