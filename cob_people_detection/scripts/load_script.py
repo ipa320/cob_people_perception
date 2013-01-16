@@ -6,6 +6,8 @@ import sys
 class dlg(wx.Frame):
   def __init__(self):
     self.base_path="/share/goa-tz/people_detection/eval/"
+    self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    self.cwd=os.getcwd()
     self.ts_dir_list = list()
     self.pf_list = list()
 
@@ -54,7 +56,11 @@ class dlg(wx.Frame):
     parent.SetSizer(sizer)
 #################### CALLBACK ###########################
   def OnRunVis(self,e):
-    os.system("octave  pvis.m")
+    script_path=self.cwd+"/pvis.m"
+    os.system("octave  %s"%script_path)
+    os.chdir(self.base_path+"/vis")
+    os.system("eog clustering_FF.jpg &")
+    os.chdir(self.cwd)
   def OnAddPf(self,e):
     self.pf_dlg=wx.FileDialog(None,"Select Probefile",defaultDir=self.base_path,style=wx.FD_MULTIPLE)
     if self.pf_dlg.ShowModal() == wx.ID_OK:
@@ -68,7 +74,11 @@ class dlg(wx.Frame):
       self.ts_dir_list.append(self.ts_dlg.GetPath())
 
   def OnProcess(self,e):
-    self.process()
+    if len(self.ts_dir_list)>0:
+      self.process()
+    os.chdir(self.bin_path)
+    os.system("./ssa_test")
+    os.chdir(self.cwd)
 
   def OnReset(self,e):
       self.reset()
@@ -128,6 +138,7 @@ class dlg(wx.Frame):
     for pf in self.pf_list:
         probe_file_stream.write(pf)
 
+    os.chdir(self.cwd)
     print "[EVAL TOOL] done"
 if __name__=="__main__":
   app= wx.App(False)
