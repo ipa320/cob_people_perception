@@ -3,7 +3,7 @@
 
 void SubspaceAnalysis::dump_matrix(cv::Mat& mat,std::string filename)
 {
-  std::string path = "/share/goa-tz/people_detection/debug/data/";
+  std::string path = "/share/goa-tz/people_detection/eval/vis/";
   path.append(filename.c_str());
   std::ofstream os(path.c_str() );
   for(int r=0;r<mat.rows;r++)

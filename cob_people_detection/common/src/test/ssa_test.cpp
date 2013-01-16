@@ -66,14 +66,14 @@ int main(int argc, const char *argv[])
    img =cv::imread(in_vec[i],0);
    //cv::imshow("img",img);
    //cv::waitKey(0);
-   //cv::resize(img,img,cv::Size(120,120));
+   cv::resize(img,img,cv::Size(120,120));
    img.convertTo(img,CV_64FC1);
    img_vec.push_back(img);
 
  }
 
   cv::Mat probe_mat=cv::imread(probe_file_vec[0],0);
-  //cv::resize(probe_mat,probe_mat,cv::Size(120,120));
+  cv::resize(probe_mat,probe_mat,cv::Size(120,120));
   probe_mat.convertTo(probe_mat,CV_64FC1);
 
 
