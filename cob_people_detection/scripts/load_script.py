@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import wx
 import os
 import sys
@@ -11,7 +12,7 @@ class dlg(wx.Frame):
     self.ts_dir_list = list()
     self.pf_list = list()
 
-    self.f=wx.Frame(None,title="Evaluation GUI",size=(300,500))
+    self.f=wx.Frame(None,title="Evaluation GUI",size=(650,500))
 
 
     self.makeLayout(self.f)
@@ -25,11 +26,10 @@ class dlg(wx.Frame):
     self.vis_btn.Bind(wx.EVT_BUTTON,self.OnRunVis)
 
 
-    self.del_dir_btn.Bind(wx.EVT_BUTTON,lambda evt,l=self.ts_dir_list :self.OnResetList(evt,l))
-    self.del_pf_btn .Bind(wx.EVT_BUTTON,lambda evt,l=self.pf_list :self.OnResetList(evt,l))
-  def makeLayout(self,parent):
-    sizer=wx.GridSizer(7,2,0,0)
+    self.del_dir_btn.Bind(wx.EVT_BUTTON,lambda evt,gl=self.ts_glist,l=self.ts_dir_list :self.OnResetList(evt,l,gl))
+    self.del_pf_btn .Bind(wx.EVT_BUTTON,lambda evt,gl=self.pf_glist,l=self.pf_list :self.OnResetList(evt,l,gl))
 
+  def makeLayout(self,parent):
     pf_btn_txt=wx.StaticText(parent,-1,"Select probe file")
     self.pf_btn=wx.Button(parent,-1,"Browse",(70,30))
 
@@ -45,35 +45,58 @@ class dlg(wx.Frame):
     reset_btn_txt=wx.StaticText(parent,-1,"Delete Config")
     self.reset_btn=wx.Button(parent,-1,"Reset",(70,30))
 
-    ok_btn_txt=wx.StaticText(parent,-1,"Process training set")
+    ok_btn_txt=wx.StaticText(parent,-1,"Process Config")
     self.ok_btn=wx.Button(parent,-1,"Process",(70,30))
 
     vis_btn_txt=wx.StaticText(parent,-1,"Visualize Results")
     self.vis_btn=wx.Button(parent,-1,"Ok",(70,30))
 
 
+    # visual feedback lists
+    self.ts_glist=wx.ListBox(choices=[],id=-1,parent=parent,size=wx.Size(80,100))
+    self.pf_glist=wx.ListBox(choices=[],id=-1,parent=parent,size=wx.Size(80,100))
+
+    # dummy for filling empty spaces
+    dummy=wx.StaticText(parent,-1,'')
+
+    # Change to flexgridsizer
+    ##sizer=wx.GridSizer(8,3,0,0)
+    sizer=wx.FlexGridSizer(8,3,0,0)
+    sizer.AddGrowableCol(2)
+
     sizer.Add(dir_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
     sizer.Add(del_dir_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
+    sizer.Add(dummy,1,wx.EXPAND)
 
     sizer.Add(self.dir_btn,1)
     sizer.Add(self.del_dir_btn,1)
+    sizer.Add(self.ts_glist,1,wx.EXPAND)
 
 
     sizer.Add(pf_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
     sizer.Add(del_pf_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
+    sizer.Add(dummy,1,wx.EXPAND)
 
     sizer.Add(self.pf_btn,1)
     sizer.Add(self.del_pf_btn,1)
+    sizer.Add(self.pf_glist,1,wx.EXPAND)
 
 
     sizer.Add(ok_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
     sizer.Add(reset_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(dummy,1,wx.EXPAND)
 
     sizer.Add(self.ok_btn,1)
     sizer.Add(self.reset_btn,1)
+    sizer.Add(dummy,1,wx.EXPAND)
 
-    sizer.Add(vis_btn_txt,1,wx.BOTTOM | wx.EXPAND)
+    sizer.Add(vis_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(dummy,1,wx.EXPAND)
+
     sizer.Add(self.vis_btn,1)
+    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(dummy,1,wx.EXPAND)
 
     parent.SetSizer(sizer)
 #################### CALLBACK ###########################
@@ -81,7 +104,7 @@ class dlg(wx.Frame):
     script_path=self.cwd+"/pvis.m"
     os.system("octave  %s"%script_path)
     os.chdir(self.base_path+"/vis")
-    os.system("eog clustering_FF.jpg &")
+    os.system("eog clustering_FF.jpg ")
     os.chdir(self.cwd)
   def OnAddPf(self,e):
     self.pf_dlg=wx.FileDialog(None,"Select Probefile",defaultDir=self.base_path,style=wx.FD_MULTIPLE)
@@ -89,11 +112,14 @@ class dlg(wx.Frame):
       temp_list= self.pf_dlg.GetPaths()
       for temp in temp_list:
         self.pf_list.append(temp)
+        self.pf_glist.Append(temp)
+
   def OnAddDir(self,e):
     self.ts_dlg=wx.DirDialog(None,"Select directories")
     self.ts_dlg.SetPath(self.base_path)
     if self.ts_dlg.ShowModal() == wx.ID_OK:
       self.ts_dir_list.append(self.ts_dlg.GetPath())
+      self.ts_glist.Append(self.ts_dir_list[-1])
 
   def OnProcess(self,e):
     if len(self.ts_dir_list)>0:
@@ -106,10 +132,9 @@ class dlg(wx.Frame):
       self.reset()
 
 
-  def OnResetList(self,e,l):
-    print l
+  def OnResetList(self,e,l,gl):
     del l[:]
-    print l
+    gl.Clear()
 
   def reset(self):
     os.chdir(self.base_path)
