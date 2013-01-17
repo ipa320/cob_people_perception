@@ -46,6 +46,12 @@ VirtualCamera::VirtualCamera(VirtualCamera::TYPE cam_type)
 //  trans=itrans;
 //}
 
+bool VirtualCamera::calc_homography(std::vector<cv::Point2f> src_pts, std::vector<cv::Point2f> dst_pts,cv::Mat& homo)
+{
+
+   homo =cv::findHomography(src_pts,dst_pts,CV_LMEDS);
+
+}
 
 bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vector<cv::Point2f> img_pts,bool check_model)
 {
@@ -81,6 +87,32 @@ bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vecto
     rot=temp_rot;
     trans=temp_trans;
    return true;
+}
+
+
+void VirtualCamera::resample_pc_indirect(cv::Mat& src,cv::Mat& dst ,cv::Mat& homo)
+{
+  //unsigned char * dst_ptr=dst.ptr<unsigned char>(0,0);
+  //for(int r=0;r<dst.rows;r++)
+  //{
+  //  for(int c=0;c<dst.cols;c++)
+  //  {
+
+  //    cv::Point3f dst_pt(c,r,1.0);
+  //    cv::Point3f src_pt;
+  //    cv::gemm(homo,dst_pt,1.0,cv::Mat(),0,src_pt);
+  //    cv::Point2f src_grid_pt(src_pt.x/src_pt.z,src_pt.y/src_pt.z);
+  //    if(src_grid_pt.x < 0 ||src_grid_pt.x > src.cols ||src_grid_pt.y <0 ||src_grid_pt.y>src.rows)
+  //    {
+  //      // insert bilinear filtering instead of rounding
+  //      *dst_ptr=src.at<unsigned char>(round(src_grid_pt.y),round(src_grid_pt.x));
+  //    }
+
+
+  //  }
+  //}
+
+  cv::warpPerspective(src,dst,homo,cv::Size(src.rows*5,src.cols*5));
 }
 
 

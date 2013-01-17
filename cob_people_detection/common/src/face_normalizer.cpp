@@ -297,7 +297,12 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   f_norm_img_.add_offset (xoffset,yoffset);
 
 
-
+  cv::Mat homo,result;
+  kinect.calc_homography(f_det_img_.as_vector(),f_norm_img_.as_vector(),homo);
+  kinect.resample_pc_indirect(img,result,homo);
+  cv::imshow("resampled",result);
+  cv::waitKey(0);
+  exit(1);
 
   //calculate difference in PnP
   cv::Vec3f rot_orig, rot_norm;

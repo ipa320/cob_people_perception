@@ -26,7 +26,8 @@ public:
 
   void sample_pc(cv::Mat& pc,cv::Mat& img);
   void sample_pc(cv::Mat& pc_xyz,cv::Mat& pc_rgb,cv::Mat& img);
-
+  void resample_pc_indirect(cv::Mat& src,cv::Mat& dst,cv::Mat& homo);
+  bool calc_homography(std::vector<cv::Point2f> src_pts, std::vector<cv::Point2f> dst_pts,cv::Mat& homo);
   cv::Mat cam_mat;
   cv::Mat dist_coeffs;
 
