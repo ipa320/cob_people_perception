@@ -216,8 +216,7 @@ protected:
 
   FaceNormalizer face_normalizer_;
 
-  SubspaceAnalysis::Fisherfaces Fisherfaces_;
-  SubspaceAnalysis::Eigenfaces Eigenfaces_;
+  SubspaceAnalysis::FishEigFaces eff_;
   std::vector<int> m_label_num;
   int             m_rec_method;
 //----------------------------------------------------
