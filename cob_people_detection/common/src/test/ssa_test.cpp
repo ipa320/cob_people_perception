@@ -92,52 +92,72 @@ int main(int argc, const char *argv[])
 
 
   int ss_dim=2;
-  SubspaceAnalysis::Eigenfaces EF;
-   EF.init(img_vec,label_vec,ss_dim);
-  std::vector<cv::Mat> eigenvecsEF(ss_dim);
-  cv::Mat eigenvalsEF,avgEF,projsEF;
-  EF.retrieve(eigenvecsEF,eigenvalsEF,avgEF,projsEF,cv::Size(img_vec[0].cols,img_vec[0].rows));
-  SubspaceAnalysis::dump_matrix(projsEF,"projEF");
+  //SubspaceAnalysis::Eigenfaces EF;
+  // EF.init(img_vec,label_vec,ss_dim);
+  //std::vector<cv::Mat> eigenvecsEF(ss_dim);
+  //cv::Mat eigenvalsEF,avgEF,projsEF;
+  //EF.retrieve(eigenvecsEF,eigenvalsEF,avgEF,projsEF,cv::Size(img_vec[0].cols,img_vec[0].rows));
+  //SubspaceAnalysis::dump_matrix(projsEF,"projEF");
 
 
-  SubspaceAnalysis::Fisherfaces FF;
-   FF.init(img_vec,label_vec);
+  //SubspaceAnalysis::Fisherfaces FF;
+  // FF.init(img_vec,label_vec);
 
-  cv::Mat eigenvalsFF,avgFF,projsFF;
-  std::vector<cv::Mat> eigenvecsFF(ss_dim);
-  FF.retrieve(eigenvecsFF,eigenvalsFF,avgFF,projsFF);
-  SubspaceAnalysis::dump_matrix(projsFF,"projFF");
+  //cv::Mat eigenvalsFF,avgFF,projsFF;
+  //std::vector<cv::Mat> eigenvecsFF(ss_dim);
+  //FF.retrieve(eigenvecsFF,eigenvalsFF,avgFF,projsFF);
+  //SubspaceAnalysis::dump_matrix(projsFF,"projFF");
+
+  SubspaceAnalysis::FishEigFaces EFF;
+
+  EFF.init(img_vec,label_vec,ss_dim);
+
 
   for(int i=0;i<probe_mat_vec.size();i++)
   {
     cv::Mat probe = probe_mat_vec[i];
-  //double DFFS;
-  //cv::Mat feats;
-  cv::Mat coeff_FF;
-  int c_FF;
-  double DFFS_FF;
-  FF.projectToSubspace(probe,coeff_FF,DFFS_FF);
-  FF.classify(coeff_FF,SubspaceAnalysis::CLASS_SVM,c_FF);
-  std::cout<<"class FF SVM= "<<c_FF<<std::endl;
-  FF.classify(coeff_FF,SubspaceAnalysis::CLASS_KNN,c_FF);
-  std::cout<<"class FF KNN= "<<c_FF<<std::endl;
-  FF.classify(coeff_FF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_FF);
-  std::cout<<"class FF DIFFS= "<<c_FF<<std::endl;
+  ////double DFFS;
+  ////cv::Mat feats;
+  //cv::Mat coeff_FF;
+  //int c_FF;
+  //double DFFS_FF;
+  //FF.projectToSubspace(probe,coeff_FF,DFFS_FF);
+  //FF.classify(coeff_FF,SubspaceAnalysis::CLASS_SVM,c_FF);
+  //std::cout<<"class FF SVM= "<<c_FF<<std::endl;
+  //FF.classify(coeff_FF,SubspaceAnalysis::CLASS_KNN,c_FF);
+  //std::cout<<"class FF KNN= "<<c_FF<<std::endl;
+  //FF.classify(coeff_FF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_FF);
+  //std::cout<<"class FF DIFFS= "<<c_FF<<std::endl;
 
-  SubspaceAnalysis::dump_matrix(coeff_FF,"sampleFF");
+  //SubspaceAnalysis::dump_matrix(coeff_FF,"sampleFF");
+  //std::cout<<"--------------------------\n";
 
-  int c_EF;
-  cv::Mat coeff_EF;
-  double DFFS_EF;
-  EF.projectToSubspace(probe,coeff_EF,DFFS_EF);
-  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_SVM,c_EF);
-  std::cout<<"class EF SVM= "<<c_EF<<std::endl;
-  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_KNN,c_EF);
-  std::cout<<"class EF KNN= "<<c_EF<<std::endl;
-  EF.classify(coeff_EF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EF);
-  std::cout<<"class EF DIFFS= "<<c_EF<<std::endl;
+  //int c_EF;
+  //cv::Mat coeff_EF;
+  //double DFFS_EF;
+  //EF.projectToSubspace(probe,coeff_EF,DFFS_EF);
+  //EF.classify(coeff_EF,SubspaceAnalysis::CLASS_SVM,c_EF);
+  //std::cout<<"class EF SVM= "<<c_EF<<std::endl;
+  //EF.classify(coeff_EF,SubspaceAnalysis::CLASS_KNN,c_EF);
+  //std::cout<<"class EF KNN= "<<c_EF<<std::endl;
+  //EF.classify(coeff_EF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EF);
+  //std::cout<<"class EF DIFFS= "<<c_EF<<std::endl;
 
-  SubspaceAnalysis::dump_matrix(coeff_EF,"sampleEF");
+  //SubspaceAnalysis::dump_matrix(coeff_EF,"sampleEF");
+
+  //std::cout<<"--------------------------\n";
+  int c_EFF;
+  cv::Mat coeff_EFF;
+  double DFFS_EFF;
+  EFF.projectToSubspace(probe,coeff_EFF,DFFS_EFF);
+  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_SVM,c_EFF);
+  std::cout<<"class EFF SVM= "<<c_EFF<<std::endl;
+  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_KNN,c_EFF);
+  std::cout<<"class EFF KNN= "<<c_EFF<<std::endl;
+  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EFF);
+  std::cout<<"class EFF DIFFS= "<<c_EFF<<std::endl;
+
+  SubspaceAnalysis::dump_matrix(coeff_EFF,"sampleEFF");
   }
 
 return 0;

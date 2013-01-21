@@ -407,15 +407,8 @@ bool SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vecto
 
   calcDataMat(img_vec,model_data_arr_);
 
-  //cv::Mat dummy;
-  //model_data_arr_.copyTo(dummy);
-  //dummy.convertTo(dummy,CV_8UC1);
-  //dummy =dummy.reshape(1,dummy.rows*160);
-  //cv::imshow("reconstuction",dummy);
-  //cv::imwrite("/home/goa-tz/Desktop/model_data_.jpg",dummy);
-
-
   //initiate PCA
+  //
   pca_=SubspaceAnalysis::PCA(model_data_arr_,ss_dim_);
 
   eigenvector_arr_=pca_.eigenvecs;
@@ -554,15 +547,135 @@ bool SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 
 }
 
+//---------------------------------------------------------------------------------
+// FishEigFaces
+//---------------------------------------------------------------------------------
+bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
+{
+  init( img_vec,label_vec, red_dim, SubspaceAnalysis::METH_FISHER, true);
+}
+bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method)
+{
+  init( img_vec,label_vec, red_dim, method, true);
+}
+bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback)
+
+{
+  fallback_=fallback;
+  svm_trained_=false;
+  knn_trained_=false;
+  num_classes_=SubspaceAnalysis::unique_elements(label_vec);
+
+  //input data checks
+  //check if input has the same size
+  if(img_vec.size()<ss_dim_+1)
+  {
+    //TODO: ROS ERROR
+    std::cout<<"EIGFACE: Invalid subspace dimension\n";
+    return false;
+  }
+  //check if number of labels equals number of images in training set
+  if(label_vec.size()!=img_vec.size())
+  {
+    return false;
+  }
+  //check if multiple classes and fallback  to eigenfaces if fallback_==true
+  if(num_classes_<2)
+  {
+    if(fallback_)
+    {
+      method=SubspaceAnalysis::METH_EIGEN;
+      std::cout<<" Automatic Fallback to Eigenfaces"<<std::endl;
+    }
+    else return false;
+  }
+
+  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
+  for(int i=0;i<label_vec.size();i++)
+  {
+    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
+  }
+
+  ss_dim_=red_dim;
+
+
+  //initialize all matrices
+  model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
+  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
+  avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
+  proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
+  eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
+  eigenvalue_arr_=cv::Mat(ss_dim_,ss_dim_,CV_64FC1);
+
+  for(int i=0;i<label_vec.size();i++)
+  {
+    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
+  }
+
+  calcDataMat(img_vec,model_data_arr_);
+
+  switch (method)
+  {
+    case SubspaceAnalysis::METH_FISHER: 
+      {
+        if(num_classes_<2)
+        {
+          std::cout<<"FISHERFACES ERROR : More than one class is necessary"<<std::endl;
+          return false;
+        }
+        //subspace dimension is num classes -1
+        ss_dim_=num_classes_ -1;
+        // pca dimension  is N- num classes
+        int pca_dim=model_data_arr_.rows-num_classes_;
+        // Reduce dimension to  N - c via PCA
+        pca_=SubspaceAnalysis::PCA(model_data_arr_,pca_dim);
+        cv::Mat proj_model_data_arr_PCA=cv::Mat(model_data_arr_.rows,pca_dim,CV_64FC1);
+        project(model_data_arr_,pca_.eigenvecs,pca_.mean,proj_model_data_arr_PCA);
+
+        // get projection matrix pca
+        cv::Mat P_pca=cv::Mat(pca_dim,img_vec[0].total(),CV_64FC1);
+        P_pca=pca_.eigenvecs;
+        avg_arr_=pca_.mean;
+
+        //perform lda
+        lda_=SubspaceAnalysis::LDA(proj_model_data_arr_PCA,label_vec,num_classes_,ss_dim_);
+
+        // get projection matrix lda
+        cv::Mat P_lda=cv::Mat(ss_dim_,pca_dim,CV_64FC1);
+        P_lda=lda_.eigenvecs;
+
+
+        // combine projection matrices
+        cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
+
+        eigenvector_arr_=eigenvector_arr_.t();
+        break;
+      }
+    case SubspaceAnalysis::METH_EIGEN: 
+      {
+        //initiate PCA
+        pca_=SubspaceAnalysis::PCA(model_data_arr_,ss_dim_);
+        eigenvector_arr_=pca_.eigenvecs;
+        eigenvalue_arr_=pca_.eigenvals;
+        avg_arr_=pca_.mean;
+        break;
+      }
+
+  }
+
+
+  proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
+
+  project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
+
+  return true;
+
+}
 
 
 //---------------------------------------------------------------------------------
 // SSA
 //---------------------------------------------------------------------------------
-
-
-
-
 void SubspaceAnalysis::SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean_row)
 {
   for(int i=0;i<data.rows;++i)

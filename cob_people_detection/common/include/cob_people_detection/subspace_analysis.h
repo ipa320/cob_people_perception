@@ -29,6 +29,13 @@ namespace SubspaceAnalysis{
     CLASS_KNN,
   };
 
+  enum Method
+  {
+    METH_FISHER,
+    METH_EIGEN
+  };
+
+
 
   //Baseclass for Fisherfaces and Eigenfaces
   class XFaces
@@ -140,15 +147,24 @@ namespace SubspaceAnalysis{
     virtual ~Fisherfaces(){};
 
     bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec);
-    //void projectToSubspace(cv::Mat& src_mat,cv::Mat& dst_mat,double& DFFS);
-    //void meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs);
-    //void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
-    //void classify(cv::Mat& src_mat,int class_index);
 
     protected:
     //void calcDIFS(cv::Mat& probe_mat,std::vector<double>& DFFS);
     SubspaceAnalysis::PCA pca_;
     SubspaceAnalysis::LDA lda_;
+  };
+  class FishEigFaces:public XFaces
+  {
+    public:
+    FishEigFaces(){};
+    virtual ~FishEigFaces(){};
+    bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
+    bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method);
+    bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback);
+    protected:
+    SubspaceAnalysis::PCA pca_;
+    SubspaceAnalysis::LDA lda_;
+    bool fallback_;
   };
 
 };
