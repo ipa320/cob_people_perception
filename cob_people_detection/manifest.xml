@@ -27,7 +27,7 @@
 <depend package="openni"/>
 <depend package="nite"/>
 <depend package="kdl"/>
-<depend package="tinyxml"/>
+<rosdep name="tinyxml"/>
 <depend package="cob_people_detection_msgs"/>
 <depend package="cob_vision_utils"/>
 <depend package="cob_image_flip"/>

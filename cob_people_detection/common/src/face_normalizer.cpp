@@ -3,32 +3,44 @@
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(true),
-                                  debug_path_("/share/goa-tz/people_detection/debug/"),
+                                  debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  //IPA
+                                  //debug_path_("/share/goa-tz/people_detection/debug/"),
                                   kinect(VirtualCamera::KINECT)
 {
-  //std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
+  //HOME
+  std::string eye_r_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_righteye.xml";
   //std::string eye_r_path="/home/goa-tz/data/haarcascade_righteye_2splits.xml";
-  std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
+  //IPA
+  //std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
               eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
               eye_r_storage_=cvCreateMemStorage(0);
 
-  //std::string eye_path="/usr/local/share/OpenCV/haarcascades/haarcascade_eye.xml";
-  std::string eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+  //HOME
+  std::string eye_path="/usr/local/share/OpenCV/haarcascades/haarcascade_eye.xml";
+  //IPA
+  //std::string eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
               eye_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_path.c_str(),0,0,0);
               eye_storage_=cvCreateMemStorage(0);
 
-  //std::string eye_l_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
-  std::string eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+  //HOME
+  std::string eye_l_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
+  //IPA
+  //std::string eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
               eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
               eye_l_storage_=cvCreateMemStorage(0);
 
-  //std::string nose_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
-  std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
+  //HOME
+  std::string nose_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
+  //IPA
+  //std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
   nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
   nose_storage_=cvCreateMemStorage(0);
 
-  //std::string mouth_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
-  std::string mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
+  //HOME
+  std::string mouth_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
+  //IPA
+  //std::string mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
               mouth_cascade_=(CvHaarClassifierCascade*) cvLoad(mouth_path.c_str(),0,0,0);
               mouth_storage_=cvCreateMemStorage(0);
 }
@@ -48,10 +60,10 @@ FaceNormalizer::~FaceNormalizer(){
 void FaceNormalizer::set_norm_face(cv::Size& input_size)
 {
 
-  f_norm_img_.lefteye.x=0.2     *input_size.width     ;
+  f_norm_img_.lefteye.x=0.3     *input_size.width     ;
   f_norm_img_.lefteye.y=0.25      *input_size.height     ;
 
-  f_norm_img_.righteye.x=0.8    *input_size.width     ;
+  f_norm_img_.righteye.x=0.7    *input_size.width     ;
   f_norm_img_.righteye.y=0.25     *input_size.height     ;
 
   f_norm_img_.mouth.x=0.5        *input_size.width     ;
@@ -297,12 +309,12 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   f_norm_img_.add_offset (xoffset,yoffset);
 
 
-  cv::Mat homo,result;
-  kinect.calc_homography(f_det_img_.as_vector(),f_norm_img_.as_vector(),homo);
-  kinect.resample_pc_indirect(img,result,homo);
-  cv::imshow("resampled",result);
-  cv::waitKey(0);
-  exit(1);
+  //cv::Mat homo,result;
+  //kinect.calc_homography(f_det_img_.as_vector(),f_norm_img_.as_vector(),homo);
+  //kinect.resample_pc_indirect(img,result,homo);
+  //cv::imshow("resampled",result);
+  //cv::waitKey(0);
+  //exit(1);
 
   //calculate difference in PnP
   cv::Vec3f rot_orig, rot_norm;
@@ -318,11 +330,17 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
 
   cv::Mat res=cv::Mat::zeros(480,640,CV_8UC3);
-  kinect.sample_pc(depth,img,res);
-
+  cv::Mat dmres=cv::Mat::zeros(480,640,CV_32FC1);
+  kinect.sample_pc(depth,img,res,dmres);
 
   cv::Rect crop(xoffset,yoffset,img.cols,img.rows);
   res(crop).copyTo(img);
+  cv::Mat dmcrop;
+  dmres(crop).copyTo(dmcrop);
+
+  processDM(dmcrop);
+  dmcrop.copyTo(depth);
+
   if(debug_)dump_img(res,"virtual_full");
 
 
@@ -620,6 +638,34 @@ bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,cv::Vec2f& offset
   fs["offset_col"]>> offset[0];
   fs.release();
   return true;
+}
+
+
+
+void FaceNormalizer::processDM(cv::Mat& dm)
+{
+  float minval=1000.0;
+  for(int r=0;r<dm.rows;r++)
+  {
+    for(int c=0;c<dm.cols;c++)
+    {
+      if(dm.at<float>(r,c) < minval &&dm.at<float>(r,c)!=0)
+        minval =dm.at<float>(r,c);
+    }
+
+  }
+  for(int r=0;r<dm.rows;r++)
+  {
+    for(int c=0;c<dm.cols;c++)
+    {
+      if(dm.at<float>(r,c)!=0)
+        dm.at<float>(r,c) -=minval;
+    }
+
+  }
+
+  despeckle(dm);
+
 }
 
 

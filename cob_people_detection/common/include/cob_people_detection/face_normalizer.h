@@ -129,6 +129,7 @@ class FaceNormalizer{
     bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
     bool features_from_depth(cv::Mat& depth);
     void despeckle(cv::Mat& src,cv::Mat& dst);
+    void processDM(cv::Mat& dm);
 
     // Methods for radiometric normalization
     bool normalize_radiometry(cv::Mat& img);
