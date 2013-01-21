@@ -137,7 +137,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(debug_)std::cout<<"1 - normalized geometry"<<std::endl;
 
   cv::cvtColor(img,img,CV_BGR2GRAY);
-  if(valid)despeckle(img,img);
+  if(valid)despeckle<unsigned char>(img,img);
 
   if(debug_ && valid)dump_img(img,"2_despeckle");
   if(debug_ && valid)std::cout<<"2 - filtered"<<std::endl;
@@ -645,97 +645,38 @@ bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,cv::Vec2f& offset
 void FaceNormalizer::processDM(cv::Mat& dm)
 {
   float minval=1000.0;
+  float mean=0.0;
+  int mean_ctr=0;
   for(int r=0;r<dm.rows;r++)
   {
     for(int c=0;c<dm.cols;c++)
     {
+      if(dm.at<float>(r,c)!=0)
+      {
+        mean+=dm.at<float>(r,c);
+        mean_ctr ++;
+      }
       if(dm.at<float>(r,c) < minval &&dm.at<float>(r,c)!=0)
         minval =dm.at<float>(r,c);
     }
 
   }
+  mean=(mean/mean_ctr )- minval;
   for(int r=0;r<dm.rows;r++)
   {
     for(int c=0;c<dm.cols;c++)
     {
       if(dm.at<float>(r,c)!=0)
         dm.at<float>(r,c) -=minval;
+
     }
 
   }
 
-  despeckle(dm);
+  despeckle<float>(dm,dm);
 
 }
 
-
-void FaceNormalizer::despeckle(cv::Mat& src,cv::Mat& dst)
-{
-
-
-  if(src.channels()==1)
-  {
-    unsigned char* lptr=dst.ptr<unsigned char>(1,0);
-    unsigned char* rptr=dst.ptr<unsigned char>(1,2);
-    unsigned char* mptr=dst.ptr<unsigned char>(1,1);
-    unsigned char* uptr=dst.ptr<unsigned char>(0,1);
-    unsigned char* dptr=dst.ptr<unsigned char>(2,1);
-
-    int normalizer=4;
-    for(int px=2*src.cols+2;px<(dst.rows*src.cols);++px)
-    {
-      if(*mptr==0)
-      {
-      normalizer=4;
-      if(*lptr==0) normalizer-=1;
-      if(*rptr==0) normalizer-=1;
-      if(*uptr==0) normalizer-=1;
-      if(*dptr==0) normalizer-=1;
-      if(normalizer>0)*mptr=round((*lptr + *rptr + *uptr +*dptr)/normalizer);
-      }
-      ++lptr;
-      ++rptr;
-      ++mptr;
-      ++uptr;
-      ++dptr;
-    }
-  }
-
-  if(src.channels()==3)
-  {
-    src.copyTo(dst);
-    cv::Vec3b* lptr=dst.ptr<cv::Vec3b>(1,0);
-    cv::Vec3b* rptr=dst.ptr<cv::Vec3b>(1,2);
-    cv::Vec3b* mptr=dst.ptr<cv::Vec3b>(1,1);
-    cv::Vec3b* uptr=dst.ptr<cv::Vec3b>(0,1);
-    cv::Vec3b* dptr=dst.ptr<cv::Vec3b>(2,1);
-
-    int normalizer=4;
-    for(int px=2*src.cols+2;px<(dst.rows*src.cols);++px)
-    {
-      if((*mptr)[0]==0)
-      {
-      normalizer=4;
-      if((*lptr)[0]==0) normalizer-=1;
-      if((*rptr)[0]==0) normalizer-=1;
-      if((*uptr)[0]==0) normalizer-=1;
-      if((*dptr)[0]==0) normalizer-=1;
-      if(normalizer>0)cv::divide((*lptr + *rptr + *uptr +*dptr),normalizer,*mptr);
-      }
-      ++lptr;
-      ++rptr;
-      ++mptr;
-      ++uptr;
-      ++dptr;
-    }
-  }
-
-  cv::medianBlur(src,src,3);
-
-  //cv::blur(dst,dst,cv::Size(3,3),cv::Point(0,0),0);
-
-
-}
 
 bool FaceNormalizer::get_feature_correspondences( cv::Mat& img, cv::Mat& depth,std::vector<cv::Point2f>& img_pts,std::vector<cv::Point3f>& obj_pts)
 {

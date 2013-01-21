@@ -24,6 +24,8 @@ int main(int argc, const char *argv[])
   //cv::cvtColor(wmat1,wmat1,CV_RGB2BGR);
   fn.normalizeFace(wmat1,depth,norm_size,offset);
   fn.dump_img(wmat1,"processedRGBD");
+  depth.convertTo(depth,CV_8UC1,255);
+  cv::equalizeHist(depth,depth);
   fn.dump_img(depth,"processedDEPTH");
  // fn.normalizeFace(wmat2,rows);
  // fn.dump_img(wmat2,"processedRGB");

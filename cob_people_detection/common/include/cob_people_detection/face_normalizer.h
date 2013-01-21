@@ -128,7 +128,7 @@ class FaceNormalizer{
 
     bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
     bool features_from_depth(cv::Mat& depth);
-    void despeckle(cv::Mat& src,cv::Mat& dst);
+    //void despeckle(cv::Mat& src,cv::Mat& dst);
     void processDM(cv::Mat& dm);
 
     // Methods for radiometric normalization
@@ -146,6 +146,70 @@ class FaceNormalizer{
     bool read_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
     bool captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset);
     bool get_feature_correspondences( cv::Mat& img,  cv::Mat& depth, std::vector<cv::Point2f>& img_pts,std::vector<cv::Point3f>& obj_pts);
+
+template <class T>
+void despeckle(cv::Mat& src,cv::Mat& dst)
+{
+
+
+  if(src.channels()==1)
+  {
+    T* lptr=src.ptr<T>(1,0);
+    T* rptr=src.ptr<T>(1,2);
+    T* mptr=src.ptr<T>(1,1);
+    T* uptr=src.ptr<T>(0,1);
+    T* dptr=src.ptr<T>(2,1);
+
+    int normalizer=4;
+    for(int px=2*src.cols+2;px<(dst.rows*src.cols);++px)
+    {
+      if(*mptr==0)
+      {
+      normalizer=4;
+      if(*lptr==0) normalizer-=1;
+      if(*rptr==0) normalizer-=1;
+      if(*uptr==0) normalizer-=1;
+      if(*dptr==0) normalizer-=1;
+      if(normalizer>0)*mptr=(*lptr + *rptr + *uptr +*dptr)/normalizer;
+      }
+      ++lptr;
+      ++rptr;
+      ++mptr;
+      ++uptr;
+      ++dptr;
+    }
+  }
+
+  if(src.channels()==3)
+  {
+    src.copyTo(dst);
+    cv::Vec<T,3>* lptr=src.ptr<cv::Vec<T,3> >(1,0);
+    cv::Vec<T,3>* rptr=src.ptr<cv::Vec<T,3> >(1,2);
+    cv::Vec<T,3>* mptr=src.ptr<cv::Vec<T,3> >(1,1);
+    cv::Vec<T,3>* uptr=src.ptr<cv::Vec<T,3> >(0,1);
+    cv::Vec<T,3>* dptr=src.ptr<cv::Vec<T,3> >(2,1);
+
+    int normalizer=4;
+    for(int px=2*src.cols+2;px<(dst.rows*src.cols);++px)
+    {
+      if((*mptr)[0]==0)
+      {
+      normalizer=4;
+      if((*lptr)[0]==0) normalizer-=1;
+      if((*rptr)[0]==0) normalizer-=1;
+      if((*uptr)[0]==0) normalizer-=1;
+      if((*dptr)[0]==0) normalizer-=1;
+      if(normalizer>0)cv::divide((*lptr + *rptr + *uptr +*dptr),normalizer,*mptr);
+      }
+      ++lptr;
+      ++rptr;
+      ++mptr;
+      ++uptr;
+      ++dptr;
+    }
+  }
+  cv::medianBlur(src,dst,3);
+}
 //---------------------------------------------------------
 
   protected:
