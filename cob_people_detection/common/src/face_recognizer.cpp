@@ -120,7 +120,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps)
 {
 	// parameters
 	m_data_directory = data_directory;
@@ -135,6 +135,38 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_
 }
 
 
+unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, cv::Mat& depth_image,cv::Rect& face_bounding_box,cv::Rect& head_bounding_box,std::string label, std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps)
+{
+
+	// secure this function with a mutex
+	boost::lock_guard<boost::mutex> lock(m_data_mutex);
+
+//	// store in appropriate format for this method
+//	cv::Mat resized_8U1;
+//	cv::Size new_size(m_eigenface_size, m_eigenface_size);
+//	convertAndResize(color_image, resized_8U1, face_bounding_box, new_size);
+
+
+  cv::Rect combined_face_bounding_box=cv::Rect(face_bounding_box.x+head_bounding_box.x,face_bounding_box.y+head_bounding_box.y,face_bounding_box.width,face_bounding_box.height);
+
+	cv::Mat roi_color = color_image(combined_face_bounding_box);
+	cv::Mat roi_depth = depth_image(face_bounding_box);
+  cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
+  cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
+  if(!face_normalizer_.normalizeFace(roi_color,roi_depth,norm_size,offset)) return ipa_Utils::RET_FAILED;
+  //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
+  cv::imshow("FACE TO ADD",roi_color);
+  cv::waitKey(50);
+
+
+
+	// Save image
+	face_images.push_back(roi_color);
+  face_depthmaps.push_back(roi_depth);
+	m_face_labels.push_back(label);
+
+	return ipa_Utils::RET_OK;
+}
 unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, cv::Mat& depth_image,cv::Rect& face_bounding_box,cv::Rect& head_bounding_box,std::string label, std::vector<cv::Mat>& face_images)
 {
 
@@ -203,7 +235,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::updateFaceLabel(int index, std
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFaces(std::string label, std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFaces(std::string label, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps)
 {
 	for (int i=0; i<(int)m_face_labels.size(); i++)
 	{
@@ -211,16 +243,18 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFaces(std::string label,
 		{
 			m_face_labels.erase(m_face_labels.begin()+i);
 			face_images.erase(face_images.begin()+i);
+			face_depthmaps.erase(face_depthmaps.begin()+i);
 			i--;
 		}
 	}
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps)
 {
 	m_face_labels.erase(m_face_labels.begin()+index);
 	face_images.erase(face_images.begin()+index);
+	face_depthmaps.erase(face_depthmaps.begin()+index);
 	return ipa_Utils::RET_OK;
 }
 
@@ -268,7 +302,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
       if(identification_labels_to_train[lj].compare(m_face_labels[li])==0) m_label_num.push_back(lj);
     }
   }
-
 
   std::vector<cv::Mat> in_vec;
   for(int i=0;i<face_images.size();i++)
@@ -893,7 +926,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::convertEigenvectorsToIpl(int o
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images)
+unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps)
 {
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "tdata.xml";
@@ -928,6 +961,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 			tag2 << "image_" << i;
 			fileStorage << tag2.str().c_str() << shortname.str().c_str();
 			cv::imwrite(img.str().c_str(), face_images[i]);
+      //TODO: SAVE DEPTHMAPS
 		}
 
 		fileStorage.release();

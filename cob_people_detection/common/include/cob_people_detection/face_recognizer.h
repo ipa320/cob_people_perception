@@ -100,7 +100,7 @@ public:
 	/// @param data_directory The directory for data files
 	/// @param face_images A list of images of persons that shall be recognized which will be loaded by the function.
 	/// @return Return code
-	virtual unsigned long initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images);
+	virtual unsigned long initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps);
 
 	/// Function to add a new face
 	/// The function adds a new face to the trained images. The labels are stored internally in m_face_labels. The face_images are stored externally to avoid waste of memory.
@@ -111,6 +111,7 @@ public:
 	/// @return Return code
 	virtual unsigned long addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
 	virtual unsigned long addFace(cv::Mat& color_image,cv::Mat& depth_image,cv::Rect& face_bounding_box, cv::Rect& head_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
+  virtual unsigned long addFace(cv::Mat& color_image, cv::Mat& depth_image,cv::Rect& face_bounding_box,cv::Rect& head_bounding_box,std::string label, std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps);
 
 	/// Updates the labels of a stored person.
 	/// @param old_label The label in the database which shall be replaced by the new label
@@ -128,18 +129,18 @@ public:
 	/// @param label The label of the database entries which shall be deleted
 	/// @param face_images Vector containing all trained images
 	/// @return Return code
-	virtual unsigned long deleteFaces(std::string label, std::vector<cv::Mat>& face_images);
+	virtual unsigned long deleteFaces(std::string label, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps);
 
 	/// Deletes the database entry with the provided index.
 	/// @param index The index of the database entry which shall be deleted
 	/// @param face_images Vector containing all trained images
 	/// @return Return code
-	virtual unsigned long deleteFace(int index, std::vector<cv::Mat>& face_images);
+	virtual unsigned long deleteFace(int index, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps);
 
 	/// Saves the training data
 	/// @param face_images A vector containing all training images
 	/// @return Return code
-	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images);
+	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps);
 
 	/// Trains a model for the recognition of a given set of faces.
 	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.

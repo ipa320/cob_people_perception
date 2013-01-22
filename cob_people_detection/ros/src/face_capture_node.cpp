@@ -72,6 +72,7 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	capture_image_ = false;
 	finish_image_capture_ = false;
 	face_images_.clear();
+	face_depthmaps_.clear();
 
 	// parameters
 	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
@@ -87,7 +88,7 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	std::cout << "debug = " << debug << "\n";
 
 	// face recognizer trainer
-	face_recognizer_trainer_.initTraining(data_directory_, eigenface_size, debug, face_images_);
+	face_recognizer_trainer_.initTraining(data_directory_, eigenface_size, debug, face_images_,face_depthmaps_);
 
 	// subscribers
 	it_ = new image_transport::ImageTransport(node_handle_);
@@ -154,7 +155,7 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		service_server_finish_recording_.shutdown();
 
 		// save new database status
-		face_recognizer_trainer_.saveTrainingData(face_images_);
+		face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 		// close action
 		cob_people_detection::addDataResult result;
@@ -171,7 +172,7 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		}
 
 		// save new database status
-		face_recognizer_trainer_.saveTrainingData(face_images_);
+		face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 		// close action
 		cob_people_detection::addDataResult result;
@@ -228,7 +229,8 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		cv::Mat img_color = color_image.clone();
 		cv::Mat img_depth = depth_image.clone();
     // normalize face
-		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_)==ipa_Utils::RET_FAILED)
+		//if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_)==ipa_Utils::RET_FAILED)
+		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_,face_depthmaps_)==ipa_Utils::RET_FAILED)
 		//if (face_recognizer_trainer_.addFace(img_color, face_bounding_box, current_label_, face_images_)==ipa_Utils::RET_FAILED)
      {
       ROS_WARN("Normalizing failed");
@@ -319,7 +321,7 @@ void FaceCaptureNode::updateDataServerCallback(const cob_people_detection::updat
 	}
 
 	// save new database status
-	face_recognizer_trainer_.saveTrainingData(face_images_);
+	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 	// close action
 	update_data_server_->setSucceeded(result, "Database update finished successfully.");
@@ -336,12 +338,12 @@ void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::delet
 	if (goal->delete_mode == BY_INDEX)
 	{
 		// delete only one entry identified by its index
-		face_recognizer_trainer_.deleteFace(goal->delete_index, face_images_);
+		face_recognizer_trainer_.deleteFace(goal->delete_index, face_images_,face_depthmaps_);
 	}
 	else if (goal->delete_mode == BY_LABEL)
 	{
 		// delete all entries identified by their label
-		face_recognizer_trainer_.deleteFaces(goal->label, face_images_);
+		face_recognizer_trainer_.deleteFaces(goal->label, face_images_,face_depthmaps_);
 	}
 	else
 	{
@@ -351,7 +353,7 @@ void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::delet
 	}
 
 	// save new database status
-	face_recognizer_trainer_.saveTrainingData(face_images_);
+	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 	// close action
 	delete_data_server_->setSucceeded(result, "Deleting entries from the database finished successfully.");

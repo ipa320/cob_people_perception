@@ -127,6 +127,7 @@ protected:
 	// face recognizer trainer
 	FaceRecognizer face_recognizer_trainer_;
 	std::vector<cv::Mat> face_images_;			///< Vector of face images
+	std::vector<cv::Mat> face_depthmaps_;			///< Vector of face depthmaps
 	std::string current_label_;					///< Label of currently captured images
 	bool capture_image_;						///<
 	int number_captured_images_;				///<

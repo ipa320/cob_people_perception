@@ -92,6 +92,11 @@ bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vecto
 
 void VirtualCamera::resample_pc_indirect(cv::Mat& src,cv::Mat& dst ,cv::Mat& homo)
 {
+  //cv::Vec3f pta=cv::Vec3f(33.3,27.75,1);
+  //cv::Vec3f ptb;
+  //cv::perspectiveTransform(pta,ptb,homo);
+  //std::cout<<"PT A: "<<pta[0] <<" "<<pta[1] << std::endl;
+  //std::cout<<"PT B: "<<ptb[0] <<" "<<ptb[1] << std::endl;
   //unsigned char * dst_ptr=dst.ptr<unsigned char>(0,0);
   //for(int r=0;r<dst.rows;r++)
   //{

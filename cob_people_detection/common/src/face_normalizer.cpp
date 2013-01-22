@@ -286,6 +286,12 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   }
    if(debug_)dump_features(img);
 
+ // cv::Mat homo,result;
+ // kinect.calc_homography(f_det_img_.as_vector(),f_norm_img_.as_vector(),homo);
+ // kinect.resample_pc_indirect(img,result,homo);
+ // cv::imshow("resampled",result);
+ // cv::waitKey(0);
+ // exit(1);
 
    //ident_face();
    dyn_norm_face();
@@ -309,21 +315,16 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   f_norm_img_.add_offset (xoffset,yoffset);
 
 
-  //cv::Mat homo,result;
-  //kinect.calc_homography(f_det_img_.as_vector(),f_norm_img_.as_vector(),homo);
-  //kinect.resample_pc_indirect(img,result,homo);
-  //cv::imshow("resampled",result);
-  //cv::waitKey(0);
-  //exit(1);
 
   //calculate difference in PnP
   cv::Vec3f rot_orig, rot_norm;
 
   if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_det_img_.as_vector(),true))  return false;
-  rot_orig=kinect.rot;
+  rot_orig=kinect.trans;
 
   if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_norm_img_.as_vector(),true))  return false;
-  rot_norm=kinect.rot;
+  rot_norm=kinect.trans;
+
 
   std::cout<<"ROT ORIG= "<<rot_orig[0]<<" , "<<rot_orig[1]<<" , "<<rot_orig[2]<<" , "<<std::endl;
   std::cout<<"ROT NORM= "<<rot_norm[0]<<" , "<<rot_norm[1]<<" , "<<rot_norm[2]<<" , "<<std::endl;
