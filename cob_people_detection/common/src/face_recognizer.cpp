@@ -151,12 +151,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Rect combined_face_bounding_box=cv::Rect(face_bounding_box.x+head_bounding_box.x,face_bounding_box.y+head_bounding_box.y,face_bounding_box.width,face_bounding_box.height);
 
 	cv::Mat roi_color = color_image(combined_face_bounding_box);
-	cv::Mat roi_depth = depth_image(face_bounding_box);
+	cv::Mat roi_depth = depth_image(face_bounding_box).clone();
   cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth,norm_size,offset)) return ipa_Utils::RET_FAILED;
   //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
-  cv::imshow("FACE TO ADD",roi_color);
+  roi_depth.convertTo(roi_depth,CV_8UC1,255);
+  cv::equalizeHist(roi_depth,roi_depth);
+  cv::imshow("FACE TO ADD",roi_depth);
   cv::waitKey(50);
 
 

@@ -145,6 +145,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
 
   //resizing
   cv::resize(img,img,norm_size_,0,0);
+  cv::resize(depth,depth,norm_size_,0,0);
   if(debug_)dump_img(img,"3_resized");
   if(debug_)std::cout<<"3 - resized"<<std::endl;
 
