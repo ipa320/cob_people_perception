@@ -113,6 +113,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
 	m_threshold_unknown = threshold_unknown;
 	m_metric = metric;
 	m_debug = debug;
+  m_depth_mode=true;
 
 	// load model
 	loadRecognitionModel(identification_labels_to_recognize);
@@ -261,14 +262,81 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vec
 	return ipa_Utils::RET_OK;
 }
 
+unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::FishEigFaces& eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
+{
+  //TODO set ss_dim dynamically
+  int ss_dim =10;
+
+  std::vector<cv::Mat> in_vec;
+  for(int i=0;i<data.size();i++)
+  {
+    cv::Mat temp=data[i];
+    temp.convertTo(temp,CV_64FC1);
+    in_vec.push_back(temp);
+  }
+
+  m_rec_method=1;
+  eff.releaseModel();
+  if(m_rec_method==1)
+  {
+    if(eff.init(in_vec,m_label_num,ss_dim,SubspaceAnalysis::METH_FISHER))
+    {
+      std::cout<<"Fisherfaces initialized"<<std::endl;
+    }
+  }
+  if (m_rec_method == 0)
+  {
+    if(eff.init(in_vec,m_label_num,ss_dim,SubspaceAnalysis::METH_EIGEN))
+    {
+      std::cout<<"Eigenfaces initialized"<<std::endl;
+    }
+    else
+    {
+      std::cout<<"[FACEREC] Eigenfaces could not be initialized ....!"<<std::endl;
+      return ipa_Utils::RET_FAILED;
+    }
+  }
+}
 unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vector<std::string>& identification_labels_to_train)
 {
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
 	// load necessary data
-	std::vector<cv::Mat> face_images;
-	loadTrainingData(face_images, identification_labels_to_train);
+
+  // If depth mode is enabled load available depthmaps
+    std::vector<cv::Mat> face_images,face_depthmaps;
+  if(m_depth_mode)
+  {
+    loadTrainingData(face_images, face_depthmaps,identification_labels_to_train);
+
+    std::vector<cv::Mat> in_vec_depth;
+    for(int i=0;i<face_depthmaps.size();i++)
+    {
+      cv::Mat temp=cv::Mat(face_depthmaps[i].rows,face_depthmaps[i].cols,CV_8UC1);
+      temp=face_depthmaps[i];
+      temp.convertTo(temp,CV_64FC1);
+      in_vec_depth.push_back(temp);
+    }
+
+    //make label vec for depth
+    depth_str_labels.clear();
+    depth_num_labels.clear();
+    for(int i=0;i<dm_exist.size();i++)
+    {
+      if(dm_exist[i])
+       {
+        depth_str_labels.push_back(m_face_labels[i]);
+        depth_num_labels.push_back(i);
+       }
+    }
+  }
+  else
+  {
+	loadTrainingData(face_images,identification_labels_to_train);
+  }
+
+
 	m_current_label_set = identification_labels_to_train;
 
 	// convert face_images to right format if necessary
@@ -295,7 +363,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 //--------------------------------------------
 //--------------------------------------------
 //--------------------------------------------
-  int ss_dim =number_eigenvectors;
 
   m_label_num.clear();
   for(int li=0;li<m_face_labels.size();li++)
@@ -306,46 +373,21 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
     }
   }
 
-  std::vector<cv::Mat> in_vec;
-  for(int i=0;i<face_images.size();i++)
-  {
-    cv::Mat temp=cv::Mat(face_images[i].rows,face_images[i].cols,CV_8UC1);
-    temp=face_images[i];
-    temp.convertTo(temp,CV_64FC1);
-    in_vec.push_back(temp);
-  }
+  
 
   //alocate memory for eigenvectors
   m_eigenvectors.clear();
   m_eigenvectors.resize(number_eigenvectors,cv::Mat(face_images[0].rows,face_images[0].cols,CV_64FC1));
 
-  // TODO: m_rec_method rom yaml file
-  m_rec_method=1;
-  eff_.releaseModel();
-  if(m_rec_method==1)
-  {
-    if(eff_.init(in_vec,m_label_num,ss_dim,SubspaceAnalysis::METH_FISHER))
-    {
-      std::cout<<"Fisherfaces initialized"<<std::endl;
-    }
-  }
-  if (m_rec_method == 0)
-  {
-    if(eff_.init(in_vec,m_label_num,ss_dim,SubspaceAnalysis::METH_EIGEN))
-    {
-      std::cout<<"Eigenfaces initialized"<<std::endl;
-    }
-    else
-    {
-      std::cout<<"[FACEREC] Eigenfaces could not be initialized ....!"<<std::endl;
-      return ipa_Utils::RET_FAILED;
-    }
-  }
 
-  eff_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
+  //--> INIT MODEL
+  initModel(eff_,face_images,m_label_num);
+  //TODO still necessary=
+  //eff_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
 
 	// save new model
-	saveRecognitionModel();
+	//TODO ALWAYS TRAINING NECESSARY - NO INTERFACE FOR SSA CLASS FOR MODEL ASSOCIATION
+  //saveRecognitionModel();
 
 	// output
 	if (m_debug)
@@ -597,17 +639,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
 	identification_labels.clear();
 
-	float* eigen_vector_weights = 0;
-	eigen_vector_weights = (float *)cvAlloc(number_eigenvectors*sizeof(float));
-
-	// Convert vector to array
-//	IplImage** m_eigenvectors_ipl = (IplImage**)cvAlloc(number_eigenvectors*sizeof(IplImage*));
-//	for(int j=0; j<number_eigenvectors; j++)
-//	{
-//		IplImage temp = (IplImage)m_eigenvectors[j];
-//		m_eigenvectors_ipl[j] = cvCloneImage(&temp);
-//	}
-
 	cv::Mat resized_8U1;
 	cv::Size resized_size(m_eigenvectors[0].size());
 	for(int i=0; i<(int)face_coordinates.size(); i++)
@@ -616,14 +647,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		convertAndResize(color_image, resized_8U1, face, resized_size);
 
 
-		// todo: preprocess
-		//cv::Mat preprocessedImage = preprocessImage(resized_8U1);
-
-		IplImage avg_image_ipl = (IplImage)m_average_image;
-
-		// Project the test image onto the PCA subspace
-		IplImage resized_8U1Ipl = (IplImage)resized_8U1;
-		//cvEigenDecomposite(&resized_8U1Ipl, number_eigenvectors, m_eigenvectors_ipl, 0, 0, &avg_image_ipl, eigen_vector_weights);
 
 
      double DFFS;
@@ -649,251 +672,12 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		}
 	}
 
-	// clear
-	//for (int i=0; i<number_eigenvectors; i++) cvReleaseImage(&(m_eigenvectors_ipl[i]));
-	cvFree(&eigen_vector_weights);
-	//cvFree(&m_eigenvectors_ipl);
 
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::classifyFace(float *eigen_vector_weights, std::string& face_label, int number_eigenvectors)
-{
-	double least_dist_sqared = DBL_MAX;
-
-	// todo: compare against single examples from training data, i.e. KNN
-	// comparing against average is arbitrarily bad
-	cv::Mat& model_data = m_projected_training_faces; 		//m_face_class_average_projections
-	std::vector<std::string>& label_data = m_face_labels;	//m_current_label_set
-	for(int i=0; i<model_data.rows; i++)
-	{
-		double distance=0;
-		double cos=0;
-		double length_sample=0;
-		double length_projection=0;
-		for(int e=0; e<number_eigenvectors; e++)
-		{
-			if (m_metric < 2)
-			{
-				float d = eigen_vector_weights[e] - ((float*)(model_data.data))[i * number_eigenvectors + e];
-				if (m_metric==0)
-					distance += d*d;							//Euklid
-				else
-					distance += d*d / ((float*)(m_eigenvalues.data))[e];	//Mahalanobis
-			}
-			else
-			{
-				cos += eigen_vector_weights[e] * ((float*)(model_data.data))[i * number_eigenvectors + e] / ((float*)(m_eigenvalues.data))[e];
-				length_projection += ((float*)(model_data.data))[i * number_eigenvectors + e] * ((float*)(model_data.data))[i * number_eigenvectors + e] / ((float*)(m_eigenvalues.data))[e];
-				length_sample += eigen_vector_weights[e]*eigen_vector_weights[e] / ((float*)(m_eigenvalues.data))[e];
-			}
-		}
-		if (m_metric < 2)
-			distance = sqrt(distance);
-		else
-		{
-			length_sample = sqrt(length_sample);
-			length_projection = sqrt(length_projection);
-			cos /= (length_projection * length_sample);
-			distance = std::abs(cos); //-cos;		// todo why not abs?
-		}
-
-		if (m_debug) std::cout << "distance to face class: " << distance << std::endl;
-
-		if(distance < least_dist_sqared)
-		{
-			least_dist_sqared = distance;
-			if(least_dist_sqared > m_threshold_unknown)
-				face_label = "Unknown";
-			else
-				face_label = label_data[i];
-		}
-	}
-	if (m_debug) std::cout << "least distance to face class: " << least_dist_sqared << std::endl;
-
-	// todo:
-//	if (personClassifier != 0 && *nearest != -1)
-//	{
-//		cv::Mat temp(1, *nEigens, CV_32FC1, eigenVectorWeights);
-//		std::cout << "class. output: " << (int)personClassifier->predict(temp) << "\n";
-//		*nearest = (int)personClassifier->predict(temp);
-//	}
-
-	return ipa_Utils::RET_OK;
-}
-
-unsigned long ipa_PeopleDetector::FaceRecognizer::PCA(int number_eigenvectors, std::vector<cv::Mat>& face_images)
-{
-	if(face_images.size() < 2)
-	{
-		std::cout << "Error: FaceRecognizer::PCA: Less than two images available for training.\n";
-		return ipa_Utils::RET_FAILED;
-	}
-
-	// Allocate memory
-	cv::Size face_image_size(face_images[0].cols, face_images[0].rows);
-	int old_number_eigenvectors = m_eigenvectors.size();
-	m_eigenvectors.clear();
-	m_eigenvectors.resize(number_eigenvectors, cv::Mat(face_image_size, CV_32FC1));
-	m_eigenvalues.create(1, number_eigenvectors, CV_32FC1);
-	m_average_image.create(face_image_size, CV_32FC1);
-
-	// Set the PCA termination criterion
-	CvTermCriteria calcLimit;
-	calcLimit = cvTermCriteria(CV_TERMCRIT_ITER, number_eigenvectors, 1);
-
-	// Convert face image vector to array
-	IplImage** face_images_ipl = (IplImage**)cvAlloc((int)face_images.size()*sizeof(IplImage*));
-	for(int j=0; j<(int)face_images.size(); j++)
-	{
-		// todo: preprocess
-		cv::Mat preprocessed_image = preprocessImage(face_images[j]);
-		IplImage temp = (IplImage)preprocessed_image;
-		face_images_ipl[j] = cvCloneImage(&temp);
-	}
-
-	// Convert eigenvector vector to array and delete old data if available
-	convertEigenvectorsToIpl(old_number_eigenvectors);
-
-	// Compute average image, eigenvalues, and eigenvectors
-	IplImage average_image_ipl = (IplImage)m_average_image;
-
-	float eigenvalues[number_eigenvectors*number_eigenvectors*number_eigenvectors];		// hack: if strange crashes occur, the array size should be increased
-	cvCalcEigenObjects((int)face_images.size(), (void*)face_images_ipl, (void*)m_eigenvectors_ipl, CV_EIGOBJ_NO_CALLBACK, 0, 0, &calcLimit, &average_image_ipl, eigenvalues);
-	for (int i=0; i<m_eigenvalues.cols; i++)
-		m_eigenvalues.at<float>(i) = eigenvalues[i];
-
-	cv::normalize(m_eigenvalues, m_eigenvalues, 1, 0, /*CV_L1*/CV_L2);	//, 0);		0=bug?
-
-	// Project the training images onto the PCA subspace
-	m_projected_training_faces.create(face_images.size(), number_eigenvectors, CV_32FC1);
-	for(int i=0; i<(int)face_images.size(); i++)
-	{
-		IplImage temp = (IplImage)face_images[i];
-		cvEigenDecomposite(&temp, number_eigenvectors, m_eigenvectors_ipl, 0, 0, &average_image_ipl, (float*)m_projected_training_faces.data + i * number_eigenvectors);	//attention: if image step of m_projected_training_faces is not number_eigenvectors * sizeof(float) then reading functions which access with (x,y) coordinates might fail
-	};
-
-	// Copy back
-	//int eigenVectorsCount = (int)m_eigenvectors.size();
-	m_eigenvectors.clear();
-	for (int i=0; i<number_eigenvectors; i++)
-		m_eigenvectors.push_back(cv::Mat(m_eigenvectors_ipl[i], true));
-
-	// Clean
-	for (int i=0; i<(int)face_images.size(); i++) cvReleaseImage(&(face_images_ipl[i]));
-	cvFree(&face_images_ipl);
-
-	return ipa_Utils::RET_OK;
-}
-
-unsigned long ipa_PeopleDetector::FaceRecognizer::computeAverageFaceProjections()
-{
-	int number_eigenvectors = m_eigenvectors.size();
-
-	// Calculate per class average projection coefficients
-	m_face_class_average_projections = cv::Mat::zeros((int)m_current_label_set.size(), number_eigenvectors, m_projected_training_faces.type());
-	for(int i=0; i<(int)m_current_label_set.size(); i++)
-	{
-		std::string face_class = m_current_label_set[i];
-
-		int count=0;
-		for(int j=0;j<(int)m_face_labels.size(); j++)
-		{
-			if(!(m_face_labels[j].compare(face_class)))
-			{
-				for(int e=0; e<number_eigenvectors; e++)
-					((float*)(m_face_class_average_projections.data))[i * number_eigenvectors + e] += ((float*)(m_projected_training_faces.data))[j * number_eigenvectors + e];
-				count++;
-			}
-		}
-		for(int e=0; e<number_eigenvectors; e++)
-			((float*)(m_face_class_average_projections.data))[i * number_eigenvectors + e] /= (float)count;
-	}
-
-	// todo: machine learning technique for person identification
-	if (false)
-	{
-		// prepare ground truth
-		cv::Mat data(m_face_labels.size(), number_eigenvectors, CV_32FC1);
-		cv::Mat labels(m_face_labels.size(), 1, CV_32SC1);
-		std::ofstream fout("svm.dat", std::ios::out);
-		for(int sample=0; sample<(int)m_face_labels.size(); sample++)
-		{
-			// copy data
-			for (int e=0; e<number_eigenvectors; e++)
-			{
-				data.at<float>(sample, e) = ((float*)m_projected_training_faces.data)[sample * number_eigenvectors + e];
-				fout << data.at<float>(sample, e) << "\t";
-			}
-			// find corresponding label
-			for(int i=0; i<(int)m_current_label_set.size(); i++)	// for each person
-				if(!(m_face_labels[sample].compare(m_current_label_set[i])))		// compare the labels
-					labels.at<int>(sample) = i;					// and assign the corresponding label's index from the m_current_label_set list
-			fout << labels.at<int>(sample) << "\n";
-		}
-		fout.close();
-
-		// train the classifier
-		cv::SVMParams svmParams(CvSVM::NU_SVC, CvSVM::RBF, 0.0, 0.001953125, 0.0, 0.0, 0.8, 0.0, 0, cv::TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, FLT_EPSILON));
-		//m_face_classifier.train_auto(data, labels, cv::Mat(), cv::Mat(), svmParams, 10, cv::SVM::get_default_grid(CvSVM::C), CvParamGrid(0.001953125, 2.01, 2.0), cv::SVM::get_default_grid(CvSVM::P), CvParamGrid(0.0125, 1.0, 2.0));
-		m_face_classifier.train(data, labels, cv::Mat(), cv::Mat(), svmParams);
-		cv::SVMParams svmParamsOptimal = m_face_classifier.get_params();
-		if (m_debug) std::cout << "\nOptimal SVM params: gamma=" << svmParamsOptimal.gamma << "  nu=" << svmParamsOptimal.nu << "\n";
-	}
-
-	if (m_debug) std::cout << "done\n";
-
-	return ipa_Utils::RET_OK;
-}
-
-cv::Mat ipa_PeopleDetector::FaceRecognizer::preprocessImage(cv::Mat& input_image)
-{
-
-  //TODO:
-  //  -- Histogramm equalization
-  //  -- Image gradient for linear illumination changes 
 
 
-	// todo:
-	return input_image;
-
-	// do a modified census transform
-	cv::Mat output(input_image.cols, input_image.rows, input_image.type());
-	//cv::Mat smoothedImage = input_image.clone();
-	//cv::GaussianBlur(smoothedImage, smoothedImage, cv::Size(3,3), 0, 0, cv::BORDER_REPLICATE);
-
-	for (int v=0; v<input_image.rows; v++)
-	{
-		uchar* srcPtr = input_image.ptr(v);
-		//uchar* smoothPtr = smoothedImage.ptr(v);
-		uchar* outPtr = output.ptr(v);
-		for (int u=0; u<input_image.cols; u++)
-		{
-			int ctOutcome = 0;
-			int offset = -1;
-			for (int dv=-1; dv<=1; dv++)
-			{
-				for (int du=-1; du<=1; du++)
-				{
-					if (dv==0 && du==0) continue;
-					offset++;
-					if (v+dv<0 || v+dv>=input_image.rows || u+du<0 || u+du>=input_image.cols) continue;
-					//if (*smoothPtr < *(srcPtr+dv*input_image.step+du)) ctOutcome += 1<<offset;
-					if (*srcPtr < *(srcPtr+dv*input_image.step+du)) ctOutcome += 1<<offset;
-				}
-			}
-			*outPtr = ctOutcome;
-
-			srcPtr++;
-			outPtr++;
-		}
-	}
-
-//	cv::imshow("census transform", output);
-//	cv::waitKey();
-
-	return output;
-}
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::convertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face, cv::Size new_size)
 {
@@ -906,28 +690,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::convertAndResize(cv::Mat& img,
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::convertEigenvectorsToIpl(int old_number_eigenvectors)
-{
-	int new_number_eigenvectors = m_eigenvectors.size();
-
-	// clear
-	if (m_eigenvectors_ipl != 0)
-	{
-		for (int i=0; i<old_number_eigenvectors; i++)
-			cvReleaseImage(&(m_eigenvectors_ipl[i]));
-		cvFree(&m_eigenvectors_ipl);
-	}
-
-	// Convert vector to array
-	m_eigenvectors_ipl = (IplImage**)cvAlloc(new_number_eigenvectors*sizeof(IplImage*));
-	for(int j=0; j<new_number_eigenvectors; j++)
-	{
-		IplImage temp = (IplImage)m_eigenvectors[j];
-		m_eigenvectors_ipl[j] = cvCloneImage(&temp);
-	}
-
-	return ipa_Utils::RET_OK;
-}
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images)
 {
@@ -1150,6 +912,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps, std::vector<std::string>& identification_labels_to_train)
 {
 	bool use_all_data = false;
+  dm_exist.clear();
 	if (identification_labels_to_train.size() == 0)
 		use_all_data = true;
 
@@ -1212,8 +975,13 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 
       if(dm_path.compare(m_data_directory))
       {
-
-      dm_exist.push_back(true);
+        cv::Mat dm_temp;
+        cv::FileStorage fs(dm_path,FileStorage::READ);
+        fs["depthmap"]>>dm_temp;
+        face_depthmaps.push_back(dm_temp);
+      
+        dm_exist.push_back(true);
+        fs.release();
       }
       else dm_exist.push_back(false);
 		}

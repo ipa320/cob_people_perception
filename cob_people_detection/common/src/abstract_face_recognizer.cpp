@@ -98,6 +98,7 @@ unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color
 		if (result_state == ipa_Utils::RET_FAILED)
 			return ipa_Utils::RET_FAILED;
 	}
+	return ipa_Utils::RET_OK;
 }
 unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color_images,std::vector<cv::Mat>& depth_images, std::vector< std::vector<cv::Rect> >& face_coordinates, std::vector< std::vector<std::string> >& identification_labels)
 {

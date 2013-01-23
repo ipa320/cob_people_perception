@@ -175,38 +175,8 @@ protected:
 	/// @param face_label Label of closest face, or 'Unknown' if the face is unknown
 	/// @param number_eigenvectors Number of eigenvalues
 	/// @return Return code
-	virtual unsigned long classifyFace(float *eigen_vector_weights, std::string& face_label, int number_eigenvectors);
-
-	/// Function to Run the Eigenface-PCA algorithm
-	/// @param number_eigenvectors Target number of eigenvectors
-	/// @param face_images Face images for training
-	/// @return Return code
-	virtual unsigned long PCA(int number_eigenvectors, std::vector<cv::Mat>& face_images);
-
-	/// Function to calculate the average eigenvector decomposition factors for each face class.
-	/// The function calculates the average eigenvector decomposition factors for each face class. Assumes that PCA() was executed before.
-	/// @return Return code
-	virtual unsigned long computeAverageFaceProjections();
-
-	/// Applies some preprocessing to the grayscale face images to obtain a more robust identification.
-	/// todo: not implemented yet
-	/// @param input_image Grayscale face image.
-	/// @return Preprocessed image.
-	virtual cv::Mat preprocessImage(cv::Mat& input_image);
-
-	/// Function to Convert and Resizes a given image
-	/// The function converts a 8U3 image from camera to an 8U1 image and resizes the face to new_size.
-	/// @param img Image from camera
-	/// @param resized Resized image patch from bounding box face
-	/// @param face The face bounding box
-	/// @param new_size The target size of the resized image
-	/// @return Return code
 	virtual unsigned long convertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face, cv::Size new_size);
 
-	/// Just converts m_eigenvectors to m_eigenvectors_ipl which is a conversion of std::vector<cv::Mat> to IplImage**.
-	/// Necessary to avoid in-place conversion each time recognizeFace is called.
-	/// @param old_number_eigenvectors The number of eigenvectors previously stored in m_eigenvectors_ipl. Needed for correct memory release.
-	virtual unsigned long convertEigenvectorsToIpl(int old_number_eigenvectors);
 
 	/// Loads the training data for the persons specified in identification_labels_to_train
 	/// @param face_images A vector containing all training images
@@ -217,12 +187,21 @@ protected:
 //----------------------------------------------------
 //----------------------------------------------------
 
+
+
+// DEPTH
+  SubspaceAnalysis::FishEigFaces depth_eff_;
+  std::vector<std::string> depth_str_labels;
+  std::vector<int> depth_num_labels;
+//
   FaceNormalizer face_normalizer_;
 
   SubspaceAnalysis::FishEigFaces eff_;
   std::vector<int> m_label_num;
   int             m_rec_method;
   std::vector<bool> dm_exist;
+  bool m_depth_mode;
+unsigned long initModel(SubspaceAnalysis::FishEigFaces& eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
 //----------------------------------------------------
 //----------------------------------------------------
 
