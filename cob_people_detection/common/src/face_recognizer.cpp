@@ -156,10 +156,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth,norm_size,offset)) return ipa_Utils::RET_FAILED;
   //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
-  roi_depth.convertTo(roi_depth,CV_8UC1,255);
-  cv::equalizeHist(roi_depth,roi_depth);
-  cv::imshow("FACE TO ADD",roi_depth);
-  cv::waitKey(50);
 
 
 
@@ -273,6 +269,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::Fi
   for(int i=0;i<data.size();i++)
   {
     cv::Mat temp=data[i];
+    //temp.convertTo(temp,CV_8UC1,255);
+    //cv::equalizeHist(temp,temp);
+    //cv::imshow("temp",temp);
+    //cv::waitKey(0);
     temp.convertTo(temp,CV_64FC1);
     in_vec.push_back(temp);
   }
@@ -281,14 +281,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::Fi
   eff.releaseModel();
   if(m_rec_method==1)
   {
-    if(eff.init(in_vec,m_label_num,ss_dim,SubspaceAnalysis::METH_FISHER))
+    if(eff.init(in_vec,labels,ss_dim,SubspaceAnalysis::METH_FISHER,true))
     {
       std::cout<<"Fisherfaces initialized"<<std::endl;
     }
   }
   if (m_rec_method == 0)
   {
-    if(eff.init(in_vec,m_label_num,ss_dim,SubspaceAnalysis::METH_EIGEN))
+    if(eff.init(in_vec,labels,ss_dim,SubspaceAnalysis::METH_EIGEN,true))
     {
       std::cout<<"Eigenfaces initialized"<<std::endl;
     }
@@ -312,14 +312,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
   {
     loadTrainingData(face_images, face_depthmaps,identification_labels_to_train);
 
-    std::vector<cv::Mat> in_vec_depth;
-    for(int i=0;i<face_depthmaps.size();i++)
-    {
-      cv::Mat temp=cv::Mat(face_depthmaps[i].rows,face_depthmaps[i].cols,CV_8UC1);
-      temp=face_depthmaps[i];
-      temp.convertTo(temp,CV_64FC1);
-      in_vec_depth.push_back(temp);
-    }
 
     //make label vec for depth
     depth_str_labels.clear();
@@ -383,7 +375,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
 
   //--> INIT MODEL
-  initModel(eff_,face_images,m_label_num);
+  initModel(eff_,face_depthmaps,depth_num_labels);
+  //initModel(eff_,face_images,m_label_num);
   //TODO still necessary=
   //eff_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
 
@@ -670,7 +663,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
       int res_label;
       eff_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
-      identification_labels.push_back(m_current_label_set[res_label]);
+      //identification_labels.push_back(m_current_label_set[res_label]);
+      identification_labels.push_back(depth_str_labels[res_label]);
 		}
 	}
 

@@ -92,7 +92,10 @@ void SubspaceAnalysis::XFaces::project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Ma
 
 
   //calculate coefficients
+  //
 
+  std::cout<<src_mat.rows<<" "<<src_mat.cols<<std::endl;
+  std::cout<<proj_mat.rows<<" "<<proj_mat.cols<<std::endl;
   cv::gemm(src_mat,proj_mat,1.0,cv::Mat(),0.0,coeff_mat,cv::GEMM_2_T);
 
 }
@@ -568,6 +571,7 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
 
   //input data checks
   //check if input has the same size
+  ss_dim_=red_dim;
   if(img_vec.size()<ss_dim_+1)
   {
     //TODO: ROS ERROR
@@ -625,6 +629,7 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
         }
         //subspace dimension is num classes -1
         ss_dim_=num_classes_ -1;
+        std::cout<<ss_dim_<<std::endl;
         // pca dimension  is N- num classes
         int pca_dim=model_data_arr_.rows-num_classes_;
         // Reduce dimension to  N - c via PCA
