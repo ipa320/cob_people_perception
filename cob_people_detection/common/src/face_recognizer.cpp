@@ -129,7 +129,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_
 
 	// load model
 	m_current_label_set.clear();	 // keep empty to load all available data
-	loadTrainingData(face_images, m_current_label_set);
+	loadTrainingData(face_images,face_depthmaps, m_current_label_set);
 
 	return ipa_Utils::RET_OK;
 }
@@ -164,6 +164,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
 	face_images.push_back(roi_color);
   face_depthmaps.push_back(roi_depth);
 	m_face_labels.push_back(label);
+  dm_exist.push_back(true);
 
 	return ipa_Utils::RET_OK;
 }
@@ -243,7 +244,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFaces(std::string label,
 		{
 			m_face_labels.erase(m_face_labels.begin()+i);
 			face_images.erase(face_images.begin()+i);
-			face_depthmaps.erase(face_depthmaps.begin()+i);
+      //TODO delete depthamaps
+			//face_depthmaps.erase(face_depthmaps.begin()+i);
 			i--;
 		}
 	}
@@ -254,7 +256,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vec
 {
 	m_face_labels.erase(m_face_labels.begin()+index);
 	face_images.erase(face_images.begin()+index);
-	face_depthmaps.erase(face_depthmaps.begin()+index);
+      //TODO delete depthamaps
+	//face_depthmaps.erase(face_depthmaps.begin()+index);
 	return ipa_Utils::RET_OK;
 }
 
@@ -926,7 +929,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::convertEigenvectorsToIpl(int o
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps)
+unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images)
 {
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "tdata.xml";
@@ -961,11 +964,85 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 			tag2 << "image_" << i;
 			fileStorage << tag2.str().c_str() << shortname.str().c_str();
 			cv::imwrite(img.str().c_str(), face_images[i]);
-      //TODO: SAVE DEPTHMAPS
+
+
 		}
 
 		fileStorage.release();
 
+		std::cout << "INFO: FaceRecognizer::saveTrainingData: " << face_images.size() << " images saved.\n" << std::endl;
+	}
+	else
+	{
+		std::cerr << "Error: FaceRecognizer::saveTrainingData: Path '" << path << "' is not a directory." << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
+
+	return ipa_Utils::RET_OK;
+}
+unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps)
+{
+
+  std::cout<<"Size VEc "<<face_images.size()<<" "<<face_depthmaps.size()<<std::endl;
+	std::string path = m_data_directory + "training_data/";
+	std::string filename = "tdata.xml";
+	std::string img_ext = ".bmp";
+	std::string dm_ext = ".xml";
+
+	std::ostringstream complete;
+	complete << path << filename;
+
+	if(fs::is_directory(path.c_str()))
+	{
+		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::WRITE);
+		if(!fileStorage.isOpened())
+		{
+			std::cout << "Error: FaceRecognizer::saveTrainingData: Can't save training data.\n" << std::endl;
+			return ipa_Utils::RET_FAILED;
+		}
+
+		// store data
+		fileStorage << "number_entries" << (int)m_face_labels.size();
+		for(int i=0; i<(int)m_face_labels.size(); i++)
+		{
+			// labels
+			std::ostringstream tag;
+			tag << "label_" << i;
+			fileStorage << tag.str().c_str() << m_face_labels[i].c_str();
+
+			// face images
+			std::ostringstream img, shortname_img, shortname_depth;
+			img << path << i << img_ext;
+			shortname_img << "training_data/" << i << img_ext;
+			std::ostringstream tag2,tag3;
+			tag2 << "image_" << i;
+			fileStorage << tag2.str().c_str() << shortname_img.str().c_str();
+
+      if(dm_exist[i])
+      {
+        shortname_depth << "training_data/" << i << dm_ext;
+        tag3<< "depthmap_"<<i;
+        fileStorage << tag3.str().c_str() << shortname_depth.str().c_str();
+      }
+			cv::imwrite(img.str().c_str(), face_images[i]);
+		}
+
+		fileStorage.release();
+
+        int j;
+      for(int i=0;i<dm_exist.size();i++)
+      {
+        if(dm_exist[i])
+        {
+        // depth maps
+        std::ostringstream dm;
+        dm << path <<i <<dm_ext;
+        cv::FileStorage fs(dm.str().c_str(),FileStorage::WRITE);
+        fs << "depthmap"<<face_depthmaps[j];
+        fs.release();
+        j++;
+        }
+      }
 		std::cout << "INFO: FaceRecognizer::saveTrainingData: " << face_images.size() << " images saved.\n" << std::endl;
 	}
 	else
@@ -1037,6 +1114,108 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			std::string path = m_data_directory + (std::string)fileStorage[tag_image.str().c_str()];
 			cv::Mat temp = cv::imread(path.c_str(),-1);
 			face_images.push_back(temp);
+		}
+
+		// clean identification_labels_to_train -> only keep those labels that appear in the training data
+		for(int j=0; j<(int)identification_labels_to_train.size(); j++)
+		{
+			bool class_exists = false;
+			for (int k=0; k<(int)m_face_labels.size(); k++)
+			{
+				if(identification_labels_to_train[j].compare(m_face_labels[k]) == 0)
+					class_exists = true;
+			}
+			if (class_exists == false)
+			{
+				identification_labels_to_train.erase(identification_labels_to_train.begin()+j);
+				j--;
+			}
+		}
+
+		// set next free filename
+		// filename_ = number_face_images;
+
+		fileStorage.release();
+
+		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " images loaded.\n" << std::endl;
+	}
+	else
+	{
+		std::cerr << "Error: FaceRecognizer::loadTrainingData: Path '" << path << "' is not a directory." << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
+
+	return ipa_Utils::RET_OK;
+}
+unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps, std::vector<std::string>& identification_labels_to_train)
+{
+	bool use_all_data = false;
+	if (identification_labels_to_train.size() == 0)
+		use_all_data = true;
+
+	std::string path = m_data_directory + "training_data/";
+	std::string filename = "tdata.xml";
+
+	std::ostringstream complete;
+	complete << path << filename;
+
+	if(fs::is_directory(path.c_str()))
+	{
+		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::READ);
+		if(!fileStorage.isOpened())
+		{
+			std::cout << "Error: FaceRecognizer::loadTrainingData: Can't open " << complete.str() << ".\n" << std::endl;
+			return ipa_Utils::RET_OK;
+		}
+
+		// labels
+		m_face_labels.clear();
+		face_images.clear();
+		int number_entries = (int)fileStorage["number_entries"];
+		for(int i=0; i<number_entries; i++)
+		{
+			// labels
+			std::ostringstream tag_label;
+			tag_label << "label_" << i;
+			std::string label = (std::string)fileStorage[tag_label.str().c_str()];
+			// look up this label in the list of unique labels identification_labels_to_train
+			bool class_exists = false;
+			for(int j=0; j<(int)identification_labels_to_train.size(); j++)
+			{
+				if(!identification_labels_to_train[j].compare(label))
+					class_exists = true;
+			}
+			// if it does not appear in the list either append it (use all data option) or neglect this piece of data
+			if (class_exists == false)
+			{
+				if (use_all_data == true)
+				{
+					// append this label to the list of labels
+					identification_labels_to_train.push_back(label);
+				}
+				else
+				{
+					// skip this data because it does not contain one of the desired labels
+					continue;
+				}
+			}
+			m_face_labels.push_back(label);
+
+			// face images
+			std::ostringstream tag_image,tag_dm;
+			tag_image << "image_" << i;
+			tag_dm << "depthmap_" << i;
+			std::string img_path = m_data_directory + (std::string)fileStorage[tag_image.str().c_str()];
+			std::string dm_path = m_data_directory + (std::string)fileStorage[tag_dm.str().c_str()];
+			cv::Mat temp = cv::imread(img_path.c_str(),-1);
+			face_images.push_back(temp);
+
+      if(dm_path.compare(m_data_directory))
+      {
+
+      dm_exist.push_back(true);
+      }
+      else dm_exist.push_back(false);
 		}
 
 		// clean identification_labels_to_train -> only keep those labels that appear in the training data

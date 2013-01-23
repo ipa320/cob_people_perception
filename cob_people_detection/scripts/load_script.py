@@ -6,10 +6,10 @@ import sys
 
 class dlg(wx.Frame):
   def __init__(self):
-    self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
-    self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
-    #self.base_path="/share/goa-tz/people_detection/eval/"
-    #self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    #self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    #self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
+    self.base_path="/share/goa-tz/people_detection/eval/"
+    self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
     self.cwd=os.getcwd()
     self.ts_dir_list = list()
     self.pf_list = list()

@@ -85,11 +85,11 @@ rosbuild_add_executable(face_normalizer_test
 rosbuild_add_executable(ssa_test
       common/src/test/ssa_test.cpp
       )
-    target_link_libraries(ssa_test subspace_analysis opencv_core opencv_highgui )
-rosbuild_add_executable(dm_test
-      common/src/test/dm_test.cpp
-      )
-    target_link_libraries(dm_test face_normalizer subspace_analysis opencv_core opencv_highgui )
+     target_link_libraries(ssa_test subspace_analysis opencv_core opencv_highgui )
+    # rosbuild_add_executable(dm_test
+    #   common/src/test/dm_test.cpp
+    #   )
+    # target_link_libraries(dm_test face_normalizer subspace_analysis opencv_core opencv_highgui )
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 

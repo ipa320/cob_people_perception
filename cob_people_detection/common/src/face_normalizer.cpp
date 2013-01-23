@@ -3,46 +3,46 @@
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(true),
-                                  debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  //HOME
+                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
-                                  //debug_path_("/share/goa-tz/people_detection/debug/"),
+                                  debug_path_("/share/goa-tz/people_detection/debug/"),
                                   kinect(VirtualCamera::KINECT)
 {
-  //HOME
-  std::string eye_r_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_righteye.xml";
-  //std::string eye_r_path="/home/goa-tz/data/haarcascade_righteye_2splits.xml";
-  //IPA
-  //std::string eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
-              eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
-              eye_r_storage_=cvCreateMemStorage(0);
+  bool home=false;
 
-  //HOME
-  std::string eye_path="/usr/local/share/OpenCV/haarcascades/haarcascade_eye.xml";
-  //IPA
-  //std::string eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-              eye_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_path.c_str(),0,0,0);
-              eye_storage_=cvCreateMemStorage(0);
+  std::string eye_r_path,eye_path,eye_l_path,nose_path,mouth_path;
+  if(home)
+  {
+    eye_r_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_righteye.xml";
+    eye_path="/usr/local/share/OpenCV/haarcascades/haarcascade_eye.xml";
+    eye_l_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
+    nose_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
+    mouth_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
 
-  //HOME
-  std::string eye_l_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
-  //IPA
-  //std::string eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-              eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
-              eye_l_storage_=cvCreateMemStorage(0);
+  }
+  else
+  {
+     eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
+     eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+     eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+     nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
+     mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
+  }
+  eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
+  eye_r_storage_=cvCreateMemStorage(0);
 
-  //HOME
-  std::string nose_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
-  //IPA
-  //std::string nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
+  eye_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_path.c_str(),0,0,0);
+  eye_storage_=cvCreateMemStorage(0);
+
+  eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
+  eye_l_storage_=cvCreateMemStorage(0);
+
   nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
   nose_storage_=cvCreateMemStorage(0);
 
-  //HOME
-  std::string mouth_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
-  //IPA
-  //std::string mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
-              mouth_cascade_=(CvHaarClassifierCascade*) cvLoad(mouth_path.c_str(),0,0,0);
-              mouth_storage_=cvCreateMemStorage(0);
+  mouth_cascade_=(CvHaarClassifierCascade*) cvLoad(mouth_path.c_str(),0,0,0);
+  mouth_storage_=cvCreateMemStorage(0);
 }
 
 
@@ -60,10 +60,10 @@ FaceNormalizer::~FaceNormalizer(){
 void FaceNormalizer::set_norm_face(cv::Size& input_size)
 {
 
-  f_norm_img_.lefteye.x=0.3     *input_size.width     ;
+  f_norm_img_.lefteye.x=0.2     *input_size.width     ;
   f_norm_img_.lefteye.y=0.25      *input_size.height     ;
 
-  f_norm_img_.righteye.x=0.7    *input_size.width     ;
+  f_norm_img_.righteye.x=0.8    *input_size.width     ;
   f_norm_img_.righteye.y=0.25     *input_size.height     ;
 
   f_norm_img_.mouth.x=0.5        *input_size.width     ;
@@ -98,7 +98,8 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset
   if(!features_from_color(img)) return false;
 
   std::cout<<"SAVING SCENE"<<std::endl;
-  std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
+  //std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
+  std::string path_root="/share/goa-tz/people_detection/debug/scene";
   std::string path= path_root;
   path.append(boost::lexical_cast<std::string>(epoch_ctr));
   save_scene(depth,img,offset,path);

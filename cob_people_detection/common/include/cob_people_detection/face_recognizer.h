@@ -141,6 +141,7 @@ public:
 	/// @param face_images A vector containing all training images
 	/// @return Return code
 	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps);
+	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images);
 
 	/// Trains a model for the recognition of a given set of faces.
 	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
@@ -212,6 +213,7 @@ protected:
 	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
 	/// @return Return code
 	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<std::string>& identification_labels_to_train);
+	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps, std::vector<std::string>& identification_labels_to_train);
 //----------------------------------------------------
 //----------------------------------------------------
 
@@ -220,6 +222,7 @@ protected:
   SubspaceAnalysis::FishEigFaces eff_;
   std::vector<int> m_label_num;
   int             m_rec_method;
+  std::vector<bool> dm_exist;
 //----------------------------------------------------
 //----------------------------------------------------
 

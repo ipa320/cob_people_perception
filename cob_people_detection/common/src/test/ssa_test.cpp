@@ -12,11 +12,11 @@ int main(int argc, const char *argv[])
 
 
   //HOME
-  std::string training_set_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/training_set_list";
-  std::string probe_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/probe_file_list";
+  //std::string training_set_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/training_set_list";
+  //std::string probe_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/probe_file_list";
   //IPA
-  //std::string training_set_path="/share/goa-tz/people_detection/eval/training_set_list";
-  //std::string probe_file_path="/share/goa-tz/people_detection/eval/probe_file_list";
+  std::string training_set_path="/share/goa-tz/people_detection/eval/training_set_list";
+  std::string probe_file_path="/share/goa-tz/people_detection/eval/probe_file_list";
 
 
   //read probe file
