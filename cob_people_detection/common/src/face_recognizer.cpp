@@ -156,8 +156,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   cv::Mat roi_depth;
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size,offset,roi_depth)) return ipa_Utils::RET_FAILED;
-  //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
-
 
 
 	// Save image
@@ -265,11 +263,12 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vec
 unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::FishEigFaces& eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
 {
   //TODO set ss_dim dynamically
-  int ss_dim =10;
+  int ss_dim =1;
 
   std::vector<cv::Mat> in_vec;
   for(int i=0;i<data.size();i++)
   {
+
     cv::Mat temp=data[i];
     temp.convertTo(temp,CV_64FC1);
     in_vec.push_back(temp);
@@ -313,23 +312,32 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
     //make label vec for depth
     depth_str_labels.clear();
+    depth_str_labels_unique.clear();
     depth_num_labels.clear();
+    
     int lbl=0;
     for(int i=0;i<dm_exist.size();i++)
     {
       if(dm_exist[i])
        {
         depth_str_labels.push_back(m_face_labels[i]);
+        bool unique=true;
+        for(int k=0;k<depth_str_labels_unique.size();k++)
+        {
+          if(depth_str_labels_unique[k].compare(m_face_labels[i])==0) unique=false;
+        }
+        if(unique==true) depth_str_labels_unique.push_back(m_face_labels[i]);
        }
     }
+
   for(int li=0;li<depth_str_labels.size();li++)
   {
-    for(int lj=0;lj<identification_labels_to_train.size();lj++)
+    for(int lj=0;lj<depth_str_labels_unique.size();lj++)
     {
-      if(identification_labels_to_train[lj].compare(depth_str_labels[li])==0) depth_num_labels.push_back(lj);
-     
+      if(depth_str_labels_unique[lj].compare(depth_str_labels[li])==0) depth_num_labels.push_back(lj);
     }
   }
+  
 
   }
   else if(!m_depth_mode)
@@ -387,8 +395,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
 
   //--> INIT MODEL
-  initModel(eff_,face_depthmaps,depth_num_labels);
-  //initModel(eff_,face_images,m_label_num);
+  if(face_depthmaps.size()>0)initModel(eff_depth,face_depthmaps,depth_num_labels);
+  
+  if(face_images.size()>0)initModel(eff_color,face_images,m_label_num);
   //TODO still necessary=
   //eff_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
 
@@ -660,7 +669,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
      resized_8U1.convertTo(resized_8U1,CV_64FC1);
 
       cv::Mat coeff_arr;
-        eff_.projectToSubspace(resized_8U1,coeff_arr,DFFS);
+        eff_color.projectToSubspace(resized_8U1,coeff_arr,DFFS);
 
 		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
     //TODO temporary
@@ -674,9 +683,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		{
 
       int res_label;
-      eff_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
-      //identification_labels.push_back(m_current_label_set[res_label]);
-      identification_labels.push_back(depth_str_labels[res_label]);
+      eff_color.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
+      identification_labels.push_back(m_current_label_set[res_label]);
 		}
 	}
 
@@ -713,30 +721,46 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
      double DFFS;
      cv::Mat temp,temp2;
      depth_crop.convertTo(depth_crop,CV_64FC1);
-     depth_crop.convertTo(temp2,CV_8UC1,255);
-     cv::equalizeHist(temp2,temp2);
-     cv::imshow("temp",temp2);
-     cv::waitKey(10);
+     color_crop.convertTo(color_crop,CV_64FC1);
+     //depth_crop.convertTo(temp2,CV_8UC1,255);
+     //cv::equalizeHist(temp2,temp2);
+     //cv::imshow("temp",temp2);
+     //cv::waitKey(10);
 
-      cv::Mat coeff_arr;
-        eff_.projectToSubspace(depth_crop,coeff_arr,DFFS);
+      cv::Mat coeff_arr_color,coeff_arr_depth;
+      int res_label_color, res_label_depth;
+      std::string class_depth,class_color;
 
-		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
-    //TODO temporary
-    DFFS=0;
-		if(DFFS > m_threshold_facespace)
-		{
-			// no face
-			identification_labels.push_back("No face");
-		}
-		else
-		{
+      if(eff_depth.trained)
+      {
+        std::cout<<"classification with depth"<<std::endl;
+      eff_depth.projectToSubspace(depth_crop,coeff_arr_depth,DFFS);
+      eff_depth.classify(coeff_arr_depth,SubspaceAnalysis::CLASS_SVM,res_label_depth);
+      class_depth=depth_str_labels[res_label_depth];
+      }
+      if(eff_color.trained)
+      {
+        std::cout<<"classification with color"<<std::endl;
+      eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
+      eff_color.classify(coeff_arr_color,SubspaceAnalysis::CLASS_SVM,res_label_color);
+      class_color=m_current_label_set[res_label_color];
+      }
 
-      int res_label;
-      eff_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
-      //identification_labels.push_back(m_current_label_set[res_label]);
-      identification_labels.push_back(depth_str_labels[res_label]);
-		}
+	//	if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
+  //  //TODO temporary
+  //  DFFS=0;
+	//	if(DFFS > m_threshold_facespace)
+	//	{
+	//		// no face
+	//		identification_labels.push_back("No face");
+	//	}
+	//	else
+	//	{
+
+      std::cout<<"CLASS COLOR= "<<class_color<<std::endl;
+      std::cout<<"CLASS DEPTH= "<<class_depth<<std::endl;
+      identification_labels.push_back(class_color);
+		//}
 	}
 
 

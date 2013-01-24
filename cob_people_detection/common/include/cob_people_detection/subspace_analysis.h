@@ -42,7 +42,7 @@ namespace SubspaceAnalysis{
   class XFaces
   {
     public:
-    XFaces():svm_trained_(false),knn_trained_(false){};
+    XFaces():trained(false),svm_trained_(false),knn_trained_(false){};
 
     virtual ~XFaces(){};
     // TODO: temporary fix - use this one for sqare sized input images
@@ -52,6 +52,7 @@ namespace SubspaceAnalysis{
     void classify(cv::Mat& coeff_arr,Classifier method,int& class_index);
     void projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS);
     void releaseModel();
+    bool trained;
 
     protected:
     void project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,cv::Mat& coeff_mat);

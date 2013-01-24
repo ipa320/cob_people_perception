@@ -193,11 +193,13 @@ protected:
 // DEPTH
   SubspaceAnalysis::FishEigFaces depth_eff_;
   std::vector<std::string> depth_str_labels;
+  std::vector<std::string> depth_str_labels_unique;
   std::vector<int> depth_num_labels;
 //
   FaceNormalizer face_normalizer_;
 
-  SubspaceAnalysis::FishEigFaces eff_;
+  SubspaceAnalysis::FishEigFaces eff_depth;
+  SubspaceAnalysis::FishEigFaces eff_color;
   std::vector<int> m_label_num;
   int             m_rec_method;
   std::vector<bool> dm_exist;

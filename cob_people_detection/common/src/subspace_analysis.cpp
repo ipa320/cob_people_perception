@@ -686,6 +686,7 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
   proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
 
   project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
+  this->trained=true;
 
   return true;
 

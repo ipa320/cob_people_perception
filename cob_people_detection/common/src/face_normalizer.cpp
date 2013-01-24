@@ -2,7 +2,7 @@
 
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
-                                  debug_(true),
+                                  debug_(false),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
@@ -133,7 +133,8 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   }
 
   //geometric normalization
-  if(!normalize_geometry_depth(img,depth)) valid=false ;
+  //TODO : TEMPORARY DISABLING GEOM NORM
+  //if(!normalize_geometry_depth(img,depth)) valid=false ;
   if(debug_)dump_img(img,"1_geometryRGBD");
   if(debug_)std::cout<<"1 - normalized geometry"<<std::endl;
 
@@ -157,6 +158,10 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(!normalize_radiometry(img)) valid=false;
   if(debug_)dump_img(img,"4_radiometry");
   if(debug_)std::cout<<"4 - normalized geometry"<<std::endl;
+
+  //TODO TEMP GREYSCALING
+  if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
+  
 
 
 
@@ -649,7 +654,6 @@ bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,cv::Vec2f& offset
 void FaceNormalizer::processDM(cv::Mat& dm_xyz,cv::Mat& dm)
 {
   //reducing to depth ( z - coordinate only)
-  std::cout<<"channels dm-xyz"<<dm_xyz.channels()<<std::endl;
   std::vector<cv::Mat> cls;
   cv::split(dm_xyz,cls);
   dm=cls[2];
