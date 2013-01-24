@@ -107,7 +107,7 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset
 
   return true;
 }
-bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_size,cv::Vec2f& offset)
+bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_size,cv::Vec2f& offset,cv::Mat& depth_res)
 {
   // set members to current values
   norm_size_=norm_size;
@@ -139,6 +139,9 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
 
   cv::cvtColor(img,img,CV_BGR2GRAY);
   if(valid)despeckle<unsigned char>(img,img);
+  //reducing the depth map
+  processDM(depth,depth_res);
+  if(valid)despeckle<float>(depth,depth);
 
   if(debug_ && valid)dump_img(img,"2_despeckle");
   if(debug_ && valid)std::cout<<"2 - filtered"<<std::endl;
@@ -146,6 +149,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   //resizing
   cv::resize(img,img,norm_size_,0,0);
   cv::resize(depth,depth,norm_size_,0,0);
+  cv::resize(depth_res,depth_res,norm_size_,0,0);
   if(debug_)dump_img(img,"3_resized");
   if(debug_)std::cout<<"3 - resized"<<std::endl;
 
@@ -333,16 +337,13 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
 
   cv::Mat res=cv::Mat::zeros(480,640,CV_8UC3);
-  cv::Mat dmres=cv::Mat::zeros(480,640,CV_32FC1);
+  cv::Mat dmres=cv::Mat::zeros(480,640,CV_32FC3);
   kinect.sample_pc(depth,img,res,dmres);
 
   cv::Rect crop(xoffset,yoffset,img.cols,img.rows);
   res(crop).copyTo(img);
   cv::Mat dmcrop;
-  dmres(crop).copyTo(dmcrop);
-
-  processDM(dmcrop);
-  dmcrop.copyTo(depth);
+  dmres(crop).copyTo(depth);
 
   if(debug_)dump_img(res,"virtual_full");
 
@@ -645,8 +646,15 @@ bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,cv::Vec2f& offset
 
 
 
-void FaceNormalizer::processDM(cv::Mat& dm)
+void FaceNormalizer::processDM(cv::Mat& dm_xyz,cv::Mat& dm)
 {
+  //reducing to depth ( z - coordinate only)
+  std::cout<<"channels dm-xyz"<<dm_xyz.channels()<<std::endl;
+  std::vector<cv::Mat> cls;
+  cv::split(dm_xyz,cls);
+  dm=cls[2];
+
+  //reduce z values
   float minval=1000.0;
   float mean=0.0;
   int mean_ctr=0;
@@ -676,7 +684,6 @@ void FaceNormalizer::processDM(cv::Mat& dm)
 
   }
 
-  despeckle<float>(dm,dm);
 
 }
 

@@ -151,10 +151,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Rect combined_face_bounding_box=cv::Rect(face_bounding_box.x+head_bounding_box.x,face_bounding_box.y+head_bounding_box.y,face_bounding_box.width,face_bounding_box.height);
 
 	cv::Mat roi_color = color_image(combined_face_bounding_box);
-	cv::Mat roi_depth = depth_image(face_bounding_box).clone();
+	cv::Mat roi_depth_xyz = depth_image(face_bounding_box).clone();
   cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
-  if(!face_normalizer_.normalizeFace(roi_color,roi_depth,norm_size,offset)) return ipa_Utils::RET_FAILED;
+  cv::Mat roi_depth;
+  if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size,offset,roi_depth)) return ipa_Utils::RET_FAILED;
   //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
 
 
@@ -182,10 +183,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Rect combined_face_bounding_box=cv::Rect(face_bounding_box.x+head_bounding_box.x,face_bounding_box.y+head_bounding_box.y,face_bounding_box.width,face_bounding_box.height);
 
 	cv::Mat roi_color = color_image(combined_face_bounding_box);
-	cv::Mat roi_depth = depth_image(face_bounding_box);
+	cv::Mat roi_depth_xyz= depth_image(face_bounding_box);
   cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
-  if(!face_normalizer_.normalizeFace(roi_color,roi_depth,norm_size,offset)) return ipa_Utils::RET_FAILED;
+  cv::Mat roi_depth;
+  if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size,offset,roi_depth)) return ipa_Utils::RET_FAILED;
   //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
   cv::imshow("FACE TO ADD",roi_color);
   cv::waitKey(50);
@@ -695,25 +697,29 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
 	identification_labels.clear();
 
-	cv::Mat resized_8U1;
 	cv::Size resized_size(m_eigenvectors[0].size());
 	for(int i=0; i<(int)face_coordinates.size(); i++)
 	{
 		cv::Rect face = face_coordinates[i];
-		convertAndResize(depth_image, resized_8U1, face, resized_size);
+		//convertAndResize(depth_image, resized_8U1, face, resized_size);
+    cv::Vec2f offset = cv::Vec2f(face.x,face.y);
+    cv::Mat color_crop=color_image(face);
+    cv::Mat depth_crop_xyz=depth_image(face);
 
+     cv::Mat depth_crop;
+    if(!face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,resized_size,offset,depth_crop)) ;
 
-
-
-     std::vector<cv::Mat> cls;
-     cv::split(resized_8U1,cls);
 
      double DFFS;
      cv::Mat temp,temp2;
-     cls[2].convertTo(temp,CV_64FC1);
+     depth_crop.convertTo(depth_crop,CV_64FC1);
+     depth_crop.convertTo(temp2,CV_8UC1,255);
+     cv::equalizeHist(temp2,temp2);
+     cv::imshow("temp",temp2);
+     cv::waitKey(10);
 
       cv::Mat coeff_arr;
-        eff_.projectToSubspace(temp,coeff_arr,DFFS);
+        eff_.projectToSubspace(depth_crop,coeff_arr,DFFS);
 
 		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
     //TODO temporary
@@ -730,7 +736,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
       eff_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
       //identification_labels.push_back(m_current_label_set[res_label]);
       identification_labels.push_back(depth_str_labels[res_label]);
-      std::cout<<"using depth"<<std::endl;
 		}
 	}
 

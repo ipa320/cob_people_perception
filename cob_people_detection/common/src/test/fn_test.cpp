@@ -28,11 +28,12 @@ int main(int argc, const char *argv[])
   fn.dump_img(wmat1,"original");
   cv::Size norm_size=cv::Size(120,120);
   //cv::cvtColor(wmat1,wmat1,CV_RGB2BGR);
-  fn.normalizeFace(wmat1,depth,norm_size,offset);
+  cv::Mat depth_res;
+  fn.normalizeFace(wmat1,depth,norm_size,offset,depth_res);
   fn.dump_img(wmat1,"processedRGBD");
   depth.convertTo(depth,CV_8UC1,255);
-  cv::equalizeHist(depth,depth);
-  fn.dump_img(depth,"processedDEPTH");
+  cv::equalizeHist(depth_res,depth_res);
+  fn.dump_img(depth_res,"processedDEPTH");
  // fn.normalizeFace(wmat2,rows);
  // fn.dump_img(wmat2,"processedRGB");
 

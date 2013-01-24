@@ -116,7 +116,7 @@ class FaceNormalizer{
 
 
     bool normalizeFace( cv::Mat & img,cv::Size& norm_size);
-    bool normalizeFace( cv::Mat & img,cv::Mat& depth,cv::Size& norm_size,cv::Vec2f& offset);
+    bool normalizeFace( cv::Mat & img,cv::Mat& depth,cv::Size& norm_size,cv::Vec2f& offset,cv::Mat& depth_res);
     void set_norm_face(cv::Size& input_size);
     bool normalize_geometry(cv::Mat& img,TRAFO model);
     void get_transform_affine(cv::Mat& trafo);
@@ -129,7 +129,7 @@ class FaceNormalizer{
     bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
     bool features_from_depth(cv::Mat& depth);
     //void despeckle(cv::Mat& src,cv::Mat& dst);
-    void processDM(cv::Mat& dm);
+    void processDM(cv::Mat& dm,cv::Mat& dm_res);
 
     // Methods for radiometric normalization
     bool normalize_radiometry(cv::Mat& img);

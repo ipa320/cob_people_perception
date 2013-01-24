@@ -165,7 +165,7 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
          else
           {
             img.at<cv::Vec3b>(ty,tx)=(*pc_rgb_ptr);
-            depth_map.at<float>(ty,tx)=((*pc_ptr)[2]);
+            depth_map.at<cv::Vec3f>(ty,tx)=((*pc_ptr));
           }
             occ_grid.at<unsigned char>(ty,tx)+=50;
        }
