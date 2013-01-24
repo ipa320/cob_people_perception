@@ -269,10 +269,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::Fi
   for(int i=0;i<data.size();i++)
   {
     cv::Mat temp=data[i];
-    //temp.convertTo(temp,CV_8UC1,255);
-    //cv::equalizeHist(temp,temp);
-    //cv::imshow("temp",temp);
-    //cv::waitKey(0);
     temp.convertTo(temp,CV_64FC1);
     in_vec.push_back(temp);
   }
@@ -316,16 +312,25 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
     //make label vec for depth
     depth_str_labels.clear();
     depth_num_labels.clear();
+    int lbl=0;
     for(int i=0;i<dm_exist.size();i++)
     {
       if(dm_exist[i])
        {
         depth_str_labels.push_back(m_face_labels[i]);
-        depth_num_labels.push_back(i);
        }
     }
+  for(int li=0;li<depth_str_labels.size();li++)
+  {
+    for(int lj=0;lj<identification_labels_to_train.size();lj++)
+    {
+      if(identification_labels_to_train[lj].compare(depth_str_labels[li])==0) depth_num_labels.push_back(lj);
+     
+    }
   }
-  else
+
+  }
+  else if(!m_depth_mode)
   {
 	loadTrainingData(face_images,identification_labels_to_train);
   }
@@ -334,22 +339,27 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	m_current_label_set = identification_labels_to_train;
 
 	// convert face_images to right format if necessary
-	cv::Size new_size(m_eigenface_size, m_eigenface_size);
-	for (uint i=0; i<face_images.size(); i++)
-	{
-		// convert to grayscale if necessary
-		if (face_images[i].type() == CV_8UC3)
-		{
-			cv::Mat temp = face_images[i];
-			cv::cvtColor(temp, face_images[i], CV_BGR2GRAY);
-		}
-		// rescale if necessary to m_eigenface_size
-		if (face_images[i].cols != m_eigenface_size || face_images[i].rows != m_eigenface_size)
-		{
-			cv::Mat temp = face_images[i];
-			cv::resize(temp, face_images[i], new_size);
-		}
-	}
+	//cv::Size new_size(m_eigenface_size, m_eigenface_size);
+	//for (int i=0; i<face_images.size(); i++)
+	//{
+	//	// convert to grayscale if necessary
+	//	if (face_images[i].type() == CV_8UC3)
+	//	{
+	//		cv::Mat temp = face_images[i];
+	//		cv::cvtColor(temp, face_images[i], CV_BGR2GRAY);
+	//	}
+	//	// rescale if necessary to m_eigenface_size
+	//	if (face_images[i].cols != m_eigenface_size || face_images[i].rows != m_eigenface_size)
+	//	{
+	//		cv::Mat temp = face_images[i];
+  //    //cv::imshow("k",temp);
+  //    //cv::waitKey(0);
+  //    std::cout<<"i="<<i<<std::endl;
+  //    std::cout<<"new_size"<<new_size.width<<" "<<new_size.height<<std::endl;
+  //    std::cout<<"face_i"<<temp.rows<<" "<<temp.cols<<std::endl;
+	//		cv::resize(temp, face_images[i], new_size);
+	//	}
+	//}
 
 	// PCA
 	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size()-1);
@@ -671,6 +681,62 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
 	return ipa_Utils::RET_OK;
 }
+unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_image,cv::Mat& depth_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels)
+{
+	// secure this function with a mutex
+	boost::lock_guard<boost::mutex> lock(m_data_mutex);
+
+	int number_eigenvectors = m_eigenvectors.size();
+	if (number_eigenvectors == 0)
+	{
+		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
+
+	identification_labels.clear();
+
+	cv::Mat resized_8U1;
+	cv::Size resized_size(m_eigenvectors[0].size());
+	for(int i=0; i<(int)face_coordinates.size(); i++)
+	{
+		cv::Rect face = face_coordinates[i];
+		convertAndResize(depth_image, resized_8U1, face, resized_size);
+
+
+
+
+     std::vector<cv::Mat> cls;
+     cv::split(resized_8U1,cls);
+
+     double DFFS;
+     cv::Mat temp,temp2;
+     cls[2].convertTo(temp,CV_64FC1);
+
+      cv::Mat coeff_arr;
+        eff_.projectToSubspace(temp,coeff_arr,DFFS);
+
+		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
+    //TODO temporary
+    DFFS=0;
+		if(DFFS > m_threshold_facespace)
+		{
+			// no face
+			identification_labels.push_back("No face");
+		}
+		else
+		{
+
+      int res_label;
+      eff_.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
+      //identification_labels.push_back(m_current_label_set[res_label]);
+      identification_labels.push_back(depth_str_labels[res_label]);
+      std::cout<<"using depth"<<std::endl;
+		}
+	}
+
+
+	return ipa_Utils::RET_OK;
+}
 
 
 
@@ -681,7 +747,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::convertAndResize(cv::Mat& img,
   resized=img(face);
   cv::resize(resized,resized,new_size);
 
-	cv::cvtColor(resized, resized, CV_BGR2GRAY);
+	//cv::cvtColor(resized, resized, CV_BGR2GRAY);
 
 	return ipa_Utils::RET_OK;
 }
@@ -967,6 +1033,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			std::string img_path = m_data_directory + (std::string)fileStorage[tag_image.str().c_str()];
 			std::string dm_path = m_data_directory + (std::string)fileStorage[tag_dm.str().c_str()];
 			cv::Mat temp = cv::imread(img_path.c_str(),-1);
+      //cv::imshow("T",temp);
+      //cv::waitKey(0);
 			face_images.push_back(temp);
 
       if(dm_path.compare(m_data_directory))

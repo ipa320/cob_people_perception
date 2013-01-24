@@ -110,7 +110,7 @@ unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color
 	for (unsigned int i=0; i<color_images.size(); i++)
 	{
 		identification_labels[i].resize(face_coordinates[i].size());
-		unsigned long result_state = recognizeFace(color_images[i], face_coordinates[i], identification_labels[i]);
+		unsigned long result_state = recognizeFace(color_images[i],depth_images[i], face_coordinates[i], identification_labels[i]);
 		if (result_state == ipa_Utils::RET_FAILED)
 			return ipa_Utils::RET_FAILED;
 	}

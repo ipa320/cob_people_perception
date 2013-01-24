@@ -168,6 +168,7 @@ protected:
 	/// @param identification_labels Vector of labels of classified faces, vector indices correspond with bounding boxes in face_coordinates
 	/// @return Return code
 	virtual unsigned long recognizeFace(cv::Mat& color_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels);
+	virtual unsigned long recognizeFace(cv::Mat& color_image,cv::Mat& depth_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels);
 
 	/// Function to find the closest face class
 	/// The function calculates the distance of each sample image to the trained face class

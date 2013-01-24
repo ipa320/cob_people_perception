@@ -389,7 +389,8 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	if (enable_face_recognition_ == true)
 	{
 		// recognize faces
-		unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
+		//unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
+		unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images,heads_depth_images, face_bounding_boxes, identification_labels);
 		if (result_state == ipa_Utils::RET_FAILED)
 		{
 			ROS_ERROR("FaceRecognizerNode::face_positions_callback: Please load a face recognition model at first.");

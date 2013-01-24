@@ -16,6 +16,7 @@
 namespace SubspaceAnalysis{
 
   void dump_matrix(cv::Mat& mat,std::string filename);
+  void condense_labels(std::vector<int>& labels);
 
 
   int unique_elements(std::vector<int> & vec);
