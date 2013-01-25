@@ -110,7 +110,7 @@ int main(int argc, const char *argv[])
 
   SubspaceAnalysis::FishEigFaces EFF;
 
-  EFF.init(img_vec,label_vec,ss_dim);
+  EFF.init(img_vec,label_vec,ss_dim,SubspaceAnalysis::METH_FISHER);
 
 
   for(int i=0;i<probe_mat_vec.size();i++)
