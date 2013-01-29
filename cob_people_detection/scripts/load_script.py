@@ -62,7 +62,7 @@ class dlg(wx.Frame):
 
 
     protocol_choice_txt=wx.StaticText(parent,-1,"Select Protocol")
-    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","manual selection"])
+    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection"])
 
     # visual feedback lists
     self.ts_glist=wx.ListBox(choices=[],id=-1,parent=parent,size=wx.Size(80,100))
@@ -143,6 +143,8 @@ class dlg(wx.Frame):
       if(self.protocol_choice.GetCurrentSelection()==0):
         self.process_leave_1_out()
       elif(self.protocol_choice.GetCurrentSelection()==1):
+        self.process_leave_half_out()
+      elif(self.protocol_choice.GetCurrentSelection()==2):
         self.process_manual()
 
   def OnReset(self,e):
@@ -168,6 +170,16 @@ class dlg(wx.Frame):
 #****************Internal Functions********************
 #*****************************************************
 
+  def process_leave_half_out(self):
+    self.reset_lists()
+    self.file_ops(self.make_ts_list)
+    self.file_ops(self.make_cl_list)
+    self.file_ops(self.leave_k_out,"half")
+    self.sync_lists()
+    self.print_lists()
+    os.chdir(self.bin_path)
+    os.system("./ssa_test")
+    os.chdir(self.cwd)
   def process_leave_1_out(self):
     self.reset_lists()
     self.file_ops(self.make_ts_list)
@@ -184,7 +196,6 @@ class dlg(wx.Frame):
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
     self.pf_list=[[] for i in range(len(self.cl_list))]
-    print self.pf_glist.GetItems()
     self.pf_list_format(self.pf_glist.GetItems())
 
     self.sync_lists()
@@ -230,14 +241,14 @@ class dlg(wx.Frame):
   def pf_list_format(self,file_list):
     for cl in xrange(len(self.ts_list)):
       for i in xrange(len(file_list)):
-        print "+++++++++**"
-        print self.ts_list[cl]
         if file_list[i] in self.ts_list[cl]:
-          print file_list[i]
           self.pf_list[cl].append(file_list[i])
 
   def leave_k_out(self,file_list_valid,k):
         num_samples=len(file_list_valid)
+        if(k is "half"):
+          k=num_samples/2
+        print k
         success_ctr=0
         rnd_list=list()
         pf_list=list()
