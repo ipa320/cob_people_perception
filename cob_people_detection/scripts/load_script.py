@@ -2,19 +2,26 @@
 import wx
 import os
 import sys
+import random
 
 
 class dlg(wx.Frame):
   def __init__(self):
+
+    # varables for gui
     #self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
     #self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
     self.base_path="/share/goa-tz/people_detection/eval/"
     self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
     self.cwd=os.getcwd()
     self.ts_dir_list = list()
-    self.pf_list = list()
-
     self.f=wx.Frame(None,title="Evaluation GUI",size=(650,500))
+
+    # variables for output
+    self.pf_list = list()
+    self.ts_list = list()
+    self.cl_list = list()
+
 
 
     self.makeLayout(self.f)
@@ -54,6 +61,9 @@ class dlg(wx.Frame):
     self.vis_btn=wx.Button(parent,-1,"Ok",(70,30))
 
 
+    protocol_choice_txt=wx.StaticText(parent,-1,"Select Protocol")
+    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","manual selection"])
+
     # visual feedback lists
     self.ts_glist=wx.ListBox(choices=[],id=-1,parent=parent,size=wx.Size(80,100))
     self.pf_glist=wx.ListBox(choices=[],id=-1,parent=parent,size=wx.Size(80,100))
@@ -73,6 +83,12 @@ class dlg(wx.Frame):
     sizer.Add(self.dir_btn,1)
     sizer.Add(self.del_dir_btn,1)
     sizer.Add(self.ts_glist,1,wx.EXPAND)
+
+
+    sizer.Add(protocol_choice_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
+    sizer.Add(self.protocol_choice,1)
+    sizer.Add(dummy,1,wx.EXPAND)
+
 
 
     sizer.Add(pf_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
@@ -113,7 +129,6 @@ class dlg(wx.Frame):
     if self.pf_dlg.ShowModal() == wx.ID_OK:
       temp_list= self.pf_dlg.GetPaths()
       for temp in temp_list:
-        self.pf_list.append(temp)
         self.pf_glist.Append(temp)
 
   def OnAddDir(self,e):
@@ -125,28 +140,131 @@ class dlg(wx.Frame):
 
   def OnProcess(self,e):
     if len(self.ts_dir_list)>0:
-      self.process()
-    os.chdir(self.bin_path)
-    os.system("./ssa_test")
-    os.chdir(self.cwd)
+      if(self.protocol_choice.GetCurrentSelection()==0):
+        self.process_leave_1_out()
+      elif(self.protocol_choice.GetCurrentSelection()==1):
+        self.process_manual()
 
   def OnReset(self,e):
-      self.reset()
+      self.delete_files()
 
 
   def OnResetList(self,e,l,gl):
     del l[:]
     gl.Clear()
 
-  def reset(self):
+  def delete_files(self):
     os.chdir(self.base_path)
     os.system("rm *")
-    self.pf_list=list()
-    self.ts_dir_list=list()
+
+  def reset_lists(self):
+    del self.ts_list[:]
+    del self.pf_list[:]
+    del self.cl_list[:]
 
 
 
-  def process(self):
+#*****************************************************
+#****************Internal Functions********************
+#*****************************************************
+
+  def process_leave_1_out(self):
+    self.reset_lists()
+    self.file_ops(self.make_ts_list)
+    self.file_ops(self.make_cl_list)
+    self.file_ops(self.leave_k_out,1)
+    self.sync_lists()
+    self.print_lists()
+    os.chdir(self.bin_path)
+    os.system("./ssa_test")
+    os.chdir(self.cwd)
+
+  def process_manual(self):
+    self.reset_lists()
+    self.file_ops(self.make_ts_list)
+    self.file_ops(self.make_cl_list)
+    self.pf_list=[[] for i in range(len(self.cl_list))]
+    print self.pf_glist.GetItems()
+    self.pf_list_format(self.pf_glist.GetItems())
+
+    self.sync_lists()
+    self.print_lists()
+    os.chdir(self.bin_path)
+    os.system("./ssa_test")
+    os.chdir(self.cwd)
+
+
+  def file_ops(self,fn=-1,add_param=False):
+
+    if fn ==-1:
+      def fn(x):
+        return x
+
+    for db in self.ts_dir_list:
+      db_path=db
+      os.chdir(db_path)
+
+      dir_list=os.listdir(".")
+      # enter directory - class
+      for dir in dir_list:
+        file_list_valid=list()
+        os.chdir(dir)
+        file_list_all=os.listdir(".")
+
+        # loop through all files
+        for file in file_list_all:
+          if file.endswith(".bmp") or file.endswith(".jpg") or file.endswith(".pgm") or file.endswith(".png"):
+            if file.endswith("Ambient.pgm"):
+              aaa=1
+            else:
+              # construct filepath
+              file_path=db_path+"/"+dir+"/"+file
+              file_list_valid.append(file_path)
+        if add_param==False:
+          fn(file_list_valid)
+        else:
+          fn(file_list_valid,add_param)
+        os.chdir(db_path)
+
+
+  def pf_list_format(self,file_list):
+    for cl in xrange(len(self.ts_list)):
+      for i in xrange(len(file_list)):
+        print "+++++++++**"
+        print self.ts_list[cl]
+        if file_list[i] in self.ts_list[cl]:
+          print file_list[i]
+          self.pf_list[cl].append(file_list[i])
+
+  def leave_k_out(self,file_list_valid,k):
+        num_samples=len(file_list_valid)
+        success_ctr=0
+        rnd_list=list()
+        pf_list=list()
+        while len(rnd_list)<k:
+          rnd_no=random.randint(0,num_samples-1)
+          if not rnd_no in rnd_list :
+            pf_list.append(file_list_valid[rnd_no])
+            rnd_list.append(rnd_no)
+        self.pf_list.append(pf_list)
+
+  def make_ts_list(self,file_list):
+      self.ts_list.append(file_list)
+
+  def make_cl_list(self,file_list):
+    class_name=os.path.basename(os.getcwd())
+    self.cl_list.append(class_name)
+
+
+  def sync_lists(self):
+    for c in xrange(len(self.ts_list)):
+      for s in self.pf_list[c]:
+        self.ts_list[c].remove(s)
+
+
+
+
+  def print_lists(self):
 
     print "[EVAL TOOL] creating lists"
     training_set_list_path=self.base_path+"training_set_list"
@@ -157,45 +275,22 @@ class dlg(wx.Frame):
     training_set_file_stream = open(training_set_list_path,"w")
     probe_file_stream = open(probe_file_list_path,"w")
     class_overview_stream = open(class_overview_path,"w")
-    #  zero based class index
-    class_index = 0
 
-    for db in self.ts_dir_list:
-      db_path=db
-      os.chdir(db_path)
+    for c in xrange(len(self.ts_list)):
+      for s in self.ts_list[c]:
+        training_set_file_stream.write(s)
+        training_set_file_stream.write("\n")
+      training_set_file_stream.write("$$\n")
 
-     ## TODO: Asser that only directories are chosen 
-      dir_list=os.listdir(".")
-
-      # enter directory - class
-      for dir in dir_list:
-        os.chdir(dir)
-        file_list_all=os.listdir(".")
-
-        # write class index 
-        class_overview_stream.write(dir+" - "+ str(class_index)+"\n")
-        class_index+=1
-
-        # loop through all files
-        for file in file_list_all:
-          if file.endswith(".bmp") or file.endswith(".jpg") or file.endswith(".pgm") or file.endswith(".png"):
-            if file.endswith("Ambient.pgm"):
-              aaa=1
-            else:
-              # construct filepath
-              file_path=db_path+"/"+dir+"/"+file
-              training_set_file_stream.write(file_path)
-              training_set_file_stream.write("\n")
-        training_set_file_stream.write("$$\n")
-        os.chdir(db_path)
-
-    # fill probe file list
-    for pf in self.pf_list:
-        probe_file_stream.write(pf)
+    for c in xrange(len(self.pf_list)):
+      for s in self.pf_list[c]:
+        probe_file_stream.write(s)
         probe_file_stream.write("\n")
 
-    os.chdir(self.cwd)
-    print "[EVAL TOOL] done"
+    for c in xrange(len(self.cl_list)):
+      o_str=str(c)+" - "+self.cl_list[c]+"\n"
+      class_overview_stream.write(o_str) 
+
 if __name__=="__main__":
   app= wx.App(False)
   dlg = dlg()
