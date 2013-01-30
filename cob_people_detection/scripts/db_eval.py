@@ -56,21 +56,27 @@ class dlg(wx.Frame):
     del_dir_btn_txt=wx.StaticText(parent,-1,"Delete Database")
     self.del_dir_btn=wx.Button(parent,-1,"Reset",(70,30))
 
-    reset_btn_txt=wx.StaticText(parent,-1,"Delete Config")
+    reset_btn_txt=wx.StaticText(parent,-1,"Delete All")
     self.reset_btn=wx.Button(parent,-1,"Reset",(70,30))
 
     ok_btn_txt=wx.StaticText(parent,-1,"Process Config")
     self.ok_btn=wx.Button(parent,-1,"Process",(70,30))
 
-    vis_btn_txt=wx.StaticText(parent,-1,"Visualize Results")
+    vis_btn_txt=wx.StaticText(parent,-1,"Visualize")
     self.vis_btn=wx.Button(parent,-1,"Ok",(70,30))
 
-    eval_btn_txt=wx.StaticText(parent,-1,"Evaluate ")
+    eval_btn_txt=wx.StaticText(parent,-1,"Evaluate")
     self.eval_btn=wx.Button(parent,-1,"Ok",(70,30))
 
 
     protocol_choice_txt=wx.StaticText(parent,-1,"Select Protocol")
     self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection"])
+
+    classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
+    self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS"])
+
+    method_choice_txt=wx.StaticText(parent,-1,"Select Method")
+    self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces"])
 
     # visual feedback lists
     self.ts_glist=wx.ListBox(choices=[],id=-1,parent=parent,size=wx.Size(80,100))
@@ -81,7 +87,7 @@ class dlg(wx.Frame):
 
     # Change to flexgridsizer
     ##sizer=wx.GridSizer(8,3,0,0)
-    sizer=wx.FlexGridSizer(8,3,0,0)
+    sizer=wx.FlexGridSizer(10,3,0,0)
     sizer.AddGrowableCol(2)
 
     sizer.Add(dir_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
@@ -109,20 +115,20 @@ class dlg(wx.Frame):
 
 
     sizer.Add(ok_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
-    sizer.Add(reset_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
-    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(method_choice_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(classifier_choice_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
 
     sizer.Add(self.ok_btn,1)
-    sizer.Add(self.reset_btn,1)
-    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(self.method_choice,1)
+    sizer.Add(self.classifier_choice,1)
 
     sizer.Add(vis_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
     sizer.Add(eval_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
-    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(reset_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
 
     sizer.Add(self.vis_btn,1)
     sizer.Add(self.eval_btn,1)
-    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(self.reset_btn,1)
 
     parent.SetSizer(sizer)
 #################### CALLBACK ###########################
@@ -150,13 +156,29 @@ class dlg(wx.Frame):
       self.ts_glist.Append(self.ts_dir_list[-1])
 
   def OnProcess(self,e):
+    # get method and classifer
+    method=str()
+    classifier=str()
+    if self.method_choice.GetCurrentSelection()==0:
+      method="FISHER"
+    elif self.method_choice.GetCurrentSelection()==1:
+      method="EIGEN"
+
+    if self.classifier_choice.GetCurrentSelection()==0:
+      classifier="KNN"
+    elif self.classifier_choice.GetCurrentSelection()==1:
+      classifier="SVM"
+    elif self.classifier_choice.GetCurrentSelection()==2:
+      classifier="DIFFS"
+
+
     if len(self.ts_dir_list)>0:
       if(self.protocol_choice.GetCurrentSelection()==0):
-        self.process_protocol(self.process_leave_1_out)
+        self.process_protocol(self.process_leave_1_out,method,classifier)
       elif(self.protocol_choice.GetCurrentSelection()==1):
-        self.process_protocol(self.process_leave_half_out)
+        self.process_protocol(self.process_leave_half_out,method,classifierr)
       elif(self.protocol_choice.GetCurrentSelection()==2):
-        self.process_protocol(self.process_manual)
+        self.process_protocol(self.process_manual,method,classifier)
 
   def OnReset(self,e):
       self.delete_files()
@@ -182,7 +204,7 @@ class dlg(wx.Frame):
 #****************Internal Functions********************
 #*****************************************************
 
-  def process_protocol(self,protocol_fn):
+  def process_protocol(self,protocol_fn,method,classifier):
     self.reset_lists()
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
@@ -191,7 +213,8 @@ class dlg(wx.Frame):
     self.sync_lists()
     self.print_lists()
     os.chdir(self.bin_path)
-    os.system("./ssa_test")
+    bin_str="./ssa_test "+method+" "+classifier
+    os.system(bin_str)
     os.chdir(self.cwd)
 
   def process_leave_half_out(self):
