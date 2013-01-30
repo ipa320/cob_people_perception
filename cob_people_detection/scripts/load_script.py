@@ -13,6 +13,10 @@ class dlg(wx.Frame):
     #self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
     self.base_path="/share/goa-tz/people_detection/eval/"
     self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+
+
+
+    self.output_path=os.path.join(self.base_path,"eval_tool_files")
     self.cwd=os.getcwd()
     self.ts_dir_list = list()
     self.f=wx.Frame(None,title="Evaluation GUI",size=(650,500))
@@ -33,6 +37,7 @@ class dlg(wx.Frame):
     self.ok_btn.Bind(wx.EVT_BUTTON,self.OnProcess)
     self.reset_btn.Bind(wx.EVT_BUTTON,self.OnReset)
     self.vis_btn.Bind(wx.EVT_BUTTON,self.OnRunVis)
+    self.eval_btn.Bind(wx.EVT_BUTTON,self.OnEvaluate)
 
 
     self.del_dir_btn.Bind(wx.EVT_BUTTON,lambda evt,gl=self.ts_glist,l=self.ts_dir_list :self.OnResetList(evt,l,gl))
@@ -59,6 +64,9 @@ class dlg(wx.Frame):
 
     vis_btn_txt=wx.StaticText(parent,-1,"Visualize Results")
     self.vis_btn=wx.Button(parent,-1,"Ok",(70,30))
+
+    eval_btn_txt=wx.StaticText(parent,-1,"Evaluate ")
+    self.eval_btn=wx.Button(parent,-1,"Ok",(70,30))
 
 
     protocol_choice_txt=wx.StaticText(parent,-1,"Select Protocol")
@@ -109,15 +117,18 @@ class dlg(wx.Frame):
     sizer.Add(dummy,1,wx.EXPAND)
 
     sizer.Add(vis_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
-    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(eval_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
     sizer.Add(dummy,1,wx.EXPAND)
 
     sizer.Add(self.vis_btn,1)
-    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(self.eval_btn,1)
     sizer.Add(dummy,1,wx.EXPAND)
 
     parent.SetSizer(sizer)
 #################### CALLBACK ###########################
+  def OnEvaluate(self,e):
+    self.evaluate()
+
   def OnRunVis(self,e):
     script_path=self.cwd+"/pvis.m"
     os.system("octave  %s"%script_path)
@@ -157,7 +168,8 @@ class dlg(wx.Frame):
 
   def delete_files(self):
     os.chdir(self.base_path)
-    os.system("rm *")
+    reset_str="rm "+os.path.join(self.output_path,"*")
+    os.system(reset_str)
 
   def reset_lists(self):
     del self.ts_list[:]
@@ -235,7 +247,6 @@ class dlg(wx.Frame):
         num_samples=len(file_list_valid)
         if(k is "half"):
           k=num_samples/2
-        print k
         success_ctr=0
         rnd_list=list()
         pf_list=list()
@@ -260,25 +271,27 @@ class dlg(wx.Frame):
         self.ts_list[c].remove(s)
 
 
-  def print_eval_file(self):
-    input_path=self.base_path+"classified_output"
-    eval_file_path=self.base_path+"eval_file"
-    tmp_list=["/a/x1.jpg","/a/x2.jpg"]
+  def evaluate(self):
+    input_path=os.path.join(self.output_path,"classified_output")
+    eval_file_path=os.path.join(self.output_path,"eval_file")
     with open(input_path,"r") as input_stream:
       classified_list=input_stream.read().splitlines()
 
     with open(eval_file_path,"w") as eval_file_stream:
-      for pf in xrange(len(tmp_list)):
-        o_str = tmp_list[pf]+" "+str(pf)+" "+classified_list[pf]+"\n"
-        eval_file_stream.write(o_str)
+      cont_ctr=0
+      for pf_l in xrange(len(self.pf_list)):
+        for pf in self.pf_list[pf_l]:
+          o_str = pf+" "+str(pf_l)+" "+str(classified_list[cont_ctr])+"\n"
+          eval_file_stream.write(o_str)
+          cont_ctr+=1
 
 
   def print_lists(self):
 
     print "[EVAL TOOL] creating lists"
-    training_set_list_path=self.base_path+"training_set_list"
-    probe_file_list_path=self.base_path+"probe_file_list"
-    class_overview_path=self.base_path+"class_overview"
+    training_set_list_path=os.path.join(self.output_path,"training_set_list")
+    probe_file_list_path=os.path.join(self.output_path,"probe_file_list")
+    class_overview_path=os.path.join(self.output_path,"class_overview")
 
 
     training_set_file_stream = open(training_set_list_path,"w")

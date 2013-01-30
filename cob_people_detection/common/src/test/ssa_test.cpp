@@ -10,13 +10,73 @@ int main(int argc, const char *argv[])
 {
 
 
+  // parse input arguments from command line
+  std::string method_str,classifier_str;
+  if (argc==1)
+  {
+    method_str="FISHER";
+    classifier_str="KNN";
+  }
+  else if (argc==2)
+  {
+    method_str=argv[1];
+    classifier_str="KNN";
+  }
+  else if (argc==3)
+  {
+    method_str=argv[1];
+    classifier_str=argv[2];
+  }
+
+
+
+  //  Configure input params for subspace analysis
+
+  SubspaceAnalysis::Method method;
+  SubspaceAnalysis::Classifier classifier;
+
+  if(!method_str.compare("FISHER"))
+  {
+    std::cout<<"FISHER"<<std::endl;
+    method = SubspaceAnalysis::METH_FISHER;
+  }
+  else if(!method_str.compare("EIGEN"))
+  {
+    std::cout<<"EIGEN"<<std::endl;
+    method = SubspaceAnalysis::METH_EIGEN;
+  }
+  else
+  {
+    std::cout<<"ERROR: invalid method - use FISHER or EIGEN"<<std::endl;
+  }
+
+  if(!classifier_str.compare("KNN"))
+  {
+    std::cout<<"KNN"<<std::endl;
+    classifier = SubspaceAnalysis::CLASS_KNN;
+  }
+  else if(!classifier_str.compare("DIFFS"))
+  {
+    std::cout<<"DIFFS"<<std::endl;
+    classifier = SubspaceAnalysis::CLASS_MIN_DIFFS;
+  }
+  else if(!classifier_str.compare("SVM"))
+  {
+    std::cout<<"SVM"<<std::endl;
+    classifier = SubspaceAnalysis::CLASS_SVM;
+  }
+  else
+  {
+    std::cout<<"ERROR: invalid classifier - use KNN or DIFFS or SVM"<<std::endl;
+  }
+
 
   //HOME
   //std::string training_set_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/training_set_list";
   //std::string probe_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/probe_file_list";
   //IPA
-  std::string training_set_path="/share/goa-tz/people_detection/eval/training_set_list";
-  std::string probe_file_path="/share/goa-tz/people_detection/eval/probe_file_list";
+  std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
+  std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
 
 
   //read probe file
@@ -27,7 +87,7 @@ int main(int argc, const char *argv[])
 
   while(probe_file_stream >> probe_file)
   {
-      std::cout<<probe_file<<std::endl;
+      //std::cout<<probe_file<<std::endl;
       probe_file_vec.push_back(probe_file);
 
       }
@@ -51,7 +111,7 @@ int main(int argc, const char *argv[])
       label++;
     }
     else
-    { 
+    {
       in_vec.push_back(img_file);
       label_vec.push_back(label);
     }
@@ -110,8 +170,12 @@ int main(int argc, const char *argv[])
 
   SubspaceAnalysis::FishEigFaces EFF;
 
-  EFF.init(img_vec,label_vec,ss_dim,SubspaceAnalysis::METH_FISHER);
+  EFF.init(img_vec,label_vec,ss_dim,method);
+  std::cout<<"EFF model computed"<<std::endl;
 
+  //open output file
+  std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
+  std::ofstream os(path.c_str() );
 
   for(int i=0;i<probe_mat_vec.size();i++)
   {
@@ -150,15 +214,26 @@ int main(int argc, const char *argv[])
   cv::Mat coeff_EFF;
   double DFFS_EFF;
   EFF.projectToSubspace(probe,coeff_EFF,DFFS_EFF);
-  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_SVM,c_EFF);
-  std::cout<<"class EFF SVM= "<<c_EFF<<std::endl;
-  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_KNN,c_EFF);
-  std::cout<<"class EFF KNN= "<<c_EFF<<std::endl;
-  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EFF);
-  std::cout<<"class EFF DIFFS= "<<c_EFF<<std::endl;
+  EFF.classify(coeff_EFF,classifier,c_EFF);
+//  std::cout<<"class EFF SVM= "<<c_EFF<<std::endl;
+//  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_KNN,c_EFF);
+//  std::cout<<"class EFF KNN= "<<c_EFF<<std::endl;
+//  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EFF);
+//  std::cout<<"class EFF DIFFS= "<<c_EFF<<std::endl;
+  os<<c_EFF<<"\n";
 
   SubspaceAnalysis::dump_matrix(coeff_EFF,"sampleEFF");
   }
+  os.close();
+
+
+  std::cout<<"EFF classified"<<std::endl;
+
+
+
+
+
+
 
 return 0;
 }
