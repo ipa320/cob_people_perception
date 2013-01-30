@@ -4,6 +4,9 @@ import os
 import sys
 import random
 
+import math
+from threading import Thread
+
 
 class dlg(wx.Frame):
   def __init__(self):
@@ -14,6 +17,7 @@ class dlg(wx.Frame):
     self.base_path="/share/goa-tz/people_detection/eval/"
     self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
 
+    self.Evaluator=Evaluator()
 
 
     self.output_path=os.path.join(self.base_path,"eval_tool_files")
@@ -72,6 +76,10 @@ class dlg(wx.Frame):
     protocol_choice_txt=wx.StaticText(parent,-1,"Select Protocol")
     self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection"])
 
+
+    spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
+    self.spin_rep=wx.SpinCtrl(parent,-1,size=wx.Size(50,30),min=1,max=20)
+
     classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
     self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS"])
 
@@ -101,7 +109,7 @@ class dlg(wx.Frame):
 
     sizer.Add(protocol_choice_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
     sizer.Add(self.protocol_choice,1)
-    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(self.spin_rep,1)
 
 
 
@@ -175,10 +183,22 @@ class dlg(wx.Frame):
     if len(self.ts_dir_list)>0:
       if(self.protocol_choice.GetCurrentSelection()==0):
         self.process_protocol(self.process_leave_1_out,method,classifier)
+        output_file=os.path.join(self.output_path,"eval_file")
+        for i in xrange(self.spin_rep.GetValue()):
+          self.process_protocol(self.process_leave_1_out,method,classifier)
+          os.rename(output_file,output_file+str(i))
+
       elif(self.protocol_choice.GetCurrentSelection()==1):
-        self.process_protocol(self.process_leave_half_out,method,classifierr)
+        self.process_protocol(self.process_leave_half_out,method,classifier)
+        output_file=os.path.join(self.output_path,"eval_file")
+        for i in xrange(self.spin_rep.GetValue()):
+          self.process_protocol(self.process_leave_half_out,method,classifier)
+          os.rename(output_file,output_file+str(i))
+
       elif(self.protocol_choice.GetCurrentSelection()==2):
         self.process_protocol(self.process_manual,method,classifier)
+
+    print self.Evaluator.calc_stats()
 
   def OnReset(self,e):
       self.delete_files()
@@ -209,13 +229,23 @@ class dlg(wx.Frame):
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
     protocol_fn()
-    #self.file_ops(self.leave_k_out,"half")
     self.sync_lists()
     self.print_lists()
     os.chdir(self.bin_path)
+
+
     bin_str="./ssa_test "+method+" "+classifier
-    os.system(bin_str)
+    t=Thread(target=self.run_bin,args=(bin_str,))
+    t.start()
+    t.join()
+
     os.chdir(self.cwd)
+    self.evaluate()
+
+
+  def run_bin(self,i_str):
+    os.system(i_str)
+
 
   def process_leave_half_out(self):
     self.file_ops(self.leave_k_out,"half")
@@ -295,6 +325,11 @@ class dlg(wx.Frame):
 
 
   def evaluate(self):
+
+    results=list()
+    groundtruth=list()
+    files=list()
+
     input_path=os.path.join(self.output_path,"classified_output")
     eval_file_path=os.path.join(self.output_path,"eval_file")
     with open(input_path,"r") as input_stream:
@@ -306,7 +341,13 @@ class dlg(wx.Frame):
         for pf in self.pf_list[pf_l]:
           o_str = pf+" "+str(pf_l)+" "+str(classified_list[cont_ctr])+"\n"
           eval_file_stream.write(o_str)
+
+          results.append(classified_list[cont_ctr])
+          groundtruth.append(pf_l)
+          files.append(pf)
+
           cont_ctr+=1
+    self.Evaluator.add_epoch(groundtruth,results,files)
 
 
   def print_lists(self):
@@ -336,8 +377,72 @@ class dlg(wx.Frame):
       o_str=str(c)+" - "+self.cl_list[c]+"\n"
       class_overview_stream.write(o_str) 
 
+#---------------------------------------------------------------------------------------
+#----------------------------EVALUATOR-----------------------------------------
+#---------------------------------------------------------------------------------------
+
+class epoch():
+  def __init__(self,gt,res,desc,ctr):
+    self.gt=gt
+    self.res=res
+    self.desc=desc
+    self.error_rate=float()
+
+    self.calc_error_rate()
+
+  def calc_error_rate(self):
+    error_list=list()
+    for i in xrange(len(self.gt)):
+        if (int(self.gt[i]) == int(self.res[i])):
+          error_list.append(0)
+        else:
+          error_list.append(1)
+
+    n=len(error_list)
+    self.error_rate=float(sum(error_list))/float(n)
+
+class Evaluator():
+  def __init__(self):
+    print "EVALUATOR instantiated"
+    self.epochs=list()
+    self.epoch_ctr=0
+
+
+  def add_epoch(self,gt,res,files):
+    e=epoch(gt,res,files,self.epoch_ctr)
+    self.epoch_ctr+=1
+    self.epochs.append(e)
+
+  def calc_stats(self):
+    n=float(len(self.epochs))
+    err=0.0
+    mean_error_rate=0.0
+    for e in self.epochs:
+      err+=e.error_rate
+    mean_error_rate=err/n
+
+    v2=0.0
+    for e in self.epochs:
+      v2+=(e.error_rate - mean_error_rate)*(e.error_rate - mean_error_rate)
+    sigma=math.sqrt(1/(n-1)*v2)
+
+
+    stats={"m_err":mean_error_rate,"sigma":sigma}
+    return stats
+
+
+
+
 
 if __name__=="__main__":
   app= wx.App(False)
   dlg = dlg()
+  #E=Evaluator()
+  #a=list([2,3,3,4])
+  #b=list([1,2,3,4])
+  #d=list([2,3,3,4])
+  #c=list(["1","2","3","4"])
+  #E.add_epoch(a,b,c)
+  #E.add_epoch(a,d,c)
+  #print E.mean_error_rate()
   app.MainLoop()
