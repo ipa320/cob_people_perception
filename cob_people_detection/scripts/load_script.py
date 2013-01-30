@@ -141,11 +141,11 @@ class dlg(wx.Frame):
   def OnProcess(self,e):
     if len(self.ts_dir_list)>0:
       if(self.protocol_choice.GetCurrentSelection()==0):
-        self.process_leave_1_out()
+        self.process_protocol(self.process_leave_1_out)
       elif(self.protocol_choice.GetCurrentSelection()==1):
-        self.process_leave_half_out()
+        self.process_protocol(self.process_leave_half_out)
       elif(self.protocol_choice.GetCurrentSelection()==2):
-        self.process_manual()
+        self.process_protocol(self.process_manual)
 
   def OnReset(self,e):
       self.delete_files()
@@ -170,40 +170,27 @@ class dlg(wx.Frame):
 #****************Internal Functions********************
 #*****************************************************
 
+  def process_protocol(self,protocol_fn):
+    self.reset_lists()
+    self.file_ops(self.make_ts_list)
+    self.file_ops(self.make_cl_list)
+    protocol_fn()
+    #self.file_ops(self.leave_k_out,"half")
+    self.sync_lists()
+    self.print_lists()
+    os.chdir(self.bin_path)
+    os.system("./ssa_test")
+    os.chdir(self.cwd)
+
   def process_leave_half_out(self):
-    self.reset_lists()
-    self.file_ops(self.make_ts_list)
-    self.file_ops(self.make_cl_list)
     self.file_ops(self.leave_k_out,"half")
-    self.sync_lists()
-    self.print_lists()
-    os.chdir(self.bin_path)
-    os.system("./ssa_test")
-    os.chdir(self.cwd)
+
   def process_leave_1_out(self):
-    self.reset_lists()
-    self.file_ops(self.make_ts_list)
-    self.file_ops(self.make_cl_list)
     self.file_ops(self.leave_k_out,1)
-    self.sync_lists()
-    self.print_lists()
-    os.chdir(self.bin_path)
-    os.system("./ssa_test")
-    os.chdir(self.cwd)
 
   def process_manual(self):
-    self.reset_lists()
-    self.file_ops(self.make_ts_list)
-    self.file_ops(self.make_cl_list)
     self.pf_list=[[] for i in range(len(self.cl_list))]
     self.pf_list_format(self.pf_glist.GetItems())
-
-    self.sync_lists()
-    self.print_lists()
-    os.chdir(self.bin_path)
-    os.system("./ssa_test")
-    os.chdir(self.cwd)
-
 
   def file_ops(self,fn=-1,add_param=False):
 
@@ -273,6 +260,17 @@ class dlg(wx.Frame):
         self.ts_list[c].remove(s)
 
 
+  def print_eval_file(self):
+    input_path=self.base_path+"classified_output"
+    eval_file_path=self.base_path+"eval_file"
+    tmp_list=["/a/x1.jpg","/a/x2.jpg"]
+    with open(input_path,"r") as input_stream:
+      classified_list=input_stream.read().splitlines()
+
+    with open(eval_file_path,"w") as eval_file_stream:
+      for pf in xrange(len(tmp_list)):
+        o_str = tmp_list[pf]+" "+str(pf)+" "+classified_list[pf]+"\n"
+        eval_file_stream.write(o_str)
 
 
   def print_lists(self):
@@ -301,6 +299,7 @@ class dlg(wx.Frame):
     for c in xrange(len(self.cl_list)):
       o_str=str(c)+" - "+self.cl_list[c]+"\n"
       class_overview_stream.write(o_str) 
+
 
 if __name__=="__main__":
   app= wx.App(False)
