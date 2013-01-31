@@ -16,7 +16,7 @@ int main(int argc, const char *argv[])
   std::string i_path;
   if(home)  i_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scenes/scene";
   else      i_path="/share/goa-tz/people_detection/debug/scenes/scene";
-  
+
   i_path.append(argv[1]);
   i_path.append(".xml");
 

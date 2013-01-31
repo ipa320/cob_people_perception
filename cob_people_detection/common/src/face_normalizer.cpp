@@ -191,6 +191,11 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
   if(!normalize_geometry(img,FaceNormalizer::AFFINE)) valid= false;
   if(debug_)dump_img(img,"1_geometryRGB");
 
+  if(img.channels()==3)
+  {
+  cv::cvtColor(img,img,CV_BGR2GRAY);
+  }
+
   //resizing
   cv::resize(img,img,norm_size_,0,0);
   if(debug_)dump_img(img,"2_resized");
@@ -205,14 +210,9 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
 
 bool FaceNormalizer::normalize_radiometry(cv::Mat& img)
 {
-  //cv::equalizeHist(img,img);
-  //TODO: temporary switch off
-  return true;
-  cv::Mat v_channel;
-  extractVChannel(img,v_channel);
 
-  dct(v_channel);
-  subVChannel(img,v_channel);
+  dct(img);
+  //logAbout(img);
 
   return true;
 }
@@ -262,11 +262,16 @@ void FaceNormalizer::eqHist(cv::Mat& img)
 void FaceNormalizer::dct(cv::Mat& img)
 {
 // Dct conversion on logarithmic image
+  cv::resize(img,img,cv::Size(img.cols*2,img.rows*2));
 
+  float mask_arr[]={-1, -1, -1 , -1 , 9 , -1, -1 , -1 ,-1};
+  cv::Mat mask=cv::Mat(3,3,CV_32FC1,mask_arr);
+  cv::filter2D(img,img,-1,mask);
   img.convertTo(img,CV_32FC1);
   cv::Scalar mu=cv::mean(img);
   double C_00=log(mu.val[0])*sqrt(img.cols*img.rows);
 
+  img=img+1;
   cv::log(img,img);
   cv::dct(img,img);
 
@@ -278,9 +283,23 @@ void FaceNormalizer::dct(cv::Mat& img)
   //--------------------------------------
 
   cv::idct(img,img);
-  cv::exp(img,img);
+  cv::normalize(img,img,0,255,cv::NORM_MINMAX);
+  cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
   img.convertTo(img,CV_8UC1);
 
+}
+
+void FaceNormalizer::logAbout(cv::Mat& img)
+{
+  img.convertTo(img,CV_32FC1);
+  float mask_arr[]={-1, -1, -1 , -1 , 9 , -1, -1 , -1 ,-1};
+  cv::Mat mask=cv::Mat(3,3,CV_32FC1,mask_arr);
+  cv::filter2D(img,img,-1,mask);
+  img=img+1;
+  cv::log(img,img);
+  cv::convertScaleAbs(img,img);
+  cv::normalize(img,img,0,255,cv::NORM_MINMAX);
+  img.convertTo(img,CV_8UC1);
 }
 
 
@@ -359,6 +378,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
 bool FaceNormalizer::normalize_geometry(cv::Mat& img,FaceNormalizer::TRAFO model)
 {
+  return true;
 
   // detect features
   if(!features_from_color(img))return false;

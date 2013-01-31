@@ -33,7 +33,6 @@ VirtualCamera::VirtualCamera(VirtualCamera::TYPE cam_type)
   //initialization of extrinsics
   rot=cv::Vec3f(0.0,0.0,0.0);
   trans=cv::Vec3f(0.0,0.0,0.0);
-  std::cout<<"KINECT INITIALIZED\n";
 }
 
 

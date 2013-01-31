@@ -80,11 +80,13 @@ class dlg(wx.Frame):
     #spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
     self.spin_rep=wx.SpinCtrl(parent,-1,size=wx.Size(50,30),min=1,max=20)
 
-    classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
+    #classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
     self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS"])
 
     method_choice_txt=wx.StaticText(parent,-1,"Select Method")
     self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces"])
+
+    self.nrm_checkbox=wx.CheckBox(parent,label="normalize")
 
     # visual feedback lists
     self.ts_glist=wx.ListBox(choices=[],id=-1,parent=parent,size=wx.Size(80,100))
@@ -123,12 +125,18 @@ class dlg(wx.Frame):
 
 
     sizer.Add(ok_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(dummy,1,wx.EXPAND)
     sizer.Add(method_choice_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
-    sizer.Add(classifier_choice_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    #sizer.Add(classifier_choice_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
 
     sizer.Add(self.ok_btn,1)
-    sizer.Add(self.method_choice,1)
-    sizer.Add(self.classifier_choice,1)
+    sizer.Add(dummy,1,wx.EXPAND)
+
+    bs=wx.BoxSizer(wx.HORIZONTAL)
+    bs.Add(self.method_choice,1)
+    bs.Add(self.classifier_choice,1)
+    bs.Add(self.nrm_checkbox,1)
+    sizer.Add(bs,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
 
     sizer.Add(vis_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
     sizer.Add(eval_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
@@ -199,6 +207,7 @@ class dlg(wx.Frame):
         self.process_protocol(self.process_manual,method,classifier)
 
     print self.Evaluator.calc_stats()
+    self.Evaluator.reset()
 
   def OnReset(self,e):
       self.delete_files()
@@ -234,7 +243,10 @@ class dlg(wx.Frame):
     os.chdir(self.bin_path)
 
 
-    bin_str="./ssa_test "+method+" "+classifier
+    if self.nrm_checkbox.GetValue()==True:
+      bin_str="./ssa_test "+method+" "+classifier+" 1"
+    else:
+      bin_str="./ssa_test "+method+" "+classifier
     t=Thread(target=self.run_bin,args=(bin_str,))
     t.start()
     t.join()
@@ -406,6 +418,10 @@ class Evaluator():
     print "EVALUATOR instantiated"
     self.epochs=list()
     self.epoch_ctr=0
+
+  def reset(self):
+    self.epoch_ctr=0
+    del self.epochs[:]
 
 
   def add_epoch(self,gt,res,files):

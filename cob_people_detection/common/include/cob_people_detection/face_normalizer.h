@@ -137,6 +137,7 @@ class FaceNormalizer{
     void subVChannel(cv::Mat& img,cv::Mat& V);
     void eqHist(cv::Mat& img);
     void dct(cv::Mat& img);
+    void logAbout(cv::Mat& img);
 
     // Debug/Output methods
     void dump_features(cv::Mat& img);
