@@ -60,10 +60,10 @@ FaceNormalizer::~FaceNormalizer(){
 void FaceNormalizer::set_norm_face(cv::Size& input_size)
 {
 
-  f_norm_img_.lefteye.x=0.2     *input_size.width     ;
+  f_norm_img_.lefteye.x=0.25     *input_size.width     ;
   f_norm_img_.lefteye.y=0.25      *input_size.height     ;
 
-  f_norm_img_.righteye.x=0.8    *input_size.width     ;
+  f_norm_img_.righteye.x=0.75    *input_size.width     ;
   f_norm_img_.righteye.y=0.25     *input_size.height     ;
 
   f_norm_img_.mouth.x=0.5        *input_size.width     ;
@@ -134,7 +134,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
 
   //geometric normalization
   //TODO : TEMPORARY DISABLING GEOM NORM
-  //if(!normalize_geometry_depth(img,depth)) valid=false ;
+  if(!normalize_geometry_depth(img,depth)) valid=false ;
   if(debug_)dump_img(img,"1_geometryRGBD");
   if(debug_)std::cout<<"1 - normalized geometry"<<std::endl;
 
@@ -142,7 +142,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(valid)despeckle<unsigned char>(img,img);
   //reducing the depth map
   processDM(depth,depth_res);
-  if(valid)despeckle<float>(depth,depth);
+  if(valid)despeckle<float>(depth_res,depth_res);
 
   if(debug_ && valid)dump_img(img,"2_despeckle");
   if(debug_ && valid)std::cout<<"2 - filtered"<<std::endl;
@@ -154,13 +154,12 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(debug_)dump_img(img,"3_resized");
   if(debug_)std::cout<<"3 - resized"<<std::endl;
 
+  if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
   // radiometric normalization
   if(!normalize_radiometry(img)) valid=false;
   if(debug_)dump_img(img,"4_radiometry");
   if(debug_)std::cout<<"4 - normalized geometry"<<std::endl;
 
-  //TODO TEMP GREYSCALING
-  if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
   
 
 
@@ -285,7 +284,10 @@ void FaceNormalizer::dct(cv::Mat& img)
   cv::idct(img,img);
   cv::normalize(img,img,0,255,cv::NORM_MINMAX);
   cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
+
   img.convertTo(img,CV_8UC1);
+
+  //cv::equalizeHist(img,img);
 
 }
 

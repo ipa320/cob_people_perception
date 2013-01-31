@@ -20,8 +20,8 @@ void preprocess(cv::Mat& img,FaceNormalizer* fn,bool normalize)
   if(normalize)
   {
     fn->normalizeFace(img,norm_size);
-    cv::imshow("normalized",img);
-    cv::waitKey(5);
+    //cv::imshow("normalized",img);
+    //cv::waitKey(5);
 
   }
   else
@@ -182,15 +182,21 @@ int main(int argc, const char *argv[])
  std::vector<cv::Mat> probe_mat_vec;
  for(int i =0 ;i<probe_file_vec.size();i++)
  {
+  std::stringstream ostr,nstr;
+  nstr<<"/share/goa-tz/people_detection/eval/picdump/";
+  ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
+
   cv::Mat probe_mat=cv::imread(probe_file_vec[i],0);
+
+  cv::imwrite(ostr.str().c_str(),probe_mat);
+
   preprocess(probe_mat,fn,normalizer);
 
-  std::stringstream ostr;
   cv::Mat oimg;
   probe_mat.convertTo(oimg,CV_8UC1);
-  cv::equalizeHist(oimg,oimg);
-  ostr<<"/share/goa-tz/people_detection/eval/picdump/normalized"<<i<<".jpg";
-  cv::imwrite(ostr.str().c_str(),oimg);
+  //cv::equalizeHist(oimg,oimg);
+  nstr<<i<<"_norm"<<".jpg";
+  cv::imwrite(nstr.str().c_str(),oimg);
 
 
   probe_mat_vec.push_back(probe_mat);

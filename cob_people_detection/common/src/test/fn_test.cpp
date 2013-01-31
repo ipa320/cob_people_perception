@@ -31,7 +31,7 @@ int main(int argc, const char *argv[])
   cv::Mat depth_res;
   fn.normalizeFace(wmat1,depth,norm_size,offset,depth_res);
   fn.dump_img(wmat1,"processedRGBD");
-  depth.convertTo(depth,CV_8UC1,255);
+  depth_res.convertTo(depth_res,CV_8UC1,255);
   cv::equalizeHist(depth_res,depth_res);
   fn.dump_img(depth_res,"processedDEPTH");
  // fn.normalizeFace(wmat2,rows);

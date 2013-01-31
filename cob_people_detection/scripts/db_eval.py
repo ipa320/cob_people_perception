@@ -78,7 +78,7 @@ class dlg(wx.Frame):
 
 
     #spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
-    self.spin_rep=wx.SpinCtrl(parent,-1,size=wx.Size(50,30),min=1,max=20)
+    self.spin_rep=wx.SpinCtrl(parent,-1,size=wx.Size(50,30),min=1,max=60)
 
     #classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
     self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS"])
