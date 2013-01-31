@@ -100,6 +100,7 @@ namespace SubspaceAnalysis{
       cv::Mat eigenvals;
       cv::Mat eigenvecs;
       cv::Mat mean;
+      int ss_dim_;
   };
 
 

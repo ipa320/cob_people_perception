@@ -77,7 +77,7 @@ class dlg(wx.Frame):
     self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection"])
 
 
-    spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
+    #spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
     self.spin_rep=wx.SpinCtrl(parent,-1,size=wx.Size(50,30),min=1,max=20)
 
     classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
@@ -184,14 +184,14 @@ class dlg(wx.Frame):
       if(self.protocol_choice.GetCurrentSelection()==0):
         self.process_protocol(self.process_leave_1_out,method,classifier)
         output_file=os.path.join(self.output_path,"eval_file")
-        for i in xrange(self.spin_rep.GetValue()):
+        for i in xrange(self.spin_rep.GetValue()-1):
           self.process_protocol(self.process_leave_1_out,method,classifier)
           os.rename(output_file,output_file+str(i))
 
       elif(self.protocol_choice.GetCurrentSelection()==1):
         self.process_protocol(self.process_leave_half_out,method,classifier)
         output_file=os.path.join(self.output_path,"eval_file")
-        for i in xrange(self.spin_rep.GetValue()):
+        for i in xrange(self.spin_rep.GetValue()-1):
           self.process_protocol(self.process_leave_half_out,method,classifier)
           os.rename(output_file,output_file+str(i))
 
@@ -421,13 +421,17 @@ class Evaluator():
       err+=e.error_rate
     mean_error_rate=err/n
 
-    v2=0.0
-    for e in self.epochs:
-      v2+=(e.error_rate - mean_error_rate)*(e.error_rate - mean_error_rate)
-    sigma=math.sqrt(1/(n-1)*v2)
+
+    if len(self.epochs)>1:
+      v2=0.0
+      for e in self.epochs:
+        v2+=(e.error_rate - mean_error_rate)*(e.error_rate - mean_error_rate)
+      sigma=math.sqrt(1/(n-1)*v2)
+    else:
+      sigma=0.0
 
 
-    stats={"m_err":mean_error_rate,"sigma":sigma}
+    stats={"succes_rate":1-mean_error_rate,"m_err":mean_error_rate,"sigma":sigma}
     return stats
 
 

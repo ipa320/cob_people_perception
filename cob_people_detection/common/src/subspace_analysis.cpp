@@ -714,7 +714,7 @@ void SubspaceAnalysis::SSA::decompose2(cv::Mat& data_mat)
 {
 
   cv::Mat zero_mat=cv::Mat::zeros(1,data_mat.cols,CV_64FC1);
-  cv::PCA pca(data_mat,zero_mat,CV_PCA_DATA_AS_ROW,1);
+  cv::PCA pca(data_mat,zero_mat,CV_PCA_DATA_AS_ROW,ss_dim_);
   eigenvecs=pca.eigenvectors;
   //svd.u.copyTo(eigenvecs);
   //svd.w.copyTo(eigenvals);
@@ -879,6 +879,7 @@ void SubspaceAnalysis::LDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& l
 //
 SubspaceAnalysis::PCA::PCA(cv::Mat& input_data,int& ss_dim)
 {
+  ss_dim_=ss_dim;
   cv::Mat data_work=input_data.clone();
   mean=cv::Mat::zeros(1,data_work.cols,CV_64FC1);
   calcDataMatMean(data_work,mean);

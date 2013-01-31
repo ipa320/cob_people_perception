@@ -151,7 +151,7 @@ int main(int argc, const char *argv[])
   std::cout<<"Size Training Set= "<<img_vec.size()<<std::endl;
 
 
-  int ss_dim=2;
+  int ss_dim=50;
   //SubspaceAnalysis::Eigenfaces EF;
   // EF.init(img_vec,label_vec,ss_dim);
   //std::vector<cv::Mat> eigenvecsEF(ss_dim);
