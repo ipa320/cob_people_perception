@@ -2,7 +2,7 @@
 
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
-                                  debug_(false),
+                                  debug_(true),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
@@ -181,7 +181,10 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
 
   if(debug_)
   {
+    if(img.channels() == 3)
+    {
     cv::cvtColor(img,img,CV_BGR2RGB);
+    }
     dump_img(img,"0_original");
   }
 
