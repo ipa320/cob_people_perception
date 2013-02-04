@@ -10,6 +10,7 @@
 #include<ostream>
 #include<limits>
 
+#include<math.h>
 // Base class for SubSpace Analysis(SSA)
 //
 //
@@ -19,7 +20,7 @@ namespace SubspaceAnalysis{
   void condense_labels(std::vector<int>& labels);
 
 
-  int unique_elements(std::vector<int> & vec);
+  void unique_elements(std::vector<int> & vec,int& unique_elements,std::vector<int>& distinct_vec);
 
   void  mat_info(cv::Mat& mat);
 
@@ -71,6 +72,7 @@ namespace SubspaceAnalysis{
     cv::Mat model_label_arr_;
 
     int num_classes_;
+    std::vector<int> unique_classes_;
 
 
     //classification flags
@@ -113,11 +115,26 @@ namespace SubspaceAnalysis{
       virtual ~LDA(){};
 
       void calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,cv::Mat&  class_mean_arr);
-      void calcProjMatrix(cv::Mat& data_arr,std::vector<int>& label_vec);
+      virtual void calcProjMatrix(cv::Mat& data_arr,std::vector<int>& label_vec);
 
       int num_classes_;
+      std::vector<int> unique_classes_;
 
       cv::Mat class_mean_arr;
+  };
+
+
+  class ILDA:public LDA
+  {
+    public:
+      ILDA(){};
+      ILDA(cv::Mat& input_data,std::vector<int>& input_labels,int& num_classes,int& ss_dim);
+      virtual ~ILDA(){};
+
+      virtual void calcProjMatrix(cv::Mat& data_arr,std::vector<int>& label_vec);
+
+
+
   };
 
 
@@ -127,7 +144,7 @@ namespace SubspaceAnalysis{
     PCA(){};
     PCA(cv::Mat& input_data,int& ss_dim);
     virtual ~PCA(){};
-    void calcProjMatrix(cv::Mat& data);
+    virtual void calcProjMatrix(cv::Mat& data);
   };
 
   class Eigenfaces:public XFaces

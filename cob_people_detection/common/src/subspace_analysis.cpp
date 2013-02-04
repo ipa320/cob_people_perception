@@ -51,7 +51,7 @@ void  SubspaceAnalysis::mat_info(cv::Mat& mat)
   std::cout<<"Type = "<<mat.type()<<std::endl;
   std::cout<<"Channels = "<<mat.channels()<<std::endl;
 }
-int SubspaceAnalysis::unique_elements(std::vector<int> & vec)
+void SubspaceAnalysis::unique_elements(std::vector<int> & vec,int& unique_elements,std::vector<int>& distinct_vec)
 {
   std::vector<int> distinct_vec;
   bool unique=true;
@@ -68,7 +68,7 @@ int SubspaceAnalysis::unique_elements(std::vector<int> & vec)
     }
     if(unique==true)distinct_vec.push_back(vec[i]);
   }
-  return distinct_vec.size();
+  unique_elements=distinct_vec.size();
 }
 //---------------------------------------------------------------------------------
 //  XFace XFaces
@@ -396,7 +396,7 @@ bool SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vecto
 {
   svm_trained_=false;
   knn_trained_=false;
-  num_classes_=SubspaceAnalysis::unique_elements(label_vec);
+  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
 
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
   for(int i=0;i<label_vec.size();i++)
@@ -502,7 +502,7 @@ bool SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 
 
   //number of classes
-  num_classes_=SubspaceAnalysis::unique_elements(label_vec);
+  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
 
   if(num_classes_<2)
   {
@@ -580,7 +580,7 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
   fallback_=fallback;
   svm_trained_=false;
   knn_trained_=false;
-  num_classes_=SubspaceAnalysis::unique_elements(label_vec);
+  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
 
   SubspaceAnalysis::condense_labels(label_vec);
 
@@ -657,7 +657,8 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
         avg_arr_=pca_.mean;
 
         //perform lda
-        lda_=SubspaceAnalysis::LDA(proj_model_data_arr_PCA,label_vec,num_classes_,ss_dim_);
+        //lda_=SubspaceAnalysis::LDA(proj_model_data_arr_PCA,label_vec,num_classes_,ss_dim_);
+        lda_=SubspaceAnalysis::ILDA(proj_model_data_arr_PCA,label_vec,num_classes_,ss_dim_);
 
         // get projection matrix lda
         cv::Mat P_lda=cv::Mat(ss_dim_,pca_dim,CV_64FC1);
@@ -798,58 +799,28 @@ void SubspaceAnalysis::LDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& l
     cv::Mat S_inter=cv::Mat::zeros(data_arr.cols,data_arr.cols,CV_64FC1);
   int class_index;
 
-  ////+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ////+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ////+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-  //  std::cout<<"DATA:"<<std::endl;
-  //for(int row=0;row<data_arr.rows;row++)
-  //{
-  //  for(int col=0;col<data_arr.cols;col++)
-  //  {
-  //    std::cout<<data_arr.at<double>(row,col)<<" ";
-  //  }
-  //  std::cout<<std::endl;
-  //}
-
-
-  //std::cout<<"class mean:"<<std::endl;
-  //for(int row=0;row<class_mean_arr.rows;row++)
-  //{
-  //  for(int col=0;col<class_mean_arr.cols;col++)
-  //  {
-  //    std::cout<<class_mean_arr.at<double>(row,col)<<" ";
-  //  }
-  //  std::cout<<std::endl;
-  //}
-
-  //std::cout<<"mean:"<<std::endl;
-  //for(int row=0;row<mean.rows;row++)
-  //{      for(int col=0;col<mean.cols;col++)
-  //  {
-  //    std::cout<<mean.at<double>(row,col)<<" ";
-  //  }
-  //  std::cout<<std::endl;
-  //}
-  ////+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ////+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ////+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   for(int i=0;i<num_classes_;++i)
   {
     //reduce data matrix
     class_index=label_vec[i];
+    //  x_i
     cv::Mat  data_row =data_arr.row(i);
+    // mu_i
     cv::Mat  class_mean_row=class_mean_arr.row(class_index);
+    // x_i-mu_i
     cv::subtract(data_row,class_mean_row,data_row);
 
 
     cv::Mat temp;
+    // mu_i - mu_0
     cv::subtract(class_mean_row,mean,temp);
+    // (mu_i - mu_0)*(mu_i - mu_0)^T
     cv::mulTransposed(temp,temp,true);
+
     cv::add(S_inter,temp,S_inter);
 
   }
-    //Intra class scatter
+
     cv::mulTransposed(data_arr,S_intra,true);
 
     //compute interclass scatte
@@ -873,6 +844,102 @@ void SubspaceAnalysis::LDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& l
 
 }
 
+//---------------------------------------------------------------------------------
+// ILDA
+//---------------------------------------------------------------------------------
+//
+SubspaceAnalysis::ILDA::ILDA(cv::Mat& input_data,std::vector<int>& input_labels,int& num_classes,int& ss_dim)
+{
+  cv::Mat data_work=input_data.clone();
+  mean=cv::Mat::zeros(1,data_work.cols,CV_64FC1);
+  calcDataMatMean(data_work,mean);
+  num_classes_=num_classes;
+  //class labels have to be in a vector in ascending order - duplicates are
+  //removed internally
+  //{0,0,1,2,3,3,4,5}
+
+  class_mean_arr=cv::Mat::zeros(num_classes_,input_data.cols,CV_64FC1);
+  calcClassMean(data_work,input_labels,class_mean_arr);
+
+  calcProjMatrix(data_work,input_labels);
+
+  eigenvecs=eigenvecs(cv::Rect(0,0,input_data.cols,ss_dim));
+  eigenvals=eigenvals(cv::Rect(0,0,1,ss_dim)).t();
+  //cv::normalize(eigenvecs,eigenvecs);
+}
+void SubspaceAnalysis::ILDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& label_vec )
+{
+  //TODO:DOESNT WORK YET
+ //reduce data matrix with class means and compute inter class scatter
+  // inter class scatter
+  //
+  std::cout<<"runnin"<<std::endl;
+
+    cv::Mat S_intra=cv::Mat::zeros(data_arr.cols,data_arr.cols,CV_64FC1);
+    cv::Mat S_inter=cv::Mat::zeros(data_arr.cols,data_arr.cols,CV_64FC1);
+  int class_index;
+
+  for(int i=0;i<data_arr.rows;++i)
+  {
+    //reduce data matrix
+    class_index=label_vec[i];
+    cv::Mat  data_row =data_arr.row(i);
+    cv::Mat  class_mean_row=class_mean_arr.row(class_index);
+    cv::subtract(data_row,class_mean_row,data_row);
+
+
+
+  }
+  for(int c=0;c<num_classes_;c++)
+  {
+    cv::Mat temp;
+    class_index=unique_classes_[c];
+    cv::Mat  class_mean_row=class_mean_arr.row(class_index);
+    cv::subtract(class_mean_row,mean,temp);
+    cv::mulTransposed(temp,temp,true);
+    cv::add(S_inter,temp,S_inter);
+
+  }
+   // //Intra class scatter
+    cv::mulTransposed(data_arr,S_intra,true);
+   // cv::Mat S_intra_inv=S_intra.inv();
+   // cv::Mat sigma=cv::Mat(num_classes_,num_classes_,CV_64FC1);
+
+   // for( int i=0;i<num_classes_;++i)
+   // {
+   //   cv::Mat mu_i=class_mean_arr.row(i);
+   //   for( int j=0;j<num_classes_;++j)
+   //   {
+   //   cv::Mat mu_j=class_mean_arr.row(j);
+
+   //   cv::Mat delta_ij=((mu_j-mu_i)*S_intra_inv*(mu_j-mu_i).t());
+   //   for(int k=0;k<data_arr.rows;k++)
+   //   {
+
+   //   }
+   //   sigma.at<double>(i,j)=1/(delta_ij.at<double>(0,0));
+   //   }
+
+   // }
+
+
+   // S_intra=sigma*S_intra;
+   // S_inter=sigma*S_inter;
+
+
+
+
+
+  cv::Mat S_intra_inv=S_intra.inv();
+
+  cv::Mat P;
+  gemm(S_intra_inv,S_inter,1.0,cv::Mat(),0.0,P);
+
+  decompose(P);
+
+  return;
+
+}
 //---------------------------------------------------------------------------------
 // PCA
 //---------------------------------------------------------------------------------
