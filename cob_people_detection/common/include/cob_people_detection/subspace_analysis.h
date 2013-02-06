@@ -63,6 +63,7 @@ namespace SubspaceAnalysis{
     void calcDFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS);
     void calcDIFS(cv::Mat& probe_mat,std::vector<double>& DFFS);
     void mat2arr(cv::Mat& src_mat,cv::Mat& dst_mat);
+    void calc_threshold(cv::Mat& data,std::vector<double>& thresh);
     //data
     int ss_dim_;
     cv::Mat eigenvector_arr_;
@@ -75,6 +76,7 @@ namespace SubspaceAnalysis{
     int num_classes_;
     std::vector<int> unique_classes_;
 
+    std::vector<double> DIFFS_thresh;
 
     //classification flags
     CvSVM svm_;
@@ -115,7 +117,8 @@ namespace SubspaceAnalysis{
       LDA(cv::Mat& input_data,std::vector<int>& input_labels,int& num_classes,int& ss_dim);
       virtual ~LDA(){};
 
-      void calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,cv::Mat&  class_mean_arr);
+      void calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,cv::Mat&  class_mean_arr,int& num_classes);
+      void calcClassMean(cv::Mat& data_mat,cv::Mat& label_mat,cv::Mat&  class_mean_arr,int& num_classes);
       virtual void calcProjMatrix(cv::Mat& data_arr,std::vector<int>& label_vec);
 
       int num_classes_;

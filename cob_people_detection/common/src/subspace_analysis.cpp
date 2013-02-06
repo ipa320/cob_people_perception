@@ -231,7 +231,6 @@ void SubspaceAnalysis::XFaces::projectToSubspace(cv::Mat& probe_mat,cv::Mat& coe
 
   cv::Mat src_arr;
   mat2arr(probe_mat,src_arr);
-  std::cout<<"SIZE"<<src_arr.rows<<" "<<src_arr.cols<<std::endl;
 
   // TODO: LOOK UP IS THIS RIGHT????
   // reduce im mat by mean
@@ -260,6 +259,37 @@ void SubspaceAnalysis::XFaces::projectToSubspace(cv::Mat& probe_mat,cv::Mat& coe
   ////cv::imshow("reconstuction",dummy);
   //cv::imwrite("/home/goa-tz/Desktop/reconstructed.jpg",dummy);
 }
+
+void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,std::vector<double>& thresh)
+{
+  //TODO: calculate sigma
+  double sigma =2.0f;
+  thresh.resize(num_classes_);
+  cv::Mat mean_arr=cv::Mat::zeros(num_classes_,data.cols,CV_64FC1);
+  SubspaceAnalysis::LDA lda;
+  lda.calcClassMean(data,model_label_arr_,mean_arr,num_classes_);
+
+  cv::Mat max_arr,curr_mean,curr_sample,curr_max;
+  max_arr=cv::Mat::ones(num_classes_,data.cols,CV_64FC1);
+  max_arr*=std::numeric_limits<double>::min();
+
+  std::cout<<mean_arr<<std::endl;
+  for(int i=0;i<data.rows;i++)
+    {
+      int index=(int)model_label_arr_.at<float>(i);
+      curr_sample=data.row(i);
+      curr_mean=mean_arr.row(index);
+      curr_max=max_arr.row(index);
+      cv::max(curr_max,curr_sample-curr_mean,curr_max);
+     }
+
+  for(int j=0;j<num_classes_;j++)
+  {
+    cv::Mat curr_row=max_arr.row(j);
+    thresh[j]=sigma*cv::norm(curr_row,cv::NORM_L2);
+  }
+}
+
 void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& class_index)
 {
   if(coeff_arr.rows>1)
@@ -739,6 +769,13 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
   proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
 
   project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
+
+
+  calc_threshold(proj_model_data_arr_,DIFFS_thresh);
+  for(int i=0;i<DIFFS_thresh.size();i++)
+  {
+    std::cout<<"DIFFS"<<DIFFS_thresh[i]<<std::endl;
+  }
   this->trained=true;
 
   return true;
@@ -807,7 +844,7 @@ SubspaceAnalysis::LDA::LDA(cv::Mat& input_data,std::vector<int>& input_labels,in
   //{0,0,1,2,3,3,4,5}
 
   class_mean_arr=cv::Mat::zeros(num_classes_,input_data.cols,CV_64FC1);
-  calcClassMean(data_work,input_labels,class_mean_arr);
+  calcClassMean(data_work,input_labels,class_mean_arr,num_classes_);
 
   calcProjMatrix(data_work,input_labels);
 
@@ -816,10 +853,21 @@ SubspaceAnalysis::LDA::LDA(cv::Mat& input_data,std::vector<int>& input_labels,in
   //cv::normalize(eigenvecs,eigenvecs);
 
 }
-void SubspaceAnalysis::LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,cv::Mat&  class_mean_arr)
+void SubspaceAnalysis::LDA::calcClassMean(cv::Mat& data_mat,cv::Mat& label_mat,cv::Mat&  class_mean_arr,int& num_classes)
+{
+  std::vector<int> label_vec;
+  for(int i=0;i<label_mat.cols;i++)
+  {
+    label_vec.push_back((int)label_mat.at<float>(i));
+  }
+
+  calcClassMean(data_mat,label_vec,class_mean_arr,num_classes);
+
+}
+void SubspaceAnalysis::LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& label_vec,cv::Mat&  class_mean_arr,int& num_classes)
 {
 
-  std::vector<int>     samples_per_class(num_classes_,0);
+  std::vector<int>     samples_per_class(num_classes,0);
 
 
   int class_index;
@@ -833,12 +881,11 @@ void SubspaceAnalysis::LDA::calcClassMean(cv::Mat& data_mat,std::vector<int>& la
     samples_per_class[class_index]++;
   }
 
-  for (int i = 0; i < num_classes_; i++) {
+  for (int i = 0; i < num_classes; i++)
+  {
     cv::Mat mean_arr_row=class_mean_arr.row(i);
     mean_arr_row.convertTo(mean_arr_row,CV_64FC1,1.0/static_cast<double>(samples_per_class[i]));
   }
-
-
 
 }
 
@@ -904,7 +951,7 @@ SubspaceAnalysis::ILDA::ILDA(cv::Mat& input_data,std::vector<int>& input_labels,
   //{0,0,1,2,3,3,4,5}
 
   class_mean_arr=cv::Mat::zeros(num_classes_,input_data.cols,CV_64FC1);
-  calcClassMean(data_work,input_labels,class_mean_arr);
+  calcClassMean(data_work,input_labels,class_mean_arr,num_classes_);
 
   calcProjMatrix(data_work,input_labels);
 
