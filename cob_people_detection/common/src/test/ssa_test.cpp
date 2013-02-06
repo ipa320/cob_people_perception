@@ -83,6 +83,11 @@ int main(int argc, const char *argv[])
     std::cout<<"FISHER"<<std::endl;
     method = SubspaceAnalysis::METH_FISHER;
   }
+  else if(!method_str.compare("IFLDA"))
+  {
+    std::cout<<"IFLDA"<<std::endl;
+    method = SubspaceAnalysis::METH_IFLDA;
+  }
   else if(!method_str.compare("EIGEN"))
   {
     std::cout<<"EIGEN"<<std::endl;
@@ -202,9 +207,6 @@ int main(int argc, const char *argv[])
   probe_mat_vec.push_back(probe_mat);
  }
 
-
-
-
   std::cout<<"Size Training Set= "<<img_vec.size()<<std::endl;
 
   int ss_dim=num_classes;
@@ -233,11 +235,6 @@ int main(int argc, const char *argv[])
 
 
   std::cout<<"EFF classified"<<std::endl;
-
-
-
-
-
 
 
 return 0;

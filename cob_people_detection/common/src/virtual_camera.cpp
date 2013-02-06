@@ -14,8 +14,10 @@ VirtualCamera::VirtualCamera(VirtualCamera::TYPE cam_type)
         sensor_size=cv::Size(640,480);
         pixel_dim=cv::Size(0,0);
         dist_coeffs=(cv::Mat_<double>(1,5) << 0.0 , 0.0 , 0.0 , 0.0 ,0.0);
-        pp.x=313.68782938;
-        pp.y=259.01834898;
+        pp.x=sensor_size.width/2;
+        pp.y=sensor_size.height/2;
+       // pp.x=313.68782938;
+       // pp.y=259.01834898;
       break;
       }
     default:
@@ -160,7 +162,7 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
 
        if (ty>0 && tx>0 && ty<sensor_size.height && tx<sensor_size.width && !isnan(ty) && !isnan(tx) )
        {
-         if(occ_grid.at<unsigned char>(ty,tx)>0) img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
+         if(occ_grid.at<unsigned char>(ty,tx)>0) int a=0;//img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
          else
           {
             img.at<cv::Vec3b>(ty,tx)=(*pc_rgb_ptr);

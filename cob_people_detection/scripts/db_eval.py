@@ -84,7 +84,7 @@ class dlg(wx.Frame):
     self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS"])
 
     method_choice_txt=wx.StaticText(parent,-1,"Select Method")
-    self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces"])
+    self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces","IFLDA"])
 
     self.nrm_checkbox=wx.CheckBox(parent,label="normalize")
 
@@ -179,6 +179,8 @@ class dlg(wx.Frame):
       method="FISHER"
     elif self.method_choice.GetCurrentSelection()==1:
       method="EIGEN"
+    elif self.method_choice.GetCurrentSelection()==2:
+      method="IFLDA"
 
     if self.classifier_choice.GetCurrentSelection()==0:
       classifier="KNN"
@@ -205,6 +207,7 @@ class dlg(wx.Frame):
 
       elif(self.protocol_choice.GetCurrentSelection()==2):
         self.process_protocol(self.process_manual,method,classifier)
+
 
     print self.Evaluator.calc_stats()
     self.Evaluator.reset()
@@ -360,6 +363,7 @@ class dlg(wx.Frame):
 
           cont_ctr+=1
     self.Evaluator.add_epoch(groundtruth,results,files)
+    print "error rate = %f"%self.Evaluator.show_last()
 
 
   def print_lists(self):
@@ -446,10 +450,20 @@ class Evaluator():
     else:
       sigma=0.0
 
-
-    stats={"succes_rate":1-mean_error_rate,"m_err":mean_error_rate,"sigma":sigma}
+    stats={"succes_rate":1-mean_error_rate,"m_err":mean_error_rate,"sigma":sigma,"reps":len(self.epochs)}
     return stats
 
+  def show_all(self):
+    err=list()
+    for e in self.epochs:
+      err.append(e.error_rate)
+
+    return err
+
+  def show_last(self):
+    err=self.epochs[-1].error_rate
+
+    return err
 
 
 

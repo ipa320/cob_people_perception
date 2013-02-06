@@ -155,7 +155,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   cv::Mat roi_depth;
-  if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size,offset,roi_depth)) return ipa_Utils::RET_FAILED;
+  //TODO MAKE TEMPORARY SWITCH OFF
+  if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size,offset,roi_depth)) ;
+  //if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size,offset,roi_depth)) return ipa_Utils::RET_FAILED;
 
 
 	// Save image
@@ -275,7 +277,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::Fi
   }
 
   m_rec_method=1;
-  eff.releaseModel();
   if(m_rec_method==1)
   {
     if(eff.init(in_vec,labels,ss_dim,SubspaceAnalysis::METH_FISHER,true))
@@ -295,6 +296,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::Fi
       return ipa_Utils::RET_FAILED;
     }
   }
+  std::cout<<"Model trained"<<std::endl;
 }
 unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vector<std::string>& identification_labels_to_train)
 {
@@ -394,8 +396,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
   m_eigenvectors.resize(number_eigenvectors,cv::Mat(face_images[0].rows,face_images[0].cols,CV_64FC1));
 
 
+  // reset effs
+  eff_depth.releaseModel();
+  eff_color.releaseModel();
   //--> INIT MODEL
+  if(m_depth_mode)
+  {
   if(face_depthmaps.size()>0)initModel(eff_depth,face_depthmaps,depth_num_labels);
+  }
   
   if(face_images.size()>0)initModel(eff_color,face_images,m_label_num);
   //TODO still necessary=
@@ -683,7 +691,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		{
 
       int res_label;
-      eff_color.classify(coeff_arr,SubspaceAnalysis::CLASS_SVM,res_label);
+      eff_color.classify(coeff_arr,SubspaceAnalysis::CLASS_MIN_DIFFS,res_label);
       identification_labels.push_back(m_current_label_set[res_label]);
 		}
 	}
@@ -731,18 +739,18 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
       int res_label_color, res_label_depth;
       std::string class_depth,class_color;
 
-      if(eff_depth.trained)
+      if((eff_depth.trained)&& (m_depth_mode==true))
       {
         std::cout<<"classification with depth"<<std::endl;
       eff_depth.projectToSubspace(depth_crop,coeff_arr_depth,DFFS);
-      eff_depth.classify(coeff_arr_depth,SubspaceAnalysis::CLASS_SVM,res_label_depth);
+      eff_depth.classify(coeff_arr_depth,SubspaceAnalysis::CLASS_MIN_DIFFS,res_label_depth);
       class_depth=depth_str_labels[res_label_depth];
       }
       if(eff_color.trained)
       {
         std::cout<<"classification with color"<<std::endl;
       eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
-      eff_color.classify(coeff_arr_color,SubspaceAnalysis::CLASS_SVM,res_label_color);
+      eff_color.classify(coeff_arr_color,SubspaceAnalysis::CLASS_MIN_DIFFS,res_label_color);
       class_color=m_current_label_set[res_label_color];
       }
 
@@ -931,6 +939,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 		// labels
 		m_face_labels.clear();
 		face_images.clear();
+    cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
 		int number_entries = (int)fileStorage["number_entries"];
 		for(int i=0; i<number_entries; i++)
 		{
@@ -966,6 +975,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			tag_image << "image_" << i;
 			std::string path = m_data_directory + (std::string)fileStorage[tag_image.str().c_str()];
 			cv::Mat temp = cv::imread(path.c_str(),-1);
+      face_normalizer_.normalizeFace(temp,norm_size);
 			face_images.push_back(temp);
 		}
 
@@ -1025,6 +1035,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 		// labels
 		m_face_labels.clear();
 		face_images.clear();
+    cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
+    cve:Vec2f offset=cv::Vec2f(0,0);
 		int number_entries = (int)fileStorage["number_entries"];
 		for(int i=0; i<number_entries; i++)
 		{
@@ -1064,20 +1076,24 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			cv::Mat temp = cv::imread(img_path.c_str(),-1);
       //cv::imshow("T",temp);
       //cv::waitKey(0);
-			face_images.push_back(temp);
 
       if(dm_path.compare(m_data_directory))
       {
         cv::Mat dm_temp;
         cv::FileStorage fs(dm_path,FileStorage::READ);
         fs["depthmap"]>>dm_temp;
+
+        face_normalizer_.normalizeFace(temp,dm_temp,norm_size,offset,dm_temp);
+
         face_depthmaps.push_back(dm_temp);
-      
         dm_exist.push_back(true);
         fs.release();
       }
       else dm_exist.push_back(false);
+        face_normalizer_.normalizeFace(temp,norm_size);
+			face_images.push_back(temp);
 		}
+
 
 		// clean identification_labels_to_train -> only keep those labels that appear in the training data
 		for(int j=0; j<(int)identification_labels_to_train.size(); j++)

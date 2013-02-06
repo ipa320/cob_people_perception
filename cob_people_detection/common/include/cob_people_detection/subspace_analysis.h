@@ -34,7 +34,8 @@ namespace SubspaceAnalysis{
   enum Method
   {
     METH_FISHER,
-    METH_EIGEN
+    METH_EIGEN,
+    METH_IFLDA
   };
 
 

@@ -2,7 +2,7 @@
 
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
-                                  debug_(true),
+                                  debug_(false),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
@@ -109,6 +109,7 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset
 }
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_size,cv::Vec2f& offset,cv::Mat& depth_res)
 {
+  //captureScene(img,depth,offset);
   // set members to current values
   norm_size_=norm_size;
   input_size_=cv::Size(img.cols,img.rows);
@@ -138,7 +139,8 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(debug_)dump_img(img,"1_geometryRGBD");
   if(debug_)std::cout<<"1 - normalized geometry"<<std::endl;
 
-  cv::cvtColor(img,img,CV_BGR2GRAY);
+  if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
+
   if(valid)despeckle<unsigned char>(img,img);
   //reducing the depth map
   processDM(depth,depth_res);
@@ -311,7 +313,10 @@ void FaceNormalizer::logAbout(cv::Mat& img)
 
 
 bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
-{
+{	
+
+
+  return false;
 
   // detect features
   if(!features_from_color(img))
@@ -354,10 +359,10 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   //calculate difference in PnP
   cv::Vec3f rot_orig, rot_norm;
 
-  if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_det_img_.as_vector(),true))  return false;
+  if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_det_img_.as_vector(),false))  return false;
   rot_orig=kinect.trans;
 
-  if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_norm_img_.as_vector(),true))  return false;
+  //if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_norm_img_.as_vector(),false))  return false;
   rot_norm=kinect.trans;
 
 
@@ -399,7 +404,8 @@ bool FaceNormalizer::normalize_geometry(cv::Mat& img,FaceNormalizer::TRAFO model
     case FaceNormalizer::AFFINE:
       {
    get_transform_affine(trafo);
-   cv::warpAffine(img,warped,trafo,norm_size_ );
+   cv::warpAffine(img,warped,trafo,cv::Size(img.cols,img.rows),cv::INTER_LINEAR,cv::BORDER_CONSTANT,cv::Scalar(100,100,100));
+   cv::resize(warped,warped,norm_size_);
    break;
       }
     case FaceNormalizer::PERSPECTIVE:
@@ -679,9 +685,16 @@ bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,cv::Vec2f& offset
 void FaceNormalizer::processDM(cv::Mat& dm_xyz,cv::Mat& dm)
 {
   //reducing to depth ( z - coordinate only)
+  if(dm_xyz.channels()==3)
+  {
   std::vector<cv::Mat> cls;
   cv::split(dm_xyz,cls);
   dm=cls[2];
+  }
+  else if (dm_xyz.channels()==1)
+  {
+    dm=dm_xyz;
+  }
 
   //reduce z values
   float minval=1000.0;
