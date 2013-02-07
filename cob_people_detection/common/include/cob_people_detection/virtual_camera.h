@@ -48,7 +48,7 @@ private:
   cv::Size sensor_size;
   cv::Size pixel_dim;
   cv::Point2f pp;
-  double focal_length;
+  cv::Vec2f focal_length;
 
 
 

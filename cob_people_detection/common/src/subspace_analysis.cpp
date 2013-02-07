@@ -273,7 +273,6 @@ void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,std::vector<double>&
   max_arr=cv::Mat::ones(num_classes_,data.cols,CV_64FC1);
   max_arr*=std::numeric_limits<double>::min();
 
-  std::cout<<mean_arr<<std::endl;
   for(int i=0;i<data.rows;i++)
     {
       int index=(int)model_label_arr_.at<float>(i);
@@ -327,6 +326,15 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
       if(min_index != -1)
       {
         class_index=(int)model_label_arr_.at<float>(min_index);
+      }
+      //check against pre calculated threshol
+
+      std::cout<<"DIFS"<<min_val<<std::endl;
+      std::cout<<"thresh"<<thresholds_[class_index]<<std::endl;
+      if(min_val>thresholds_[class_index])
+      {
+        std::cout<<"threshold yields unknown"<<std::endl;
+        //class_index =-1
       }
       break;
     };
@@ -385,13 +393,15 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
       break;
     };
 
-    default:
-    {
+    default: {
       std::cout<<"[CLASSIFICATION] method not implemented"<<std::endl;
       break;
     };
   return;
 }
+
+
+
 }
 
 
@@ -771,11 +781,7 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
   project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
 
 
-  calc_threshold(proj_model_data_arr_,DIFFS_thresh);
-  for(int i=0;i<DIFFS_thresh.size();i++)
-  {
-    std::cout<<"DIFFS"<<DIFFS_thresh[i]<<std::endl;
-  }
+  calc_threshold(proj_model_data_arr_,thresholds_);
   this->trained=true;
 
   return true;

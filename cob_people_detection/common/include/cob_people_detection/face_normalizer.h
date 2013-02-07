@@ -153,6 +153,8 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
 {
 
 
+
+
   if(src.channels()==1)
   {
     T* lptr=src.ptr<T>(1,0);

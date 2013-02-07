@@ -76,7 +76,7 @@ namespace SubspaceAnalysis{
     int num_classes_;
     std::vector<int> unique_classes_;
 
-    std::vector<double> DIFFS_thresh;
+    std::vector<double> thresholds_;
 
     //classification flags
     CvSVM svm_;

@@ -152,7 +152,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
 
 	cv::Mat roi_color = color_image(combined_face_bounding_box);
 	cv::Mat roi_depth_xyz = depth_image(face_bounding_box).clone();
-  cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
+  cv::Vec2f offset = cv::Vec2f(combined_face_bounding_box.x,combined_face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   cv::Mat roi_depth;
   //TODO MAKE TEMPORARY SWITCH OFF
@@ -184,7 +184,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
 
 	cv::Mat roi_color = color_image(combined_face_bounding_box);
 	cv::Mat roi_depth_xyz= depth_image(face_bounding_box);
-  cv::Vec2f offset = cv::Vec2f(face_bounding_box.x,face_bounding_box.y);
+  cv::Vec2f offset = cv::Vec2f(combined_face_bounding_box.x,combined_face_bounding_box.y);
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   cv::Mat roi_depth;
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size,offset,roi_depth)) return ipa_Utils::RET_FAILED;
@@ -393,7 +393,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
   //alocate memory for eigenvectors
   m_eigenvectors.clear();
-  m_eigenvectors.resize(number_eigenvectors,cv::Mat(face_images[0].rows,face_images[0].cols,CV_64FC1));
 
 
   // reset effs

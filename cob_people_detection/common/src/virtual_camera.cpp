@@ -10,14 +10,13 @@ VirtualCamera::VirtualCamera(VirtualCamera::TYPE cam_type)
   {
     case VirtualCamera::KINECT:
       {
-        focal_length= 526.37013657;
+        focal_length[0]=524.90160178307269 ;
+        focal_length[1]=525.85226379335393;
         sensor_size=cv::Size(640,480);
         pixel_dim=cv::Size(0,0);
-        dist_coeffs=(cv::Mat_<double>(1,5) << 0.0 , 0.0 , 0.0 , 0.0 ,0.0);
-        pp.x=sensor_size.width/2;
-        pp.y=sensor_size.height/2;
-       // pp.x=313.68782938;
-       // pp.y=259.01834898;
+        dist_coeffs=(cv::Mat_<double>(1,5) << 0.25852454045259377, -0.88621162461930914, 0.0012346117737001144, 0.00036377459304633028, 1.0422813597203011);
+        pp.x=312.13543361773458;
+        pp.y=254.73474482242005;
       break;
       }
     default:
@@ -30,7 +29,7 @@ VirtualCamera::VirtualCamera(VirtualCamera::TYPE cam_type)
 
   //calculation of intrinsics
   //pp=cv::Point(round(sensor_size.width),round(sensor_size.height));
-  cam_mat=(cv::Mat_<double>(3,3) << focal_length , 0.0 , pp.x  , 0.0 , focal_length , pp.y  , 0.0 , 0.0 , 1);
+  cam_mat=(cv::Mat_<double>(3,3) << focal_length[0] , 0.0 , pp.x  , 0.0 , focal_length[1] , pp.y  , 0.0 , 0.0 , 1);
 
   //initialization of extrinsics
   rot=cv::Vec3f(0.0,0.0,0.0);
@@ -39,6 +38,13 @@ VirtualCamera::VirtualCamera(VirtualCamera::TYPE cam_type)
 
 
 
+//bool VirtualCamera::calibrate(std::vector<cv::Mat>& img_vec,cv::Size& pattern_size,double square_length)
+//{
+//
+//
+//
+//
+//}
 
 
 //void VirtualCamera::set_extrinsics(cv::Vec3f& irot, cv::Vec3f& itrans)
@@ -74,7 +80,7 @@ bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vecto
 //  }
 
 
-  cv::solvePnP(obj_pts,img_pts,cam_mat,dist_coeffs,temp_rot,temp_trans);
+  cv::solvePnP(obj_pts,img_pts,cam_mat,dist_coeffs,temp_rot,temp_trans,false);
 
   if(check_model==true)
   {
@@ -126,9 +132,6 @@ void VirtualCamera::resample_pc_indirect(cv::Mat& src,cv::Mat& dst ,cv::Mat& hom
 void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img,cv::Mat& depth_map)
 {
 
-  //std::cout<<"\n[VIRTUAL CAMERA] sampling pointcloud with extrinsics:\n";
-  //std::cout<<" rot: \n"<<rot[0]<<" , "<<rot[1]<<" , "<<rot[2]<<std::endl;
-  //std::cout<<" trans: \n"<<trans[0]<<" , "<<trans[1]<<" , "<<trans[2]<<std::endl<<std::endl;
 
   cv::Mat pc_xyz,pc_rgb;
   pc_xyzPtr.copyTo(pc_xyz);
