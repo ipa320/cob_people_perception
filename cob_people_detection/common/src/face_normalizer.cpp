@@ -336,7 +336,8 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
    lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
    x_new<<f_det_xyz_.righteye.x-f_det_xyz_.lefteye.x,f_det_xyz_.righteye.y-f_det_xyz_.lefteye.y,f_det_xyz_.righteye.z-f_det_xyz_.lefteye.z;
-   y_new<<f_det_xyz_.mouth.x-f_det_xyz_.nose.x,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,f_det_xyz_.mouth.z-f_det_xyz_.nose.z;
+   y_new<<f_det_xyz_.mouth.x-f_det_xyz_.nose.x,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,f_det_xyz_.lefteye.z-f_det_xyz_.mouth.z;
+   y_new<<0,1,0;
    x_new.normalize();
    y_new.normalize();
 
@@ -359,8 +360,10 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    for(int i=0;i<img.total();i++)
    {
      pt<<(*ptr)[0],(*ptr)[1],(*ptr)[2];
+     pt-=lefteye;
      //pt=trafo.inverse().rotation()*pt;
-     pt=trafo*pt;
+     pt=trafo.rotation()*pt;
+     pt+=lefteye;
     (*ptr)[0]=pt[0];
     (*ptr)[1]=pt[1];
     (*ptr)[2]=pt[2];
