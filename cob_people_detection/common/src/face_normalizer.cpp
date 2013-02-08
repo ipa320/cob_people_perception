@@ -1,5 +1,8 @@
 #include<cob_people_detection/face_normalizer.h>
 #include<pcl/common/transform.h>
+#include<fstream>
+
+
 
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
@@ -8,7 +11,7 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
-                                  debug_path_("/share/goa-tz/people_detection/debug/"),
+                                  debug_path_("/share/goa-tz/people_detection/normalization/results"),
                                   kinect(VirtualCamera::KINECT)
 {
   bool home=false;
@@ -130,24 +133,24 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   cv::Mat temp_mat;
    cv::cvtColor(img,temp_mat,CV_BGR2RGB);
     dump_img(temp_mat,"0_originalRGBD");
-
   }
 
+  if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
+  // radiometric normalization
+  if(!normalize_radiometry(img)) valid=false;
+  if(debug_)dump_img(img,"4_radiometry");
+
   //geometric normalization
-  //TODO : TEMPORARY DISABLING GEOM NORM
   if(!normalize_geometry_depth(img,depth)) valid=false ;
   if(debug_)dump_img(img,"1_geometryRGBD");
   //if(debug_)std::cout<<"1 - normalized geometry"<<std::endl;
-
-  if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
+  
 
   if(valid)despeckle<unsigned char>(img,img);
   //reducing the depth map
   processDM(depth,depth_res);
   if(valid)despeckle<float>(depth_res,depth_res);
-
   if(debug_ && valid)dump_img(img,"2_despeckle");
-  //if(debug_ && valid)std::cout<<"2 - filtered"<<std::endl;
 
   //resizing
   cv::resize(img,img,norm_size_,0,0);
@@ -156,11 +159,6 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(debug_)dump_img(img,"3_resized");
   //if(debug_)std::cout<<"3 - resized"<<std::endl;
 
-  if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
-  // radiometric normalization
-  if(!normalize_radiometry(img)) valid=false;
-  if(debug_)dump_img(img,"4_radiometry");
-  //if(debug_)std::cout<<"4 - normalized geometry"<<std::endl;
 
   
 
@@ -263,14 +261,28 @@ void FaceNormalizer::eqHist(cv::Mat& img)
 
 }
 
-void FaceNormalizer::dct(cv::Mat& img)
+void FaceNormalizer::dct(cv::Mat& input_img)
 {
+
+  cv::Mat img=cv::Mat(input_img.rows,input_img.cols,CV_8UC1);
+  if(input_img.channels()==3)
+  {
+    extractVChannel(input_img,img);
+    std::cout<<"extracting"<<std::endl;
+
+  }
+  else
+  {
+    img=input_img;
+  }
+
+
 // Dct conversion on logarithmic image
   cv::resize(img,img,cv::Size(img.cols*2,img.rows*2));
 
-  float mask_arr[]={-1, -1, -1 , -1 , 9 , -1, -1 , -1 ,-1};
-  cv::Mat mask=cv::Mat(3,3,CV_32FC1,mask_arr);
-  cv::filter2D(img,img,-1,mask);
+  //float mask_arr[]={-1, -1, -1 , -1 , 9 , -1, -1 , -1 ,-1};
+  //cv::Mat mask=cv::Mat(3,3,CV_32FC1,mask_arr);
+  //cv::filter2D(img,img,-1,mask);
   img.convertTo(img,CV_32FC1);
   cv::Scalar mu=cv::mean(img);
   double C_00=log(mu.val[0])*sqrt(img.cols*img.rows);
@@ -293,6 +305,15 @@ void FaceNormalizer::dct(cv::Mat& img)
   img.convertTo(img,CV_8UC1);
 
   //cv::equalizeHist(img,img);
+  if(input_img.channels()==3)
+  {
+    subVChannel(input_img,img);
+
+  }
+  else
+  { 
+    input_img=img;
+  }
 
 }
 
@@ -339,9 +360,11 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
 
 
-   Eigen::Vector3f x_new,y_new,z_new,lefteye,nose;
+   Eigen::Vector3f x_new,y_new,z_new,lefteye,nose,righteye;
 
    nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
+   lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
+   righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
    x_new<<f_det_xyz_.righteye.x-f_det_xyz_.lefteye.x,f_det_xyz_.righteye.y-f_det_xyz_.lefteye.y,f_det_xyz_.righteye.z-f_det_xyz_.lefteye.z;
    //y_new<<f_det_xyz_.mouth.x-f_det_xyz_.nose.x,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,(f_det_xyz_.mouth.z-f_det_xyz_.lefteye.z)*0.5;
    y_new<<f_det_xyz_.mouth.x-f_det_xyz_.nose.x,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,0;
@@ -353,11 +376,18 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //y_new<<0,1,0;
    z_new=x_new.cross(y_new);
    //lefteye<<0,0,0;
+   std::string path="/share/goa-tz/people_detection/normalization/axes";
+    std::ofstream os(path.c_str() );
+    os<<x_new[0]<<" "<<x_new[1]<<" "<<x_new[2]<<"\n";
+    os<<y_new[0]<<" "<<y_new[1]<<" "<<y_new[2]<<"\n";
+    os<<z_new[0]<<" "<<z_new[1]<<" "<<z_new[2]<<"\n";
+
+    os.close();
+
    std::cout<<"new x \n"<<x_new<<std::endl;
    std::cout<<"new y \n"<<y_new<<std::endl;
    std::cout<<"new z \n"<<z_new<<std::endl;
    Eigen::Affine3f trafo;
-   //Eigen::Affine3f trafo=Eigen::Affine3f::Identity();
    Eigen::Vector3f origin=nose;
    origin[2]-=0.5;
 
@@ -365,7 +395,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //trafo.setIdentity();
 
 
-   Eigen::Translation3f view_offset(0,0,+0.5);
+   Eigen::Translation3f view_offset(0,0,+1);
    trafo=trafo*view_offset;
 
    cv::Vec3f* ptr=depth.ptr<cv::Vec3f>(0,0);
@@ -374,23 +404,38 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    for(int i=0;i<img.total();i++)
    {
      pt<<(*ptr)[0],(*ptr)[1],(*ptr)[2];
-     pt-=nose;
      pt=trafo*pt;
-     pt+=nose;
     (*ptr)[0]=pt[0];
     (*ptr)[1]=pt[1];
     (*ptr)[2]=pt[2];
      ptr++;
    }
 
+   lefteye=trafo*lefteye;
+   righteye=trafo*righteye;
+   nose=trafo*nose;
 
+   //transform norm coordiantes separately to  determinde roi
+   cv::Point2f lefteye_uv,righteye_uv,nose_uv;
+   cv::Point3f lefteye_xyz,righteye_xyz,nose_xyz;
 
+   lefteye_xyz = cv::Point3f(lefteye[0],lefteye[1],lefteye[2]);
+   righteye_xyz = cv::Point3f(righteye[0],righteye[1],righteye[2]);
+   nose_xyz = cv::Point3f(nose[0],nose[1],nose[2]);
 
+   kinect.sample_point(lefteye_xyz,lefteye_uv);
+   kinect.sample_point(righteye_xyz,righteye_uv);
+   kinect.sample_point(nose_xyz,nose_uv);
+
+   int dim_x=(righteye_uv.x-lefteye_uv.x)*2;
+   //int dim_y=(nose_uv.y-lefteye_uv.y)*4;
+   int dim_y=dim_x;
+
+   std::cout<<"dim"<<dim_x<<","<<dim_y<<std::endl;
+   cv::Rect roi=cv::Rect(round(lefteye_uv.x-dim_x/4),round(lefteye_uv.y-dim_y/4),dim_x,dim_y);
 
    int xoffset=round(offset_[0]);
    int yoffset=round(offset_[1]);
-
-
 
 
   f_det_img_.add_offset  (xoffset,yoffset);
@@ -412,14 +457,13 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   //std::cout<<"relative Position= "<<rot_orig[0]<<" , "<<rot_orig[1]<<" , "<<rot_orig[2]<<" , "<<std::endl;
 
 
-  cv::Mat res=cv::Mat::zeros(480,640,CV_8UC3);
+  cv::Mat res;
   cv::Mat dmres=cv::Mat::zeros(480,640,CV_32FC3);
   kinect.sample_pc(depth,img,res,dmres);
 
-  cv::Rect crop(xoffset,yoffset,img.cols,img.rows);
-  res(crop).copyTo(img);
+  res(roi).copyTo(img);
   cv::Mat dmcrop;
-  dmres(crop).copyTo(depth);
+  dmres(roi).copyTo(depth);
 
   if(debug_)dump_img(res,"virtual_full");
 

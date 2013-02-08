@@ -102,41 +102,12 @@ bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vecto
 }
 
 
-void VirtualCamera::resample_pc_indirect(cv::Mat& src,cv::Mat& dst ,cv::Mat& homo)
-{
-  //cv::Vec3f pta=cv::Vec3f(33.3,27.75,1);
-  //cv::Vec3f ptb;
-  //cv::perspectiveTransform(pta,ptb,homo);
-  //std::cout<<"PT A: "<<pta[0] <<" "<<pta[1] << std::endl;
-  //std::cout<<"PT B: "<<ptb[0] <<" "<<ptb[1] << std::endl;
-  //unsigned char * dst_ptr=dst.ptr<unsigned char>(0,0);
-  //for(int r=0;r<dst.rows;r++)
-  //{
-  //  for(int c=0;c<dst.cols;c++)
-  //  {
-
-  //    cv::Point3f dst_pt(c,r,1.0);
-  //    cv::Point3f src_pt;
-  //    cv::gemm(homo,dst_pt,1.0,cv::Mat(),0,src_pt);
-  //    cv::Point2f src_grid_pt(src_pt.x/src_pt.z,src_pt.y/src_pt.z);
-  //    if(src_grid_pt.x < 0 ||src_grid_pt.x > src.cols ||src_grid_pt.y <0 ||src_grid_pt.y>src.rows)
-  //    {
-  //      // insert bilinear filtering instead of rounding
-  //      *dst_ptr=src.at<unsigned char>(round(src_grid_pt.y),round(src_grid_pt.x));
-  //    }
-
-
-  //  }
-  //}
-
-  cv::warpPerspective(src,dst,homo,cv::Size(src.rows*5,src.cols*5));
-}
-
-
 
 void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img,cv::Mat& depth_map)
 {
 
+
+  int channels=pc_rgbPtr.channels();
 
   cv::Mat pc_xyz,pc_rgb;
   pc_xyzPtr.copyTo(pc_xyz);
@@ -152,15 +123,19 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
    // calc reprojection diffs
    cv::projectPoints(pc_xyz,rot,trans,cam_mat,dist_coeffs,pc_proj);
 
-   // assign color values to calculated image coordinates
    cv::Vec3f* pc_ptr=pc_xyzPtr.ptr<cv::Vec3f>(0,0);
    cv::Vec2f* pc_proj_ptr=pc_proj.ptr<cv::Vec2f>(0,0);
-   cv::Vec3b* pc_rgb_ptr=pc_rgb.ptr<cv::Vec3b>(0,0);
    int ty,tx;
 
    cv::Mat occ_grid=cv::Mat::zeros(sensor_size,CV_8UC1);
 
 
+   if(channels==3)
+   {
+    img=cv::Mat::zeros(this->sensor_size.height,sensor_size.width,CV_8UC3);
+    cv::add(img,0,img);
+   // assign color values to calculated image coordinates
+   cv::Vec3b* pc_rgb_ptr=pc_rgb.ptr<cv::Vec3b>(0,0);
    for(int i=0;i<pc_proj.rows;++i)
      {
        cv::Vec2f txty=*pc_proj_ptr;
@@ -170,7 +145,7 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
 
        if (ty>0 && tx>0 && ty<sensor_size.height && tx<sensor_size.width && !isnan(ty) && !isnan(tx) )
        {
-         if(occ_grid.at<unsigned char>(ty,tx)>0) img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
+         if(occ_grid.at<unsigned char>(ty,tx)>0) int a=0;// img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
          else
           {
             img.at<cv::Vec3b>(ty,tx)=(*pc_rgb_ptr);
@@ -182,38 +157,16 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
        pc_proj_ptr++;
        pc_ptr++;
       }
+   }
 
-   return;
-}
-void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img)
-{
 
-  //std::cout<<"\n[VIRTUAL CAMERA] sampling pointcloud with extrinsics:\n";
-  //std::cout<<" rot: \n"<<rot[0]<<" , "<<rot[1]<<" , "<<rot[2]<<std::endl;
-  //std::cout<<" trans: \n"<<trans[0]<<" , "<<trans[1]<<" , "<<trans[2]<<std::endl<<std::endl;
-
-  cv::Mat pc_xyz,pc_rgb;
-  pc_xyzPtr.copyTo(pc_xyz);
-  pc_rgbPtr.copyTo(pc_rgb);
-  if(pc_xyz.rows>1 && pc_xyz.cols >1)
-  {
-    pc_xyz=pc_xyz.reshape(3,1);
-  }
-
-   //project 3d points to virtual camera
-   cv::Mat pc_proj(pc_xyz.rows*pc_xyz.cols,1,CV_32FC2);
-
-   // calc reprojection diffs
-   cv::projectPoints(pc_xyz,rot,trans,cam_mat,dist_coeffs,pc_proj);
-
+   if(channels==1)
+   {
+     std::cout<<"ONE CHANNEL PROCESSING"<<std::endl;
    // assign color values to calculated image coordinates
-   cv::Vec2f* pc_proj_ptr=pc_proj.ptr<cv::Vec2f>(0,0);
-   cv::Vec3b* pc_rgb_ptr=pc_rgb.ptr<cv::Vec3b>(0,0);
-   int ty,tx;
-
-   cv::Mat occ_grid=cv::Mat::zeros(sensor_size,CV_8UC1);
-
-
+    img=cv::Mat::zeros(this->sensor_size.height,sensor_size.width,CV_8UC1);
+    cv::add(img,0,img);
+   unsigned char* pc_rgb_ptr=pc_rgb.ptr<unsigned char>(0,0);
    for(int i=0;i<pc_proj.rows;++i)
      {
        cv::Vec2f txty=*pc_proj_ptr;
@@ -223,14 +176,37 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
 
        if (ty>0 && tx>0 && ty<sensor_size.height && tx<sensor_size.width && !isnan(ty) && !isnan(tx) )
        {
-         if(occ_grid.at<unsigned char>(ty,tx)>0) img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
-         else                  img.at<cv::Vec3b>(ty,tx)=(*pc_rgb_ptr);
-         occ_grid.at<unsigned char>(ty,tx)+=50;
+         if(occ_grid.at<unsigned char>(ty,tx)>0) int a=0;// img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
+         else
+          {
+            img.at<unsigned char>(ty,tx)=(*pc_rgb_ptr);
+            depth_map.at<cv::Vec3f>(ty,tx)=((*pc_ptr));
+          }
+            occ_grid.at<unsigned char>(ty,tx)+=50;
        }
        pc_rgb_ptr++;
        pc_proj_ptr++;
+       pc_ptr++;
       }
-   
+
+   }
+
+   return;
+}
+void VirtualCamera::sample_point(cv::Point3f& p_xyz,cv::Point2f& p_uv)
+{
+
+
+
+   // calc reprojection diffs
+   //cv::Mat m_xyz=(cv::Mat)p_xyz;
+   //cv::Mat m_uv= (cv::Mat)p_uv;
+   //std::cout<<"m xyz"<<m_xyz<<std::endl;
+    std::vector<cv::Point3f> m_xyz;
+    std::vector<cv::Point2f> m_uv;
+    m_xyz.push_back(p_xyz);
+   cv::projectPoints(m_xyz,rot,trans,cam_mat,dist_coeffs,m_uv);
+   p_uv=m_uv[0];
    return;
 }
 

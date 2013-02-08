@@ -165,6 +165,7 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
     T* dptr=src.ptr<T>(2,1);
 
     int normalizer=4;
+
     for(int px=2*src.cols+2;px<(dst.rows*src.cols);++px)
     {
       if(*mptr==0)
@@ -186,7 +187,6 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
 
   if(src.channels()==3)
   {
-    src.copyTo(dst);
     cv::Vec<T,3>* lptr=src.ptr<cv::Vec<T,3> >(1,0);
     cv::Vec<T,3>* rptr=src.ptr<cv::Vec<T,3> >(1,2);
     cv::Vec<T,3>* mptr=src.ptr<cv::Vec<T,3> >(1,1);
@@ -212,7 +212,7 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
       ++dptr;
     }
   }
-  cv::medianBlur(src,dst,3);
+  cv::medianBlur(dst,dst,3);
 }
 //---------------------------------------------------------
 
