@@ -93,7 +93,12 @@ bool VirtualCamera::calc_extrinsics( std::vector<cv::Point3f> obj_pts,std::vecto
 
     rot=temp_rot;
     trans=temp_trans;
+    //trans[1]=0;
+    //trans[2]=0;
+    //trans[2]=-1.0;
+
    return true;
+
 }
 
 
@@ -165,7 +170,7 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
 
        if (ty>0 && tx>0 && ty<sensor_size.height && tx<sensor_size.width && !isnan(ty) && !isnan(tx) )
        {
-         if(occ_grid.at<unsigned char>(ty,tx)>0) int a=0;//img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
+         if(occ_grid.at<unsigned char>(ty,tx)>0) img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
          else
           {
             img.at<cv::Vec3b>(ty,tx)=(*pc_rgb_ptr);

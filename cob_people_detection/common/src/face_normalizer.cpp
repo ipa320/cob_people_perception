@@ -4,6 +4,7 @@
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(true),
+                                  record_scene(false),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
@@ -321,6 +322,12 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
     //std::cout<<" NO COLOR FEATS"<<std::endl;
     return false;
   }
+  if(record_scene)
+  {
+    std::cout<<"RECORDING SCENE - NO NORMALIZATION"<<std::endl;
+    captureScene(img,depth,offset_);
+    return true;
+ }
    if(debug_)dump_features(img);
 
 
@@ -332,12 +339,13 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
 
 
-   Eigen::Vector3f x_new,y_new,z_new,lefteye;
+   Eigen::Vector3f x_new,y_new,z_new,lefteye,nose;
 
-   lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
+   nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
    x_new<<f_det_xyz_.righteye.x-f_det_xyz_.lefteye.x,f_det_xyz_.righteye.y-f_det_xyz_.lefteye.y,f_det_xyz_.righteye.z-f_det_xyz_.lefteye.z;
-   y_new<<f_det_xyz_.mouth.x-f_det_xyz_.nose.x,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,f_det_xyz_.lefteye.z-f_det_xyz_.mouth.z;
-   y_new<<0,1,0;
+   //y_new<<f_det_xyz_.mouth.x-f_det_xyz_.nose.x,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,(f_det_xyz_.mouth.z-f_det_xyz_.lefteye.z)*0.5;
+   y_new<<f_det_xyz_.mouth.x-f_det_xyz_.nose.x,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,0;
+   //y_new<<0,1,0;
    x_new.normalize();
    y_new.normalize();
 
@@ -350,9 +358,15 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    std::cout<<"new z \n"<<z_new<<std::endl;
    Eigen::Affine3f trafo;
    //Eigen::Affine3f trafo=Eigen::Affine3f::Identity();
-   pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,lefteye,trafo);
+   Eigen::Vector3f origin=nose;
+   origin[2]-=0.5;
+
+   pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,nose,trafo);
    //trafo.setIdentity();
-   
+
+
+   Eigen::Translation3f view_offset(0,0,+0.5);
+   trafo=trafo*view_offset;
 
    cv::Vec3f* ptr=depth.ptr<cv::Vec3f>(0,0);
    Eigen::Vector3f pt;
@@ -360,16 +374,15 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    for(int i=0;i<img.total();i++)
    {
      pt<<(*ptr)[0],(*ptr)[1],(*ptr)[2];
-     pt-=lefteye;
-     //pt=trafo.inverse().rotation()*pt;
-     pt=trafo.rotation()*pt;
-     pt+=lefteye;
+     pt-=nose;
+     pt=trafo*pt;
+     pt+=nose;
     (*ptr)[0]=pt[0];
     (*ptr)[1]=pt[1];
     (*ptr)[2]=pt[2];
      ptr++;
    }
-     
+
 
 
 
@@ -386,20 +399,17 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
   std::cout<< xoffset<<" "<<yoffset<<std::endl;
 
-  //calculate difference in PnP
-  cv::Vec3f rot_orig, rot_norm;
+  ////calculate difference in PnP
+  //cv::Vec3f rot_orig, rot_norm;
 
-  
-
-  //if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_det_img_.as_vector(),false))  return false;
+  //FACE::FaceFeatures<cv::Point3f> f_local_xyz;
+  //face_coordinate_system(f_det_xyz_,f_local_xyz);
+  //f_local_xyz.print();
+  //if(!kinect.calc_extrinsics(f_local_xyz.as_vector(),f_det_img_.as_vector(),false))  return false;
   //rot_orig=kinect.trans;
 
-  //if(!kinect.calc_extrinsics(f_det_xyz_.as_vector(),f_norm_img_.as_vector(),false))  return false;
-  //rot_norm=kinect.trans;
-
-
-  
-  std::cout<<"relative Position= "<<rot_orig[0]<<" , "<<rot_orig[1]<<" , "<<rot_orig[2]<<" , "<<std::endl;
+  //
+  //std::cout<<"relative Position= "<<rot_orig[0]<<" , "<<rot_orig[1]<<" , "<<rot_orig[2]<<" , "<<std::endl;
 
 
   cv::Mat res=cv::Mat::zeros(480,640,CV_8UC3);
@@ -770,5 +780,37 @@ bool FaceNormalizer::get_feature_correspondences( cv::Mat& img, cv::Mat& depth,s
   features_from_depth(depth);
   img_pts=f_det_img_.as_vector();
   obj_pts=f_det_xyz_.as_vector();
+
+}
+
+bool FaceNormalizer::face_coordinate_system(FACE::FaceFeatures<cv::Point3f>& feat_world,FACE::FaceFeatures<cv::Point3f>& feat_local)
+{
+
+  cv::Vec3f x_new = cv::Vec3f(feat_world.righteye.x-feat_world.lefteye.x,feat_world.righteye.y-feat_world.lefteye.y,feat_world.righteye.z-feat_world.lefteye.z);
+  cv::Vec3f y_new = cv::Vec3f(feat_world.mouth.x-   feat_world.nose.x,   feat_world.mouth.y-   feat_world.nose.y,0);
+  cv::Vec3f z_new=x_new.cross(y_new);
+
+
+  cv::normalize(x_new,x_new);
+  cv::normalize(y_new,y_new);
+  cv::normalize(z_new,z_new);
+
+  feat_local.nose.x=0.0;
+  feat_local.nose.y=0.0;
+  feat_local.nose.z=0.0;
+
+  feat_local.lefteye.x= x_new.dot(feat_world.lefteye-feat_world.nose)              ;
+  feat_local.lefteye.y= y_new.dot(feat_world.lefteye-feat_world.nose)             ;
+  feat_local.lefteye.z= z_new.dot(feat_world.lefteye-feat_world.nose)             ;
+
+  feat_local.righteye.x= x_new.dot(feat_world.righteye-feat_world.nose)            ;
+  feat_local.righteye.y= y_new.dot(feat_world.righteye-feat_world.nose)           ;
+  feat_local.righteye.z= z_new.dot(feat_world.righteye-feat_world.nose)           ;
+
+
+  feat_local.mouth.x= x_new.dot(feat_world.mouth-feat_world.nose)                 ;
+  feat_local.mouth.y= y_new.dot(feat_world.mouth-feat_world.nose)                 ;
+  feat_local.mouth.z= z_new.dot(feat_world.mouth-feat_world.nose)                 ;
+
 
 }

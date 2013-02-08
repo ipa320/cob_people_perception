@@ -88,13 +88,13 @@ class FaceFeatures{
                     {
                       std::cout<<"--------------------"<<std::endl;
                       std::cout<<"lefteye:\n";
-                      std::cout<<lefteye.x<<" , "<<lefteye.y<<std::endl;
+                      std::cout<<lefteye.x<<" , "<<lefteye.y<<" , "<<lefteye.z<<std::endl;
                       std::cout<<"righteye:\n";
-                      std::cout<<righteye.x<<" , "<<righteye.y<<std::endl;
+                      std::cout<<righteye.x<<" , "<<righteye.y<<" , "<<righteye.z<<std::endl;
                       std::cout<<"nose:\n";
-                      std::cout<<nose.x<<" , "<<nose.y<<std::endl;
+                      std::cout<<nose.x<<" , "<<nose.y<<" , "<<nose.z<<std::endl;
                       std::cout<<"mouth:\n";
-                      std::cout<<mouth.x<<" , "<<mouth.y<<std::endl;
+                      std::cout<<mouth.x<<" , "<<mouth.y<<" , "<<mouth.y<<std::endl;
                       std::cout<<"--------------------"<<std::endl;
                     }
 };
@@ -147,6 +147,7 @@ class FaceNormalizer{
     bool read_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
     bool captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset);
     bool get_feature_correspondences( cv::Mat& img,  cv::Mat& depth, std::vector<cv::Point2f>& img_pts,std::vector<cv::Point3f>& obj_pts);
+    bool face_coordinate_system(FACE::FaceFeatures<cv::Point3f>& feat_world,FACE::FaceFeatures<cv::Point3f>& feat_local);
 
 template <class T>
 void despeckle(cv::Mat& src,cv::Mat& dst)
@@ -218,6 +219,7 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
   protected:
   int epoch_ctr;
   bool debug_;
+  bool record_scene;
   std::string debug_path_;
 
   cv::Vec2f offset_;
