@@ -116,7 +116,7 @@ class FaceNormalizer{
 
 
     bool normalizeFace( cv::Mat & img,cv::Size& norm_size);
-    bool normalizeFace( cv::Mat & img,cv::Mat& depth,cv::Size& norm_size,cv::Vec2f& offset,cv::Mat& depth_res);
+    bool normalizeFace( cv::Mat & img,cv::Mat& depth,cv::Size& norm_size);
     void set_norm_face(cv::Size& input_size);
     bool normalize_geometry(cv::Mat& img,TRAFO model);
     void get_transform_affine(cv::Mat& trafo);
@@ -143,9 +143,9 @@ class FaceNormalizer{
     void dump_features(cv::Mat& img);
     void dump_img(cv::Mat& data,std::string name);
     void showImg(cv::Mat& img,std::string window_name);
-    bool save_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
-    bool read_scene(cv::Mat& depth,cv::Mat& color,cv::Vec2f& offset,std::string path);
-    bool captureScene( cv::Mat& img,cv::Mat& depth,cv::Vec2f& offset);
+    bool save_scene(cv::Mat& depth,cv::Mat& color,std::string path);
+    bool read_scene(cv::Mat& depth,cv::Mat& color,std::string path);
+    bool captureScene( cv::Mat& img,cv::Mat& depth);
     bool get_feature_correspondences( cv::Mat& img,  cv::Mat& depth, std::vector<cv::Point2f>& img_pts,std::vector<cv::Point3f>& obj_pts);
     bool face_coordinate_system(FACE::FaceFeatures<cv::Point3f>& feat_world,FACE::FaceFeatures<cv::Point3f>& feat_local);
 
@@ -222,7 +222,6 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
   bool record_scene;
   std::string debug_path_;
 
-  cv::Vec2f offset_;
 
   CvHaarClassifierCascade* nose_cascade_;
   CvMemStorage* nose_storage_;

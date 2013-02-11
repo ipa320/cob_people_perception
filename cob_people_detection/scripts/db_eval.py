@@ -241,6 +241,7 @@ class dlg(wx.Frame):
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
     protocol_fn()
+    print self.pf_list
     self.sync_lists()
     self.print_lists()
     os.chdir(self.bin_path)
@@ -264,12 +265,16 @@ class dlg(wx.Frame):
 
   def process_leave_half_out(self):
     self.file_ops(self.leave_k_out,"half")
+    ##append empty list for unknown calssifications
+    self.pf_list.append([])
 
   def process_leave_1_out(self):
     self.file_ops(self.leave_k_out,1)
+    ##append empty list for unknown calssifications
+    self.pf_list.append([])
 
   def process_manual(self):
-    self.pf_list=[[] for i in range(len(self.cl_list))]
+    self.pf_list=[[] for i in range(len(self.cl_list)+1)]
     self.pf_list_format(self.pf_glist.GetItems())
 
   def file_ops(self,fn=-1,add_param=False):
@@ -307,9 +312,12 @@ class dlg(wx.Frame):
 
   def pf_list_format(self,file_list):
     for cl in xrange(len(self.ts_list)):
-      for i in xrange(len(file_list)):
-        if file_list[i] in self.ts_list[cl]:
-          self.pf_list[cl].append(file_list[i])
+        for i in reversed(xrange(len(file_list))):
+          if file_list[i] in self.ts_list[cl]:
+            self.pf_list[cl].append(file_list[i])
+            file_list.remove(file_list[i])
+    for rf in file_list:
+      self.pf_list[-1].append(rf)
 
   def leave_k_out(self,file_list_valid,k):
         num_samples=len(file_list_valid)
@@ -352,7 +360,9 @@ class dlg(wx.Frame):
 
     with open(eval_file_path,"w") as eval_file_stream:
       cont_ctr=0
-      for pf_l in xrange(len(self.pf_list)):
+      print "cl list"+str (len(self.cl_list))
+      print "pf list"+str (len(self.pf_list))
+      for pf_l in xrange(len(self.cl_list)):
         for pf in self.pf_list[pf_l]:
           o_str = pf+" "+str(pf_l)+" "+str(classified_list[cont_ctr])+"\n"
           eval_file_stream.write(o_str)
@@ -362,6 +372,15 @@ class dlg(wx.Frame):
           files.append(pf)
 
           cont_ctr+=1
+      # append unknown probe files as -1
+      for ukf in self.pf_list[-1]:
+            o_str = ukf+" "+str(-1)+" "+str(classified_list[cont_ctr])+"\n"
+            eval_file_stream.write(o_str)
+            results.append(classified_list[cont_ctr])
+            groundtruth.append(-1)
+            files.append(ukf)
+            cont_ctr+=1
+
     self.Evaluator.add_epoch(groundtruth,results,files)
     print "error rate = %f"%self.Evaluator.show_last()
 

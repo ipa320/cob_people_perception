@@ -11,11 +11,7 @@
 
 
 
-void preprocess(cv::Mat& img,FaceNormalizer* fn,bool normalize)
-{
-  double aspect_ratio=1;
-  aspect_ratio=double(img.cols)/double(img.rows);
-  cv::Size norm_size=cv::Size(round(120*aspect_ratio),120);
+void preprocess(cv::Mat& img,FaceNormalizer* fn,bool normalize,cv::Size& norm_size) {
   //cv::Size norm_size=cv::Size(120,120);
   if(normalize)
   {
@@ -167,9 +163,9 @@ int main(int argc, const char *argv[])
   int num_classes = label;
 
 
-
-
-  // load training images
+ cv::Size norm_size;
+  double aspect_ratio=1;
+ // load training images
  std::vector<cv::Mat> img_vec;
  for(int i =0;i<in_vec.size();i++)
  {
@@ -177,7 +173,12 @@ int main(int argc, const char *argv[])
    img =cv::imread(in_vec[i],0);
    //cv::imshow("img",img);
    //cv::waitKey(0);
-   preprocess(img,fn,normalizer);
+   if(i==0)
+   {
+    aspect_ratio=double(img.cols)/double(img.rows);
+    norm_size=cv::Size(round(120*aspect_ratio),120);
+   }
+   preprocess(img,fn,normalizer,norm_size);
    img_vec.push_back(img);
 
  }
@@ -195,7 +196,7 @@ int main(int argc, const char *argv[])
 
   cv::imwrite(ostr.str().c_str(),probe_mat);
 
-  preprocess(probe_mat,fn,normalizer);
+  preprocess(probe_mat,fn,normalizer,norm_size);
 
   cv::Mat oimg;
   probe_mat.convertTo(oimg,CV_8UC1);
