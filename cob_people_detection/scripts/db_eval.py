@@ -224,11 +224,9 @@ class dlg(wx.Frame):
       if len(self.ts_dir_list)>0:
         if(self.protocol_choice.GetCurrentSelection()==0):
           self.process_protocol(self.process_leave_1_out,method,classifier)
-          os.rename(output_file,output_file+str(i))
 
         elif(self.protocol_choice.GetCurrentSelection()==1):
           self.process_protocol(self.process_leave_half_out,method,classifier)
-          os.rename(output_file,output_file+str(i))
 
         elif(self.protocol_choice.GetCurrentSelection()==2):
           print "manual selection not suitable for cross validation"
@@ -246,6 +244,7 @@ class dlg(wx.Frame):
 
         os.chdir(self.cwd)
         self.evaluate()
+        os.rename(output_file,output_file+str(i))
     print self.Evaluator.calc_stats()
     self.Evaluator.reset()
 
