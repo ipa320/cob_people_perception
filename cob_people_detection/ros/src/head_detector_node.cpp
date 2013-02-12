@@ -75,6 +75,7 @@
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 
+#include<opencv/highgui.h>
 using namespace ipa_PeopleDetector;
 
 HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
@@ -123,6 +124,8 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 	cv::Mat depth_image;
 	cv::Mat color_image;
 	convertPclMessageToMat(pointcloud, depth_image, color_image);
+  depth_image.convertTo(depth_image,CV_8UC3,255);
+  cv::imwrite("/home/goa-tz/D.bmp",depth_image);
 
 	// detect heads in the depth image
 	std::vector<cv::Rect> head_bounding_boxes;

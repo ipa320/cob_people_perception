@@ -277,8 +277,11 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   //---------------------------------------
   //if(debug_)std::cout<<"C_00 a priori="<<img.at<float>(0,0)<<std::endl;
   //if(debug_)std::cout<<"C_00 a post="<<C_00<<std::endl;
+  //if(debug_)std::cout<<"C_01 a priori="<<img.at<float>(0,1)<<std::endl;
+  //if(debug_)std::cout<<"C_01 a post="<<0<<std::endl;
   img.at<float>(0,0)=C_00;
   img.at<float>(0,1)=0;
+  //img.at<float>(1,0)=0;
   //--------------------------------------
 
   cv::idct(img,img);
@@ -286,8 +289,8 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
 
   img.convertTo(img,CV_8UC1);
+  cv::blur(img,img,cv::Size(3,3));
 
-  //cv::equalizeHist(img,img);
   if(input_img.channels()==3)
   {
     subVChannel(input_img,img);

@@ -40,8 +40,9 @@ class dlg(wx.Frame):
     self.pf_btn.Bind(wx.EVT_BUTTON,self.OnAddPf)
     self.ok_btn.Bind(wx.EVT_BUTTON,self.OnProcess)
     self.reset_btn.Bind(wx.EVT_BUTTON,self.OnReset)
-    self.vis_btn.Bind(wx.EVT_BUTTON,self.OnRunVis)
-    self.eval_btn.Bind(wx.EVT_BUTTON,self.OnEvaluate)
+    self.mproc_btn.Bind(wx.EVT_BUTTON,self.OnProcessMulti)
+    #self.vis_btn.Bind(wx.EVT_BUTTON,self.OnRunVis)
+    #self.eval_btn.Bind(wx.EVT_BUTTON,self.OnEvaluate)
 
 
     self.del_dir_btn.Bind(wx.EVT_BUTTON,lambda evt,gl=self.ts_glist,l=self.ts_dir_list :self.OnResetList(evt,l,gl))
@@ -60,20 +61,20 @@ class dlg(wx.Frame):
     del_dir_btn_txt=wx.StaticText(parent,-1,"Delete Database")
     self.del_dir_btn=wx.Button(parent,-1,"Reset",(70,30))
 
-    reset_btn_txt=wx.StaticText(parent,-1,"Delete All")
-    self.reset_btn=wx.Button(parent,-1,"Reset",(70,30))
+    reset_btn_txt=wx.StaticText(parent,-1,"Delete all lists")
+    self.reset_btn=wx.Button(parent,-1,"Delete",(70,30))
 
-    ok_btn_txt=wx.StaticText(parent,-1,"Process Config")
+    ok_btn_txt=wx.StaticText(parent,-1,"Processing")
     self.ok_btn=wx.Button(parent,-1,"Process",(70,30))
 
-    vis_btn_txt=wx.StaticText(parent,-1,"Visualize")
-    self.vis_btn=wx.Button(parent,-1,"Ok",(70,30))
+    #vis_btn_txt=wx.StaticText(parent,-1,"Visualize")
+    #self.vis_btn=wx.Button(parent,-1,"Ok",(70,30))
 
-    eval_btn_txt=wx.StaticText(parent,-1,"Evaluate")
-    self.eval_btn=wx.Button(parent,-1,"Ok",(70,30))
+    #eval_btn_txt=wx.StaticText(parent,-1,"Evaluate")
+    #self.eval_btn=wx.Button(parent,-1,"Ok",(70,30))
 
 
-    protocol_choice_txt=wx.StaticText(parent,-1,"Select Protocol")
+    protocol_choice_txt=wx.StaticText(parent,-1,"Testfile selection")
     self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection"])
 
 
@@ -87,6 +88,16 @@ class dlg(wx.Frame):
     self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces","IFLDA"])
 
     self.nrm_checkbox=wx.CheckBox(parent,label="normalize")
+
+    self.upd_checkbox=wx.CheckBox(parent,label="update lists")
+    self.upd_checkbox.SetValue(True)
+
+
+    mproc_btn_txt=wx.StaticText(parent,-1," Cross Validation")
+    self.mproc_btn=wx.Button(parent,-1,"Process",(70,30))
+
+    plist_btn_txt=wx.StaticText(parent,-1,"Print lists")
+    self.plist_btn=wx.Button(parent,-1,"Print",(70,30))
 
     # visual feedback lists
     self.ts_glist=wx.ListBox(choices=[],id=-1,parent=parent,size=wx.Size(80,100))
@@ -109,9 +120,6 @@ class dlg(wx.Frame):
     sizer.Add(self.ts_glist,1,wx.EXPAND)
 
 
-    sizer.Add(protocol_choice_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
-    sizer.Add(self.protocol_choice,1)
-    sizer.Add(self.spin_rep,1)
 
 
 
@@ -123,6 +131,13 @@ class dlg(wx.Frame):
     sizer.Add(self.del_pf_btn,1)
     sizer.Add(self.pf_glist,1,wx.EXPAND)
 
+    sizer.Add(protocol_choice_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
+    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(dummy,1,wx.EXPAND)
+
+    sizer.Add(self.protocol_choice,1)
+    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(dummy,1,wx.EXPAND)
 
     sizer.Add(ok_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
     sizer.Add(dummy,1,wx.EXPAND)
@@ -130,7 +145,7 @@ class dlg(wx.Frame):
     #sizer.Add(classifier_choice_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
 
     sizer.Add(self.ok_btn,1)
-    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(self.upd_checkbox,1)
 
     bs=wx.BoxSizer(wx.HORIZONTAL)
     bs.Add(self.method_choice,1)
@@ -138,13 +153,26 @@ class dlg(wx.Frame):
     bs.Add(self.nrm_checkbox,1)
     sizer.Add(bs,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
 
-    sizer.Add(vis_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
-    sizer.Add(eval_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
-    sizer.Add(reset_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(mproc_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(dummy,1,wx.EXPAND)
+    sizer.Add(dummy,1,wx.EXPAND)
 
-    sizer.Add(self.vis_btn,1)
-    sizer.Add(self.eval_btn,1)
+    #sizer.Add(vis_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    #sizer.Add(eval_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+
+    sizer.Add(self.mproc_btn,1)
+    sizer.Add(self.spin_rep,1)
+    sizer.Add(dummy,1,wx.EXPAND)
+
+    sizer.Add(reset_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(plist_btn_txt,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
+    sizer.Add(dummy,1,wx.EXPAND)
+
     sizer.Add(self.reset_btn,1)
+    sizer.Add(self.plist_btn,1)
+    sizer.Add(dummy,1,wx.EXPAND)
+    #sizer.Add(self.eval_btn,1)
+    #sizer.Add(self.vis_btn,1)
 
     parent.SetSizer(sizer)
 #################### CALLBACK ###########################
@@ -171,6 +199,57 @@ class dlg(wx.Frame):
       self.ts_dir_list.append(self.ts_dlg.GetPath())
       self.ts_glist.Append(self.ts_dir_list[-1])
 
+  def OnProcessMulti(self,e):
+    # get method and classifer
+    method=str()
+    classifier=str()
+    if self.method_choice.GetCurrentSelection()==0:
+      method="FISHER"
+    elif self.method_choice.GetCurrentSelection()==1:
+      method="EIGEN"
+    elif self.method_choice.GetCurrentSelection()==2:
+      method="IFLDA"
+
+    if self.classifier_choice.GetCurrentSelection()==0:
+      classifier="KNN"
+    elif self.classifier_choice.GetCurrentSelection()==1:
+      classifier="SVM"
+    elif self.classifier_choice.GetCurrentSelection()==2:
+      classifier="DIFFS"
+
+    # if lists are supposed to be updated
+    #if self.upd_checkbox.GetValue()==True:
+    for i in xrange(self.spin_rep.GetValue()):
+      output_file=os.path.join(self.output_path,"eval_file")
+      if len(self.ts_dir_list)>0:
+        if(self.protocol_choice.GetCurrentSelection()==0):
+          self.process_protocol(self.process_leave_1_out,method,classifier)
+          os.rename(output_file,output_file+str(i))
+
+        elif(self.protocol_choice.GetCurrentSelection()==1):
+          self.process_protocol(self.process_leave_half_out,method,classifier)
+          os.rename(output_file,output_file+str(i))
+
+        elif(self.protocol_choice.GetCurrentSelection()==2):
+          print "manual selection not suitable for cross validation"
+          return
+
+        # run binary
+        os.chdir(self.bin_path)
+        if self.nrm_checkbox.GetValue()==True:
+          bin_str="./ssa_test "+method+" "+classifier+" 1"
+        else:
+          bin_str="./ssa_test "+method+" "+classifier
+        t=Thread(target=self.run_bin,args=(bin_str,))
+        t.start()
+        t.join()
+
+        os.chdir(self.cwd)
+        self.evaluate()
+    print self.Evaluator.calc_stats()
+    self.Evaluator.reset()
+
+
   def OnProcess(self,e):
     # get method and classifer
     method=str()
@@ -189,24 +268,34 @@ class dlg(wx.Frame):
     elif self.classifier_choice.GetCurrentSelection()==2:
       classifier="DIFFS"
 
-
-    if len(self.ts_dir_list)>0:
-      if(self.protocol_choice.GetCurrentSelection()==0):
-        self.process_protocol(self.process_leave_1_out,method,classifier)
-        output_file=os.path.join(self.output_path,"eval_file")
-        for i in xrange(self.spin_rep.GetValue()-1):
+    # if lists are supposed to be updated
+    if self.upd_checkbox.GetValue()==True:
+      if len(self.ts_dir_list)>0:
+        if(self.protocol_choice.GetCurrentSelection()==0):
           self.process_protocol(self.process_leave_1_out,method,classifier)
-          os.rename(output_file,output_file+str(i))
+          output_file=os.path.join(self.output_path,"eval_file")
+          self.process_protocol(self.process_leave_1_out,method,classifier)
 
-      elif(self.protocol_choice.GetCurrentSelection()==1):
-        self.process_protocol(self.process_leave_half_out,method,classifier)
-        output_file=os.path.join(self.output_path,"eval_file")
-        for i in xrange(self.spin_rep.GetValue()-1):
+        elif(self.protocol_choice.GetCurrentSelection()==1):
           self.process_protocol(self.process_leave_half_out,method,classifier)
-          os.rename(output_file,output_file+str(i))
+          output_file=os.path.join(self.output_path,"eval_file")
+          self.process_protocol(self.process_leave_half_out,method,classifier)
 
-      elif(self.protocol_choice.GetCurrentSelection()==2):
-        self.process_protocol(self.process_manual,method,classifier)
+        elif(self.protocol_choice.GetCurrentSelection()==2):
+          self.process_protocol(self.process_manual,method,classifier)
+
+    # run binary
+    os.chdir(self.bin_path)
+    if self.nrm_checkbox.GetValue()==True:
+      bin_str="./ssa_test "+method+" "+classifier+" 1"
+    else:
+      bin_str="./ssa_test "+method+" "+classifier
+    t=Thread(target=self.run_bin,args=(bin_str,))
+    t.start()
+    t.join()
+
+    os.chdir(self.cwd)
+    self.evaluate()
 
 
     print self.Evaluator.calc_stats()
@@ -241,23 +330,8 @@ class dlg(wx.Frame):
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
     protocol_fn()
-    print self.pf_list
     self.sync_lists()
     self.print_lists()
-    os.chdir(self.bin_path)
-
-
-    if self.nrm_checkbox.GetValue()==True:
-      bin_str="./ssa_test "+method+" "+classifier+" 1"
-    else:
-      bin_str="./ssa_test "+method+" "+classifier
-    t=Thread(target=self.run_bin,args=(bin_str,))
-    t.start()
-    t.join()
-
-    os.chdir(self.cwd)
-    self.evaluate()
-
 
   def run_bin(self,i_str):
     os.system(i_str)
@@ -360,8 +434,6 @@ class dlg(wx.Frame):
 
     with open(eval_file_path,"w") as eval_file_stream:
       cont_ctr=0
-      print "cl list"+str (len(self.cl_list))
-      print "pf list"+str (len(self.pf_list))
       for pf_l in xrange(len(self.cl_list)):
         for pf in self.pf_list[pf_l]:
           o_str = pf+" "+str(pf_l)+" "+str(classified_list[cont_ctr])+"\n"
