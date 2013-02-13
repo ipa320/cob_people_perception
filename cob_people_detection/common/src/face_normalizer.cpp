@@ -6,7 +6,7 @@
 
 using namespace cv;
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
-                                  debug_(true),
+                                  debug_(false),
                                   record_scene(false),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
@@ -126,11 +126,11 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   //norm size from input image
   set_norm_face(input_size_);
 
-  if(debug_)
-  {
-  cv::Mat temp_mat;
-    dump_img(temp_mat,"0_originalRGBD");
-  }
+  //if(debug_)
+  //{
+  //  cv::Mat temp_mat;
+  //  dump_img(temp_mat,"0_originalRGBD");
+  //}
 
   if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
   // radiometric normalization
@@ -139,6 +139,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
 
   //geometric normalization
   if(!normalize_geometry_depth(img,depth)) valid=false ;
+  if(debug_ && valid)dump_img(img,"1_geometry");
 
   //resizing
   cv::resize(img,img,norm_size_,0,0);
@@ -159,32 +160,27 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
   //norm size ffrom input image
   set_norm_face(input_size_);
 
-  if(debug_)
-  {
-    if(img.channels() == 3)
-    {
-    cv::cvtColor(img,img,CV_BGR2RGB);
-    }
-    dump_img(img,"0_original");
-  }
+  //if(debug_)
+  //{
+  //  if(img.channels() == 3)
+  //  {
+  //  cv::cvtColor(img,img,CV_BGR2RGB);
+  //  }
+  //  dump_img(img,"0_original");
+  //}
 
+  if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
+  // radiometric normalization
+  if(!normalize_radiometry(img)) valid=false;
+  if(debug_)dump_img(img,"1_radiometry");
 
   //geometric normalization
   if(!normalize_geometry(img,FaceNormalizer::AFFINE)) valid= false;
   if(debug_)dump_img(img,"1_geometryRGB");
 
-  if(img.channels()==3)
-  {
-  cv::cvtColor(img,img,CV_BGR2GRAY);
-  }
-
   //resizing
   cv::resize(img,img,norm_size_,0,0);
   if(debug_)dump_img(img,"2_resized");
-
-  // radiometric normalization
-  if(!normalize_radiometry(img)) valid= false;
-  if(debug_)dump_img(img,"3_radiometry");
 
   epoch_ctr++;
   return valid;
@@ -356,20 +352,23 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //y_new<<0,1,0;
    z_new=x_new.cross(y_new);
    //lefteye<<0,0,0;
-   std::string path="/share/goa-tz/people_detection/normalization/axes";
-    std::ofstream os(path.c_str() );
-    os<<x_new[0]<<" "<<x_new[1]<<" "<<x_new[2]<<"\n";
-    os<<y_new[0]<<" "<<y_new[1]<<" "<<y_new[2]<<"\n";
-    os<<z_new[0]<<" "<<z_new[1]<<" "<<z_new[2]<<"\n";
+   if(debug_)
+    {
+      std::string path="/share/goa-tz/people_detection/normalization/axes";
+      std::ofstream os(path.c_str() );
+      os<<x_new[0]<<" "<<x_new[1]<<" "<<x_new[2]<<"\n";
+      os<<y_new[0]<<" "<<y_new[1]<<" "<<y_new[2]<<"\n";
+      os<<z_new[0]<<" "<<z_new[1]<<" "<<z_new[2]<<"\n";
 
-    os.close();
+      os.close();
 
-   std::cout<<"new x \n"<<x_new<<std::endl;
-   std::cout<<"new y \n"<<y_new<<std::endl;
-   std::cout<<"new z \n"<<z_new<<std::endl;
+     std::cout<<"new x \n"<<x_new<<std::endl;
+     std::cout<<"new y \n"<<y_new<<std::endl;
+     std::cout<<"new z \n"<<z_new<<std::endl;
+    }
    Eigen::Affine3f trafo;
    Eigen::Vector3f origin=nose;
-   origin[2]-=0.5;
+   origin[2]-=0.7;
 
    pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,nose,trafo);
    //trafo.setIdentity();

@@ -288,35 +288,49 @@ void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,std::vector<cv::Mat>
     thresh[j]=sigma*curr_row;
   }
 }
-void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,std::vector<double>& thresh)
+void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,double& thresh)
 {
-  //TODO: calculate sigma
-  double sigma =1.3f;
-  thresh.resize(num_classes_);
-  class_centers_=cv::Mat::zeros(num_classes_,data.cols,CV_64FC1);
-  SubspaceAnalysis::LDA lda;
-  lda.calcClassMean(data,model_label_arr_,class_centers_,num_classes_);
+  //TODO implemented brute force method -> optimization
+  // implement for case when Di>Pi
+  //  don't use until that....
+  std::vector<double> P(num_classes_,std::numeric_limits<double>::max());
+  std::vector<double> D(num_classes_,std::numeric_limits<double>::min());
+  std::vector<double> Phi(num_classes_,std::numeric_limits<double>::max());
+  thresh=std::numeric_limits<double>::max();
 
-  cv::Mat max_arr,curr_mean,curr_sample,curr_max;
-  max_arr=cv::Mat::ones(num_classes_,data.cols,CV_64FC1);
-  max_arr*=std::numeric_limits<double>::min();
-
-  cv::Mat absdiff_arr;
   for(int i=0;i<data.rows;i++)
-    {
-      int index=(int)model_label_arr_.at<float>(i);
-      curr_sample=data.row(i);
-      curr_mean=class_centers_.row(index);
-      curr_max=max_arr.row(index);
-      cv::absdiff(curr_mean,curr_sample,absdiff_arr);
-      cv::max(curr_max,absdiff_arr,curr_max);
-     }
-
-  for(int j=0;j<num_classes_;j++)
   {
-    cv::Mat curr_row=max_arr.row(j);
-    thresh[j]=sigma*cv::norm(curr_row,cv::NORM_L2);
+    cv::Mat i_row=data.row(i);
+    for(int n=0;n<data.rows;n++)
+    {
+      if(n==i) continue;
+      cv::Mat n_row=data.row(n);
+      double dist = cv::norm(i_row,n_row,cv::NORM_L2);
+      if(model_label_arr_.at<float>(n)==model_label_arr_.at<float>(i))
+      {
+        D[model_label_arr_.at<float>(i)]=std::max(dist,D[model_label_arr_.at<float>(i)]);
+      }
+      else
+      {
+        P[model_label_arr_.at<float>(i)]=std::min(dist,P[model_label_arr_.at<float>(i)]);
+      }
+    }
   }
+
+  // if only one class - P =D
+  if(num_classes_==1)
+  {
+    P[0]=D[0];
+  }
+
+  for(int c=0;c<num_classes_;c++)
+  {
+    thresh=std::min(thresh,(P[c]+D[c]) *0.5);
+    std::cout<<"c"<<c<<": "<<D[c]<<" "<<P[c]<<std::endl;
+  }
+  std::cout<<"THRESH for db: "<<thresh<<std::endl;
+
+
 }
 
 void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& class_index)
@@ -342,25 +356,34 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
       int minDIFSindex;
       calcDIFS(coeff_arr,minDIFSindex,minDIFS,minDIFScoeffs);
 
-      //check against pre calculated threshol
+      if(minDIFS>thresh_)
+      {
+        std::cout<<"NEW threshold: unknown"<<std::endl;
+        class_index=-1;
+      }
+      else
+      {
+        class_index=(int)model_label_arr_.at<float>(minDIFSindex);
+      }
+     // //check against pre calculated threshol
 
-        cv::Mat t_arr=thresholds_[model_label_arr_.at<float>(minDIFSindex) ];
-        cv::Mat mean_arr=class_centers_.row(model_label_arr_.at<float>(minDIFSindex) );
+     //   cv::Mat t_arr=thresholds_[model_label_arr_.at<float>(minDIFSindex) ];
+     //   cv::Mat mean_arr=class_centers_.row(model_label_arr_.at<float>(minDIFSindex) );
 
-        cv::Mat log_arr;
-        cv::compare((coeff_arr-mean_arr),t_arr,log_arr,cv::CMP_GT);
-       // std::cout<<log_arr<<std::endl;
-       // std::cout<<"NRM= "<<cv::norm(log_arr,cv::NORM_L1)<<std::endl;
-        if((int)cv::norm(log_arr,cv::NORM_L1) > 1*255)
-        {
-          class_index=-1;
-          std::cout<<"threshold--> unknown"<<std::endl;
-        }
-        else
-        {
-          std::cout<<"threshold--> known"<<std::endl;
-          class_index=(int)model_label_arr_.at<float>(minDIFSindex);
-        }
+     //   cv::Mat log_arr;
+     //   cv::compare((coeff_arr-mean_arr),t_arr,log_arr,cv::CMP_GT);
+     //  // std::cout<<log_arr<<std::endl;
+     //  // std::cout<<"NRM= "<<cv::norm(log_arr,cv::NORM_L1)<<std::endl;
+     //   if((int)cv::norm(log_arr,cv::NORM_L1) > 1*255)
+     //   {
+     //     class_index=-1;
+     //     std::cout<<"threshold--> unknown"<<std::endl;
+     //   }
+     //   else
+     //   {
+     //     std::cout<<"threshold--> known"<<std::endl;
+     //     class_index=(int)model_label_arr_.at<float>(minDIFSindex);
+     //   }
       break;
     };
 
@@ -814,7 +837,10 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
   project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
 
 
-  calc_threshold(proj_model_data_arr_,thresholds_);
+  //calc_threshold(proj_model_data_arr_,thresholds_);
+  std::cout<<"calculating threshold...";
+  calc_threshold(proj_model_data_arr_,thresh_);
+  std::cout<<"done"<<std::endl;
   this->trained=true;
 
   return true;

@@ -113,7 +113,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
 	m_threshold_unknown = threshold_unknown;
 	m_metric = metric;
 	m_debug = debug;
-  m_depth_mode=true;
+  m_depth_mode=false;
 
 	// load model
 	loadRecognitionModel(identification_labels_to_recognize);
@@ -155,8 +155,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   cv::Mat roi_depth;
   //TODO MAKE TEMPORARY SWITCH OFF
-  if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) ;
-  //if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size,offset,roi_depth)) return ipa_Utils::RET_FAILED;
+  //if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) ;
+  if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) return ipa_Utils::RET_FAILED;
 
 
 	// Save image
@@ -371,8 +371,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	//	}
 	//}
 
-	// PCA
-	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size()-1);
 
 //--------------------------------------------
 //--------------------------------------------
@@ -651,8 +649,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
-	int number_eigenvectors = m_eigenvectors.size();
-	if (number_eigenvectors == 0)
+	if (eff_color.trained==false )
 	{
 		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
 		return ipa_Utils::RET_FAILED;
@@ -665,7 +662,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	for(int i=0; i<(int)face_coordinates.size(); i++)
 	{
 		cv::Rect face = face_coordinates[i];
-		convertAndResize(color_image, resized_8U1, face, resized_size);
+    cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
+		convertAndResize(color_image, resized_8U1, face, norm_size);
 
 
 
@@ -689,7 +687,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
       int res_label;
       eff_color.classify(coeff_arr,SubspaceAnalysis::CLASS_MIN_DIFFS,res_label);
-      identification_labels.push_back(m_current_label_set[res_label]);
+      if(res_label==-1)
+      {
+        identification_labels.push_back("Unknown Face");
+      }
+      else
+      {
+        identification_labels.push_back(m_current_label_set[res_label]);
+      }
 		}
 	}
 
@@ -702,7 +707,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
 	int number_eigenvectors = m_eigenvectors.size();
-	if (number_eigenvectors == 0)
+	if (eff_depth.trained==false &&eff_color.trained==false )
 	{
 		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
 		return ipa_Utils::RET_FAILED;
@@ -719,7 +724,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
     cv::Mat depth_crop_xyz=depth_image(face);
 
      cv::Mat depth_crop;
-    if(!face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,resized_size)) ;
+    cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
+    if(!face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,norm_size)) ;
 
 
      double DFFS;

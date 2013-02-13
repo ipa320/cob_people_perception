@@ -63,7 +63,7 @@ namespace SubspaceAnalysis{
     void calcDFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS);
     void calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& minDIFScoeffs);
     void mat2arr(cv::Mat& src_mat,cv::Mat& dst_mat);
-    void calc_threshold(cv::Mat& data,std::vector<double>& thresh);
+    void calc_threshold(cv::Mat& data,double& thresh);
     void calc_threshold(cv::Mat& data,std::vector<cv::Mat>& thresh);
     //data
     int ss_dim_;
@@ -78,6 +78,7 @@ namespace SubspaceAnalysis{
     std::vector<int> unique_classes_;
 
     std::vector<cv::Mat> thresholds_;
+    double thresh_;
     cv::Mat class_centers_;
 
     //classification flags
