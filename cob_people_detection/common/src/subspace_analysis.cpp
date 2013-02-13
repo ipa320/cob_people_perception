@@ -296,7 +296,6 @@ void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,double& thresh)
   std::vector<double> P(num_classes_,std::numeric_limits<double>::max());
   std::vector<double> D(num_classes_,std::numeric_limits<double>::min());
   std::vector<double> Phi(num_classes_,std::numeric_limits<double>::max());
-  thresh=std::numeric_limits<double>::max();
 
   for(int i=0;i<data.rows;i++)
   {
@@ -343,47 +342,20 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 
   if(num_classes_<2)
   {
-    method = SubspaceAnalysis::CLASS_MIN_DIFFS;
+    method = SubspaceAnalysis::CLASS_DIFS;
   }
 
 
   switch(method)
   {
-    case SubspaceAnalysis::CLASS_MIN_DIFFS:
+    case SubspaceAnalysis::CLASS_DIFS:
     {
       double minDIFS;
       cv::Mat minDIFScoeffs;
       int minDIFSindex;
       calcDIFS(coeff_arr,minDIFSindex,minDIFS,minDIFScoeffs);
+      class_index=(int)model_label_arr_.at<float>(minDIFSindex);
 
-      if(minDIFS>thresh_)
-      {
-        std::cout<<"NEW threshold: unknown"<<std::endl;
-        class_index=-1;
-      }
-      else
-      {
-        class_index=(int)model_label_arr_.at<float>(minDIFSindex);
-      }
-     // //check against pre calculated threshol
-
-     //   cv::Mat t_arr=thresholds_[model_label_arr_.at<float>(minDIFSindex) ];
-     //   cv::Mat mean_arr=class_centers_.row(model_label_arr_.at<float>(minDIFSindex) );
-
-     //   cv::Mat log_arr;
-     //   cv::compare((coeff_arr-mean_arr),t_arr,log_arr,cv::CMP_GT);
-     //  // std::cout<<log_arr<<std::endl;
-     //  // std::cout<<"NRM= "<<cv::norm(log_arr,cv::NORM_L1)<<std::endl;
-     //   if((int)cv::norm(log_arr,cv::NORM_L1) > 1*255)
-     //   {
-     //     class_index=-1;
-     //     std::cout<<"threshold--> unknown"<<std::endl;
-     //   }
-     //   else
-     //   {
-     //     std::cout<<"threshold--> known"<<std::endl;
-     //     class_index=(int)model_label_arr_.at<float>(minDIFSindex);
-     //   }
       break;
     };
 
@@ -445,9 +417,13 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
       std::cout<<"[CLASSIFICATION] method not implemented"<<std::endl;
       break;
     };
-  return;
-}
+  }
 
+  if(use_unknown_thresh_)
+  {
+    verifyClassification(coeff_arr,class_index);
+  }
+  return;
 
 
 }
@@ -497,6 +473,29 @@ void SubspaceAnalysis::XFaces::releaseModel()
       CvKNearest knn_;
 
 }
+
+bool SubspaceAnalysis::XFaces::verifyClassification(cv::Mat& sample,int& index)
+{
+
+
+  double minDIFS=std::numeric_limits<double>::max();
+  for(int n=0;n<proj_model_data_arr_.rows;n++)
+  {
+    if(model_label_arr_.at<float>(n)==(float)index)
+    {
+      cv::Mat curr_row=proj_model_data_arr_.row(n);
+      double dist=cv::norm(curr_row,sample,cv::NORM_L2);
+      minDIFS=std::min(dist,minDIFS);
+    }
+  }
+  if(minDIFS>thresh_)
+  {
+    std::cout<<"NEW threshold: unknown "<<minDIFS<<std::endl;
+    index=-1;
+    return false;
+  }
+  return true;
+}
 //---------------------------------------------------------------------------------
 // EIGENFACES
 //---------------------------------------------------------------------------------
@@ -506,6 +505,7 @@ bool SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vecto
 {
   svm_trained_=false;
   knn_trained_=false;
+  thresh_=std::numeric_limits<double>::max();
   SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
 
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
@@ -591,6 +591,7 @@ bool SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 {
   svm_trained_=false;
   knn_trained_=false;
+  thresh_=std::numeric_limits<double>::max();
   // check if input data is valid
   if(img_vec.size()!=label_vec.size())
   {
@@ -678,18 +679,21 @@ bool SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 //---------------------------------------------------------------------------------
 bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
 {
-  init( img_vec,label_vec, red_dim, SubspaceAnalysis::METH_FISHER, true);
+  init( img_vec,label_vec, red_dim, SubspaceAnalysis::METH_FISHER, true,true);
 }
 bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method)
 {
-  init( img_vec,label_vec, red_dim, method, true);
+  init( img_vec,label_vec, red_dim, method, true,true);
 }
-bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback)
+bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh)
 
 {
   fallback_=fallback;
   svm_trained_=false;
   knn_trained_=false;
+  use_unknown_thresh_= use_unknown_thresh;
+  //initialize Threshold with maximum value
+  thresh_=std::numeric_limits<double>::max();
   SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
 
   SubspaceAnalysis::condense_labels(label_vec);
@@ -838,14 +842,18 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
 
 
   //calc_threshold(proj_model_data_arr_,thresholds_);
+  if(use_unknown_thresh_)
+  {
   std::cout<<"calculating threshold...";
   calc_threshold(proj_model_data_arr_,thresh_);
   std::cout<<"done"<<std::endl;
+  }
   this->trained=true;
 
   return true;
 
 }
+
 
 
 //---------------------------------------------------------------------------------

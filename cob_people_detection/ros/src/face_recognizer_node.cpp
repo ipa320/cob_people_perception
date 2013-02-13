@@ -90,6 +90,9 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	double threshold_unknown;				// Threshold to detect unknown faces
 	int metric; 							// metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 	bool debug;								// enables some debug outputs
+  int class_meth;           // choose classification method
+  int subs_meth;           // choose subspace method
+  bool use_unknown_thresh; // use threshold for unknown faces
 	std::vector<std::string> identification_labels_to_recognize;	// a list of labels of persons that shall be recognized
 	std::cout << "\n--------------------------\nFace Recognizer Parameters:\n--------------------------\n";
 	node_handle_.param("data_directory", data_directory_, data_directory_);
@@ -108,6 +111,14 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	std::cout << "metric = " << metric << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
+  node_handle_.param("subspace_method",subs_meth,0);
+  std::cout<< "subspace method"<<subs_meth<<"\n";
+  node_handle_.param("classification_method",class_meth,0);
+  std::cout<< "classification method"<<class_meth<<"\n";
+
+  node_handle_.param("use_unknown_thresh",use_unknown_thresh,true);
+  std::cout<< " use use unknown thresh: "<<use_unknown_thresh<<"\n";
+
 	std::cout << "identification_labels_to_recognize: \n";
 	XmlRpc::XmlRpcValue identification_labels_to_recognize_list;
 	node_handle_.getParam("identification_labels_to_recognize", identification_labels_to_recognize_list);
@@ -123,7 +134,7 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	}
 
 	// initialize face recognizer
-	face_recognizer_.init(data_directory_, eigenface_size, eigenvectors_per_person, threshold_facespace, threshold_unknown, metric, debug, identification_labels_to_recognize);
+	face_recognizer_.init(data_directory_, eigenface_size, metric, debug, identification_labels_to_recognize,subs_meth,class_meth,use_unknown_thresh);
 
 	// advertise topics
 	face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_recognitions", 1);

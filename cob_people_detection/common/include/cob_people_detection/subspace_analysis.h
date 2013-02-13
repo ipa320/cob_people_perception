@@ -26,7 +26,7 @@ namespace SubspaceAnalysis{
 
   enum Classifier
   {
-    CLASS_MIN_DIFFS,
+    CLASS_DIFS,
     CLASS_SVM,
     CLASS_KNN,
   };
@@ -54,6 +54,7 @@ namespace SubspaceAnalysis{
     void classify(cv::Mat& coeff_arr,Classifier method,int& class_index);
     void projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS);
     void releaseModel();
+    bool verifyClassification(cv::Mat& sample,int& index);
     bool trained;
 
     protected:
@@ -78,6 +79,7 @@ namespace SubspaceAnalysis{
     std::vector<int> unique_classes_;
 
     std::vector<cv::Mat> thresholds_;
+    bool use_unknown_thresh_;
     double thresh_;
     cv::Mat class_centers_;
 
@@ -187,7 +189,7 @@ namespace SubspaceAnalysis{
     virtual ~FishEigFaces(){};
     bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
     bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method);
-    bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback);
+    bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh);
     protected:
     SubspaceAnalysis::PCA pca_;
     SubspaceAnalysis::LDA lda_;

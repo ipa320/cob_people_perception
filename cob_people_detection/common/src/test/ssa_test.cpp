@@ -102,7 +102,7 @@ int main(int argc, const char *argv[])
   else if(!classifier_str.compare("DIFFS"))
   {
     std::cout<<"DIFFS"<<std::endl;
-    classifier = SubspaceAnalysis::CLASS_MIN_DIFFS;
+    classifier = SubspaceAnalysis::CLASS_DIFS;
   }
   else if(!classifier_str.compare("SVM"))
   {

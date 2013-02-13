@@ -14,17 +14,6 @@ enable_face_recognition: true
 # int
 eigenface_size: 160
 
-# number of eigenvectors per person to identify -> controls the total number of eigenvectors
-# int
-eigenvectors_per_person: 5
-
-# Threshold to facespace
-# double
-threshold_facespace: 20000
-# Threshold to detect unknown faces
-# double
-threshold_unknown: 2500
-
 # metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 # int
 metric: 0
@@ -32,3 +21,15 @@ metric: 0
 # enables some debug outputs
 # bool
 debug: false 
+
+# specifies classification algorithm: 0 = DIFS, 1 = KNN, 2 = SVM
+# int
+classification_method: 0
+
+#specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces
+# int
+subspace_method: 0
+
+# is unknown threshold supposed to be utilized: true = use unknown threshold, false = do not use threshold
+# bool
+use_unkown_thresh: false

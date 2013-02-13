@@ -101,7 +101,7 @@ int main(int argc, const char *argv[])
 
   SubspaceAnalysis::FishEigFaces EFF;
 
-  EFF.init(img_vec,label_vec,ss_dim,SubspaceAnalysis::METH_FISHER,true);
+  EFF.init(img_vec,label_vec,ss_dim,SubspaceAnalysis::METH_FISHER,true,true);
 
 
   for(int i=0;i<probe_mat_vec.size();i++)
@@ -117,7 +117,7 @@ int main(int argc, const char *argv[])
   //std::cout<<"class FF SVM= "<<c_FF<<std::endl;
   //FF.classify(coeff_FF,SubspaceAnalysis::CLASS_KNN,c_FF);
   //std::cout<<"class FF KNN= "<<c_FF<<std::endl;
-  //FF.classify(coeff_FF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_FF);
+  //FF.classify(coeff_FF,SubspaceAnalysis::CLASS_DIFS,c_FF);
   //std::cout<<"class FF DIFFS= "<<c_FF<<std::endl;
 
   //SubspaceAnalysis::dump_matrix(coeff_FF,"sampleFF");
@@ -131,7 +131,7 @@ int main(int argc, const char *argv[])
   //std::cout<<"class EF SVM= "<<c_EF<<std::endl;
   //EF.classify(coeff_EF,SubspaceAnalysis::CLASS_KNN,c_EF);
   //std::cout<<"class EF KNN= "<<c_EF<<std::endl;
-  //EF.classify(coeff_EF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EF);
+  //EF.classify(coeff_EF,SubspaceAnalysis::CLASS_DIFS,c_EF);
   //std::cout<<"class EF DIFFS= "<<c_EF<<std::endl;
 
   //SubspaceAnalysis::dump_matrix(coeff_EF,"sampleEF");
@@ -146,7 +146,7 @@ int main(int argc, const char *argv[])
   std::cout<<"class EFF SVM= "<<c_EFF<<std::endl;
   EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_KNN,c_EFF);
   std::cout<<"class EFF KNN= "<<c_EFF<<std::endl;
-  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_MIN_DIFFS,c_EFF);
+  EFF.classify(coeff_EFF,SubspaceAnalysis::CLASS_DIFS,c_EFF);
   std::cout<<"class EFF DIFFS= "<<c_EFF<<std::endl;
 
   SubspaceAnalysis::dump_matrix(coeff_EFF,"sampleEFF");

@@ -106,6 +106,7 @@ class FaceNormalizer{
 
   public:
     FaceNormalizer();
+    FaceNormalizer(int i_epoch_ctr,bool i_debug,bool i_record_scene,std::string i_dbg_path);
     ~FaceNormalizer();
 
       enum TRAFO
@@ -217,6 +218,8 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
 //---------------------------------------------------------
 
   protected:
+
+  void init();
   int epoch_ctr;
   bool debug_;
   bool record_scene;

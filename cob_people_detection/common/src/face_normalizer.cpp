@@ -5,6 +5,18 @@
 
 
 using namespace cv;
+//constructor for debug mode
+FaceNormalizer::FaceNormalizer(int i_epoch_ctr,bool i_debug,bool i_record_scene,std::string i_dbg_path): epoch_ctr(i_epoch_ctr),
+                                  debug_(i_debug),
+                                  record_scene(i_debug),
+                                  //HOME
+                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  //IPA
+                                  debug_path_(i_dbg_path),
+                                  kinect(VirtualCamera::KINECT)
+{
+  this->init();
+}
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(false),
                                   record_scene(false),
@@ -13,6 +25,11 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   //IPA
                                   debug_path_("/share/goa-tz/people_detection/normalization/results/"),
                                   kinect(VirtualCamera::KINECT)
+{
+  this->init();
+}
+
+void FaceNormalizer::init()
 {
   bool home=false;
 
@@ -410,7 +427,6 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //int dim_y=(nose_uv.y-lefteye_uv.y)*4;
    int dim_y=dim_x;
 
-   std::cout<<"dim"<<dim_x<<","<<dim_y<<std::endl;
    cv::Rect roi=cv::Rect(round(lefteye_uv.x-dim_x/4),round(lefteye_uv.y-dim_y/4),dim_x,dim_y);
 
 
@@ -428,8 +444,6 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   processDM(depth,depth);
   despeckle<float>(depth,depth);
 
-  //if(debug_ )dump_img(img,"2_despeckle");
-  //if(debug_)dump_img(res,"virtual_full");
 
    return true;
 }

@@ -103,17 +103,63 @@ ipa_PeopleDetector::FaceRecognizer::~FaceRecognizer(void)
 	}
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize)
+unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh)
 {
 	// parameters
 	m_data_directory = data_directory;
 	m_eigenface_size = eigenface_size;
-	m_eigenvectors_per_person = eigenvectors_per_person;
-	m_threshold_facespace = threshold_facespace;
-	m_threshold_unknown = threshold_unknown;
 	m_metric = metric;
 	m_debug = debug;
   m_depth_mode=false;
+  m_use_unknown_thresh=use_unknown_thresh;
+
+
+  switch(subs_meth)
+  {
+    case 0:
+    {
+      m_subs_meth=SubspaceAnalysis::METH_FISHER;
+      break;
+    }
+    case 1:
+    {
+      m_subs_meth=SubspaceAnalysis::METH_EIGEN;
+      break;
+    }
+    default:
+    {
+      m_subs_meth=SubspaceAnalysis::METH_FISHER;
+      break;
+    }
+  };
+
+
+  switch(class_meth)
+  {
+    case 0:
+    {
+      m_class_meth=SubspaceAnalysis::CLASS_DIFS;
+      break;
+    }
+    case 1:
+    {
+      m_class_meth=SubspaceAnalysis::CLASS_KNN;
+      break;
+    }
+    case 2:
+    {
+      m_class_meth=SubspaceAnalysis::CLASS_SVM;
+      break;
+    }
+    default:
+    {
+      m_class_meth=SubspaceAnalysis::CLASS_DIFS;
+      break;
+    }
+  };
+
+
+
 
 	// load model
 	loadRecognitionModel(identification_labels_to_recognize);
@@ -275,26 +321,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::Fi
   }
 
   m_rec_method=1;
-  if(m_rec_method==1)
+  if(!eff.init(in_vec,labels,ss_dim,m_subs_meth,true,m_use_unknown_thresh))
   {
-    if(eff.init(in_vec,labels,ss_dim,SubspaceAnalysis::METH_FISHER,true))
-    {
-      std::cout<<"Fisherfaces initialized"<<std::endl;
-    }
-  }
-  if (m_rec_method == 0)
-  {
-    if(eff.init(in_vec,labels,ss_dim,SubspaceAnalysis::METH_EIGEN,true))
-    {
-      std::cout<<"Eigenfaces initialized"<<std::endl;
-    }
-    else
-    {
-      std::cout<<"[FACEREC] Eigenfaces could not be initialized ....!"<<std::endl;
+      std::cout<<"[FACEREC] Reognition module could not be initialized ....!"<<std::endl;
       return ipa_Utils::RET_FAILED;
-    }
   }
-  std::cout<<"Model trained"<<std::endl;
 }
 unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vector<std::string>& identification_labels_to_train)
 {
@@ -667,7 +698,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
 
 
-
      double DFFS;
      resized_8U1.convertTo(resized_8U1,CV_64FC1);
 
@@ -675,9 +705,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
         eff_color.projectToSubspace(resized_8U1,coeff_arr,DFFS);
 
 		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
-    //TODO temporary
-    DFFS=0;
-		if(DFFS > m_threshold_facespace)
+    //TODO temporary turned off
+		if(0==1)
 		{
 			// no face
 			identification_labels.push_back("No face");
@@ -686,7 +715,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		{
 
       int res_label;
-      eff_color.classify(coeff_arr,SubspaceAnalysis::CLASS_MIN_DIFFS,res_label);
+      eff_color.classify(coeff_arr,m_class_meth,res_label);
       if(res_label==-1)
       {
         identification_labels.push_back("Unknown Face");
@@ -697,7 +726,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
       }
 		}
 	}
-
 
 	return ipa_Utils::RET_OK;
 }
@@ -745,14 +773,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
       {
         std::cout<<"classification with depth"<<std::endl;
       eff_depth.projectToSubspace(depth_crop,coeff_arr_depth,DFFS);
-      eff_depth.classify(coeff_arr_depth,SubspaceAnalysis::CLASS_MIN_DIFFS,res_label_depth);
+      eff_depth.classify(coeff_arr_depth,m_class_meth,res_label_depth);
       class_depth=depth_str_labels[res_label_depth];
       }
       if(eff_color.trained)
       {
         std::cout<<"classification with color"<<std::endl;
       eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
-      eff_color.classify(coeff_arr_color,SubspaceAnalysis::CLASS_MIN_DIFFS,res_label_color);
+      eff_color.classify(coeff_arr_color,m_class_meth,res_label_color);
       class_color=m_current_label_set[res_label_color];
       }
 

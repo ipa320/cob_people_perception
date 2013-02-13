@@ -93,7 +93,7 @@ public:
 	/// @param data_directory The directory for data files
 	/// @param identification_labels_to_recognize A list of labels of persons that shall be recognized
 	/// @return Return code
-	virtual unsigned long init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize);
+virtual unsigned long init(std::string data_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh);
 
 	/// Initialization function for training purposes (only for capturing images, not the training of recognition models).
 	/// Parameters: see class member explanations.
@@ -204,6 +204,9 @@ protected:
   int             m_rec_method;
   std::vector<bool> dm_exist;
   bool m_depth_mode;
+  SubspaceAnalysis::Classifier m_class_meth;
+  SubspaceAnalysis::Method m_subs_meth;
+  bool m_use_unknown_thresh;
 unsigned long initModel(SubspaceAnalysis::FishEigFaces& eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
 //----------------------------------------------------
 //----------------------------------------------------
