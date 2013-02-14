@@ -167,12 +167,13 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps)
+unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps,bool use_depth)
 {
 	// parameters
 	m_data_directory = data_directory;
 	m_eigenface_size = eigenface_size;
 	m_debug = debug;
+  m_depth_mode=use_depth;
 
 	// load model
 	m_current_label_set.clear();	 // keep empty to load all available data
@@ -205,6 +206,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) return ipa_Utils::RET_FAILED;
 
 
+std::cout<<"ROI DEPTH"<<roi_depth<<std::endl;
 	// Save image
 	face_images.push_back(roi_color);
   face_depthmaps.push_back(roi_depth);
@@ -345,7 +347,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
     depth_str_labels.clear();
     depth_str_labels_unique.clear();
     depth_num_labels.clear();
-    
+
     int lbl=0;
     for(int i=0;i<dm_exist.size();i++)
     {
@@ -889,7 +891,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps)
 {
 
-  std::cout<<"Size VEc "<<face_images.size()<<" "<<face_depthmaps.size()<<std::endl;
+  std::cout<<"Size Vec "<<face_images.size()<<" "<<face_depthmaps.size()<<std::endl;
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "tdata.xml";
 	std::string img_ext = ".bmp";
@@ -1121,22 +1123,31 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
       //cv::imshow("T",temp);
       //cv::waitKey(0);
 
-      if(dm_path.compare(m_data_directory))
+      if(m_depth_mode)
       {
-        cv::Mat dm_temp;
-        cv::FileStorage fs(dm_path,FileStorage::READ);
-        fs["depthmap"]>>dm_temp;
+        if(dm_path.compare(m_data_directory))
+        {
+          cv::Mat dm_temp;
+          cv::FileStorage fs(dm_path,FileStorage::READ);
+          fs["depthmap"]>>dm_temp;
 
-        face_normalizer_.normalizeFace(temp,dm_temp,norm_size);
+          face_normalizer_.normalizeFace(temp,dm_temp,norm_size);
 
-        face_depthmaps.push_back(dm_temp);
-        dm_exist.push_back(true);
-        fs.release();
-      }
-      else dm_exist.push_back(false);
-        face_normalizer_.normalizeFace(temp,norm_size);
-			face_images.push_back(temp);
-		}
+          face_depthmaps.push_back(dm_temp);
+          dm_exist.push_back(true);
+          fs.release();
+        }
+        else dm_exist.push_back(false);
+        {
+          face_normalizer_.normalizeFace(temp,norm_size);
+        face_images.push_back(temp);
+        }
+    }
+    else
+    {
+      face_normalizer_.normalizeFace(temp,norm_size);
+    }
+    }
 
 
 		// clean identification_labels_to_train -> only keep those labels that appear in the training data

@@ -222,6 +222,8 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
   void init();
   int epoch_ctr;
   bool debug_;
+  bool vis_debug_;
+
   bool record_scene;
   std::string debug_path_;
 

@@ -100,7 +100,7 @@ virtual unsigned long init(std::string data_directory, int eigenface_size, int m
 	/// @param data_directory The directory for data files
 	/// @param face_images A list of images of persons that shall be recognized which will be loaded by the function.
 	/// @return Return code
-	virtual unsigned long initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps);
+	virtual unsigned long initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps,bool use_depth);
 
 	/// Function to add a new face
 	/// The function adds a new face to the trained images. The labels are stored internally in m_face_labels. The face_images are stored externally to avoid waste of memory.

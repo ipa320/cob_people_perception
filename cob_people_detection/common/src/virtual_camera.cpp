@@ -133,6 +133,7 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
    if(channels==3)
    {
     cv::add(img,0,img);
+    cv::add(depth_map,0,depth_map);
    // assign color values to calculated image coordinates
    cv::Vec3b* pc_rgb_ptr=pc_rgb.ptr<cv::Vec3b>(0,0);
    for(int i=0;i<pc_proj.rows;++i)
@@ -163,8 +164,8 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
    {
      std::cout<<"ONE CHANNEL PROCESSING"<<std::endl;
    // assign color values to calculated image coordinates
-    img=cv::Mat::zeros(this->sensor_size.height,sensor_size.width,CV_8UC1);
     cv::add(img,0,img);
+    cv::add(depth_map,0,depth_map);
    unsigned char* pc_rgb_ptr=pc_rgb.ptr<unsigned char>(0,0);
    for(int i=0;i<pc_proj.rows;++i)
      {
