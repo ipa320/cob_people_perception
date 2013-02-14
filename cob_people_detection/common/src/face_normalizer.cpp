@@ -429,14 +429,19 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
    cv::Rect roi=cv::Rect(round(lefteye_uv.x-dim_x/4),round(lefteye_uv.y-dim_y/4),dim_x,dim_y);
 
-
   cv::Mat imgres;
+  if(img.channels()==3)imgres=cv::Mat::zeros(480,640,CV_8UC3);
+  if(img.channels()==1)imgres=cv::Mat::zeros(480,640,CV_8UC1);
   cv::Mat dmres=cv::Mat::zeros(480,640,CV_32FC3);
+
   kinect.sample_pc(depth,img,imgres,dmres);
 
-  imgres(roi).copyTo(img);
-  cv::Mat dmcrop;
-  dmres(roi).copyTo(depth);
+  if(roi.height==0 ||roi.width==0) return false;
+
+  img=imgres;
+  depth=dmres;
+  //imgres(roi).copyTo(img);
+  //dmres(roi).copyTo(depth);
 
   despeckle<unsigned char>(img,img);
 
@@ -444,8 +449,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   processDM(depth,depth);
   despeckle<float>(depth,depth);
 
-
-   return true;
+  return true;
 }
 
 

@@ -103,14 +103,14 @@ ipa_PeopleDetector::FaceRecognizer::~FaceRecognizer(void)
 	}
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh)
+unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth)
 {
 	// parameters
 	m_data_directory = data_directory;
 	m_eigenface_size = eigenface_size;
 	m_metric = metric;
 	m_debug = debug;
-  m_depth_mode=false;
+  m_depth_mode=use_depth;
   m_use_unknown_thresh=use_unknown_thresh;
 
 
@@ -772,16 +772,31 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
       if((eff_depth.trained)&& (m_depth_mode==true))
       {
         std::cout<<"classification with depth"<<std::endl;
-      eff_depth.projectToSubspace(depth_crop,coeff_arr_depth,DFFS);
-      eff_depth.classify(coeff_arr_depth,m_class_meth,res_label_depth);
-      class_depth=depth_str_labels[res_label_depth];
+        eff_depth.projectToSubspace(depth_crop,coeff_arr_depth,DFFS);
+        eff_depth.classify(coeff_arr_depth,m_class_meth,res_label_depth);
+        if(res_label_depth==-1)
+        {
+          class_depth="Unknown";
+        }
+        else
+        {
+          class_depth=depth_str_labels[res_label_depth];
+        }
       }
+
       if(eff_color.trained)
       {
         std::cout<<"classification with color"<<std::endl;
-      eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
-      eff_color.classify(coeff_arr_color,m_class_meth,res_label_color);
-      class_color=m_current_label_set[res_label_color];
+        eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
+        eff_color.classify(coeff_arr_color,m_class_meth,res_label_color);
+        if(res_label_color==-1)
+        {
+          class_color="Unknown";
+        }
+        else
+        {
+          class_color=m_current_label_set[res_label_color];
+        }
       }
 
 	//	if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;

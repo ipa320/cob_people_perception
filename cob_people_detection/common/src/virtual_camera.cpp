@@ -132,7 +132,6 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
 
    if(channels==3)
    {
-    img=cv::Mat::zeros(this->sensor_size.height,sensor_size.width,CV_8UC3);
     cv::add(img,0,img);
    // assign color values to calculated image coordinates
    cv::Vec3b* pc_rgb_ptr=pc_rgb.ptr<cv::Vec3b>(0,0);
