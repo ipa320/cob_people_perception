@@ -445,7 +445,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
   kinect.sample_pc(depth,img,imgres,dmres);
 
-  if(roi.height<=0 ||roi.width<=0 || roi.x<0 || roi.y<0) return false;
+  if(roi.height<=0 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows) return false;
 
   std::cout<<"imgres "<<imgres.rows<<" "<<imgres.cols<<std::endl;
   std::cout<<"depthres "<<dmres.rows<<" "<<dmres.cols<<std::endl;
