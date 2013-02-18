@@ -29,6 +29,7 @@ namespace SubspaceAnalysis{
     CLASS_DIFS,
     CLASS_SVM,
     CLASS_KNN,
+    CLASS_RF
   };
 
   enum Method
@@ -44,7 +45,7 @@ namespace SubspaceAnalysis{
   class XFaces
   {
     public:
-    XFaces():trained(false),svm_trained_(false),knn_trained_(false){};
+    XFaces():trained(false),rf_trained_(false),svm_trained_(false),knn_trained_(false){};
 
     virtual ~XFaces(){};
     // TODO: temporary fix - use this one for sqare sized input images
@@ -86,6 +87,9 @@ namespace SubspaceAnalysis{
     //classification flags
     CvSVM svm_;
     bool svm_trained_;
+
+    CvRTrees rf_;
+    bool rf_trained_;
 
     CvKNearest knn_;
     bool knn_trained_;

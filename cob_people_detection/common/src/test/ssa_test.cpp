@@ -42,7 +42,7 @@ int main(int argc, const char *argv[])
   if (argc==1)
   {
     method_str="FISHER";
-    classifier_str="KNN";
+    classifier_str="SVM";
     normalizer=false;
   }
 
@@ -108,6 +108,11 @@ int main(int argc, const char *argv[])
   {
     std::cout<<"SVM"<<std::endl;
     classifier = SubspaceAnalysis::CLASS_SVM;
+  }
+  else if(!classifier_str.compare("RF"))
+  {
+    std::cout<<"RF"<<std::endl;
+    classifier = SubspaceAnalysis::CLASS_RF;
   }
   else
   {
@@ -215,7 +220,7 @@ int main(int argc, const char *argv[])
   SubspaceAnalysis::FishEigFaces EFF;
 
   // calculate Model
-  EFF.init(img_vec,label_vec,ss_dim,method);
+  EFF.init(img_vec,label_vec,ss_dim,method,true,false);
   std::cout<<"EFF model computed"<<std::endl;
 
   //open output file

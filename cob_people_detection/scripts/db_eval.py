@@ -82,7 +82,7 @@ class dlg(wx.Frame):
     self.spin_rep=wx.SpinCtrl(parent,-1,size=wx.Size(50,30),min=1,max=60)
 
     #classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
-    self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS"])
+    self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS","RandomForest"])
 
     method_choice_txt=wx.StaticText(parent,-1,"Select Method")
     self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces","IFLDA"])
@@ -216,6 +216,8 @@ class dlg(wx.Frame):
       classifier="SVM"
     elif self.classifier_choice.GetCurrentSelection()==2:
       classifier="DIFFS"
+    elif self.classifier_choice.GetCurrentSelection()==3:
+      classifier="RF"
 
     # if lists are supposed to be updated
     #if self.upd_checkbox.GetValue()==True:
@@ -266,6 +268,8 @@ class dlg(wx.Frame):
       classifier="SVM"
     elif self.classifier_choice.GetCurrentSelection()==2:
       classifier="DIFFS"
+    elif self.classifier_choice.GetCurrentSelection()==3:
+      classifier="RF"
 
     # if lists are supposed to be updated
     if self.upd_checkbox.GetValue()==True:

@@ -412,6 +412,30 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 
       break;
     };
+    case SubspaceAnalysis::CLASS_RF:
+    {
+      // train SVM when not already trained
+      if(!rf_trained_)
+      {
+        //train svm with model data
+        CvRTParams params;
+
+        cv::Mat data_float;
+        proj_model_data_arr_.convertTo(data_float,CV_32FC1);
+
+
+        rf_.train(data_float,CV_ROW_SAMPLE,model_label_arr_,cv::Mat(),cv::Mat(),cv::Mat(),cv::Mat(),params);
+        rf_trained_=true;
+      }
+
+      // predict using svm
+      cv::Mat sample;
+      coeff_arr.convertTo(sample,CV_32FC1);
+      //class_index=(int)svm_.predict(sample);
+     class_index=(int)rf_.predict(sample);
+
+      break;
+    };
 
     default: {
       std::cout<<"[CLASSIFICATION] method not implemented"<<std::endl;
