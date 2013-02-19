@@ -22,6 +22,7 @@ namespace SubspaceAnalysis{
 
   void error_prompt(std::string fct,std::string desc);
   void unique_elements(std::vector<int> & vec,int& unique_elements,std::vector<int>& distinct_vec);
+  void unique_elements(cv::Mat & mat,int& unique_elements,std::vector<int>& distinct_vec);
 
   void  mat_info(cv::Mat& mat);
 
@@ -58,6 +59,9 @@ namespace SubspaceAnalysis{
     void projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS);
     void releaseModel();
     bool verifyClassification(cv::Mat& sample,int& index);
+    bool saveModel(std::string path);
+    bool loadModel(cv::Mat& eigenvec_arr,cv::Mat& eigenval_arr,cv::Mat& proj_model,cv::Mat& avg_arr,std::vector<int>& label_vec,bool use_unknown_thresh);
+    bool loadModelFromFile(std::string path,bool use_unknown_thresh);
     bool trained;
 
     protected:
@@ -201,7 +205,6 @@ namespace SubspaceAnalysis{
     bool trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
     bool trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method);
     bool trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh);
-    bool loadModel(cv::Mat& eigenvec_arr,cv::Mat& eigenval_arr,cv::Mat& proj_model,cv::Mat& avg_arr,std::vector<int>& label_vec,bool use_unknown_thresh);
 
     protected:
     SubspaceAnalysis::PCA pca_;

@@ -1,10 +1,15 @@
 #include<cob_people_detection/subspace_analysis.h>
 
+#include "boost/filesystem/operations.hpp"
+#include "boost/filesystem/convenience.hpp"
+#include "boost/filesystem/path.hpp"
+#include <boost/thread/mutex.hpp>
+
 void SubspaceAnalysis::error_prompt(std::string fct,std::string desc)
 {
-  std::cout<<"ERROR\n";
-  std::cout<<"Function:......... "<<fct<<std::endl;
-  std::cout<<"Description:...... "<<desc<<std::endl;
+  std::cerr<<"ERROR\n";
+  std::cerr<<"Function:......... "<<fct<<std::endl;
+  std::cerr<<"Description:...... "<<desc<<std::endl;
 }
 void SubspaceAnalysis::dump_matrix(cv::Mat& mat,std::string filename)
 {
@@ -55,6 +60,24 @@ void  SubspaceAnalysis::mat_info(cv::Mat& mat)
   std::cout<<"rows= "<<mat.rows<<"  cols= "<<mat.cols<<std::endl;
   std::cout<<"Type = "<<mat.type()<<std::endl;
   std::cout<<"Channels = "<<mat.channels()<<std::endl;
+}
+void SubspaceAnalysis::unique_elements(cv::Mat & mat,int& unique_elements,std::vector<int>& distinct_vec)
+{
+  bool unique=true;
+  for(int i=0;i<mat.total();++i)
+  {
+
+    if(i!=0)
+    {
+    unique=true;
+    for(int j=0;j<distinct_vec.size();j++)
+    {
+      if(mat.at<float>(i)==distinct_vec[j]) unique =false;
+    }
+    }
+    if(unique==true)distinct_vec.push_back(mat.at<float>(i));
+  }
+  unique_elements=distinct_vec.size();
 }
 void SubspaceAnalysis::unique_elements(std::vector<int> & vec,int& unique_elements,std::vector<int>& distinct_vec)
 {
@@ -515,10 +538,7 @@ void SubspaceAnalysis::XFaces::releaseModel()
       model_label_arr_.release();;
 
 
-
-      //classification flags
       CvSVM svm_;
-
       CvKNearest knn_;
 
 }
@@ -760,7 +780,96 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
 //-----------------------------------------------------------------------------------------------
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool SubspaceAnalysis::FishEigFaces::loadModel(cv::Mat& eigenvec_arr,cv::Mat& eigenval_arr,cv::Mat& avg_arr,cv::Mat& proj_model,std::vector<int>& label_vec,bool use_unknown_thresh)
+
+bool SubspaceAnalysis::XFaces::saveModel(std::string path)
+{
+	std::string filename = "rdata.xml";
+	std::string img_ext = ".bmp";
+
+	std::ostringstream o_path;
+	o_path << path << filename;
+
+	if(boost::filesystem::is_directory(path.c_str()))
+	{
+		if (boost::filesystem::is_regular_file(o_path.str().c_str()))
+		{
+			if (boost::filesystem::remove(o_path.str().c_str()) == false)
+			{
+
+      error_prompt("saveModel()","old rdata.xml can not be removed");
+				return false;
+			}
+		}
+		cv::FileStorage fileStorage(o_path.str().c_str(), cv::FileStorage::WRITE);
+		if(!fileStorage.isOpened())
+		{
+      error_prompt("saveModel()","Output path is invalid");
+			return false;
+		}
+
+    fileStorage << "eigenvectors" << eigenvector_arr_;
+		// Eigenvalue matrix
+		fileStorage << "eigenvalues" << eigenvalue_arr_;
+
+		// Average image
+		fileStorage << "average_image" << avg_arr_;
+
+		// Projection coefficients of the training faces
+		fileStorage << "projected_model_data" << proj_model_data_arr_;
+
+    fileStorage << "model_data_labels"  << model_label_arr_;
+
+		fileStorage.release();
+
+	}
+
+	return true;
+}
+
+bool SubspaceAnalysis::XFaces::loadModelFromFile(std::string path,bool use_unknown_thresh)
+{
+  //if(this->trained)this->releaseModel();
+
+	// secure this function with a mutex
+
+		cv::FileStorage fileStorage(path.c_str(), cv::FileStorage::READ);
+		if(!fileStorage.isOpened())
+		{
+      error_prompt("loadModelFromFile()","Invalid input file");
+      return false;
+		}
+		else
+		{
+      fileStorage["eigenvectors"] >> eigenvector_arr_;
+      fileStorage["eigenvalues"] >> eigenvalue_arr_;
+      fileStorage["average_image"] >> avg_arr_;
+      fileStorage["projected_model_data"] >> proj_model_data_arr_;
+      fileStorage["model_data_labels"]  >> model_label_arr_;
+
+		}
+		fileStorage.release();
+
+    //TODO keep only a selection instead of whole dataset depending on labels
+
+    use_unknown_thresh_= use_unknown_thresh;
+
+    SubspaceAnalysis::unique_elements(model_label_arr_,num_classes_,unique_classes_);
+
+    ss_dim_=proj_model_data_arr_.cols;
+
+    if(use_unknown_thresh_)
+    {
+    std::cout<<"calculating threshold...";
+    calc_threshold(proj_model_data_arr_,thresh_);
+    std::cout<<"done"<<std::endl;
+    }
+    this->trained=true;
+    std::cout<<"FishEigFaces --> model loaded successfully\n";
+    return true;
+
+}
+
+bool SubspaceAnalysis::XFaces::loadModel(cv::Mat& eigenvec_arr,cv::Mat& eigenval_arr,cv::Mat& avg_arr,cv::Mat& proj_model,std::vector<int>& label_vec,bool use_unknown_thresh)
 {
   //check if number of labels equals number of images in training set
   if(label_vec.size()!=proj_model.rows)
@@ -769,6 +878,7 @@ bool SubspaceAnalysis::FishEigFaces::loadModel(cv::Mat& eigenvec_arr,cv::Mat& ei
     return false;
   }
 
+  //if(this->trained)this->releaseModel();
   eigenvector_arr_=eigenvec_arr;
   eigenvalue_arr_=eigenval_arr;
   proj_model_data_arr_=proj_model;
@@ -840,12 +950,6 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
     else return false;
   }
 
-  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
-
-  for(int i=0;i<label_vec.size();i++)
-  {
-    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
-  }
 
   //initialize all matrices
   model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
@@ -854,6 +958,11 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
   eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
   eigenvalue_arr_=cv::Mat(ss_dim_,ss_dim_,CV_64FC1);
+
+  for(int i=0;i<label_vec.size();i++)
+  {
+    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
+  }
 
 
   calcDataMat(img_vec,model_data_arr_);

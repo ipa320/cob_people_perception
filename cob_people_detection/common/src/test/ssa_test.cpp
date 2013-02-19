@@ -217,11 +217,12 @@ int main(int argc, const char *argv[])
 
   int ss_dim=num_classes;
 
-  SubspaceAnalysis::FishEigFaces EFF;
+  SubspaceAnalysis::FishEigFaces* EFF=new SubspaceAnalysis::FishEigFaces();
 
   // calculate Model
-  EFF.init(img_vec,label_vec,ss_dim,method,true,false);
+  //EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
   std::cout<<"EFF model computed"<<std::endl;
+  EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
   //open output file
   std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
@@ -233,28 +234,30 @@ int main(int argc, const char *argv[])
   int c_EFF;
   cv::Mat coeff_EFF;
   double DFFS_EFF;
-  EFF.projectToSubspace(probe,coeff_EFF,DFFS_EFF);
-  EFF.classify(coeff_EFF,classifier,c_EFF);
+  EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
+  EFF->classify(coeff_EFF,classifier,c_EFF);
   os<<c_EFF<<"\n";
   }
   os.close();
   std::cout<<"EFF classified"<<std::endl;
 
   cv::Mat m1_evec,m1_eval,m1_avg,m1_pmd;
-  EFF.getModel(m1_evec,m1_eval,m1_avg,m1_pmd);
+  EFF->getModel(m1_evec,m1_eval,m1_avg,m1_pmd);
+  EFF->saveModel("/share/goa-tz/people_detection/debug/");
 
 
-  SubspaceAnalysis::FishEigFaces* m2=new SubspaceAnalysis::FishEigFaces();
+  //SubspaceAnalysis::FishEigFaces* m2=new SubspaceAnalysis::FishEigFaces();
 
 
-  m2->loadModel(m1_evec,m1_eval,m1_avg,m1_pmd,label_vec,true);
+  //m2->loadModel(m1_evec,m1_eval,m1_avg,m1_pmd,label_vec,false);
+  //m2->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
-  double m2_dffs;
-  cv::Mat m2_coeff;
-  int m2_c;
-  cv::Mat probe=probe_mat_vec[0];
-  m2->projectToSubspace(probe,m2_coeff,m2_dffs);
-  m2->classify(m2_coeff,classifier,m2_c);
+  //double m2_dffs;
+  //cv::Mat m2_coeff;
+  //int m2_c;
+  //cv::Mat probe=probe_mat_vec[0];
+  //m2->projectToSubspace(probe,m2_coeff,m2_dffs);
+  //m2->classify(m2_coeff,classifier,m2_c);
 
 
 
