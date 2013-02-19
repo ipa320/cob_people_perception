@@ -1,6 +1,11 @@
 #include<cob_people_detection/subspace_analysis.h>
 
-
+void SubspaceAnalysis::error_prompt(std::string fct,std::string desc)
+{
+  std::cout<<"ERROR\n";
+  std::cout<<"Function:......... "<<fct<<std::endl;
+  std::cout<<"Description:...... "<<desc<<std::endl;
+}
 void SubspaceAnalysis::dump_matrix(cv::Mat& mat,std::string filename)
 {
   std::string path = "/share/goa-tz/people_detection/eval/vis/";
@@ -204,6 +209,15 @@ void SubspaceAnalysis::XFaces::retrieve(std::vector<cv::Mat>& out_eigenvectors,c
   eigenvalue_arr_.copyTo(out_eigenvalues);
 
 }
+
+void SubspaceAnalysis::XFaces::getModel(cv::Mat& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data)
+{
+  avg_arr_            .copyTo( out_avg            ) ;
+  proj_model_data_arr_.copyTo( out_proj_model_data) ;
+  eigenvector_arr_    .copyTo( out_eigenvectors   ) ;
+  eigenvalue_arr_     .copyTo( out_eigenvalues    ) ;
+}
+
 void SubspaceAnalysis::XFaces::retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data,cv::Size output_dim)
 {
 
@@ -228,6 +242,12 @@ void SubspaceAnalysis::XFaces::retrieve(std::vector<cv::Mat>& out_eigenvectors,c
 
 void SubspaceAnalysis::XFaces::projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS)
 {
+
+  if(this->trained ==false)
+  {
+    std::cout<<"XFaces --> Model not trained - aborting projectToSubspace\n";
+    return;
+  }
 
   cv::Mat src_arr;
   mat2arr(probe_mat,src_arr);
@@ -325,7 +345,7 @@ void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,double& thresh)
   for(int c=0;c<num_classes_;c++)
   {
     thresh=std::min(thresh,(P[c]+D[c]) *0.5);
-    std::cout<<"c"<<c<<": "<<D[c]<<" "<<P[c]<<std::endl;
+    //std::cout<<"c"<<c<<": "<<D[c]<<" "<<P[c]<<std::endl;
   }
   std::cout<<"THRESH for db: "<<thresh<<std::endl;
 
@@ -334,6 +354,11 @@ void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,double& thresh)
 
 void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& class_index)
 {
+  if(this->trained ==false)
+  {
+    std::cout<<"XFaces --> Model not trained - aborting classify\n";
+    return;
+  }
   if(coeff_arr.rows>1)
   {
     std::cout<<"[CLASSIFICATION] only implemented for single sample in single row"<<std::endl;
@@ -701,25 +726,94 @@ bool SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 //---------------------------------------------------------------------------------
 // FishEigFaces
 //---------------------------------------------------------------------------------
+
+SubspaceAnalysis::FishEigFaces::FishEigFaces()
+{
+fallback_=false;
+svm_trained_=false;
+knn_trained_=false;
+use_unknown_thresh_=true;
+
+//initialize Threshold with maximum value
+thresh_=std::numeric_limits<double>::max();
+
+num_classes_=-1;
+
+}
+
+//-----------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//old interface - just for compability reasons  use new trainModel and
+//loadModel
 bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
 {
-  init( img_vec,label_vec, red_dim, SubspaceAnalysis::METH_FISHER, true,true);
+  trainModel( img_vec, label_vec, red_dim);
 }
 bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method)
 {
-  init( img_vec,label_vec, red_dim, method, true,true);
+  trainModel(img_vec, label_vec, red_dim, method);
 }
 bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh)
+{
+  trainModel( img_vec, label_vec, red_dim,method,fallback, use_unknown_thresh);
+}
+//-----------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool SubspaceAnalysis::FishEigFaces::loadModel(cv::Mat& eigenvec_arr,cv::Mat& eigenval_arr,cv::Mat& avg_arr,cv::Mat& proj_model,std::vector<int>& label_vec,bool use_unknown_thresh)
+{
+  //check if number of labels equals number of images in training set
+  if(label_vec.size()!=proj_model.rows)
+  {
+    error_prompt("loadModel()","#labels != #rows in projected model data");
+    return false;
+  }
+
+  eigenvector_arr_=eigenvec_arr;
+  eigenvalue_arr_=eigenval_arr;
+  proj_model_data_arr_=proj_model;
+  avg_arr_=avg_arr;
+
+  use_unknown_thresh_= use_unknown_thresh;
+
+  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
+  SubspaceAnalysis::condense_labels(label_vec);
+  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
+  for(int i=0;i<label_vec.size();i++)
+  {
+    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
+  }
+
+  ss_dim_=proj_model_data_arr_.cols;
+
+  if(use_unknown_thresh_)
+  {
+  std::cout<<"calculating threshold...";
+  calc_threshold(proj_model_data_arr_,thresh_);
+  std::cout<<"done"<<std::endl;
+  }
+  this->trained=true;
+  std::cout<<"FishEigFaces --> model loaded successfully\n";
+  return true;
+}
+
+
+
+bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
+{
+  trainModel( img_vec,label_vec, red_dim, SubspaceAnalysis::METH_FISHER, true,true);
+}
+bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method)
+{
+  trainModel( img_vec,label_vec, red_dim, method, true,true);
+}
+bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh)
 
 {
   fallback_=fallback;
-  svm_trained_=false;
-  knn_trained_=false;
   use_unknown_thresh_= use_unknown_thresh;
   //initialize Threshold with maximum value
-  thresh_=std::numeric_limits<double>::max();
   SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
-
   SubspaceAnalysis::condense_labels(label_vec);
 
   //input data checks
@@ -727,8 +821,7 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
   ss_dim_=red_dim;
   if(img_vec.size()<ss_dim_+1)
   {
-    //TODO: ROS ERROR
-    std::cout<<"EIGFACE: Invalid subspace dimension\n";
+    error_prompt("trainModel()","Invalid subspace dimension");
     return false;
   }
   //check if number of labels equals number of images in training set
@@ -748,13 +841,11 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
   }
 
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
+
   for(int i=0;i<label_vec.size();i++)
   {
     model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
   }
-
-  ss_dim_=red_dim;
-
 
   //initialize all matrices
   model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
@@ -764,10 +855,6 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
   eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
   eigenvalue_arr_=cv::Mat(ss_dim_,ss_dim_,CV_64FC1);
 
-  for(int i=0;i<label_vec.size();i++)
-  {
-    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
-  }
 
   calcDataMat(img_vec,model_data_arr_);
 

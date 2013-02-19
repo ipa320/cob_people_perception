@@ -20,6 +20,7 @@ namespace SubspaceAnalysis{
   void condense_labels(std::vector<int>& labels);
 
 
+  void error_prompt(std::string fct,std::string desc);
   void unique_elements(std::vector<int> & vec,int& unique_elements,std::vector<int>& distinct_vec);
 
   void  mat_info(cv::Mat& mat);
@@ -45,12 +46,13 @@ namespace SubspaceAnalysis{
   class XFaces
   {
     public:
-    XFaces():trained(false),rf_trained_(false),svm_trained_(false),knn_trained_(false){};
+    XFaces():trained(false),svm_trained_(false),knn_trained_(false),rf_trained_(false){};
 
     virtual ~XFaces(){};
     // TODO: temporary fix - use this one for sqare sized input images
     void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
     void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data,cv::Size output_dim);
+    void getModel(cv::Mat& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
     //void classify(cv::Mat& src_mat,int& class_index);
     void classify(cv::Mat& coeff_arr,Classifier method,int& class_index);
     void projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS);
@@ -189,11 +191,18 @@ namespace SubspaceAnalysis{
   class FishEigFaces:public XFaces
   {
     public:
-    FishEigFaces(){};
+    FishEigFaces();
     virtual ~FishEigFaces(){};
+    //old interface TODO change to new
     bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
     bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method);
     bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh);
+
+    bool trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
+    bool trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method);
+    bool trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh);
+    bool loadModel(cv::Mat& eigenvec_arr,cv::Mat& eigenval_arr,cv::Mat& proj_model,cv::Mat& avg_arr,std::vector<int>& label_vec,bool use_unknown_thresh);
+
     protected:
     SubspaceAnalysis::PCA pca_;
     SubspaceAnalysis::LDA lda_;
