@@ -26,6 +26,35 @@ namespace SubspaceAnalysis{
 
   void  mat_info(cv::Mat& mat);
 
+    template <class T>
+    void process_labels(std::vector<T> src_vec,cv::Mat& dst_labels)
+    {
+
+
+      dst_labels=cv::Mat::zeros(1,src_vec.size(),CV_32FC1);
+      dst_labels-=1;
+      bool unique;
+      for(int i=0;i<src_vec.size();++i)
+      {
+        unique=true;
+        for(int j=0;j<dst_labels.rows;j++)
+        {
+          if(i==0)
+          {
+            break;
+          }
+          else if(src_vec[i]==src_vec[j])
+          {
+            unique =false;
+            dst_labels.at<float>(i)=dst_labels.at<float>(j);
+            break;
+          }
+          else continue;
+        }
+        if(unique==true)dst_labels.at<float>(i)=(float)i;
+      }
+
+    }
   enum Classifier
   {
     CLASS_DIFS,
@@ -73,6 +102,9 @@ namespace SubspaceAnalysis{
     void mat2arr(cv::Mat& src_mat,cv::Mat& dst_mat);
     void calc_threshold(cv::Mat& data,double& thresh);
     void calc_threshold(cv::Mat& data,std::vector<cv::Mat>& thresh);
+
+
+
     //data
     int ss_dim_;
     cv::Mat eigenvector_arr_;
@@ -83,7 +115,7 @@ namespace SubspaceAnalysis{
     cv::Mat model_label_arr_;
 
     int num_classes_;
-    std::vector<int> unique_classes_;
+    std::vector<int> unique_labels_;
 
     std::vector<cv::Mat> thresholds_;
     bool use_unknown_thresh_;
@@ -94,11 +126,12 @@ namespace SubspaceAnalysis{
     CvSVM svm_;
     bool svm_trained_;
 
-    CvRTrees rf_;
-    bool rf_trained_;
 
     CvKNearest knn_;
     bool knn_trained_;
+
+    CvRTrees rf_;
+    bool rf_trained_;
   };
 
   //Baseclass for PCA LDA
@@ -137,7 +170,7 @@ namespace SubspaceAnalysis{
       virtual void calcProjMatrix(cv::Mat& data_arr,std::vector<int>& label_vec);
 
       int num_classes_;
-      std::vector<int> unique_classes_;
+      std::vector<int> unique_labels_;
 
       cv::Mat class_mean_arr;
   };

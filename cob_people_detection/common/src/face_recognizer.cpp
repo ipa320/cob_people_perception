@@ -323,7 +323,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::Fi
   }
 
   m_rec_method=1;
-  if(!eff.init(in_vec,labels,ss_dim,m_subs_meth,true,m_use_unknown_thresh))
+  if(!eff.trainModel(in_vec,labels,ss_dim,m_subs_meth,true,m_use_unknown_thresh))
   {
       std::cout<<"[FACEREC] Reognition module could not be initialized ....!"<<std::endl;
       return ipa_Utils::RET_FAILED;
@@ -427,19 +427,25 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
   // reset effs
   eff_depth.releaseModel();
   eff_color.releaseModel();
+
+
+	std::string path = m_data_directory + "training_data/";
+  std::string path_color=m_data_directory +"training_data/"+ "rdata_color.xml" ;
+  std::string path_depth=m_data_directory +"training_data/"+ "rdata_depth.xml" ;
+
   //--> INIT MODEL
   if(m_depth_mode)
   {
   if(face_depthmaps.size()>0)initModel(eff_depth,face_depthmaps,depth_num_labels);
+  eff_depth.saveModel(path_depth);
   }
-  
-  if(face_images.size()>0)initModel(eff_color,face_images,m_label_num);
-  //TODO still necessary=
-  //eff_.retrieve(m_eigenvectors,m_eigenvalues,m_average_image,m_projected_training_faces);
 
-	// save new model
+  if(face_images.size()>0)initModel(eff_color,face_images,m_label_num);
+  eff_color.saveModel(path_color);
+
 	//TODO ALWAYS TRAINING NECESSARY - NO INTERFACE FOR SSA CLASS FOR MODEL ASSOCIATION
   //saveRecognitionModel();
+
 
 	// output
 	if (m_debug)

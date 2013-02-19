@@ -220,9 +220,9 @@ int main(int argc, const char *argv[])
   SubspaceAnalysis::FishEigFaces* EFF=new SubspaceAnalysis::FishEigFaces();
 
   // calculate Model
-  //EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
+  EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
   std::cout<<"EFF model computed"<<std::endl;
-  EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
+  //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
   //open output file
   std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
@@ -243,7 +243,7 @@ int main(int argc, const char *argv[])
 
   cv::Mat m1_evec,m1_eval,m1_avg,m1_pmd;
   EFF->getModel(m1_evec,m1_eval,m1_avg,m1_pmd);
-  EFF->saveModel("/share/goa-tz/people_detection/debug/");
+  EFF->saveModel("/share/goa-tz/people_detection/debug/test.xml");
 
 
   //SubspaceAnalysis::FishEigFaces* m2=new SubspaceAnalysis::FishEigFaces();

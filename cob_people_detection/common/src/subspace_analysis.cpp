@@ -575,7 +575,7 @@ bool SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vecto
   svm_trained_=false;
   knn_trained_=false;
   thresh_=std::numeric_limits<double>::max();
-  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
+  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
 
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
   for(int i=0;i<label_vec.size();i++)
@@ -682,7 +682,7 @@ bool SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 
 
   //number of classes
-  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
+  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
 
   if(num_classes_<2)
   {
@@ -783,24 +783,19 @@ bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vec
 
 bool SubspaceAnalysis::XFaces::saveModel(std::string path)
 {
-	std::string filename = "rdata.xml";
-	std::string img_ext = ".bmp";
 
-	std::ostringstream o_path;
-	o_path << path << filename;
+  std::cout<<"saving model"<<std::endl;
 
-	if(boost::filesystem::is_directory(path.c_str()))
-	{
-		if (boost::filesystem::is_regular_file(o_path.str().c_str()))
+		if (boost::filesystem::is_regular_file(path.c_str()))
 		{
-			if (boost::filesystem::remove(o_path.str().c_str()) == false)
+			if (boost::filesystem::remove(path.c_str()) == false)
 			{
 
       error_prompt("saveModel()","old rdata.xml can not be removed");
 				return false;
 			}
 		}
-		cv::FileStorage fileStorage(o_path.str().c_str(), cv::FileStorage::WRITE);
+		cv::FileStorage fileStorage(path.c_str(), cv::FileStorage::WRITE);
 		if(!fileStorage.isOpened())
 		{
       error_prompt("saveModel()","Output path is invalid");
@@ -820,8 +815,6 @@ bool SubspaceAnalysis::XFaces::saveModel(std::string path)
     fileStorage << "model_data_labels"  << model_label_arr_;
 
 		fileStorage.release();
-
-	}
 
 	return true;
 }
@@ -853,7 +846,7 @@ bool SubspaceAnalysis::XFaces::loadModelFromFile(std::string path,bool use_unkno
 
     use_unknown_thresh_= use_unknown_thresh;
 
-    SubspaceAnalysis::unique_elements(model_label_arr_,num_classes_,unique_classes_);
+    SubspaceAnalysis::unique_elements(model_label_arr_,num_classes_,unique_labels_);
 
     ss_dim_=proj_model_data_arr_.cols;
 
@@ -886,7 +879,7 @@ bool SubspaceAnalysis::XFaces::loadModel(cv::Mat& eigenvec_arr,cv::Mat& eigenval
 
   use_unknown_thresh_= use_unknown_thresh;
 
-  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
+  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
   SubspaceAnalysis::condense_labels(label_vec);
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
   for(int i=0;i<label_vec.size();i++)
@@ -923,7 +916,10 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   fallback_=fallback;
   use_unknown_thresh_= use_unknown_thresh;
   //initialize Threshold with maximum value
-  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_classes_);
+  //process_labels<int>(label_vec,model_label_arr_);
+
+
+  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
   SubspaceAnalysis::condense_labels(label_vec);
 
   //input data checks
@@ -971,7 +967,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   cv::Mat proj_model_data_arr_PCA,P_pca,P_lda;
   switch (method)
   {
-    case SubspaceAnalysis::METH_FISHER: 
+    case SubspaceAnalysis::METH_FISHER:
       {
         if(num_classes_<2)
         {
@@ -1128,7 +1124,7 @@ void SubspaceAnalysis::SSA::decompose(cv::Mat& data_mat)
 SubspaceAnalysis::LDA::LDA(cv::Mat& input_data,std::vector<int>& input_labels,int& num_classes,int& ss_dim) 
 {
 
-  SubspaceAnalysis::unique_elements(input_labels,num_classes_,unique_classes_);
+  SubspaceAnalysis::unique_elements(input_labels,num_classes_,unique_labels_);
   cv::Mat data_work=input_data.clone();
   mean=cv::Mat::zeros(1,data_work.cols,CV_64FC1);
   calcDataMatMean(data_work,mean);
@@ -1206,7 +1202,7 @@ void SubspaceAnalysis::LDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& l
   for(int c=0;c<num_classes_;c++)
   {
     cv::Mat temp;
-    class_index=unique_classes_[c];
+    class_index=unique_labels_[c];
     cv::Mat  class_mean_row=class_mean_arr.row(class_index);
     cv::subtract(class_mean_row,mean,temp);
     cv::mulTransposed(temp,temp,true);
@@ -1234,7 +1230,7 @@ void SubspaceAnalysis::LDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& l
 //
 SubspaceAnalysis::ILDA::ILDA(cv::Mat& input_data,std::vector<int>& input_labels,int& num_classes,int& ss_dim)
 {
-  SubspaceAnalysis::unique_elements(input_labels,num_classes_,unique_classes_);
+  SubspaceAnalysis::unique_elements(input_labels,num_classes_,unique_labels_);
   cv::Mat data_work=input_data.clone();
   mean=cv::Mat::zeros(1,data_work.cols,CV_64FC1);
   calcDataMatMean(data_work,mean);
@@ -1280,7 +1276,7 @@ void SubspaceAnalysis::ILDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& 
   for(int c=0;c<num_classes_;c++)
   {
     cv::Mat temp;
-    class_index=unique_classes_[c];
+    class_index=unique_labels_[c];
     cv::Mat  class_mean_row=class_mean_arr.row(class_index);
     cv::subtract(class_mean_row,mean,temp);
     cv::mulTransposed(temp,temp,true);
