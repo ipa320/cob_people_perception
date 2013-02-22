@@ -175,6 +175,8 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		}
 
 		// save new database status
+  std::cout<<"before saving2:"<<std::endl;
+  std::cout<<face_depthmaps_.back()<<std::endl;
 		face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 		// close action
@@ -229,8 +231,8 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
 		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
 		cv::Rect head_bounding_box(head_rect.x, head_rect.y, head_rect.width, head_rect.height);
-		cv::Mat img_color = color_image.clone();
-		cv::Mat img_depth = depth_image.clone();
+		cv::Mat img_color = color_image;
+		cv::Mat img_depth = depth_image;
     // normalize face
 		//if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_)==ipa_Utils::RET_FAILED)
 		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_,face_depthmaps_)==ipa_Utils::RET_FAILED)
@@ -324,6 +326,8 @@ void FaceCaptureNode::updateDataServerCallback(const cob_people_detection::updat
 	}
 
 	// save new database status
+  std::cout<<"before saving1:"<<std::endl;
+  std::cout<<face_depthmaps_.back()<<std::endl;
 	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 	// close action
@@ -356,6 +360,8 @@ void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::delet
 	}
 
 	// save new database status
+  std::cout<<"before saving1:"<<std::endl;
+  std::cout<<face_depthmaps_.back()<<std::endl;
 	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 	// close action

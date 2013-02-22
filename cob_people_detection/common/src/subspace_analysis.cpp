@@ -969,6 +969,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   {
     case SubspaceAnalysis::METH_FISHER:
       {
+        std::cout<<"FISHERFACES"<<std::endl;
         if(num_classes_<2)
         {
           std::cout<<"FISHERFACES ERROR : More than one class is necessary"<<std::endl;
@@ -1041,6 +1042,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
 
     case SubspaceAnalysis::METH_EIGEN: 
       {
+        std::cout<<"EIGENFACES"<<std::endl;
         //initiate PCA
         pca_=SubspaceAnalysis::PCA(model_data_arr_,ss_dim_);
         eigenvector_arr_=pca_.eigenvecs;

@@ -18,6 +18,19 @@ FaceNormalizer::FaceNormalizer(int i_epoch_ctr,bool i_debug,bool i_record_scene,
 {
   this->init();
 }
+FaceNormalizer::FaceNormalizer(FNConfig& config): epoch_ctr(0),
+                                  debug_(true),
+                                  record_scene(false),
+                                  //HOME
+                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  //IPA
+                                  debug_path_("/share/goa-tz/people_detection/normalization/results/"),
+                                  kinect(VirtualCamera::KINECT),
+                                  vis_debug_(false),
+                                  config_(config)
+{
+  this->init();
+}
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(true),
                                   record_scene(false),
@@ -26,8 +39,12 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   //IPA
                                   debug_path_("/share/goa-tz/people_detection/normalization/results/"),
                                   kinect(VirtualCamera::KINECT),
-                                  vis_debug_(true)
+                                  vis_debug_(false)
 {
+  config_.eq_ill=true;
+  config_.align=false;
+  config_.resize=true;
+  config_.cvt2gray=true;
   this->init();
 }
 
@@ -126,9 +143,32 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth)
   std::string path= path_root;
   path.append(boost::lexical_cast<std::string>(epoch_ctr));
   save_scene(depth,img,path);
+
+  std::vector<cv::Mat> channels_xyz,channels_rgb;
+  cv::split(depth,channels_xyz);
+  channels_xyz[2].convertTo(channels_xyz[2],CV_8U,255);
+  cv::imshow("saving depth...",channels_xyz[2]);
+
+  cv::split(img,channels_rgb);
+  channels_rgb[2].convertTo(channels_rgb[2],CV_8U,255);
+  cv::imshow("saving rgb...",channels_rgb[2]);
+
+    cv::waitKey(50);
+
+
   epoch_ctr++;
 
   return true;
+}
+
+bool FaceNormalizer::normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_size, cv::Mat& DM)
+{
+  normalizeFace(RGB,XYZ,norm_size);
+  XYZ.copyTo(DM);
+  //reducing z coordinate and performing whitening transformation
+  processDM(DM,DM);
+  //despeckle<float>(DM,DM);
+
 }
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_size)
 {
@@ -151,26 +191,39 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   //  dump_img(temp_mat,"0_originalRGBD");
   //}
 
-  if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
-  // radiometric normalization
-  //if(!normalize_radiometry(img)) valid=false;
-  if(debug_)dump_img(img,"1_radiometry");
 
   //geometric normalization
-  if(!normalize_geometry_depth(img,depth)) valid=false ;
-  if(debug_ && valid)dump_img(img,"1_geometry");
+  if(config_.align)
+  {
+    if(!normalize_geometry_depth(img,depth)) valid=false ;
+    if(debug_ && valid)dump_img(img,"1_geometry");
+  }
 
+
+  if(config_.cvt2gray)
+  {
+    if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
+  }
+
+  if(config_.eq_ill)
+  {
+    // radiometric normalization
+    if(!normalize_radiometry(img)) valid=false;
+    if(debug_)dump_img(img,"1_radiometry");
+  }
+
+  if(config_.resize)
+  {
   //resizing
   cv::resize(img,img,norm_size_,0,0);
   cv::resize(depth,depth,norm_size_,0,0);
+  }
 
    if(vis_debug_)
    {
    cv::imshow("resized",img);
    cv::waitKey(10);
    }
-
-
 
   return valid;
 }
@@ -310,7 +363,7 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
 
   img.convertTo(img,CV_8UC1);
-  cv::blur(img,img,cv::Size(3,3));
+  //cv::blur(img,img,cv::Size(3,3));
 
   if(input_img.channels()==3)
   {
@@ -400,7 +453,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //trafo.setIdentity();
 
 
-   Eigen::Translation3f view_offset(0,0,0.7);
+   Eigen::Translation3f view_offset(0,0,0.8);
    trafo=trafo*view_offset;
 
    cv::Vec3f* ptr=depth.ptr<cv::Vec3f>(0,0);
@@ -458,10 +511,9 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   dmres(roi).copyTo(depth);
 
   despeckle<unsigned char>(img,img);
+  //only take central region
+  img=img(cv::Rect(2,2,img.cols-4,img.rows-4));
 
-  //reducing the depth map
-  processDM(depth,depth);
-  despeckle<float>(depth,depth);
 
   return true;
 }

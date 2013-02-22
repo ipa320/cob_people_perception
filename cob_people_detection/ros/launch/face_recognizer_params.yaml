@@ -24,7 +24,7 @@ debug: false
 
 #specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces
 # int
-subspace_method: 0
+subspace_method: 1
 
 # specifies classification algorithm: 0 = DIFS, 1 = KNN, 2 = SVM
 # int
@@ -35,4 +35,4 @@ classification_method: 2
 use_unknown_thresh: true
 
 # use depth
-use_depth: false
+use_depth: true

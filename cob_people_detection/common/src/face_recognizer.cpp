@@ -206,10 +206,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) return ipa_Utils::RET_FAILED;
 
 
-std::cout<<"ROI DEPTH"<<roi_depth<<std::endl;
+
 	// Save image
 	face_images.push_back(roi_color);
-  face_depthmaps.push_back(roi_depth);
+  face_depthmaps.push_back(roi_depth_xyz);
 	m_face_labels.push_back(label);
   dm_exist.push_back(true);
 
@@ -733,6 +733,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
         identification_labels.push_back(m_current_label_set[res_label]);
       }
 		}
+
+
 	}
 
 	return ipa_Utils::RET_OK;
@@ -759,14 +761,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
     cv::Mat color_crop=color_image(face);
     cv::Mat depth_crop_xyz=depth_image(face);
 
-     cv::Mat depth_crop;
+     cv::Mat DM_crop;
     cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
-    if(!face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,norm_size)) ;
+    if(!face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,norm_size,DM_crop)) ;
 
 
      double DFFS;
      cv::Mat temp,temp2;
-     depth_crop.convertTo(depth_crop,CV_64FC1);
+     DM_crop.convertTo(DM_crop,CV_64FC1);
      color_crop.convertTo(color_crop,CV_64FC1);
      //depth_crop.convertTo(temp2,CV_8UC1,255);
      //cv::equalizeHist(temp2,temp2);
@@ -780,7 +782,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
       if((eff_depth.trained)&& (m_depth_mode==true))
       {
         std::cout<<"classification with depth"<<std::endl;
-        eff_depth.projectToSubspace(depth_crop,coeff_arr_depth,DFFS);
+        eff_depth.projectToSubspace(DM_crop,coeff_arr_depth,DFFS);
         eff_depth.classify(coeff_arr_depth,m_class_meth,res_label_depth);
         if(res_label_depth==-1)
         {
@@ -804,6 +806,31 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
         else
         {
           class_color=m_current_label_set[res_label_color];
+        }
+      }
+
+
+      //compare and combine classification resutls
+      //
+      // case 1 - A  A        --> A
+      // case 2 - C  Unknown --> A
+      // case 3 - Unknown A   --> A
+      std::string classification_combined;
+      if(class_color.compare(class_depth)==0) classification_combined=class_color; //case 1
+      else
+      {
+        bool found=false;
+        for(int l=0;l<depth_str_labels.size();l++)
+        {
+          if (class_color.compare(depth_str_labels[l])==0 ) found = true;
+        }
+        if(!found && class_depth.compare("Unknown")== 0) classification_combined=class_color;
+        else if(!found && class_color.compare("Unknown")==0) classification_combined=class_depth;
+        else
+        {
+          // this is the case when the algorithm yields different labels
+          // insert weighting mechanism --> disadvantage of winner takes it all
+          classification_combined=class_color;
         }
       }
 
@@ -896,6 +923,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 }
 unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps)
 {
+
 
   std::cout<<"Size Vec "<<face_images.size()<<" "<<face_depthmaps.size()<<std::endl;
 	std::string path = m_data_directory + "training_data/";
@@ -1133,11 +1161,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
       {
         if(dm_path.compare(m_data_directory))
         {
-          cv::Mat dm_temp;
+          cv::Mat xyz_temp,dm_temp;
           cv::FileStorage fs(dm_path,FileStorage::READ);
-          fs["depthmap"]>>dm_temp;
+          fs["depthmap"]>>xyz_temp;
 
-          face_normalizer_.normalizeFace(temp,dm_temp,norm_size);
+          face_normalizer_.normalizeFace(temp,xyz_temp,norm_size,dm_temp);
 
           face_depthmaps.push_back(dm_temp);
           dm_exist.push_back(true);

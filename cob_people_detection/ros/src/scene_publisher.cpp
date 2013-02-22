@@ -43,6 +43,7 @@ void process()
   std::stringstream xml_stream,jpg_stream;
   xml_stream<<file.c_str()<<"d.xml";
   jpg_stream<<file.c_str()<<"c.bmp";
+  //jpg_stream<<file.c_str()<<"c.jpg";
 
 
   //Load depth map
@@ -52,13 +53,24 @@ void process()
   cv::FileStorage fs(xml_stream.str().c_str(),cv::FileStorage::READ);
   fs["depthmap"]>> dm;
   fs.release();
+//  cv::Mat dm_cp,dm_cp_roi;
+//  dm.convertTo(dm_cp,CV_8UC1,255);
+//  cv::Rect roi=cv::Rect(320-100,240-100,200,200);
+//  cv::equalizeHist(dm_cp(roi),dm_cp_roi);
+//  cv::imwrite("/share/goa-tz/people_detection/debug/img_depth.jpg",dm_cp);
+// // imshow("DM",dm_cp_roi);
+// // cv::waitKey(10);
 
 
   //Load color map
-  cv::Mat img=cv::Mat(1280,960,CV_16UC3);
+  cv::Mat img;
   img=cv::imread(jpg_stream.str().c_str());
   img.convertTo(img,CV_8UC3);
   cv::resize(img,img,cv::Size(640,480));
+  //cv::Mat img_cp,img_cp_roi;
+  //cv::cvtColor(img,img_cp,CV_RGB2GRAY);
+  //cv::equalizeHist(img_cp(roi),img_cp_roi);
+  //cv::imwrite("/share/goa-tz/people_detection/debug/img_rgb.jpg",img_cp);
 
 
 
@@ -70,21 +82,30 @@ void process()
   pc.height=480;
   Eigen::Matrix3f cam_mat;
   Eigen::Vector3f pt;
-  cam_mat << 524.90160178307269,0.0,312.13543361773458,0.0,525.85226379335393,254.73474482242005,0.0,0.0,1.0;
+  cam_mat << 524.90160178307269,0.0,320.13543361773458,0.0,525.85226379335393,240.73474482242005,0.0,0.0,1.0;
   Eigen::Matrix3f cam_mat_inv=cam_mat.inverse();
   int index=0;
   for(int r=0;r<dm.rows;r++)
   {
     for(int c=0;c<dm.cols;c++)
     {
-    pt  << c,r,1.0;
-    pt=cam_mat_inv*pt;
-    pt[2]=dm.at<double>(r,c);
+    //pt  << c,r,1.0/525;
+    //pt=cam_mat_inv*pt;
+
+    pt[0]=(c-320);
+    pt[1]=(r-240);
+    pt[2]=525;
+
+    pt.normalize();
+
+    pt=pt*dm.at<double>(r,c);
 
     pcl::PointXYZRGB point;
     point.x=(float)pt[0];
     point.y=(float)pt[1];
     point.z=(float)pt[2];
+    //if(point.z>3) point.z=0.0;
+
     uint32_t rgb = (static_cast<uint32_t>(img.at<cv::Vec3b>(r,c)[0]) << 16 |static_cast<uint32_t>(img.at<cv::Vec3b>(r,c)[1]) << 8 | static_cast<uint32_t>(img.at<cv::Vec3b>(r,c)[2]));
     point.rgb = *reinterpret_cast<float*>(&rgb);
     pc.points.push_back (point);

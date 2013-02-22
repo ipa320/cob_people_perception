@@ -102,10 +102,20 @@ class FaceFeatures{
 
 };
 
+
 class FaceNormalizer{
 
   public:
+      struct FNConfig
+      {
+      bool eq_ill;
+      bool align;
+      bool resize;
+      bool cvt2gray;
+      };
+
     FaceNormalizer();
+    FaceNormalizer(FNConfig& config);
     FaceNormalizer(int i_epoch_ctr,bool i_debug,bool i_record_scene,std::string i_dbg_path);
     ~FaceNormalizer();
 
@@ -116,8 +126,11 @@ class FaceNormalizer{
       };
 
 
+
+
     bool normalizeFace( cv::Mat & img,cv::Size& norm_size);
     bool normalizeFace( cv::Mat & img,cv::Mat& depth,cv::Size& norm_size);
+    bool normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_size, cv::Mat& DM);
     void set_norm_face(cv::Size& input_size);
     bool normalize_geometry(cv::Mat& img,TRAFO model);
     void get_transform_affine(cv::Mat& trafo);
@@ -226,7 +239,7 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
 
   bool record_scene;
   std::string debug_path_;
-
+  FNConfig config_;
 
   CvHaarClassifierCascade* nose_cascade_;
   CvMemStorage* nose_storage_;
