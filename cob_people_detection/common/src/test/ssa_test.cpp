@@ -22,7 +22,7 @@ void preprocess(cv::Mat& img,FaceNormalizer* fn,bool normalize,cv::Size& norm_si
   }
   else
   {
-    cv::resize(img,img,norm_size); 
+    cv::resize(img,img,norm_size);
   }
 
 
@@ -121,11 +121,11 @@ int main(int argc, const char *argv[])
 
 
   //HOME
-  //std::string training_set_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/training_set_list";
-  //std::string probe_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/probe_file_list";
+  std::string training_set_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/training_set_list";
+  std::string probe_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/probe_file_list";
   //IPA
-  std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
-  std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
+  //std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
+  //std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
 
 
   //read probe file
@@ -194,7 +194,8 @@ int main(int argc, const char *argv[])
  for(int i =0 ;i<probe_file_vec.size();i++)
  {
   std::stringstream ostr,nstr;
-  nstr<<"/share/goa-tz/people_detection/eval/picdump/";
+  //nstr<<"/share/goa-tz/people_detection/eval/picdump/";
+  nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
   ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
 
   cv::Mat probe_mat=cv::imread(probe_file_vec[i],0);
@@ -225,7 +226,8 @@ int main(int argc, const char *argv[])
   //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
   //open output file
-  std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
+  //std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
+  std::string path = "/share/goa-tz/people_detection/deug/eval/eval_tool_files/classified_output";
   std::ofstream os(path.c_str() );
 
   for(int i=0;i<probe_mat_vec.size();i++)

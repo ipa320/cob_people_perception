@@ -3,6 +3,7 @@ import wx
 import os
 import sys
 import random
+import math
 
 import math
 from threading import Thread
@@ -12,12 +13,13 @@ class dlg(wx.Frame):
   def __init__(self):
 
     # varables for gui
-    #self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
-    #self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
-    self.base_path="/share/goa-tz/people_detection/eval/"
-    self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidfiles"
+    self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
+    #self.base_path="/share/goa-tz/people_detection/eval/"
+    #self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
 
-    self.Evaluator=Evaluator()
+    self.Evaluator=Evaluator(invalid_list=self.invalid_file_path)
 
 
     self.output_path=os.path.join(self.base_path,"eval_tool_files")
@@ -75,7 +77,7 @@ class dlg(wx.Frame):
 
 
     protocol_choice_txt=wx.StaticText(parent,-1,"Testfile selection")
-    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection"])
+    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection","unknown","yale"])
 
 
     #spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
@@ -233,6 +235,10 @@ class dlg(wx.Frame):
         elif(self.protocol_choice.GetCurrentSelection()==2):
           print "manual selection not suitable for cross validation"
           return
+        elif(self.protocol_choice.GetCurrentSelection()==3):
+          self.process_protocol(self.process_unknown,method,classifier)
+        elif(self.protocol_choice.GetCurrentSelection()==4):
+          self.process_protocol(self.process_yale,method,classifier)
 
         # run binary
         os.chdir(self.bin_path)
@@ -286,6 +292,10 @@ class dlg(wx.Frame):
 
         elif(self.protocol_choice.GetCurrentSelection()==2):
           self.process_protocol(self.process_manual,method,classifier)
+        elif(self.protocol_choice.GetCurrentSelection()==3):
+          self.process_protocol(self.process_unknown,method,classifier)
+        elif(self.protocol_choice.GetCurrentSelection()==4):
+          self.process_protocol(self.process_yale,method,classifier)
 
     # run binary
     os.chdir(self.bin_path)
@@ -333,12 +343,36 @@ class dlg(wx.Frame):
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
     protocol_fn()
+    print self.pf_list
     self.sync_lists()
+    print self.pf_list
     self.print_lists()
+
 
   def run_bin(self,i_str):
     os.system(i_str)
 
+
+  def process_yale(self):
+    k=2
+    self.file_ops(self.yale,k)
+   # k=-1
+   # self.file_ops(self.yale,k)
+
+  def process_unknown(self):
+    C=len(self.cl_list)
+    ctr=0
+    rnd_list=list()
+    k=[False for i in range(len(self.cl_list))]
+    while ctr < math.floor(C*0.5):
+      rnd=random.randint(0,C-1)
+      if  rnd not in  rnd_list:
+        rnd_list.append(rnd)
+        k[rnd]=True
+        ctr+=1
+    self.pf_list=[[] for i in range(len(self.cl_list)+1)]
+
+    self.file_ops(self.unknown,k)
 
   def process_leave_half_out(self):
     self.file_ops(self.leave_k_out,"half")
@@ -396,6 +430,112 @@ class dlg(wx.Frame):
     for rf in file_list:
       self.pf_list[-1].append(rf)
 
+  def yale(self, files,k):
+   # remove files from ts list
+   # if k==-1:
+   #   for file in self.ts_list:
+   #     if file not in self.pf_list:
+   #       self.ts_list.remove(file)
+
+
+    ss1=list()
+    ss2=list()
+    ss3=list()
+    ss4=list()
+    ss5=list()
+    for item in files:
+      if int(item[-11:-8]) <=12:
+        ss1.append(item)
+        continue
+      elif int(item[-11:-8]) <=25:
+        ss2.append(item)
+        continue
+      elif int(item[-11:-8]) <=50:
+        ss3.append(item)
+        continue
+      elif int(item[-11:-8]) <=77:
+        ss4.append(item)
+        continue
+      elif int(item[-11:-8]) >77:
+        ss5.append(item)
+        continue
+
+    if k==2:
+      self.pf_list.append(ss2)
+      for f in ss3:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+      for f in ss4:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+      for f in ss5:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+    if k==3:
+      self.pf_list.append(ss3)
+      for f in ss2:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+      for f in ss4:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+      for f in ss5:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+    if k==4:
+      self.pf_list.append(ss4)
+      for f in ss2:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+      for f in ss3:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+      for f in ss5:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+    if k==5:
+      self.pf_list.append(ss5)
+      for f in ss2:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+      for f in ss3:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+      for f in ss4:
+        for c in self.ts_list:
+          if f in c:
+            c.remove(f)
+
+  def unknown(self, files,k):
+      if k[0] ==True:
+        self.pf_list[-1].extend(files)
+        self.pf_list[len(self.cl_list)-len(k)]=[]
+        del k[0]
+      else:
+        num_samples=len(files)
+        n=num_samples/2
+        success_ctr=0
+        rnd_list=list()
+        pf_list=list()
+        while len(rnd_list)<n:
+          rnd_no=random.randint(0,num_samples-1)
+          if not rnd_no in rnd_list :
+            pf_list.append(files[rnd_no])
+            rnd_list.append(rnd_no)
+        self.pf_list[len(self.cl_list)-len(k)].extend(pf_list)
+        del k[0]
+
   def leave_k_out(self,file_list_valid,k):
         num_samples=len(file_list_valid)
         if(k is "half"):
@@ -419,9 +559,12 @@ class dlg(wx.Frame):
 
 
   def sync_lists(self):
-    for c in xrange(len(self.ts_list)):
+    for c in xrange(len(self.pf_list)):
       for s in self.pf_list[c]:
-        self.ts_list[c].remove(s)
+        if len(s) >0:
+          for ts in self.ts_list:
+            if s in ts:
+              ts.remove(s)
 
 
   def evaluate(self):
@@ -461,6 +604,7 @@ class dlg(wx.Frame):
 
 
   def print_lists(self):
+    #print self.pf_list
 
     print "[EVAL TOOL] creating lists"
     training_set_list_path=os.path.join(self.output_path,"training_set_list")
@@ -480,12 +624,12 @@ class dlg(wx.Frame):
 
     for c in xrange(len(self.pf_list)):
       for s in self.pf_list[c]:
-        probe_file_stream.write(s)
-        probe_file_stream.write("\n")
+          probe_file_stream.write(s)
+          probe_file_stream.write("\n")
 
     for c in xrange(len(self.cl_list)):
       o_str=str(c)+" - "+self.cl_list[c]+"\n"
-      class_overview_stream.write(o_str) 
+      class_overview_stream.write(o_str)
 
 #---------------------------------------------------------------------------------------
 #----------------------------EVALUATOR-----------------------------------------
@@ -512,7 +656,12 @@ class epoch():
     self.error_rate=float(sum(error_list))/float(n)
 
 class Evaluator():
-  def __init__(self):
+  def __init__(self,invalid_list=0):
+    if invalid_list==0:
+      invalid_files=list()
+    else:
+      with open(invalid_list,"r") as input_stream:
+        invalid_files=input_stream.read().splitlines()
     print "EVALUATOR instantiated"
     self.epochs=list()
     self.epoch_ctr=0
@@ -532,6 +681,9 @@ class Evaluator():
     err=0.0
     mean_error_rate=0.0
     for e in self.epochs:
+      if e.desc in self.invalid_files:
+        print "invalid file is excluded from statistical calculations"
+        continue
       err+=e.error_rate
     mean_error_rate=err/n
 
