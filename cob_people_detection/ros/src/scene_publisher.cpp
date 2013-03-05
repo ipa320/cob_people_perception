@@ -4,7 +4,7 @@
 #include<opencv/cv.h>
 #include<opencv/highgui.h>
 
-#include<pcl/common/transform.h>
+#include<pcl/common/transforms.h>
 #include<pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 
@@ -84,6 +84,12 @@ void process()
   Eigen::Vector3f pt;
   cam_mat << 524.90160178307269,0.0,320.13543361773458,0.0,525.85226379335393,240.73474482242005,0.0,0.0,1.0;
   Eigen::Matrix3f cam_mat_inv=cam_mat.inverse();
+    // compensate for kinect offset
+    Eigen::Affine3f trafo;
+    trafo.setIdentity();
+    Eigen::Translation3f trans=Eigen::Translation3f(-0.03,0,0); 
+    trafo*=trans;
+
   int index=0;
   for(int r=0;r<dm.rows;r++)
   {
@@ -98,17 +104,20 @@ void process()
 
     pt.normalize();
 
+
     pt=pt*dm.at<double>(r,c);
+    pt=trafo*pt;
 
     pcl::PointXYZRGB point;
     point.x=(float)pt[0];
     point.y=(float)pt[1];
     point.z=(float)pt[2];
-    //if(point.z>3) point.z=0.0;
+
 
     uint32_t rgb = (static_cast<uint32_t>(img.at<cv::Vec3b>(r,c)[0]) << 16 |static_cast<uint32_t>(img.at<cv::Vec3b>(r,c)[1]) << 8 | static_cast<uint32_t>(img.at<cv::Vec3b>(r,c)[2]));
     point.rgb = *reinterpret_cast<float*>(&rgb);
     pc.points.push_back (point);
+
 
     //pc.points[index].x=pt[0];
     //pc.points[index].y=pt[1];

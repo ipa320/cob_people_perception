@@ -13,12 +13,13 @@ class dlg(wx.Frame):
   def __init__(self):
 
     # varables for gui
-    self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidfiles"
+    self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidlist"
     self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
     self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
     #self.base_path="/share/goa-tz/people_detection/eval/"
     #self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
 
+    #self.Evaluator=Evaluator()
     self.Evaluator=Evaluator(invalid_list=self.invalid_file_path)
 
 
@@ -31,7 +32,12 @@ class dlg(wx.Frame):
     self.pf_list = list()
     self.ts_list = list()
     self.cl_list = list()
+    self.unknown_list=list()
+    self.invalid_list=list()
 
+
+    with open(self.invalid_file_path,"r") as input_stream:
+      self.invalid_list=input_stream.read().splitlines()
 
 
     self.makeLayout(self.f)
@@ -343,9 +349,7 @@ class dlg(wx.Frame):
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
     protocol_fn()
-    print self.pf_list
     self.sync_lists()
-    print self.pf_list
     self.print_lists()
 
 
@@ -354,8 +358,10 @@ class dlg(wx.Frame):
 
 
   def process_yale(self):
-    k=2
+    k=5
     self.file_ops(self.yale,k)
+    ##append empty list for unknown calssifications
+    self.pf_list.append([])
    # k=-1
    # self.file_ops(self.yale,k)
 
@@ -363,16 +369,22 @@ class dlg(wx.Frame):
     C=len(self.cl_list)
     ctr=0
     rnd_list=list()
-    k=[False for i in range(len(self.cl_list))]
+    k=[False for i in range(int(len(self.cl_list)))]
     while ctr < math.floor(C*0.5):
       rnd=random.randint(0,C-1)
       if  rnd not in  rnd_list:
         rnd_list.append(rnd)
         k[rnd]=True
         ctr+=1
-    self.pf_list=[[] for i in range(len(self.cl_list)+1)]
+    i=0
+    for cl in self.cl_list:
+      if cl:
+        del self.cl_list[i]
+      i+=1
 
     self.file_ops(self.unknown,k)
+    self.pf_list.append(self.unknown_list)
+    print self.pf_list
 
   def process_leave_half_out(self):
     self.file_ops(self.leave_k_out,"half")
@@ -438,89 +450,41 @@ class dlg(wx.Frame):
    #       self.ts_list.remove(file)
 
 
-    ss1=list()
-    ss2=list()
-    ss3=list()
-    ss4=list()
-    ss5=list()
+    ss=[[] for i in range(5)]
     for item in files:
-      if int(item[-11:-8]) <=12:
-        ss1.append(item)
+      if (int(item[-11:-8]) <=12 and int(item[-6:-4]) <=12):
+      #if int(item[-11:-8]) <=12:
+        ss[0].append(item)
         continue
-      elif int(item[-11:-8]) <=25:
-        ss2.append(item)
+      elif (int(item[-11:-8]) <=25 and  int(item[-6:-4]) <=25):
+      #elif int(item[-11:-8]) <=25:
+        ss[1].append(item)
         continue
-      elif int(item[-11:-8]) <=50:
-        ss3.append(item)
+      elif (int(item[-11:-8]) <=50 and int(item[-6:-4]) <=50):
+      #elif int(item[-11:-8]) <=50:
+        ss[2].append(item)
         continue
-      elif int(item[-11:-8]) <=77:
-        ss4.append(item)
+      elif (int(item[-11:-8]) <=77 and int(item[-6:-4]) <=77):
+      #elif int(item[-11:-8]) <=77:
+        ss[3].append(item)
         continue
-      elif int(item[-11:-8]) >77:
-        ss5.append(item)
+      elif ( int(item[-11:-8]) >77 or int(item[-6:-4]) >77):
+      #elif  int(item[-11:-8]) >77:
+        ss[4].append(item)
         continue
 
-    if k==2:
-      self.pf_list.append(ss2)
-      for f in ss3:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-      for f in ss4:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-      for f in ss5:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-    if k==3:
-      self.pf_list.append(ss3)
-      for f in ss2:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-      for f in ss4:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-      for f in ss5:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-    if k==4:
-      self.pf_list.append(ss4)
-      for f in ss2:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-      for f in ss3:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-      for f in ss5:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-    if k==5:
-      self.pf_list.append(ss5)
-      for f in ss2:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-      for f in ss3:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
-      for f in ss4:
-        for c in self.ts_list:
-          if f in c:
-            c.remove(f)
+    self.pf_list.append(ss[k-1])
+    for s in ss[1:]:
+      for f in s:
+          for c in self.ts_list:
+            if f in c:
+              c.remove(f)
+
+
 
   def unknown(self, files,k):
       if k[0] ==True:
-        self.pf_list[-1].extend(files)
-        self.pf_list[len(self.cl_list)-len(k)]=[]
+        self.unknown_list.extend(files)
         del k[0]
       else:
         num_samples=len(files)
@@ -533,7 +497,7 @@ class dlg(wx.Frame):
           if not rnd_no in rnd_list :
             pf_list.append(files[rnd_no])
             rnd_list.append(rnd_no)
-        self.pf_list[len(self.cl_list)-len(k)].extend(pf_list)
+        self.pf_list.append(pf_list)
         del k[0]
 
   def leave_k_out(self,file_list_valid,k):
@@ -617,13 +581,17 @@ class dlg(wx.Frame):
     class_overview_stream = open(class_overview_path,"w")
 
     for c in xrange(len(self.ts_list)):
-      for s in self.ts_list[c]:
-        training_set_file_stream.write(s)
-        training_set_file_stream.write("\n")
-      training_set_file_stream.write("$$\n")
+      if len(self.ts_list[c])>0:
+        for s in self.ts_list[c]:
+            if os.path.split(s)[1] not in self.invalid_list:
+              training_set_file_stream.write(s)
+              training_set_file_stream.write("\n")
+        training_set_file_stream.write("$$\n")
 
     for c in xrange(len(self.pf_list)):
       for s in self.pf_list[c]:
+        print os.path.split(s)[1]
+        if os.path.split(s)[1] not in self.invalid_list:
           probe_file_stream.write(s)
           probe_file_stream.write("\n")
 
@@ -658,10 +626,10 @@ class epoch():
 class Evaluator():
   def __init__(self,invalid_list=0):
     if invalid_list==0:
-      invalid_files=list()
+      self.invalid_files=list()
     else:
       with open(invalid_list,"r") as input_stream:
-        invalid_files=input_stream.read().splitlines()
+        self.invalid_files=input_stream.read().splitlines()
     print "EVALUATOR instantiated"
     self.epochs=list()
     self.epoch_ctr=0

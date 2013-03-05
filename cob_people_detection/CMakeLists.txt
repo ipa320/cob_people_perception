@@ -68,6 +68,7 @@ rosbuild_check_for_sse()
 #      ros/src/face_normalizer_node.cpp)
 #    target_link_libraries(face_normalizer_node virtual_camera)
 
+rosbuild_add_boost_directories()
 
 rosbuild_add_library(virtual_camera
   common/src/virtual_camera.cpp)
@@ -86,11 +87,12 @@ rosbuild_add_executable(ssa_test
       common/src/test/ssa_test.cpp
       )
      target_link_libraries(ssa_test subspace_analysis face_normalizer opencv_core opencv_highgui )
+     #target_link_libraries(ssa_test subspace_analysis face_normalizer opencv_core opencv_highgui boost)
 
-     rosbuild_add_executable(xml_test
-       common/src/test/xml_test.cpp
-       )
-     target_link_libraries(xml_test face_normalizer subspace_analysis opencv_core opencv_highgui )
+     #rosbuild_add_executable(xml_test
+     #  common/src/test/xml_test.cpp
+     #  )
+     #target_link_libraries(xml_test face_normalizer subspace_analysis opencv_core opencv_highgui )
 
      rosbuild_add_executable(scene_publisher
        ros/src/scene_publisher.cpp
@@ -102,6 +104,7 @@ rosbuild_add_executable(ssa_test
 rosbuild_add_library(subspace_analysis
   common/src/subspace_analysis.cpp)
 target_link_libraries(subspace_analysis  opencv_core )
+rosbuild_link_boost(subspace_analysis system filesystem)
 
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
