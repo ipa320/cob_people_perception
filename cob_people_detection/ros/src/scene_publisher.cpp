@@ -4,7 +4,7 @@
 #include<opencv/cv.h>
 #include<opencv/highgui.h>
 
-#include<pcl/common/transforms.h>
+#include<pcl/common/transform.h>
 #include<pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 
@@ -53,13 +53,13 @@ void process()
   cv::FileStorage fs(xml_stream.str().c_str(),cv::FileStorage::READ);
   fs["depthmap"]>> dm;
   fs.release();
-//  cv::Mat dm_cp,dm_cp_roi;
-//  dm.convertTo(dm_cp,CV_8UC1,255);
-//  cv::Rect roi=cv::Rect(320-100,240-100,200,200);
-//  cv::equalizeHist(dm_cp(roi),dm_cp_roi);
-//  cv::imwrite("/share/goa-tz/people_detection/debug/img_depth.jpg",dm_cp);
-// // imshow("DM",dm_cp_roi);
-// // cv::waitKey(10);
+  cv::Mat dm_cp,dm_cp_roi;
+  //  dm.convertTo(dm_cp,CV_8UC1,255);
+  //  cv::Rect roi=cv::Rect(320-100,240-100,200,200);
+  //  cv::equalizeHist(dm_cp(roi),dm_cp_roi);
+  //  cv::imwrite("/share/goa-tz/people_detection/debug/img_depth.jpg",dm_cp);
+ // imshow("DM",dm_cp_roi);
+ // cv::waitKey(10);
 
 
   //Load color map
@@ -67,10 +67,10 @@ void process()
   img=cv::imread(jpg_stream.str().c_str());
   img.convertTo(img,CV_8UC3);
   cv::resize(img,img,cv::Size(640,480));
-  //cv::Mat img_cp,img_cp_roi;
-  //cv::cvtColor(img,img_cp,CV_RGB2GRAY);
-  //cv::equalizeHist(img_cp(roi),img_cp_roi);
-  //cv::imwrite("/share/goa-tz/people_detection/debug/img_rgb.jpg",img_cp);
+  //  cv::Mat img_cp,img_cp_roi;
+  //  cv::cvtColor(img,img_cp,CV_RGB2GRAY);
+  //  cv::equalizeHist(img_cp(roi),img_cp_roi);
+  //  cv::imwrite("/share/goa-tz/people_detection/debug/img_rgb.jpg",img_cp);
 
 
 
@@ -80,17 +80,16 @@ void process()
 
   pc.width=640;
   pc.height=480;
-  Eigen::Matrix3f cam_mat;
-  Eigen::Vector3f pt;
-  cam_mat << 524.90160178307269,0.0,320.13543361773458,0.0,525.85226379335393,240.73474482242005,0.0,0.0,1.0;
-  Eigen::Matrix3f cam_mat_inv=cam_mat.inverse();
+  cv::Mat cam_mat =(cv::Mat_<double>(3,3)<< 524.90160178307269,0.0,320.13543361773458,0.0,525.85226379335393,240.73474482242005,0.0,0.0,1.0);
     // compensate for kinect offset
-    Eigen::Affine3f trafo;
-    trafo.setIdentity();
-    Eigen::Translation3f trans=Eigen::Translation3f(-0.03,0,0); 
-    trafo*=trans;
-
   int index=0;
+  cv::Vec3f rvec,tvec;
+  cv::Mat dist_coeff;
+
+  tvec=cv::Vec3f(0.025,0.0,0.0);
+  rvec=cv::Vec3f(0.0,0.0,0);
+  dist_coeff=cv::Mat::zeros(1,5,CV_32FC1);
+  cv::Mat pc_trans=cv::Mat::zeros(640,480,CV_64FC1);
   for(int r=0;r<dm.rows;r++)
   {
     for(int c=0;c<dm.cols;c++)
@@ -98,23 +97,58 @@ void process()
     //pt  << c,r,1.0/525;
     //pt=cam_mat_inv*pt;
 
-    pt[0]=(c-320);
-    pt[1]=(r-240);
-    pt[2]=525;
+    cv::Point3f pt;
+    pt.x=(c-320);
+    pt.y=(r-240);
+    pt.z=525;
 
-    pt.normalize();
 
+    double nrm=cv::norm(pt);
+    pt.x/=nrm;
+    pt.y/=nrm;
+    pt.z/=nrm;
 
     pt=pt*dm.at<double>(r,c);
-    pt=trafo*pt;
+    std::vector<cv::Point3f> pt3_vec;
+    pt3_vec.push_back(pt);
+    std::vector<cv::Point2f> pt2_vec;
+
+    cv::projectPoints(pt3_vec,rvec,tvec,cam_mat,dist_coeff,pt2_vec);
+
+    int x_t,y_t;
+    x_t=round(pt2_vec[0].x);
+    y_t=round(pt2_vec[0].y);
+    if(x_t<0 ||x_t>640 ||y_t<0 ||y_t>480) continue;
+    pc_trans.at<double>(y_t,x_t)=dm.at<double>(r,c);
+
+    }
+  }
+
+  for(int ra=0;ra<dm.rows;ra++)
+  {
+    for(int ca=0;ca<dm.cols;ca++)
+    {
+    cv::Point3f pt;
+    pt.x=(ca-320);
+    pt.y=(ra-240);
+    pt.z=525;
+
+
+    double nrm=cv::norm(pt);
+    pt.x/=nrm;
+    pt.y/=nrm;
+    pt.z/=nrm;
+
+    pt=pt*pc_trans.at<double>(ra,ca);
+
 
     pcl::PointXYZRGB point;
-    point.x=(float)pt[0];
-    point.y=(float)pt[1];
-    point.z=(float)pt[2];
+    point.x=(float)pt.x;
+    point.y=(float)pt.y;
+    point.z=(float)pt.z;
 
 
-    uint32_t rgb = (static_cast<uint32_t>(img.at<cv::Vec3b>(r,c)[0]) << 16 |static_cast<uint32_t>(img.at<cv::Vec3b>(r,c)[1]) << 8 | static_cast<uint32_t>(img.at<cv::Vec3b>(r,c)[2]));
+    uint32_t rgb = (static_cast<uint32_t>(img.at<cv::Vec3b>(ra,ca)[0]) << 16 |static_cast<uint32_t>(img.at<cv::Vec3b>(ra,ca)[1]) << 8 | static_cast<uint32_t>(img.at<cv::Vec3b>(ra,ca)[2]));
     point.rgb = *reinterpret_cast<float*>(&rgb);
     pc.points.push_back (point);
 
@@ -152,13 +186,13 @@ void process()
   img_pub_.publish(out_img);
 
 
-  ////debug output
-  //dm.convertTo(dm,CV_8UC1,255);
-  //cv::imshow("dm_raw",dm);
-  //cv::waitKey(0);
-  //img.convertTo(dm,CV_8UC3);
-  //cv::imshow("img_raw",img);
-  //cv::waitKey(0);
+  //debug output
+//  dm.convertTo(dm,CV_8UC1,255);
+//  cv::imshow("dm_raw",dm);
+//  cv::waitKey(0);
+//  img.convertTo(dm,CV_8UC3);
+//  cv::imshow("img_raw",img);
+//  cv::waitKey(0);
 
 
 }
@@ -181,13 +215,13 @@ protected:
 
 int main (int argc, char** argv)
 {
-	ros::init (argc, argv, "cylinder_client");
+	ros::init (argc, argv, "scene publisher");
 
 
   scene_publisher sp;
   sp.process();
 
-	ros::Rate loop_rate(1);
+	ros::Rate loop_rate(5);
 	while (ros::ok())
 	{
     sp.publish();

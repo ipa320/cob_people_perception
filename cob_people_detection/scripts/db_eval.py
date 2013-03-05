@@ -13,11 +13,12 @@ class dlg(wx.Frame):
   def __init__(self):
 
     # varables for gui
-    self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidlist"
-    self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
-    self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
-    #self.base_path="/share/goa-tz/people_detection/eval/"
-    #self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    #self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidlist"
+    #self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    #self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
+    self.base_path="/share/goa-tz/people_detection/eval/"
+    self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    self.invalid_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/invalidlist"
 
     #self.Evaluator=Evaluator()
     self.Evaluator=Evaluator(invalid_list=self.invalid_file_path)
@@ -384,7 +385,6 @@ class dlg(wx.Frame):
 
     self.file_ops(self.unknown,k)
     self.pf_list.append(self.unknown_list)
-    print self.pf_list
 
   def process_leave_half_out(self):
     self.file_ops(self.leave_k_out,"half")
@@ -590,7 +590,6 @@ class dlg(wx.Frame):
 
     for c in xrange(len(self.pf_list)):
       for s in self.pf_list[c]:
-        print os.path.split(s)[1]
         if os.path.split(s)[1] not in self.invalid_list:
           probe_file_stream.write(s)
           probe_file_stream.write("\n")

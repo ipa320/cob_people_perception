@@ -126,11 +126,11 @@ int main(int argc, const char *argv[])
 
 
   //HOME
-  std::string training_set_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_list";
-  std::string probe_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_list";
+  //std::string training_set_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_list";
+  //std::string probe_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_list";
   //IPA
-  //std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
-  //std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
+  std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
+  std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
 
 
   //read probe file
@@ -199,8 +199,8 @@ int main(int argc, const char *argv[])
  for(int i =0 ;i<probe_file_vec.size();i++)
  {
   std::stringstream ostr,nstr;
-  //nstr<<"/share/goa-tz/people_detection/eval/picdump/";
-  nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
+  nstr<<"/share/goa-tz/people_detection/eval/picdump/";
+  //nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
   ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
 
   cv::Mat probe_mat=cv::imread(probe_file_vec[i],0);
@@ -226,18 +226,18 @@ int main(int argc, const char *argv[])
   SubspaceAnalysis::FishEigFaces* EFF=new SubspaceAnalysis::FishEigFaces();
 
   // calculate Model
-  //EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
+  EFF->trainModel(img_vec,label_vec,ss_dim,method,true,true);
   std::cout<<"EFF model computed"<<std::endl;
   //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
   //open output file
-  //std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
-  std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
+  std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
+  //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
   std::ofstream os(path.c_str() );
 
   //opencv
-  cv::Ptr<cv::FaceRecognizer> model = cv::createFisherFaceRecognizer();
-  model->train(img_vec, label_vec);
+ // cv::Ptr<cv::FaceRecognizer> model = cv::createFisherFaceRecognizer();
+ // model->train(img_vec, label_vec);
 
   for(int i=0;i<probe_mat_vec.size();i++)
   {
@@ -245,9 +245,9 @@ int main(int argc, const char *argv[])
   int c_EFF;
   cv::Mat coeff_EFF;
   double DFFS_EFF;
-  //EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
-  //EFF->classify(coeff_EFF,classifier,c_EFF);
-  c_EFF=model->predict(probe);
+  EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
+  EFF->classify(coeff_EFF,classifier,c_EFF);
+  //c_EFF=model->predict(probe);
   os<<c_EFF<<"\n";
   }
   os.close();
