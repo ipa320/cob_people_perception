@@ -359,7 +359,7 @@ class dlg(wx.Frame):
 
 
   def process_yale(self):
-    k=5
+    k=4
     self.file_ops(self.yale,k)
     ##append empty list for unknown calssifications
     self.pf_list.append([])

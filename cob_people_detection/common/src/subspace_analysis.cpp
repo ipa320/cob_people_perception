@@ -284,6 +284,7 @@ void SubspaceAnalysis::XFaces::projectToSubspace(cv::Mat& probe_mat,cv::Mat& coe
   //}
 
   //cv::normalize(src_arr,src_arr,1.0,0.0,cv::NORM_L1);
+  //cv::subtract(src_arr,avg_arr_,src_arr);
   project(src_arr,eigenvector_arr_,avg_arr_,coeff_arr);
 
   cv::Mat rec_mat=cv::Mat(src_arr.rows,eigenvector_arr_.rows,CV_64FC1);

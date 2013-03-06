@@ -1,4 +1,5 @@
 #include<iostream>
+#include<iomanip>
 #include<fstream>
 
 #include<opencv/cv.h>
@@ -19,6 +20,8 @@ public:
 	// Constructor
 	scene_publisher()
 	{
+    this->persp=1;
+    this->shot=0;
 
     file="-1";
     n_.param("/cob_people_detection/face_recognizer/file",file,file);
@@ -39,12 +42,13 @@ public:
 void process()
 {
 
+  pc.clear();
 
   std::stringstream xml_stream,jpg_stream;
-  xml_stream<<file.c_str()<<"d.xml";
-  jpg_stream<<file.c_str()<<"c.bmp";
-  //jpg_stream<<file.c_str()<<"c.jpg";
+  xml_stream<<file.c_str()<<"/"<<std::setw(3)<<std::setfill('0')<<persp<<"_"<<shot<<"_d.xml";
+  jpg_stream<<file.c_str()<<"/"<<std::setw(3)<<std::setfill('0')<<persp<<"_"<<shot<<"_c.bmp";
 
+  std::cout<<xml_stream.str()<<" "<<jpg_stream.str()<<std::endl;
 
   //Load depth map
   cv::Mat dm=cv::Mat(640,480,CV_64FC1);
@@ -198,6 +202,8 @@ void process()
 }
 
 	ros::NodeHandle n_;
+  int persp;
+  int shot;
 
 
 protected:
@@ -219,17 +225,21 @@ int main (int argc, char** argv)
 
 
   scene_publisher sp;
-  sp.process();
 
-	ros::Rate loop_rate(5);
+
+	ros::Rate loop_rate(1);
 	while (ros::ok())
 	{
+    sp.shot++;
+    if(sp.shot==4)
+    {
+      sp.shot=1;
+      sp.persp++;
+    }
+    if(sp.persp==18) break;
+    sp.process();
     sp.publish();
 		ros::spinOnce ();
 		loop_rate.sleep();
 	}
 }
-
-
-
-

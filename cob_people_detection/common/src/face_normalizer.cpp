@@ -33,7 +33,7 @@ FaceNormalizer::FaceNormalizer(FNConfig& config): epoch_ctr(0),
 }
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(true),
-                                  record_scene(false),
+                                  record_scene(true),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
@@ -41,9 +41,9 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   kinect(VirtualCamera::KINECT),
                                   vis_debug_(true)
 {
-  config_.eq_ill=true;
-  config_.align=true;
-  config_.resize=true;
+  config_.eq_ill=  false;
+  config_.align=   true;
+  config_.resize=  false;
   config_.cvt2gray=true;
   this->init();
 }
@@ -139,21 +139,19 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth)
 
   std::cout<<"SAVING SCENE"<<std::endl;
   //std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
-  std::string path_root="/share/goa-tz/people_detection/normalization/scenes/scene";
+  std::string path_root="/share/goa-tz/people_detection/eval/kinect3d_crops/scene";
   std::string path= path_root;
   path.append(boost::lexical_cast<std::string>(epoch_ctr));
   save_scene(depth,img,path);
 
-  std::vector<cv::Mat> channels_xyz,channels_rgb;
-  cv::split(depth,channels_xyz);
-  channels_xyz[2].convertTo(channels_xyz[2],CV_8U,255);
-  cv::imshow("saving depth...",channels_xyz[2]);
-
-  cv::split(img,channels_rgb);
-  channels_rgb[2].convertTo(channels_rgb[2],CV_8U,255);
-  cv::imshow("saving rgb...",channels_rgb[2]);
-
-    cv::waitKey(50);
+//  std::vector<cv::Mat> channels_xyz,channels_rgb;
+//  cv::split(depth,channels_xyz);
+//  channels_xyz[2].convertTo(channels_xyz[2],CV_8U,255);
+//  cv::imshow("saving depth...",channels_xyz[2]);
+//
+//  cv::split(img,channels_rgb);
+//  channels_rgb[2].convertTo(channels_rgb[2],CV_8U,255);
+//  cv::imshow("saving rgb...",channels_rgb[2]);
 
 
   epoch_ctr++;
@@ -173,12 +171,6 @@ bool FaceNormalizer::normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_s
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_size)
 {
 
-  cv::Mat dm_cp;
-    std::vector<cv::Mat> c;
-    cv::split(depth,c);
-    c[2].convertTo(dm_cp,CV_8UC1,255);
-    cv::equalizeHist(dm_cp,dm_cp);
-    cv::imwrite("/share/goa-tz/people_detection/debug/img_depth.jpg",dm_cp);
   norm_size_=norm_size;
   input_size_=cv::Size(img.cols,img.rows);
 
@@ -403,18 +395,18 @@ void FaceNormalizer::logAbout(cv::Mat& img)
 
 bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 {
-
-  // detect features
-  if(!features_from_color(img))return false;
-  //if(debug_)dump_features(img);
-  dump_features(img);
-
   if(record_scene)
   {
     std::cout<<"RECORDING SCENE - NO NORMALIZATION"<<std::endl;
     captureScene(img,depth);
     return true;
   }
+
+  // detect features
+  if(!features_from_color(img))return false;
+  //if(debug_)dump_features(img);
+  dump_features(img);
+
 
    //ident_face();
    dyn_norm_face();

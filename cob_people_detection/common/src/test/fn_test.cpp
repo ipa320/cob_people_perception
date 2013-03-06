@@ -10,11 +10,17 @@ int main(int argc, const char *argv[])
 
 
   std::cout<<"[FaceNormalizer] running scene no. "<<argv[1]<<"...\n";
-  FaceNormalizer fn;
+  FaceNormalizer::FNConfig cfg;
+  cfg.eq_ill=true;
+  cfg.align=true;
+  cfg.resize=true;
+  cfg.cvt2gray=true;
+
+  FaceNormalizer fn(cfg);
   cv::Mat depth,img,xyz;
   std::string i_path;
   if(home)  i_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scenes/scene";
-  else      i_path="/share/goa-tz/people_detection/normalization/scenes/scene";
+  else      i_path="/share/goa-tz/people_detection/eval/Kinect3DSelect/2/scene";
 
   i_path.append(argv[1]);
   i_path.append(".xml");

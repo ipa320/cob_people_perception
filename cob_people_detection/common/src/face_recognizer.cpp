@@ -761,9 +761,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
     cv::Mat color_crop=color_image(face);
     cv::Mat depth_crop_xyz=depth_image(face);
 
-     cv::Mat DM_crop;
+     cv::Mat DM_crop=cv::Mat::zeros(m_eigenface_size,m_eigenface_size,CV_8UC1);
     cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
-    if(!face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,norm_size,DM_crop)) ;
+    if(!face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,norm_size,DM_crop));
+    return ipa_Utils::RET_FAILED ;
 
 
      double DFFS;
