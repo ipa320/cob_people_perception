@@ -162,7 +162,6 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
 
    if(channels==1)
    {
-     std::cout<<"ONE CHANNEL PROCESSING"<<std::endl;
    // assign color values to calculated image coordinates
     cv::add(img,0,img);
     cv::add(depth_map,0,depth_map);

@@ -33,7 +33,7 @@ FaceNormalizer::FaceNormalizer(FNConfig& config): epoch_ctr(0),
 }
 FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(true),
-                                  record_scene(true),
+                                  record_scene(false),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
@@ -452,7 +452,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //trafo.setIdentity();
 
 
-   Eigen::Translation3f view_offset(0,0,0.8);
+   Eigen::Translation3f view_offset(0,0,0.9);
    trafo=trafo*view_offset;
 
    cv::Vec3f* ptr=depth.ptr<cv::Vec3f>(0,0);
@@ -472,7 +472,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    righteye=trafo*righteye;
    nose=trafo*nose;
 
-   //transform norm coordiantes separately to  determinde roi
+   //transform norm coordiantes separately to  determine roi
    cv::Point2f lefteye_uv,righteye_uv,nose_uv;
    cv::Point3f lefteye_xyz,righteye_xyz,nose_xyz;
 
@@ -499,12 +499,12 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
   if(roi.height<=0 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows) return false;
 
-  std::cout<<"imgres "<<imgres.rows<<" "<<imgres.cols<<std::endl;
-  std::cout<<"depthres "<<dmres.rows<<" "<<dmres.cols<<std::endl;
+ // std::cout<<"imgres "<<imgres.rows<<" "<<imgres.cols<<std::endl;
+ // std::cout<<"depthres "<<dmres.rows<<" "<<dmres.cols<<std::endl;
 
-  std::cout<<"img "<<img.rows<<" "<<img.cols<<std::endl;
-  std::cout<<"depth "<<depth.rows<<" "<<depth.cols<<std::endl;
-  std::cout<<"roi:  "<<roi.x<<" "<<roi.y<<" "<<roi.height<<" "<<roi.width<<" "<<depth.cols<<std::endl;
+ // std::cout<<"img "<<img.rows<<" "<<img.cols<<std::endl;
+ // std::cout<<"depth "<<depth.rows<<" "<<depth.cols<<std::endl;
+ // std::cout<<"roi:  "<<roi.x<<" "<<roi.y<<" "<<roi.height<<" "<<roi.width<<" "<<depth.cols<<std::endl;
 
   imgres(roi).copyTo(img);
   dmres(roi).copyTo(depth);
@@ -512,7 +512,6 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   despeckle<unsigned char>(img,img);
   //only take central region
   img=img(cv::Rect(2,2,img.cols-4,img.rows-4));
-
 
   return true;
 }

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import wx
 import os
-import sys
-import random
 import math
+import random
+import sys
+import subprocess
 
 import math
 from threading import Thread
@@ -98,6 +99,8 @@ class dlg(wx.Frame):
 
     self.nrm_checkbox=wx.CheckBox(parent,label="normalize")
 
+    self.use_xyz_data=wx.CheckBox(parent,label="use xyz data")
+
     self.upd_checkbox=wx.CheckBox(parent,label="update lists")
     self.upd_checkbox.SetValue(True)
 
@@ -124,7 +127,11 @@ class dlg(wx.Frame):
     sizer.Add(del_dir_btn_txt,1,wx.BOTTOM |wx.ALIGN_BOTTOM)
     sizer.Add(dummy,1,wx.EXPAND)
 
-    sizer.Add(self.dir_btn,1)
+    bs_3=wx.BoxSizer(wx.VERTICAL)
+    bs_3.Add(self.dir_btn,1)
+    bs_3.Add(self.use_xyz_data,1)
+    sizer.Add(bs_3,1)
+    #sizer.Add(self.dir_btn,1)
     sizer.Add(self.del_dir_btn,1)
     sizer.Add(self.ts_glist,1,wx.EXPAND)
 
@@ -212,6 +219,7 @@ class dlg(wx.Frame):
     # get method and classifer
     method=str()
     classifier=str()
+    xyz_tag=str()
     if self.method_choice.GetCurrentSelection()==0:
       method="FISHER"
     elif self.method_choice.GetCurrentSelection()==1:
@@ -227,6 +235,11 @@ class dlg(wx.Frame):
       classifier="DIFFS"
     elif self.classifier_choice.GetCurrentSelection()==3:
       classifier="RF"
+
+    if self.use_xyz_data.Value==True:
+      xyz_tag="1"
+    elif self.use_xyz_data.Value==False:
+      xyz_tag="0"
 
     # if lists are supposed to be updated
     #if self.upd_checkbox.GetValue()==True:
@@ -247,12 +260,12 @@ class dlg(wx.Frame):
         elif(self.protocol_choice.GetCurrentSelection()==4):
           self.process_protocol(self.process_yale,method,classifier)
 
-        # run binary
+        # run binaryin
         os.chdir(self.bin_path)
         if self.nrm_checkbox.GetValue()==True:
-          bin_str="./ssa_test "+method+" "+classifier+" 1"
+          bin_str="./ssa_test "+method+" "+classifier+" 1 "+xyz_tag
         else:
-          bin_str="./ssa_test "+method+" "+classifier
+          bin_str="./ssa_test "+method+" "+classifier+" 0 "+xyz_tag
         t=Thread(target=self.run_bin,args=(bin_str,))
         t.start()
         t.join()
@@ -268,6 +281,7 @@ class dlg(wx.Frame):
     # get method and classifer
     method=str()
     classifier=str()
+    xyz_tag=str()
     if self.method_choice.GetCurrentSelection()==0:
       method="FISHER"
     elif self.method_choice.GetCurrentSelection()==1:
@@ -304,15 +318,23 @@ class dlg(wx.Frame):
         elif(self.protocol_choice.GetCurrentSelection()==4):
           self.process_protocol(self.process_yale,method,classifier)
 
+    if self.use_xyz_data.Value==True:
+      xyz_tag="1"
+    elif self.use_xyz_data.Value==False:
+      xyz_tag="0"
+
     # run binary
     os.chdir(self.bin_path)
     if self.nrm_checkbox.GetValue()==True:
-      bin_str="./ssa_test "+method+" "+classifier+" 1"
+      #bin_str="./ssa_test "+method+" "+classifier+" 1 "+xyz_tag
+      normalizer="1"
     else:
-      bin_str="./ssa_test "+method+" "+classifier
-    t=Thread(target=self.run_bin,args=(bin_str,))
+      #bin_str="./ssa_test "+method+" "+classifier+" 0 "+xyz_tag
+      normalizer="0"
+    t=Thread(target=self.run_bin,args=(method,classifier,normalizer,xyz_tag))
     t.start()
     t.join()
+
 
     os.chdir(self.cwd)
     self.evaluate()
@@ -330,9 +352,10 @@ class dlg(wx.Frame):
     gl.Clear()
 
   def delete_files(self):
-    os.chdir(self.base_path)
-    reset_str="rm "+os.path.join(self.output_path,"*")
-    os.system(reset_str)
+    os.chdir(self.output_path)
+    str_list=["rm","classified_output","eval_file","class_overview","probe_file_list","probe_file_xyz_list","training_set_list","training_set_xyz_list"]
+    subprocess.call(str_list)
+
 
   def reset_lists(self):
     del self.ts_list[:]
@@ -354,9 +377,8 @@ class dlg(wx.Frame):
     self.print_lists()
 
 
-  def run_bin(self,i_str):
-    os.system(i_str)
-
+  def run_bin(self,method,classifier,normalize,xyz):
+    subprocess.call(["./ssa_test",method,classifier,normalize,xyz])
 
   def process_yale(self):
     k=4
@@ -572,13 +594,37 @@ class dlg(wx.Frame):
 
     print "[EVAL TOOL] creating lists"
     training_set_list_path=os.path.join(self.output_path,"training_set_list")
+    training_set_list_xyz_path=os.path.join(self.output_path,"training_set_xyz_list")
     probe_file_list_path=os.path.join(self.output_path,"probe_file_list")
+    probe_file_xyz_list_path=os.path.join(self.output_path,"probe_file_xyz_list")
     class_overview_path=os.path.join(self.output_path,"class_overview")
 
 
     training_set_file_stream = open(training_set_list_path,"w")
+    training_set_file_xyz_stream = open(training_set_list_xyz_path,"w")
     probe_file_stream = open(probe_file_list_path,"w")
+    probe_file_xyz_stream = open(probe_file_xyz_list_path,"w")
     class_overview_stream = open(class_overview_path,"w")
+
+
+    # make lists with depth
+    if self.use_xyz_data.Value:
+      for c in xrange(len(self.ts_list)):
+        if len(self.ts_list[c])>0:
+          for s in self.ts_list[c]:
+              if os.path.split(s)[1] not in self.invalid_list:
+                s_mod=os.path.splitext(s)[0]+".xml"
+                training_set_file_xyz_stream.write(s_mod)
+                training_set_file_xyz_stream.write("\n")
+          training_set_file_xyz_stream.write("$$\n")
+
+
+      for c in xrange(len(self.pf_list)):
+        for s in self.pf_list[c]:
+          if os.path.split(s)[1] not in self.invalid_list:
+            s_mod=os.path.splitext(s)[0]+".xml"
+            probe_file_xyz_stream.write(s_mod)
+            probe_file_xyz_stream.write("\n")
 
     for c in xrange(len(self.ts_list)):
       if len(self.ts_list[c])>0:

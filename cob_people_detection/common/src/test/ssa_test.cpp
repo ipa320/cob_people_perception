@@ -7,10 +7,23 @@
 #include<fstream>
 
 
+void preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::Size& norm_size) {
+  //cv::Size norm_size=cv::Size(120,120);
+  if(normalize)
+  {
+    cv::Mat dm;
+    fn->normalizeFace(img,xyz,norm_size,dm);
+    //cv::imshow("normalized",img);
+    //cv::waitKey(5);
 
+  }
+  else
+  {
+    cv::resize(img,img,norm_size);
+  }
 
-
-
+  img.convertTo(img,CV_64FC1);
+}
 void preprocess(cv::Mat& img,FaceNormalizer* fn,bool normalize,cv::Size& norm_size) {
   //cv::Size norm_size=cv::Size(120,120);
   if(normalize)
@@ -25,9 +38,6 @@ void preprocess(cv::Mat& img,FaceNormalizer* fn,bool normalize,cv::Size& norm_si
     cv::resize(img,img,norm_size);
   }
 
-
-
-
   img.convertTo(img,CV_64FC1);
 }
 
@@ -36,13 +46,14 @@ int main(int argc, const char *argv[])
 
   FaceNormalizer::FNConfig config;
   config.eq_ill=true;
-  config.align=false;
+  config.align=true;
   config.resize=true;
   config.cvt2gray=true;
   FaceNormalizer* fn=new FaceNormalizer(config);
 
   // parse input arguments from command line
   std::string method_str,classifier_str;
+  bool use_xyz=true;
   bool normalizer=false;
   if (argc==1)
   {
@@ -69,7 +80,23 @@ int main(int argc, const char *argv[])
   {
     method_str=argv[1];
     classifier_str=argv[2];
-    normalizer=true;
+
+    if (std::strcmp(argv[3],"0")==0) normalizer=false;
+    if (std::strcmp(argv[3],"1")==0) normalizer=true;
+
+    if (std::strcmp(argv[4],"0")==0) use_xyz=false;
+    if (std::strcmp(argv[4],"1")==0) use_xyz=true;
+  }
+
+  else if (argc==5)
+  {
+    method_str=argv[1];
+    classifier_str=argv[2];
+    if (std::strcmp(argv[3],"0")==0) normalizer=false;
+    if (std::strcmp(argv[3],"1")==0) normalizer=true;
+
+    if (std::strcmp(argv[4],"0")==0) use_xyz=false;
+    if (std::strcmp(argv[4],"1")==0) use_xyz=true;
   }
 
 
@@ -125,12 +152,19 @@ int main(int argc, const char *argv[])
   }
 
 
+  std::cout<<"SSA test configuration:"<<std::endl;
+  std::cout<<"classifier: "<<classifier_str<<std::endl;
+  std::cout<<"method: "<<method_str<<std::endl;
+  std::cout<<"normalizing: "<<normalizer<<std::endl;
+  std::cout<<"use xyz: "<<use_xyz<<std::endl;
   //HOME
   //std::string training_set_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_list";
   //std::string probe_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_list";
   //IPA
   std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
+  std::string training_set_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_xyz_list";
   std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
+  std::string probe_file_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_xyz_list";
 
 
   //read probe file
@@ -145,6 +179,20 @@ int main(int argc, const char *argv[])
       probe_file_vec.push_back(probe_file);
 
       }
+
+  std::vector<std::string> probe_file_xyz_vec;
+  if(use_xyz)
+  {
+  std::ifstream probe_file_xyz_stream(probe_file_xyz_path.c_str());
+  std::string probe_file_xyz;
+
+  while(probe_file_xyz_stream >> probe_file_xyz)
+  {
+      //std::cout<<probe_file<<std::endl;
+      probe_file_xyz_vec.push_back(probe_file_xyz);
+
+      }
+  }
 
 
   // read training set
@@ -170,9 +218,32 @@ int main(int argc, const char *argv[])
 
       }
 
+  std::vector<std::string> in_vec_xyz;
+  if(use_xyz)
+  {
+  // read xyz data
+  std::ifstream in_file_xyz(training_set_xyz_path.c_str());
+  std::string xml_file;
+
+  while(in_file_xyz >> xml_file)
+  {
+    if(!std::strcmp(xml_file.c_str(),"$$")==0)
+    {
+      in_vec_xyz.push_back(xml_file);
+    }
+
+      }
+  }
+
+
+  if((use_xyz==true) && (in_vec.size()!=in_vec_xyz.size() || probe_file_vec.size() != probe_file_xyz_vec.size()))
+  {
+    use_xyz=false;
+    std::cerr<<"Error - not for every image 3d information could be loaded - ignoring 3d information\n";
+  }
+
+
   int num_classes = label;
-
-
  cv::Size norm_size;
   double aspect_ratio=1;
  // load training images
@@ -180,15 +251,27 @@ int main(int argc, const char *argv[])
  for(int i =0;i<in_vec.size();i++)
  {
    cv::Mat img;
-   img =cv::imread(in_vec[i],0);
-   //cv::imshow("img",img);
-   //cv::waitKey(0);
+  cv::Mat xyz;
+  if(use_xyz)
+  {
+  cv::FileStorage fs(in_vec_xyz[i],FileStorage::READ);
+  fs["depth"]>> xyz;
+  fs["color"]>> img;
+  fs.release();
+  }
+  else
+  {
+    img=cv::imread(in_vec[i],0);
+  }
+
    if(i==0)
    {
     aspect_ratio=double(img.cols)/double(img.rows);
     norm_size=cv::Size(round(160*aspect_ratio),160);
    }
-   preprocess(img,fn,normalizer,norm_size);
+   if(use_xyz)preprocess(img,xyz,fn,normalizer,norm_size);
+   if(!use_xyz)preprocess(img,fn,normalizer,norm_size);
+
    img_vec.push_back(img);
 
  }
@@ -203,20 +286,32 @@ int main(int argc, const char *argv[])
   //nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
   ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
 
-  cv::Mat probe_mat=cv::imread(probe_file_vec[i],0);
+  cv::Mat probe_xyz,probe_img;
+  if(use_xyz)
+  {
+  cv::FileStorage fs(probe_file_xyz_vec[i],FileStorage::READ);
+  fs["depth"]>> probe_xyz;
+  fs["color"]>> probe_img;
+  fs.release();
+  }
+  else
+  {
+  probe_img=cv::imread(probe_file_vec[i],0);
+  }
 
-  cv::imwrite(ostr.str().c_str(),probe_mat);
+  cv::imwrite(ostr.str().c_str(),probe_img);
 
-  preprocess(probe_mat,fn,normalizer,norm_size);
+  if(use_xyz)preprocess(probe_img,probe_xyz,fn,normalizer,norm_size);
+  if(!use_xyz)preprocess(probe_img,fn,normalizer,norm_size);
 
   cv::Mat oimg;
-  probe_mat.convertTo(oimg,CV_8UC1);
+  probe_img.convertTo(oimg,CV_8UC1);
   //cv::equalizeHist(oimg,oimg);
   nstr<<i<<"_norm"<<".jpg";
   cv::imwrite(nstr.str().c_str(),oimg);
 
 
-  probe_mat_vec.push_back(probe_mat);
+  probe_mat_vec.push_back(probe_img);
  }
 
   std::cout<<"Size Training Set= "<<img_vec.size()<<std::endl;
