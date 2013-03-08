@@ -263,10 +263,10 @@ class dlg(wx.Frame):
         # run binaryin
         os.chdir(self.bin_path)
         if self.nrm_checkbox.GetValue()==True:
-          bin_str="./ssa_test "+method+" "+classifier+" 1 "+xyz_tag
+          normalizer="1"
         else:
-          bin_str="./ssa_test "+method+" "+classifier+" 0 "+xyz_tag
-        t=Thread(target=self.run_bin,args=(bin_str,))
+          normalizer="0"
+        t=Thread(target=self.run_bin,args=(method,classifier,normalizer,xyz_tag))
         t.start()
         t.join()
 

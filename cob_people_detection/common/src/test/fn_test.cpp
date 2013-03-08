@@ -20,7 +20,7 @@ int main(int argc, const char *argv[])
   cv::Mat depth,img,xyz;
   std::string i_path;
   if(home)  i_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scenes/scene";
-  else      i_path="/share/goa-tz/people_detection/eval/Kinect3DSelect/2/scene";
+  else      i_path="/share/goa-tz/people_detection/eval/kinect3d_crops/";
 
   i_path.append(argv[1]);
   i_path.append(".xml");
@@ -38,12 +38,9 @@ int main(int argc, const char *argv[])
   fn.normalizeFace(wmat1,xyz,norm_size,depth);
   depth.convertTo(depth,CV_8UC1,255);
   cv::equalizeHist(depth,depth);
-  cv::imshow("DEPTH",depth);
-  cv::imshow("color",wmat1);
-  cv::waitKey(0);
 
   //fn.normalizeFace(wmat1,norm_size);
-  //fn.dump_img(wmat2,"processedRGB");
+ fn.dump_img(wmat1,"processedRGB");
 
   std::cout<<"..done\n";
   return 0;

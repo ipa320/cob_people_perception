@@ -90,7 +90,7 @@ void process()
   cv::Vec3f rvec,tvec;
   cv::Mat dist_coeff;
 
-  tvec=cv::Vec3f(0.025,0.0,0.0);
+  tvec=cv::Vec3f(0.03,0.0,0.0);
   rvec=cv::Vec3f(0.0,0.0,0);
   dist_coeff=cv::Mat::zeros(1,5,CV_32FC1);
   cv::Mat pc_trans=cv::Mat::zeros(640,480,CV_64FC1);
@@ -227,7 +227,7 @@ int main (int argc, char** argv)
   scene_publisher sp;
 
 
-	ros::Rate loop_rate(1);
+	ros::Rate loop_rate(5);
 	while (ros::ok())
 	{
     sp.shot++;
