@@ -226,7 +226,7 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
       ++dptr;
     }
   }
-  cv::medianBlur(dst,dst,3);
+  //cv::medianBlur(dst,dst,3);
 }
 //---------------------------------------------------------
 
