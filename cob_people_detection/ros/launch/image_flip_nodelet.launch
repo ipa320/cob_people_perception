@@ -4,10 +4,10 @@
   <!-- sensor message gateway node (forwards sensor messages in a desired rate) -->
   <rosparam command="load" ns="/cob_image_flip/kinect_image_flip" file="$(find cob_image_flip)/ros/launch/image_flip_params.yaml"/>
   <node pkg="nodelet" type="nodelet" name="CobKinectImageFlipNodelet" ns="/cob_image_flip/kinect_image_flip" args="load cob_image_flip/CobKinectImageFlipNodelet /cam3d_nodelet_manager" output="screen">
-    <remap from="pointcloud_in" to="/cob_people_detection/sensor_message_gateway/pointcloud_rgb_out"/>
-    <remap from="pointcloud_out" to="/cob_people_detection/image_flip/pointcloud_rgb_out"/>
-    <remap from="colorimage_in" to="/cob_people_detection/sensor_message_gateway/colorimage_out"/>
-    <remap from="colorimage_out" to="/cob_people_detection/image_flip/colorimage_out"/>
+    <remap from="~pointcloud_in" to="/cob_people_detection/sensor_message_gateway/pointcloud_rgb_out"/>
+    <remap from="~pointcloud_out" to="/cob_people_detection/image_flip/pointcloud_rgb_out"/>
+    <remap from="~colorimage_in" to="/cob_people_detection/sensor_message_gateway/colorimage_out"/>
+    <remap from="~colorimage_out" to="/cob_people_detection/image_flip/colorimage_out"/>
   </node>           
 
 </launch>
