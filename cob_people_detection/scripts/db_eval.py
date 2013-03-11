@@ -14,12 +14,12 @@ class dlg(wx.Frame):
   def __init__(self):
 
     # varables for gui
-    self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidlist"
-    self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
-    self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
-    #self.base_path="/share/goa-tz/people_detection/eval/"
-    #self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
-    #self.invalid_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/invalidlist"
+    #self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidlist"
+    #self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    #self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
+    self.base_path="/share/goa-tz/people_detection/eval/"
+    self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    self.invalid_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/invalidlist"
 
     #self.Evaluator=Evaluator()
     self.Evaluator=Evaluator(invalid_list=self.invalid_file_path)
@@ -85,7 +85,7 @@ class dlg(wx.Frame):
 
 
     protocol_choice_txt=wx.StaticText(parent,-1,"Testfile selection")
-    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection","unknown","yale"])
+    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection","unknown","yale2","yale3","yale4","yale5"])
 
 
     #spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
@@ -243,6 +243,7 @@ class dlg(wx.Frame):
 
     # if lists are supposed to be updated
     #if self.upd_checkbox.GetValue()==True:
+    prot_choice=self.protocoll_choice.GetCurrentSelection()
     for i in xrange(self.spin_rep.GetValue()):
       output_file=os.path.join(self.output_path,"eval_file")
       if len(self.ts_dir_list)>0:
@@ -257,8 +258,19 @@ class dlg(wx.Frame):
           return
         elif(self.protocol_choice.GetCurrentSelection()==3):
           self.process_protocol(self.process_unknown,method,classifier)
-        elif(self.protocol_choice.GetCurrentSelection()==4):
-          self.process_protocol(self.process_yale,method,classifier)
+        elif(prot_choice==4):
+          self.yale_flag=2
+          self.process_protocol(self.process_yale(2),method,classifier)
+        elif(prot_choice==5):
+          self.yale_flag=3
+          self.process_protocol(self.process_yale(3),method,classifier)
+        elif(prot_choice==6):
+          self.yale_flag=4
+          self.process_protocol(self.process_yale(4),method,classifier)
+        elif(prot_choice==7):
+          self.yale_flag=5
+          self.process_protocol(self.process_yale(5),method,classifier)
+          #self.process_protocol(self.process_kinect,method,classifier)
 
         # run binaryin
         os.chdir(self.bin_path)
@@ -298,6 +310,7 @@ class dlg(wx.Frame):
     elif self.classifier_choice.GetCurrentSelection()==3:
       classifier="RF"
 
+    prot_choice=self.protocol_choice.GetCurrentSelection()
     # if lists are supposed to be updated
     if self.upd_checkbox.GetValue()==True:
       if len(self.ts_dir_list)>0:
@@ -315,7 +328,17 @@ class dlg(wx.Frame):
           self.process_protocol(self.process_manual,method,classifier)
         elif(self.protocol_choice.GetCurrentSelection()==3):
           self.process_protocol(self.process_unknown,method,classifier)
-        elif(self.protocol_choice.GetCurrentSelection()==4):
+        elif(prot_choice==4):
+          self.yale_flag=2
+          self.process_protocol(self.process_yale,method,classifier)
+        elif(prot_choice==5):
+          self.yale_flag=3
+          self.process_protocol(self.process_yale,method,classifier)
+        elif(prot_choice==6):
+          self.yale_flag=4
+          self.process_protocol(self.process_yale,method,classifier)
+        elif(prot_choice==7):
+          self.yale_flag=5
           self.process_protocol(self.process_yale,method,classifier)
 
     if self.use_xyz_data.Value==True:
@@ -380,8 +403,12 @@ class dlg(wx.Frame):
   def run_bin(self,method,classifier,normalize,xyz):
     subprocess.call(["./ssa_test",method,classifier,normalize,xyz])
 
+  def process_kinect(self):
+    self.file_ops(self.kinect)
+    self.pf_list.append([])
+
   def process_yale(self):
-    k=4
+    k=self.yale_flag
     self.file_ops(self.yale,k)
     ##append empty list for unknown calssifications
     self.pf_list.append([])
@@ -463,6 +490,19 @@ class dlg(wx.Frame):
             file_list.remove(file_list[i])
     for rf in file_list:
       self.pf_list[-1].append(rf)
+
+  def kinect(self,files):
+    ts=list()
+    pf=list()
+    for f in files:
+      name=os.path.split(f)[1]
+      if name[0]=="_":
+        print name
+        pf.append(f)
+      else:
+        ts.append(f)
+    self.pf_list.append(pf)
+    self.ts_list.append(ts)
 
   def yale(self, files,k):
    # remove files from ts list

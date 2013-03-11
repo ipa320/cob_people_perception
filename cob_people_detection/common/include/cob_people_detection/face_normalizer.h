@@ -81,7 +81,7 @@ class FaceFeatures{
                       if(std::isnan(lefteye.x)|| std::isnan(lefteye.y)) return false;
                       if(std::isnan(righteye.x)|| std::isnan(righteye.y)) return false;
                       if(std::isnan(nose.x)|| std::isnan(nose.y)) return false;
-                      if(std::isnan(mouth.x)|| std::isnan(mouth.y)) return false;
+                      //if(std::isnan(mouth.x)|| std::isnan(mouth.y)) return false;
                       else return true;
                     }
                     void print()
@@ -189,7 +189,8 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
       if(*rptr==0) normalizer-=1;
       if(*uptr==0) normalizer-=1;
       if(*dptr==0) normalizer-=1;
-      if(normalizer>0)*mptr=(*lptr + *rptr + *uptr +*dptr)/normalizer;
+      if(normalizer>1)*mptr=(*lptr + *rptr + *uptr +*dptr)/normalizer;
+      else *mptr =75;
       }
       ++lptr;
       ++rptr;
@@ -217,7 +218,8 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
       if((*rptr)[0]==0) normalizer-=1;
       if((*uptr)[0]==0) normalizer-=1;
       if((*dptr)[0]==0) normalizer-=1;
-      if(normalizer>0)cv::divide((*lptr + *rptr + *uptr +*dptr),normalizer,*mptr);
+      if(normalizer>1)cv::divide((*lptr + *rptr + *uptr +*dptr),normalizer,*mptr);
+      else *mptr =75;
       }
       ++lptr;
       ++rptr;
@@ -233,6 +235,7 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
   protected:
 
   void init();
+  int fail_ctr;
   int epoch_ctr;
   bool debug_;
   bool vis_debug_;
