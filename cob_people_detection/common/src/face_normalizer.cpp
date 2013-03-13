@@ -164,11 +164,13 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth)
 
 bool FaceNormalizer::normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_size, cv::Mat& DM)
 {
-  normalizeFace(RGB,XYZ,norm_size);
+  bool valid=true;
+  valid =normalizeFace(RGB,XYZ,norm_size);
   XYZ.copyTo(DM);
   //reducing z coordinate and performing whitening transformation
   processDM(DM,DM);
   //despeckle<float>(DM,DM);
+  return valid;
 
 }
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_size)
@@ -378,10 +380,10 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   //--------------------------------------
 
   cv::idct(img,img);
-  cv::normalize(img,img,0,255,cv::NORM_MINMAX);
+  //cv::normalize(img,img,0,255,cv::NORM_MINMAX);
   cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
 
-  img.convertTo(img,CV_8UC1);
+  //img.convertTo(img,CV_8UC1);
   //cv::blur(img,img,cv::Size(3,3));
 
   if(input_img.channels()==3)

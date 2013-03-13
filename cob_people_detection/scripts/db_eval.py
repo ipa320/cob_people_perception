@@ -469,8 +469,8 @@ class dlg(wx.Frame):
         # loop through all files
         for file in file_list_all:
           if file.endswith(".bmp") or file.endswith(".jpg") or file.endswith(".pgm") or file.endswith(".png"):
-            if file.endswith("Ambient.pgm"):
-              aaa=1
+            if file.endswith("Ambient.pgm") or file in self.invalid_list:
+              print file
             else:
               # construct filepath
               file_path=db_path+"/"+dir+"/"+file
