@@ -357,11 +357,8 @@ int main(int argc, const char *argv[])
   std::ofstream os(path.c_str() );
 
   //opencv
-<<<<<<< HEAD
-=======
   //cv::Ptr<cv::FaceRecognizer> model = cv::createFisherFaceRecognizer();
   //model->train(img_vec, label_vec);
->>>>>>> origin/experimental
 
   for(int i=0;i<probe_mat_vec.size();i++)
   {
