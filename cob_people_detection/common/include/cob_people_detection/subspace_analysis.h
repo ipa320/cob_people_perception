@@ -68,6 +68,7 @@ namespace SubspaceAnalysis{
     METH_FISHER,
     METH_EIGEN,
     METH_IFLDA
+    //METH_OCV_FISHER
   };
 
 
