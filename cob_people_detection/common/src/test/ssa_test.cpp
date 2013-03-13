@@ -7,12 +7,13 @@
 #include<fstream>
 
 
-void preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::Size& norm_size) {
+bool preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::Size& norm_size) {
   //cv::Size norm_size=cv::Size(120,120);
+  bool valid=true;
   if(normalize)
   {
     cv::Mat dm;
-    fn->normalizeFace(img,xyz,norm_size,dm);
+    valid=fn->normalizeFace(img,xyz,norm_size,dm);
     //cv::imshow("normalized",img);
     //cv::waitKey(5);
 
@@ -23,12 +24,14 @@ void preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::
   }
 
   img.convertTo(img,CV_64FC1);
+  return valid;
 }
-void preprocess(cv::Mat& img,FaceNormalizer* fn,bool normalize,cv::Size& norm_size) {
+bool preprocess(cv::Mat& img,FaceNormalizer* fn,bool normalize,cv::Size& norm_size) {
+  bool valid=true;
   //cv::Size norm_size=cv::Size(120,120);
   if(normalize)
   {
-    fn->normalizeFace(img,norm_size);
+    valid=fn->normalizeFace(img,norm_size);
     //cv::imshow("normalized",img);
     //cv::waitKey(5);
 
@@ -39,6 +42,7 @@ void preprocess(cv::Mat& img,FaceNormalizer* fn,bool normalize,cv::Size& norm_si
   }
 
   img.convertTo(img,CV_64FC1);
+  return valid;
 }
 
 int main(int argc, const char *argv[])
@@ -251,6 +255,10 @@ int main(int argc, const char *argv[])
   double aspect_ratio=1;
  // load training images
  std::vector<cv::Mat> img_vec;
+
+  std::string invalid_path="/share/goa-tz/people_detection/eval/eval_tool_files/nrm_failed";
+  std::ofstream os_inv(invalid_path.c_str() );
+  bool valid;
  for(int i =0;i<in_vec.size();i++)
  {
    cv::Mat img;
@@ -272,10 +280,16 @@ int main(int argc, const char *argv[])
     aspect_ratio=double(img.cols)/double(img.rows);
     norm_size=cv::Size(round(160*aspect_ratio),160);
    }
-   if(use_xyz)preprocess(img,xyz,fn,normalizer,norm_size);
-   if(!use_xyz)preprocess(img,fn,normalizer,norm_size);
+   valid=true;
+   if(use_xyz)valid=preprocess(img,xyz,fn,normalizer,norm_size);
+   if(!use_xyz)valid=preprocess(img,fn,normalizer,norm_size);
 
    img_vec.push_back(img);
+
+   if(!valid)
+   {
+    os_inv<<in_vec[i]<<"\n";
+   }
 
  }
 
@@ -304,8 +318,9 @@ int main(int argc, const char *argv[])
 
   cv::imwrite(ostr.str().c_str(),probe_img);
 
-  if(use_xyz)preprocess(probe_img,probe_xyz,fn,normalizer,norm_size);
-  if(!use_xyz)preprocess(probe_img,fn,normalizer,norm_size);
+  valid=true;
+  if(use_xyz)valid=preprocess(probe_img,probe_xyz,fn,normalizer,norm_size);
+  if(!use_xyz)valid=preprocess(probe_img,fn,normalizer,norm_size);
 
   cv::Mat oimg;
   probe_img.convertTo(oimg,CV_8UC1);
@@ -315,7 +330,15 @@ int main(int argc, const char *argv[])
 
 
   probe_mat_vec.push_back(probe_img);
+
+  if(!valid)
+  {
+
+    os_inv<<in_vec[i]<<"\n";
+  }
+
  }
+ os_inv.close();
 
   std::cout<<"Size Training Set= "<<img_vec.size()<<std::endl;
 
