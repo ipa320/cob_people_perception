@@ -52,7 +52,7 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
 
 void FaceNormalizer::init()
 {
-  bool home=false;
+  bool home=true;
   fail_ctr=0;
 
   std::string eye_r_path,eye_path,eye_l_path,nose_path,mouth_path;

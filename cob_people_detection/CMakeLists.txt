@@ -78,7 +78,7 @@ target_link_libraries(virtual_camera  opencv_core )
 #-------------------Tests
 #-----------------------------------------------------------------------
 rosbuild_add_library(subspace_analysis
-  common/src/subspace_analysis_fuerte.cpp)
+  common/src/subspace_analysis.cpp)
 target_link_libraries(subspace_analysis  opencv_core  opencv_highgui )
 rosbuild_link_boost(subspace_analysis system filesystem)
 
