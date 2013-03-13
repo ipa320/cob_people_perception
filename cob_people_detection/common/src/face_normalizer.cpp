@@ -1,5 +1,5 @@
 #include<cob_people_detection/face_normalizer.h>
-#include<pcl/common/transform.h>
+#include<pcl/common/transforms.h>
 #include<pcl/common/eigen.h>
 #include<pcl/common/common.h>
 #include<fstream>
@@ -24,9 +24,9 @@ FaceNormalizer::FaceNormalizer(FNConfig& config): epoch_ctr(0),
                                   debug_(false),
                                   record_scene(false),
                                   //HOME
-                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
-                                  debug_path_("/share/goa-tz/people_detection/normalization/results/"),
+                                  //debug_path_("/share/goa-tz/people_detection/normalization/results/"),
                                   kinect(VirtualCamera::KINECT),
                                   vis_debug_(false),
                                   config_(config)
@@ -37,9 +37,9 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(true),
                                   record_scene(true),
                                   //HOME
-                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
-                                  debug_path_("/share/goa-tz/people_detection/normalization/results/"),
+                                  //debug_path_("/share/goa-tz/people_detection/normalization/results/"),
                                   kinect(VirtualCamera::KINECT),
                                   vis_debug_(true)
 {
@@ -141,8 +141,8 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth)
 
 
   std::cout<<"SAVING SCENE"<<std::endl;
-  //std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
-  std::string path_root="/share/goa-tz/people_detection/eval/kinect3d_crops/scene";
+  std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
+  //std::string path_root="/share/goa-tz/people_detection/eval/kinect3d_crops/scene";
   std::string path= path_root;
   path.append(boost::lexical_cast<std::string>(epoch_ctr));
   save_scene(depth,img,path);

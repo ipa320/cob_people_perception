@@ -5,7 +5,7 @@
 #include<opencv/highgui.h>
 int main(int argc, const char *argv[])
 {
-  bool home=false;
+  bool home=true;
 
 
   std::cout<<"[FaceNormalizer] running scene no. "<<argv[1]<<"...\n";
