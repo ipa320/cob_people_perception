@@ -344,7 +344,7 @@ int main(int argc, const char *argv[])
   if(!valid)
   {
 
-    os_inv<<in_vec[i]<<"\n";
+    os_inv<<probe_file_vec[i]<<"\n";
   }
 
  }

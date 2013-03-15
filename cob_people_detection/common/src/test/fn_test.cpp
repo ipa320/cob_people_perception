@@ -10,9 +10,9 @@ int main(int argc, const char *argv[])
 
   std::cout<<"[FaceNormalizer] running scene no. "<<argv[1]<<"...\n";
   FaceNormalizer::FNConfig cfg;
-  cfg.eq_ill=false;
+  cfg.eq_ill=true;
   cfg.align=true;
-  cfg.resize=false;
+  cfg.resize=true;
   cfg.cvt2gray=true;
 
   FaceNormalizer fn(cfg);
@@ -20,8 +20,8 @@ int main(int argc, const char *argv[])
   std::string i_path;
   if(home)  i_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/kinect3d_crops/";
   //if(home)  i_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scenes/";
-  else      i_path="/share/goa-tz/people_detection/normalization/test_scenes/";
-  //else      i_path="/share/goa-tz/people_detection/eval/Kinect3DSelect/";
+  //else      i_path="/share/goa-tz/people_detection/normalization/test_scenes/";
+  else      i_path="/share/goa-tz/people_detection/eval/Kinect3DSelect/";
 
   i_path.append(argv[1]);
   std::string xml_path=i_path;

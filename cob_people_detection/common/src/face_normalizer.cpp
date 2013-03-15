@@ -446,13 +446,13 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 //   std::cout<<"left"<<lefteye<<std::endl;
 //   std::cout<<"middle"<<eye_middle<<std::endl;
 //   std::cout<<"right"<<righteye<<std::endl;
+   //eye_middle<<(f_det_xyz_.righteye.x+ f_det_xyz_.lefteye.x)*0.5,(f_det_xyz_.righteye.y+ f_det_xyz_.lefteye.y)*0.5,(f_det_xyz_.righteye.z+ f_det_xyz_.lefteye.z)*0.5;
 
 
 
 
 
-   eye_middle<<(f_det_xyz_.righteye.x+ f_det_xyz_.lefteye.x)*0.5,(f_det_xyz_.righteye.y+ f_det_xyz_.lefteye.y)*0.5,(f_det_xyz_.righteye.z+ f_det_xyz_.lefteye.z)*0.5;
-   y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2])+0.03;
+   //y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2])+0.03;
    //y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],0;
    y_new<<0,1,0;
    x_new.normalize();
@@ -533,7 +533,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //determine bounding box
 
 
-   float s=2.0;
+   float s=2.2;
    int dim_x=(righteye_uv.x-lefteye_uv.x)*s;
    int off_x=((righteye_uv.x-lefteye_uv.x)*s -(righteye_uv.x-lefteye_uv.x))/2;
    int off_y=off_x+10;
@@ -541,7 +541,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    int dim_y=dim_x;
 
    //cv::Rect roi=cv::Rect(round(lefteye_uv.x-off_x),round(lefteye_uv.y-off_y),dim_x,dim_y);
-   cv::Rect roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5),dim_x,dim_y);
+   cv::Rect roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5-20),dim_x,dim_y);
 
   cv::Mat imgres;
   if(img.channels()==3)imgres=cv::Mat::zeros(480,640,CV_8UC3);

@@ -343,7 +343,6 @@ class dlg(wx.Frame):
           self.yale_flag=5
           self.process_protocol(self.process_yale,method,classifier)
         elif(prot_choice==8):
-          print "HALLO"
           self.process_kinect()
 
     if self.use_xyz_data.Value==True:
