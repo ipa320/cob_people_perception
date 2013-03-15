@@ -15,6 +15,7 @@ VirtualCamera::VirtualCamera(VirtualCamera::TYPE cam_type)
         sensor_size=cv::Size(640,480);
         pixel_dim=cv::Size(0,0);
         dist_coeffs=(cv::Mat_<double>(1,5) << 0.25852454045259377, -0.88621162461930914, 0.0012346117737001144, 0.00036377459304633028, 1.0422813597203011);
+        //dist_coeffs=(cv::Mat_<double>(1,5) << 0,0,0,0,0);
         pp.x=312.13543361773458;
         pp.y=254.73474482242005;
       break;
@@ -178,8 +179,11 @@ void VirtualCamera::sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img
          if(occ_grid.at<unsigned char>(ty,tx)>0) int a=0;// img.at<cv::Vec3b>(ty,tx)=cv::Vec3b(0,0,255);
          else
           {
+            if((depth_map.at<cv::Vec3f>(ty,tx)[2]==0) || (depth_map.at<cv::Vec3f>(ty,tx)[2]>(*pc_ptr)[2]))
+            {
             img.at<unsigned char>(ty,tx)=(*pc_rgb_ptr);
             depth_map.at<cv::Vec3f>(ty,tx)=((*pc_ptr));
+            }
           }
             occ_grid.at<unsigned char>(ty,tx)+=50;
        }
