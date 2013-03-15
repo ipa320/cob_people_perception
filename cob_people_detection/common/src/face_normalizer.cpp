@@ -24,9 +24,9 @@ FaceNormalizer::FaceNormalizer(FNConfig& config): epoch_ctr(0),
                                   debug_(false),
                                   record_scene(false),
                                   //HOME
-                                  debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
-                                  //debug_path_("/share/goa-tz/people_detection/normalization/results/"),
+                                  debug_path_("/share/goa-tz/people_detection/normalization/results/"),
                                   kinect(VirtualCamera::KINECT),
                                   vis_debug_(false),
                                   config_(config)
@@ -37,9 +37,9 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(true),
                                   record_scene(true),
                                   //HOME
-                                  debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
-                                  //debug_path_("/share/goa-tz/people_detection/normalization/results/"),
+                                  debug_path_("/share/goa-tz/people_detection/normalization/results/"),
                                   kinect(VirtualCamera::KINECT),
                                   vis_debug_(true)
 {
@@ -52,7 +52,7 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
 
 void FaceNormalizer::init()
 {
-  bool home=true;
+  bool home=false;
   fail_ctr=0;
 
   std::string eye_r_path,eye_path,eye_l_path,nose_path,mouth_path;
@@ -67,11 +67,17 @@ void FaceNormalizer::init()
   }
   else
   {
-     eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
-     eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-     eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-     nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
-     mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
+     eye_r_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_righteye.xml";
+     eye_path=    "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
+     eye_l_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
+     nose_path=   "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
+     mouth_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
+     //eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
+     //eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+     //eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+     //nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
+     //mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
+
   }
   eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
   eye_r_storage_=cvCreateMemStorage(0);
@@ -141,8 +147,8 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth)
 
 
   std::cout<<"SAVING SCENE"<<std::endl;
-  std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
-  //std::string path_root="/share/goa-tz/people_detection/normalization/test_scenes/scene";
+  //std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
+  std::string path_root="/share/goa-tz/people_detection/normalization/test_scenes/scene";
   std::string path= path_root;
   path.append(boost::lexical_cast<std::string>(epoch_ctr));
   save_scene(depth,img,path);

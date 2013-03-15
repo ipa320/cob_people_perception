@@ -14,12 +14,12 @@ class dlg(wx.Frame):
   def __init__(self):
 
     # varables for gui
-    self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidlist"
-    self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
-    self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
-    #self.base_path="/share/goa-tz/people_detection/eval/"
-    #self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
-    #self.invalid_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/invalidlist"
+    #self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidlist"
+    #self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    #self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
+    self.base_path="/share/goa-tz/people_detection/eval/"
+    self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    self.invalid_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/invalidlist"
 
     #self.Evaluator=Evaluator()
     self.Evaluator=Evaluator(invalid_list=self.invalid_file_path)
@@ -505,9 +505,8 @@ class dlg(wx.Frame):
         # loop through all files
         for file in file_list_all:
           if file.endswith(".bmp") or file.endswith(".jpg") or file.endswith(".pgm") or file.endswith(".png"):
-            if file.endswith("Ambient.pgm") or file in self.invalid_list:
-              print file
-            else:
+            if not file.endswith("Ambient.pgm") or file in self.invalid_list:
+
               # construct filepath
               file_path=db_path+"/"+dir+"/"+file
               file_list_valid.append(file_path)
