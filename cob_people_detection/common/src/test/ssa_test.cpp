@@ -7,15 +7,17 @@
 #include<fstream>
 
 
-bool preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::Size& norm_size) {
+bool preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::Size& norm_size,cv::Mat& dm) {
   //cv::Size norm_size=cv::Size(120,120);
   bool valid=true;
   if(normalize)
   {
-    cv::Mat dm;
     valid=fn->normalizeFace(img,xyz,norm_size,dm);
-    //cv::imshow("normalized",img);
-    //cv::waitKey(5);
+
+   // dm.convertTo(dm,CV_8UC1);
+   // cv::equalizeHist(dm,dm);
+   // cv::imshow("normalized",dm);
+   // cv::waitKey(5);
 
   }
   else
@@ -23,6 +25,7 @@ bool preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::
     cv::resize(img,img,norm_size);
   }
 
+  dm.convertTo(dm,CV_64FC1);
   img.convertTo(img,CV_64FC1);
   return valid;
 }
@@ -163,15 +166,15 @@ int main(int argc, const char *argv[])
   std::cout<<"normalizing: "<<normalizer<<std::endl;
   std::cout<<"use xyz: "<<use_xyz<<std::endl;
   //HOME
-  std::string training_set_path=     "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_list";
-  std::string training_set_xyz_path= "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_xyz_list";
-  std::string probe_file_path=       "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_list";
-  std::string probe_file_xyz_path=   "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_xyz_list";
+  //std::string training_set_path=     "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_list";
+  //std::string training_set_xyz_path= "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_xyz_list";
+  //std::string probe_file_path=       "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_list";
+  //std::string probe_file_xyz_path=   "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_xyz_list";
   //IPA
-  //std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
-  //std::string training_set_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_xyz_list";
-  //std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
-  //std::string probe_file_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_xyz_list";
+  std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
+  std::string training_set_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_xyz_list";
+  std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
+  std::string probe_file_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_xyz_list";
 
 
   //read probe file
@@ -255,6 +258,7 @@ int main(int argc, const char *argv[])
   double aspect_ratio=1;
  // load training images
  std::vector<cv::Mat> img_vec;
+ std::vector<cv::Mat> dm_vec;
 
   std::string invalid_path="/share/goa-tz/people_detection/eval/eval_tool_files/nrm_failed";
   std::ofstream os_inv(invalid_path.c_str() );
@@ -281,10 +285,13 @@ int main(int argc, const char *argv[])
     norm_size=cv::Size(round(160*aspect_ratio),160);
    }
    valid=true;
-   if(use_xyz)valid=preprocess(img,xyz,fn,normalizer,norm_size);
+   cv::Mat dm;
+   if(use_xyz)valid=preprocess(img,xyz,fn,normalizer,norm_size,dm);
+   //if(use_xyz)valid=preprocess(img,fn,normalizer,norm_size);
    if(!use_xyz)valid=preprocess(img,fn,normalizer,norm_size);
 
    img_vec.push_back(img);
+   if(use_xyz)dm_vec.push_back(dm);
 
    if(!valid)
    {
@@ -296,11 +303,12 @@ int main(int argc, const char *argv[])
 
 // load test images
  std::vector<cv::Mat> probe_mat_vec;
+ std::vector<cv::Mat> probe_dm_vec;
  for(int i =0 ;i<probe_file_vec.size();i++)
  {
   std::stringstream ostr,nstr;
-  //nstr<<"/share/goa-tz/people_detection/eval/picdump/";
-  nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
+  nstr<<"/share/goa-tz/people_detection/eval/picdump/";
+  //nstr<<"/home/om/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
   ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
 
   cv::Mat probe_xyz,probe_img;
@@ -319,7 +327,8 @@ int main(int argc, const char *argv[])
   cv::imwrite(ostr.str().c_str(),probe_img);
 
   valid=true;
-  if(use_xyz)valid=preprocess(probe_img,probe_xyz,fn,normalizer,norm_size);
+  cv::Mat dm;
+  if(use_xyz)valid=preprocess(probe_img,probe_xyz,fn,normalizer,norm_size,dm);
   if(!use_xyz)valid=preprocess(probe_img,fn,normalizer,norm_size);
 
   cv::Mat oimg;
@@ -330,6 +339,7 @@ int main(int argc, const char *argv[])
 
 
   probe_mat_vec.push_back(probe_img);
+  if(use_xyz)probe_dm_vec.push_back(dm);
 
   if(!valid)
   {
@@ -351,17 +361,22 @@ int main(int argc, const char *argv[])
   std::cout<<"EFF model computed"<<std::endl;
   //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
+
+  //SubspaceAnalysis::FishEigFaces* EFF_depth=new SubspaceAnalysis::FishEigFaces();
+  //if(use_xyz)
+  //{
+  //EFF_depth->trainModel(dm_vec,label_vec,ss_dim,method,true,false);
+  //}
+
+
   //open output file
-  //std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
-  std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
+  std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
+  //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
   std::ofstream os(path.c_str() );
 
   //opencv
-<<<<<<< HEAD
-=======
   //cv::Ptr<cv::FaceRecognizer> model = cv::createFisherFaceRecognizer();
   //model->train(img_vec, label_vec);
->>>>>>> origin/experimental
 
   for(int i=0;i<probe_mat_vec.size();i++)
   {
@@ -371,7 +386,22 @@ int main(int argc, const char *argv[])
   double DFFS_EFF;
   EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
   EFF->classify(coeff_EFF,classifier,c_EFF);
-  //c_EFF=model->predict(probe);
+  //std::cout<<"RGB CLASS"<<c_EFF<<std::endl;
+
+  //For use with depth data
+  int c_EFF_dm;
+  cv::Mat coeff_EFF_dm;
+  double DFFS_EFF_dm;
+  //if(use_xyz)
+  //{
+  //cv::Mat probe_dm = probe_dm_vec[i];
+  //EFF_depth->projectToSubspace(probe_dm,coeff_EFF_dm,DFFS_EFF_dm);
+  //EFF_depth->classify(coeff_EFF_dm,classifier,c_EFF_dm);
+  ////std::cout<<"DM CLASS"<<c_EFF_dm<<std::endl;
+
+  //}
+
+  //Output to classified file
   os<<c_EFF<<"\n";
   }
   os.close();

@@ -1,5 +1,5 @@
 #include<cob_people_detection/face_normalizer.h>
-#include<pcl/common/transforms.h>
+#include<pcl/common/transform.h>
 #include<pcl/common/eigen.h>
 #include<pcl/common/common.h>
 #include<fstream>
@@ -24,9 +24,9 @@ FaceNormalizer::FaceNormalizer(FNConfig& config): epoch_ctr(0),
                                   debug_(false),
                                   record_scene(false),
                                   //HOME
-                                  debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
-                                  //debug_path_("/share/goa-tz/people_detection/normalization/results/"),
+                                  debug_path_("/share/goa-tz/people_detection/normalization/results/"),
                                   kinect(VirtualCamera::KINECT),
                                   vis_debug_(false),
                                   config_(config)
@@ -37,22 +37,22 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   debug_(true),
                                   record_scene(true),
                                   //HOME
-                                  debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
+                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
                                   //IPA
-                                  //debug_path_("/share/goa-tz/people_detection/normalization/results/"),
+                                  debug_path_("/share/goa-tz/people_detection/normalization/results/"),
                                   kinect(VirtualCamera::KINECT),
                                   vis_debug_(true)
 {
-  config_.eq_ill=  false;
+  config_.eq_ill=  true;
   config_.align=   true;
-  config_.resize=  false;
+  config_.resize=  true;
   config_.cvt2gray=true;
   this->init();
 }
 
 void FaceNormalizer::init()
 {
-  bool home=true;
+  bool home=false;
   fail_ctr=0;
 
   std::string eye_r_path,eye_path,eye_l_path,nose_path,mouth_path;
@@ -141,8 +141,8 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth)
 
 
   std::cout<<"SAVING SCENE"<<std::endl;
-  std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
-  //std::string path_root="/share/goa-tz/people_detection/eval/kinect3d_crops/scene";
+  //std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
+  std::string path_root="/share/goa-tz/people_detection/normalization/test_scenes/scene";
   std::string path= path_root;
   path.append(boost::lexical_cast<std::string>(epoch_ctr));
   save_scene(depth,img,path);
@@ -344,7 +344,6 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   {
     extractVChannel(input_img,img);
     std::cout<<"extracting"<<std::endl;
-
   }
   else
   {
@@ -380,7 +379,7 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   //--------------------------------------
 
   cv::idct(img,img);
-  //cv::normalize(img,img,0,255,cv::NORM_MINMAX);
+  cv::normalize(img,img,0,255,cv::NORM_MINMAX);
   cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
 
   //img.convertTo(img,CV_8UC1);
@@ -441,18 +440,31 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
    lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
    righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
-   eye_middle<<(f_det_xyz_.righteye.x+ f_det_xyz_.lefteye.x)*0.5,(f_det_xyz_.righteye.y+ f_det_xyz_.lefteye.y)*0.5,(f_det_xyz_.righteye.z+ f_det_xyz_.lefteye.z)*0.5;
    x_new<<f_det_xyz_.righteye.x-f_det_xyz_.lefteye.x,f_det_xyz_.righteye.y-f_det_xyz_.lefteye.y,f_det_xyz_.righteye.z-f_det_xyz_.lefteye.z;
-   //y_new<<f_det_xyz_.mouth.x-f_det_xyz_.nose.x,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,(f_det_xyz_.mouth.z-f_det_xyz_.lefteye.z)*0.5;
-   //y_new<<f_det_xyz_.mouth.x-f_det_xyz_.nose.x,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,((f_det_xyz_.mouth.z-f_det_xyz_.lefteye.z)+(f_det_xyz_.mouth.z-f_det_xyz_.lefteye.z))*0.5;
-   ////y_new<<0,f_det_xyz_.mouth.y-f_det_xyz_.nose.y,0;
-   y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-f_det_xyz_.lefteye.z)*0.2;
+
+   eye_middle=lefteye+((x_new.dot(nose-lefteye))/(x_new.dot(x_new)))*x_new;
+//   std::cout<<"left"<<lefteye<<std::endl;
+//   std::cout<<"middle"<<eye_middle<<std::endl;
+//   std::cout<<"right"<<righteye<<std::endl;
+
+
+
+
+
+   eye_middle<<(f_det_xyz_.righteye.x+ f_det_xyz_.lefteye.x)*0.5,(f_det_xyz_.righteye.y+ f_det_xyz_.lefteye.y)*0.5,(f_det_xyz_.righteye.z+ f_det_xyz_.lefteye.z)*0.5;
+   y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2])+0.03;
    //y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],0;
+   y_new<<0,1,0;
    x_new.normalize();
    y_new.normalize();
 
    //y_new<<0,1,0;
    z_new=x_new.cross(y_new);
+
+   //std::cout<<"new x\n"<<x_new<<std::endl;
+   //std::cout<<"new y\n"<<y_new<<std::endl;
+   //std::cout<<"new z\n"<<z_new<<std::endl;
+
    //lefteye<<0,0,0;
    //if(debug_)
    // {
@@ -464,13 +476,11 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
    //   os.close();
 
-     //std::cout<<"new x \n"<<x_new<<std::endl;
-     //std::cout<<"new y \n"<<y_new<<std::endl;
-     //std::cout<<"new z \n"<<z_new<<std::endl;
    // }
    Eigen::Affine3f trafo;
    Eigen::Vector3f origin;
    origin<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
+   origin=nose;
    //origin[2]=0;
    //origin<< 0,0,0;
    //origin[2]=0;
@@ -478,14 +488,15 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,origin,trafo);
    //trafo.setIdentity();
 
-  //float roll,pitch,yaw;
-  //pcl::getEulerAngles(trafo,roll,pitch,yaw); 
+  float roll,pitch,yaw;
+  pcl::getEulerAngles(trafo,roll,pitch,yaw);
   //std::cout<<"roll= "<<roll<<"pitch= "<<pitch<<"yaw= "<<yaw<<std::endl;
 
 
    cv::Vec3f* ptr=depth.ptr<cv::Vec3f>(0,0);
    Eigen::Vector3f pt;
-   double view_offset=0.8;
+   //double view_offset=2.2;
+   double view_offset=0.5;
 
    for(int i=0;i<img.total();i++)
    {
@@ -506,6 +517,11 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    cv::Point2f lefteye_uv,righteye_uv,nose_uv;
    cv::Point3f lefteye_xyz,righteye_xyz,nose_xyz;
 
+
+   //std::cout<<"CONTROL OF FEAT POINTS"<<std::endl;
+   //std::cout<<"lefteye\n"<<lefteye<<std::endl;
+   //std::cout<<"righteye\n"<<righteye<<std::endl;
+
    lefteye_xyz = cv::Point3f(lefteye[0],lefteye[1],lefteye[2]+view_offset);
    righteye_xyz = cv::Point3f(righteye[0],righteye[1],righteye[2]+view_offset);
    nose_xyz = cv::Point3f(nose[0],nose[1],nose[2]+view_offset);
@@ -517,7 +533,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //determine bounding box
 
 
-   float s=2.3;
+   float s=2.0;
    int dim_x=(righteye_uv.x-lefteye_uv.x)*s;
    int off_x=((righteye_uv.x-lefteye_uv.x)*s -(righteye_uv.x-lefteye_uv.x))/2;
    int off_y=off_x+10;
@@ -525,7 +541,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    int dim_y=dim_x;
 
    //cv::Rect roi=cv::Rect(round(lefteye_uv.x-off_x),round(lefteye_uv.y-off_y),dim_x,dim_y);
-   cv::Rect roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5-10),dim_x,dim_y);
+   cv::Rect roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5),dim_x,dim_y);
 
   cv::Mat imgres;
   if(img.channels()==3)imgres=cv::Mat::zeros(480,640,CV_8UC3);
@@ -536,6 +552,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   //cv::imshow("img",imgres);
   //cv::waitKey(0);
 
+  //TODO
   if(roi.height<=0 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows) return false;
 
  // std::cout<<"imgres "<<imgres.rows<<" "<<imgres.cols<<std::endl;
@@ -545,10 +562,15 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
  // std::cout<<"depth "<<depth.rows<<" "<<depth.cols<<std::endl;
  // std::cout<<"roi:  "<<roi.x<<" "<<roi.y<<" "<<roi.height<<" "<<roi.width<<" "<<depth.cols<<std::endl;
 
+ // //TODO
   imgres(roi).copyTo(img);
   dmres(roi).copyTo(depth);
+ //
+ //imgres.copyTo(img);
+ //dmres.copyTo(depth);
 
   despeckle<unsigned char>(img,img);
+  cv::blur(img,img,cv::Size(3,3));
   //only take central region
   img=img(cv::Rect(2,2,img.cols-4,img.rows-4));
 
@@ -664,8 +686,8 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE 
 {
 
   //  determine scale of search pattern
-  double scale=norm_size_.width/160.0;
-  
+  double scale=img.cols/160.0;
+
 
   CvSeq* seq;
   cv::Vec2f offset;
@@ -677,7 +699,7 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE 
   {
     offset =cv::Vec2f(0,0);
     IplImage ipl_img=(IplImage)img;
-     seq=cvHaarDetectObjects(&ipl_img,nose_cascade_,nose_storage_,1.3,2,CV_HAAR_DO_CANNY_PRUNING,cv::Size(15*scale,15*scale));
+     seq=cvHaarDetectObjects(&ipl_img,nose_cascade_,nose_storage_,1.1,1,0,cv::Size(20*scale,20*scale));
      //seq=cvHaarDetectObjects(&ipl_img,nose_cascade_,nose_storage_,1.3,2,CV_HAAR_DO_CANNY_PRUNING,cv::Size(15*scale,15*scale));
      break;
   }
@@ -891,8 +913,8 @@ void FaceNormalizer::processDM(cv::Mat& dm_xyz,cv::Mat& dm)
       if(dm.at<float>(r,c) < minval &&dm.at<float>(r,c)!=0)
         minval =dm.at<float>(r,c);
     }
-
   }
+
   mean=(mean/mean_ctr )- minval;
   for(int r=0;r<dm.rows;r++)
   {
@@ -900,12 +922,10 @@ void FaceNormalizer::processDM(cv::Mat& dm_xyz,cv::Mat& dm)
     {
       if(dm.at<float>(r,c)!=0)
         dm.at<float>(r,c) -=minval;
-
     }
-
   }
-
-
+  despeckle<float>(dm,dm);
+  cv::blur(dm,dm,cv::Size(3,3));
 }
 
 
