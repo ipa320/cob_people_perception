@@ -2,8 +2,8 @@
 #define SSA_H_
 
 
-#include<opencv/cv.h>
 #include<iostream>
+#include<opencv/cv.h>
 #include<opencv/highgui.h>
 #include<opencv/ml.h>
 #include<fstream>
@@ -67,7 +67,8 @@ namespace SubspaceAnalysis{
   {
     METH_FISHER,
     METH_EIGEN,
-    METH_IFLDA
+    METH_IFLDA,
+    METH_OCV_FISHER
   };
 
 

@@ -4,7 +4,10 @@
 #include "boost/filesystem/convenience.hpp"
 #include "boost/filesystem/path.hpp"
 #include <boost/thread/mutex.hpp>
-
+#include<opencv/cv.h>
+#include <opencv/cvaux.h>
+#include <opencv/highgui.h>
+#include <opencv/ml.h>
 void SubspaceAnalysis::error_prompt(std::string fct,std::string desc)
 {
   std::cerr<<"ERROR\n";
@@ -132,6 +135,11 @@ void SubspaceAnalysis::XFaces::project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Ma
 {
 
 
+  //for(int i=0;i<src_mat.rows;i++)
+  //{
+  //  cv::Mat c_row=src_mat.row(i);
+  //  cv::subtract(c_row,avg_mat,c_row);
+  //}
 
   //calculate coefficients
   //
@@ -284,7 +292,6 @@ void SubspaceAnalysis::XFaces::projectToSubspace(cv::Mat& probe_mat,cv::Mat& coe
   //}
 
   //cv::normalize(src_arr,src_arr,1.0,0.0,cv::NORM_L1);
-  //cv::subtract(src_arr,avg_arr_,src_arr);
   project(src_arr,eigenvector_arr_,avg_arr_,coeff_arr);
 
   cv::Mat rec_mat=cv::Mat(src_arr.rows,eigenvector_arr_.rows,CV_64FC1);
@@ -1041,7 +1048,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
       }
       }
 
-    case SubspaceAnalysis::METH_EIGEN: 
+    case SubspaceAnalysis::METH_EIGEN:
       {
         std::cout<<"EIGENFACES"<<std::endl;
         //initiate PCA
@@ -1049,6 +1056,17 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
         eigenvector_arr_=pca_.eigenvecs;
         eigenvalue_arr_=pca_.eigenvals;
         avg_arr_=pca_.mean;
+        break;
+      }
+    case SubspaceAnalysis::METH_OCV_FISHER:
+      {
+        std::cout<<"OpenCv Fisherfaces"<<std::endl;
+        cv::Ptr<cv::FaceRecognizer> model =cv::createFisherFaceRecognizer();
+        model->train(img_vec, label_vec);
+        //initiate PCA
+        eigenvector_arr_=model->getMat("eigenvectors").t();
+        eigenvalue_arr_=model->getMat("eigenvalues");
+        avg_arr_=model->getMat("mean");
         break;
       }
 
