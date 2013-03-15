@@ -14,12 +14,12 @@ class dlg(wx.Frame):
   def __init__(self):
 
     # varables for gui
-    self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidlist"
-    self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
-    self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
-    #self.base_path="/share/goa-tz/people_detection/eval/"
-    #self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
-    #self.invalid_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/invalidlist"
+    #self.invalid_file_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/invalidlist"
+    #self.bin_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    #self.base_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/"
+    self.base_path="/share/goa-tz/people_detection/eval/"
+    self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
+    self.invalid_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/invalidlist"
 
     #self.Evaluator=Evaluator()
     self.Evaluator=Evaluator(invalid_list=self.invalid_file_path)
@@ -87,7 +87,7 @@ class dlg(wx.Frame):
 
 
     protocol_choice_txt=wx.StaticText(parent,-1,"Testfile selection")
-    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection","unknown","yale2","yale3","yale4","yale5"])
+    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection","unknown","yale2","yale3","yale4","yale5","kinect"])
 
 
     #spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
@@ -342,6 +342,9 @@ class dlg(wx.Frame):
         elif(prot_choice==7):
           self.yale_flag=5
           self.process_protocol(self.process_yale,method,classifier)
+        elif(prot_choice==8):
+          print "HALLO"
+          self.process_kinect()
 
     if self.use_xyz_data.Value==True:
       xyz_tag="1"
@@ -406,8 +409,40 @@ class dlg(wx.Frame):
     subprocess.call(["./ssa_test",method,classifier,normalize,xyz])
 
   def process_kinect(self):
-    self.file_ops(self.kinect)
+    self.reset_lists()
+    pf_path=os.path.join(self.base_path,"eval_tool_files","pf_list")
+    ts_path=os.path.join(self.base_path,"eval_tool_files","ts_list")
+    curr_files=list()
+    with open(ts_path,"r") as input_stream:
+      lines=input_stream.read().splitlines()
+      for line in lines:
+        if "$$" in line:
+          self.ts_list.append(curr_files)
+          curr_files=list()
+        else:
+          curr_files.append(line)
+
+
+    cl_ctr=0
+    curr_files=list()
+    with open(pf_path,"r") as input_stream:
+
+      lines=input_stream.read().splitlines()
+      for line in lines:
+        if "$$" in line:
+          cl_ctr+=1
+          lines.remove("$$")
+          self.cl_list.append(cl_ctr)
+          self.pf_list.append(curr_files)
+          curr_files=list()
+        else:
+          curr_files.append(line)
+
     self.pf_list.append([])
+    self.sync_lists()
+    self.print_lists()
+
+    
 
   def process_yale(self):
     k=self.yale_flag
@@ -683,7 +718,7 @@ class dlg(wx.Frame):
           probe_file_stream.write("\n")
 
     for c in xrange(len(self.cl_list)):
-      o_str=str(c)+" - "+self.cl_list[c]+"\n"
+      o_str=str(c)+" - "+str(self.cl_list[c])+"\n"
       class_overview_stream.write(o_str)
 
 #---------------------------------------------------------------------------------------
