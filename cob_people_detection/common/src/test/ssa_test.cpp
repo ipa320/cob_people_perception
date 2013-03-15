@@ -114,7 +114,7 @@ int main(int argc, const char *argv[])
   {
     std::cout<<"FISHER"<<std::endl;
     method=SubspaceAnalysis::METH_OCV_FISHER;
-    method = SubspaceAnalysis::METH_FISHER;
+    //method = SubspaceAnalysis::METH_FISHER;
   }
   else if(!method_str.compare("IFLDA"))
   {

@@ -43,9 +43,9 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   kinect(VirtualCamera::KINECT),
                                   vis_debug_(true)
 {
-  config_.eq_ill=  false;
+  config_.eq_ill=  true;
   config_.align=   true;
-  config_.resize=  false;
+  config_.resize=  true;
   config_.cvt2gray=true;
   this->init();
 }
@@ -380,7 +380,7 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   //--------------------------------------
 
   cv::idct(img,img);
-  //cv::normalize(img,img,0,255,cv::NORM_MINMAX);
+  cv::normalize(img,img,0,255,cv::NORM_MINMAX);
   cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
 
   //img.convertTo(img,CV_8UC1);
