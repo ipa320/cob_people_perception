@@ -166,15 +166,15 @@ int main(int argc, const char *argv[])
   std::cout<<"normalizing: "<<normalizer<<std::endl;
   std::cout<<"use xyz: "<<use_xyz<<std::endl;
   //HOME
-  //std::string training_set_path=     "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_list";
-  //std::string training_set_xyz_path= "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_xyz_list";
-  //std::string probe_file_path=       "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_list";
-  //std::string probe_file_xyz_path=   "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_xyz_list";
+  std::string training_set_path=     "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_list";
+  std::string training_set_xyz_path= "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_xyz_list";
+  std::string probe_file_path=       "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_list";
+  std::string probe_file_xyz_path=   "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_xyz_list";
   //IPA
-  std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
-  std::string training_set_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_xyz_list";
-  std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
-  std::string probe_file_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_xyz_list";
+  //std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
+  //std::string training_set_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_xyz_list";
+  //std::string probe_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_list";
+  //std::string probe_file_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/probe_file_xyz_list";
 
 
   //read probe file
@@ -260,7 +260,8 @@ int main(int argc, const char *argv[])
  std::vector<cv::Mat> img_vec;
  std::vector<cv::Mat> dm_vec;
 
-  std::string invalid_path="/share/goa-tz/people_detection/eval/eval_tool_files/nrm_failed";
+  //std::string invalid_path="/share/goa-tz/people_detection/eval/eval_tool_files/nrm_failed";
+  std::string invalid_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/eval/eval_tool_files/nrm_failed";
   std::ofstream os_inv(invalid_path.c_str() );
   bool valid;
  for(int i =0;i<in_vec.size();i++)
@@ -307,8 +308,8 @@ int main(int argc, const char *argv[])
  for(int i =0 ;i<probe_file_vec.size();i++)
  {
   std::stringstream ostr,nstr;
-  nstr<<"/share/goa-tz/people_detection/eval/picdump/";
-  //nstr<<"/home/om/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
+  //nstr<<"/share/goa-tz/people_detection/eval/picdump/";
+  nstr<<"/home/om/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
   ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
 
   cv::Mat probe_xyz,probe_img;
@@ -370,8 +371,8 @@ int main(int argc, const char *argv[])
 
 
   //open output file
-  std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
-  //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
+  //std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
+  std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
   std::ofstream os(path.c_str() );
 
   //opencv
