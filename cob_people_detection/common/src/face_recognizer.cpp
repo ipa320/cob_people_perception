@@ -104,61 +104,56 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
 	// parameters
 	m_data_directory = data_directory;
 	m_eigenface_size = eigenface_size;
-//	m_eigenvectors_per_person = eigenvectors_per_person;
-//	m_threshold_facespace = threshold_facespace;
-//	m_threshold_unknown = threshold_unknown;
+	//	m_eigenvectors_per_person = eigenvectors_per_person;
+	//	m_threshold_facespace = threshold_facespace;
+	//	m_threshold_unknown = threshold_unknown;
 	m_metric = metric;
 	m_debug = debug;
-  m_depth_mode=use_depth;
-  m_use_unknown_thresh=use_unknown_thresh;
+	m_depth_mode = use_depth;
+	m_use_unknown_thresh = use_unknown_thresh;
 
+	switch (subs_meth)
+	{
+	case 0:
+	{
+		m_subs_meth = SubspaceAnalysis::METH_FISHER;
+		break;
+	}
+	case 1:
+	{
+		m_subs_meth = SubspaceAnalysis::METH_EIGEN;
+		break;
+	}
+	default:
+	{
+		m_subs_meth = SubspaceAnalysis::METH_FISHER;
+		break;
+	}
+	};
 
-  switch(subs_meth)
-  {
-    case 0:
-    {
-      m_subs_meth=SubspaceAnalysis::METH_FISHER;
-      break;
-    }
-    case 1:
-    {
-      m_subs_meth=SubspaceAnalysis::METH_EIGEN;
-      break;
-    }
-    default:
-    {
-      m_subs_meth=SubspaceAnalysis::METH_FISHER;
-      break;
-    }
-  };
-
-
-  switch(class_meth)
-  {
-    case 0:
-    {
-      m_class_meth=SubspaceAnalysis::CLASS_DIFS;
-      break;
-    }
-    case 1:
-    {
-      m_class_meth=SubspaceAnalysis::CLASS_KNN;
-      break;
-    }
-    case 2:
-    {
-      m_class_meth=SubspaceAnalysis::CLASS_SVM;
-      break;
-    }
-    default:
-    {
-      m_class_meth=SubspaceAnalysis::CLASS_DIFS;
-      break;
-    }
-  };
-
-
-
+	switch (class_meth)
+	{
+	case 0:
+	{
+		m_class_meth = SubspaceAnalysis::CLASS_DIFS;
+		break;
+	}
+	case 1:
+	{
+		m_class_meth = SubspaceAnalysis::CLASS_KNN;
+		break;
+	}
+	case 2:
+	{
+		m_class_meth = SubspaceAnalysis::CLASS_SVM;
+		break;
+	}
+	default:
+	{
+		m_class_meth = SubspaceAnalysis::CLASS_DIFS;
+		break;
+	}
+	};
 
 	// load model
 	loadRecognitionModel(identification_labels_to_recognize);
@@ -306,27 +301,30 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vec
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::FishEigFaces& eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
+unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::FishEigFaces& eff, std::vector<cv::Mat>& data, std::vector<int>& labels)
 {
-  //TODO set ss_dim dynamically
-  int ss_dim =1;
+	//TODO set ss_dim dynamically
+	int ss_dim = 1;
 
-  std::vector<cv::Mat> in_vec;
-  for(int i=0;i<data.size();i++)
-  {
+	std::vector<cv::Mat> in_vec;
+	for (unsigned int i = 0; i < data.size(); i++)
+	{
 
-    cv::Mat temp=data[i];
-    temp.convertTo(temp,CV_64FC1);
-    in_vec.push_back(temp);
-  }
+		cv::Mat temp = data[i];
+		temp.convertTo(temp, CV_64FC1);
+		in_vec.push_back(temp);
+	}
 
-  m_rec_method=1;
-  if(!eff.trainModel(in_vec,labels,ss_dim,m_subs_meth,true,m_use_unknown_thresh))
-  {
-      std::cout<<"[FACEREC] Reognition module could not be initialized ....!"<<std::endl;
-      return ipa_Utils::RET_FAILED;
-  }
+	m_rec_method = 1;
+	if (!eff.trainModel(in_vec, labels, ss_dim, m_subs_meth, true, m_use_unknown_thresh))
+	{
+		std::cout << "[FACEREC] Reognition module could not be initialized ....!" << std::endl;
+		return ipa_Utils::RET_FAILED;
+	}
+
+	return ipa_Utils::RET_OK;
 }
+
 unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vector<std::string>& identification_labels_to_train)
 {
 	// secure this function with a mutex
@@ -334,48 +332,48 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
 	// load necessary data
 
-  // If depth mode is enabled load available depthmaps
-    std::vector<cv::Mat> face_images,face_depthmaps;
-  if(m_depth_mode)
-  {
-    loadTrainingData(face_images, face_depthmaps,identification_labels_to_train);
+	// If depth mode is enabled load available depthmaps
+	std::vector<cv::Mat> face_images, face_depthmaps;
+	if (m_depth_mode)
+	{
+		loadTrainingData(face_images, face_depthmaps, identification_labels_to_train);
 
+		//make label vec for depth
+		depth_str_labels.clear();
+		depth_str_labels_unique.clear();
+		depth_num_labels.clear();
 
-    //make label vec for depth
-    depth_str_labels.clear();
-    depth_str_labels_unique.clear();
-    depth_num_labels.clear();
+		//int lbl = 0;
+		for (unsigned int i = 0; i < dm_exist.size(); i++)
+		{
+			if (dm_exist[i])
+			{
+				depth_str_labels.push_back(m_face_labels[i]);
+				bool unique = true;
+				for (unsigned int k = 0; k < depth_str_labels_unique.size(); k++)
+				{
+					if (depth_str_labels_unique[k].compare(m_face_labels[i]) == 0)
+						unique = false;
+				}
+				if (unique == true)
+					depth_str_labels_unique.push_back(m_face_labels[i]);
+			}
+		}
 
-    int lbl=0;
-    for(int i=0;i<dm_exist.size();i++)
-    {
-      if(dm_exist[i])
-       {
-        depth_str_labels.push_back(m_face_labels[i]);
-        bool unique=true;
-        for(int k=0;k<depth_str_labels_unique.size();k++)
-        {
-          if(depth_str_labels_unique[k].compare(m_face_labels[i])==0) unique=false;
-        }
-        if(unique==true) depth_str_labels_unique.push_back(m_face_labels[i]);
-       }
-    }
+		for (unsigned int li = 0; li < depth_str_labels.size(); li++)
+		{
+			for (unsigned int lj = 0; lj < depth_str_labels_unique.size(); lj++)
+			{
+				if (depth_str_labels_unique[lj].compare(depth_str_labels[li]) == 0)
+					depth_num_labels.push_back(lj);
+			}
+		}
 
-  for(int li=0;li<depth_str_labels.size();li++)
-  {
-    for(int lj=0;lj<depth_str_labels_unique.size();lj++)
-    {
-      if(depth_str_labels_unique[lj].compare(depth_str_labels[li])==0) depth_num_labels.push_back(lj);
-    }
-  }
-  
-
-  }
-  else if(!m_depth_mode)
-  {
-	loadTrainingData(face_images,identification_labels_to_train);
-  }
-
+	}
+	else if (!m_depth_mode)
+	{
+		loadTrainingData(face_images, identification_labels_to_train);
+	}
 
 	m_current_label_set = identification_labels_to_train;
 
@@ -393,74 +391,73 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	//	if (face_images[i].cols != m_eigenface_size || face_images[i].rows != m_eigenface_size)
 	//	{
 	//		cv::Mat temp = face_images[i];
-  //    //cv::imshow("k",temp);
-  //    //cv::waitKey(0);
-  //    std::cout<<"i="<<i<<std::endl;
-  //    std::cout<<"new_size"<<new_size.width<<" "<<new_size.height<<std::endl;
-  //    std::cout<<"face_i"<<temp.rows<<" "<<temp.cols<<std::endl;
+	//    //cv::imshow("k",temp);
+	//    //cv::waitKey(0);
+	//    std::cout<<"i="<<i<<std::endl;
+	//    std::cout<<"new_size"<<new_size.width<<" "<<new_size.height<<std::endl;
+	//    std::cout<<"face_i"<<temp.rows<<" "<<temp.cols<<std::endl;
 	//		cv::resize(temp, face_images[i], new_size);
 	//	}
 	//}
 
-//	// PCA
-//	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size()-1);
-//	bool return_value = PCA(number_eigenvectors, face_images);
-//	if (return_value == ipa_Utils::RET_FAILED)
-//		return ipa_Utils::RET_FAILED;
+	//	// PCA
+	//	int number_eigenvectors = std::min(m_eigenvectors_per_person * identification_labels_to_train.size(), face_images.size()-1);
+	//	bool return_value = PCA(number_eigenvectors, face_images);
+	//	if (return_value == ipa_Utils::RET_FAILED)
+	//		return ipa_Utils::RET_FAILED;
 
-//	// compute average face projections per class
-//	computeAverageFaceProjections();
+	//	// compute average face projections per class
+	//	computeAverageFaceProjections();
 
-//	// save new model
-//	saveRecognitionModel();
+	//	// save new model
+	//	saveRecognitionModel();
 
-//--------------------------------------------
-//--------------------------------------------
-//--------------------------------------------
+	//--------------------------------------------
+	//--------------------------------------------
+	//--------------------------------------------
 
-  m_label_num.clear();
-  for(int li=0;li<m_face_labels.size();li++)
-  {
-    for(int lj=0;lj<identification_labels_to_train.size();lj++)
-    {
-      if(identification_labels_to_train[lj].compare(m_face_labels[li])==0) m_label_num.push_back(lj);
-    }
-  }
+	m_label_num.clear();
+	for (unsigned int li = 0; li < m_face_labels.size(); li++)
+	{
+		for (unsigned int lj = 0; lj < identification_labels_to_train.size(); lj++)
+		{
+			if (identification_labels_to_train[lj].compare(m_face_labels[li]) == 0)
+				m_label_num.push_back(lj);
+		}
+	}
 
-  
+	//alocate memory for eigenvectors
+	m_eigenvectors.clear();
 
-  //alocate memory for eigenvectors
-  m_eigenvectors.clear();
-
-
-  // reset effs
-  eff_depth.releaseModel();
-  eff_color.releaseModel();
-
+	// reset effs
+	eff_depth.releaseModel();
+	eff_color.releaseModel();
 
 	std::string path = m_data_directory + "training_data/";
-  std::string path_color=m_data_directory +"training_data/"+ "rdata_color.xml" ;
-  std::string path_depth=m_data_directory +"training_data/"+ "rdata_depth.xml" ;
+	std::string path_color = m_data_directory + "training_data/" + "rdata_color.xml";
+	std::string path_depth = m_data_directory + "training_data/" + "rdata_depth.xml";
 
-  //--> INIT MODEL
-  if(m_depth_mode)
-  {
-  if(face_depthmaps.size()>0)initModel(eff_depth,face_depthmaps,depth_num_labels);
-  eff_depth.saveModel(path_depth);
-  }
+	//--> INIT MODEL
+	if (m_depth_mode)
+	{
+		if (face_depthmaps.size() > 0)
+			initModel(eff_depth, face_depthmaps, depth_num_labels);
+		eff_depth.saveModel(path_depth);
+	}
 
-  if(face_images.size()>0)initModel(eff_color,face_images,m_label_num);
-  eff_color.saveModel(path_color);
+	if (face_images.size() > 0)
+		initModel(eff_color, face_images, m_label_num);
+	eff_color.saveModel(path_color);
 
 	//TODO ALWAYS TRAINING NECESSARY - NO INTERFACE FOR SSA CLASS FOR MODEL ASSOCIATION
-  //saveRecognitionModel();
+	//saveRecognitionModel();
 
 
 	// output
 	if (m_debug)
 	{
 		std::cout << "FaceRecognizer::trainRecognitionModel: New model trained with labels: " << std::endl;
-		for (int i=0; i<(int)m_current_label_set.size(); i++)
+		for (int i = 0; i < (int)m_current_label_set.size(); i++)
 			std::cout << "   - " << m_current_label_set[i] << std::endl;
 		std::cout << std::endl;
 	}
@@ -753,8 +750,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
-	int number_eigenvectors = m_eigenvectors.size();
-	if (eff_depth.trained==false &&eff_color.trained==false )
+//	int number_eigenvectors = m_eigenvectors.size();
+	if (eff_depth.trained == false && eff_color.trained == false)
 	{
 		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
 		return ipa_Utils::RET_FAILED;
@@ -763,108 +760,108 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	identification_labels.clear();
 
 	cv::Size resized_size(m_eigenvectors[0].size());
-	for(int i=0; i<(int)face_coordinates.size(); i++)
+	for (int i = 0; i < (int)face_coordinates.size(); i++)
 	{
 		cv::Rect face = face_coordinates[i];
 		//convertAndResize(depth_image, resized_8U1, face, resized_size);
-    cv::Mat color_crop=color_image(face);
-    cv::Mat depth_crop_xyz=depth_image(face);
+		cv::Mat color_crop = color_image(face);
+		cv::Mat depth_crop_xyz = depth_image(face);
 
-     cv::Mat DM_crop=cv::Mat::zeros(m_eigenface_size,m_eigenface_size,CV_8UC1);
-    cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
-    if(!face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,norm_size,DM_crop));
-    return ipa_Utils::RET_FAILED ;
+		cv::Mat DM_crop = cv::Mat::zeros(m_eigenface_size, m_eigenface_size, CV_8UC1);
+		cv::Size norm_size = cv::Size(m_eigenface_size, m_eigenface_size);
+		if (!face_normalizer_.normalizeFace(color_crop, depth_crop_xyz, norm_size, DM_crop))
+			return ipa_Utils::RET_FAILED;
 
-     double DFFS;
-     cv::Mat temp,temp2;
-     DM_crop.convertTo(DM_crop,CV_64FC1);
-     color_crop.convertTo(color_crop,CV_64FC1);
-     //depth_crop.convertTo(temp2,CV_8UC1,255);
-     //cv::equalizeHist(temp2,temp2);
-     //cv::imshow("temp",temp2);
-     //cv::waitKey(10);
+		double DFFS;
+		cv::Mat temp, temp2;
+		DM_crop.convertTo(DM_crop, CV_64FC1);
+		color_crop.convertTo(color_crop, CV_64FC1);
+		//depth_crop.convertTo(temp2,CV_8UC1,255);
+		//cv::equalizeHist(temp2,temp2);
+		//cv::imshow("temp",temp2);
+		//cv::waitKey(10);
 
-      cv::Mat coeff_arr_color,coeff_arr_depth;
-      int res_label_color, res_label_depth;
-      std::string class_depth,class_color;
+		cv::Mat coeff_arr_color, coeff_arr_depth;
+		int res_label_color, res_label_depth;
+		std::string class_depth, class_color;
 
-      if((eff_depth.trained)&& (m_depth_mode==true))
-      {
-        std::cout<<"classification with depth"<<std::endl;
-        eff_depth.projectToSubspace(DM_crop,coeff_arr_depth,DFFS);
-        eff_depth.classify(coeff_arr_depth,m_class_meth,res_label_depth);
-        if(res_label_depth==-1)
-        {
-          class_depth="Unknown";
-        }
-        else
-        {
-          class_depth=depth_str_labels[res_label_depth];
-        }
-      }
+		if ((eff_depth.trained) && (m_depth_mode == true))
+		{
+			std::cout << "classification with depth" << std::endl;
+			eff_depth.projectToSubspace(DM_crop, coeff_arr_depth, DFFS);
+			eff_depth.classify(coeff_arr_depth, m_class_meth, res_label_depth);
+			if (res_label_depth == -1)
+			{
+				class_depth = "Unknown";
+			}
+			else
+			{
+				class_depth = depth_str_labels[res_label_depth];
+			}
+		}
 
-      if(eff_color.trained)
-      {
-        std::cout<<"classification with color"<<std::endl;
-        eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
-        eff_color.classify(coeff_arr_color,m_class_meth,res_label_color);
-        if(res_label_color==-1)
-        {
-          class_color="Unknown";
-        }
-        else
-        {
-          class_color=m_current_label_set[res_label_color];
-        }
-      }
+		if (eff_color.trained)
+		{
+			std::cout << "classification with color" << std::endl;
+			eff_color.projectToSubspace(color_crop, coeff_arr_color, DFFS);
+			eff_color.classify(coeff_arr_color, m_class_meth, res_label_color);
+			if (res_label_color == -1)
+			{
+				class_color = "Unknown";
+			}
+			else
+			{
+				class_color = m_current_label_set[res_label_color];
+			}
+		}
 
+		//compare and combine classification resutls
+		//
+		// case 1 - A  A        --> A
+		// case 2 - C  Unknown --> A
+		// case 3 - Unknown A   --> A
+		std::string classification_combined;
+		if (class_color.compare(class_depth) == 0)
+			classification_combined = class_color; //case 1
+		else
+		{
+			bool found = false;
+			for (unsigned int l = 0; l < depth_str_labels.size(); l++)
+			{
+				if (class_color.compare(depth_str_labels[l]) == 0)
+					found = true;
+			}
+			if (!found && class_depth.compare("Unknown") == 0)
+				classification_combined = class_color;
+			else if (!found && class_color.compare("Unknown") == 0)
+				classification_combined = class_depth;
+			else
+			{
+				// this is the case when the algorithm yields different labels
+				// insert weighting mechanism --> disadvantage of winner takes it all
+				classification_combined = class_color;
+			}
+		}
 
-      //compare and combine classification resutls
-      //
-      // case 1 - A  A        --> A
-      // case 2 - C  Unknown --> A
-      // case 3 - Unknown A   --> A
-      std::string classification_combined;
-      if(class_color.compare(class_depth)==0) classification_combined=class_color; //case 1
-      else
-      {
-        bool found=false;
-        for(int l=0;l<depth_str_labels.size();l++)
-        {
-          if (class_color.compare(depth_str_labels[l])==0 ) found = true;
-        }
-        if(!found && class_depth.compare("Unknown")== 0) classification_combined=class_color;
-        else if(!found && class_color.compare("Unknown")==0) classification_combined=class_depth;
-        else
-        {
-          // this is the case when the algorithm yields different labels
-          // insert weighting mechanism --> disadvantage of winner takes it all
-          classification_combined=class_color;
-        }
-      }
+		//	if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
+		//  //TODO temporary
+		//  DFFS=0;
+		//	if(DFFS > m_threshold_facespace)
+		//	{
+		//		// no face
+		//		identification_labels.push_back("No face");
+		//	}
+		//	else
+		//	{
 
-	//	if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
-  //  //TODO temporary
-  //  DFFS=0;
-	//	if(DFFS > m_threshold_facespace)
-	//	{
-	//		// no face
-	//		identification_labels.push_back("No face");
-	//	}
-	//	else
-	//	{
-
-      std::cout<<"CLASS COLOR= "<<class_color<<std::endl;
-      std::cout<<"CLASS DEPTH= "<<class_depth<<std::endl;
-      identification_labels.push_back(class_color);
+		std::cout << "CLASS COLOR= " << class_color << std::endl;
+		std::cout << "CLASS DEPTH= " << class_depth << std::endl;
+		identification_labels.push_back(class_color);
 		//}
 	}
 
-
 	return ipa_Utils::RET_OK;
 }
-
-
 
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::convertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face, cv::Size new_size)
@@ -928,9 +925,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 
 	return ipa_Utils::RET_OK;
 }
-unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps)
+
+
+unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps)
 {
-  std::cout<<"Size Vec "<<face_images.size()<<" "<<face_depthmaps.size()<<std::endl;
+	std::cout << "Size Vec " << face_images.size() << " " << face_depthmaps.size() << std::endl;
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "tdata.xml";
 	std::string img_ext = ".bmp";
@@ -939,10 +938,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 	std::ostringstream complete;
 	complete << path << filename;
 
-	if(fs::is_directory(path.c_str()))
+	if (fs::is_directory(path.c_str()))
 	{
 		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::WRITE);
-		if(!fileStorage.isOpened())
+		if (!fileStorage.isOpened())
 		{
 			std::cout << "Error: FaceRecognizer::saveTrainingData: Can't save training data.\n" << std::endl;
 			return ipa_Utils::RET_FAILED;
@@ -950,7 +949,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 
 		// store data
 		fileStorage << "number_entries" << (int)m_face_labels.size();
-		for(int i=0; i<(int)m_face_labels.size(); i++)
+		for (int i = 0; i < (int)m_face_labels.size(); i++)
 		{
 			// labels
 			std::ostringstream tag;
@@ -961,35 +960,35 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 			std::ostringstream img, shortname_img, shortname_depth;
 			img << path << i << img_ext;
 			shortname_img << "training_data/" << i << img_ext;
-			std::ostringstream tag2,tag3;
+			std::ostringstream tag2, tag3;
 			tag2 << "image_" << i;
 			fileStorage << tag2.str().c_str() << shortname_img.str().c_str();
 
-      if(dm_exist[i])
-      {
-        shortname_depth << "training_data/" << i << dm_ext;
-        tag3<< "depthmap_"<<i;
-        fileStorage << tag3.str().c_str() << shortname_depth.str().c_str();
-      }
+			if (dm_exist[i])
+			{
+				shortname_depth << "training_data/" << i << dm_ext;
+				tag3 << "depthmap_" << i;
+				fileStorage << tag3.str().c_str() << shortname_depth.str().c_str();
+			}
 			cv::imwrite(img.str().c_str(), face_images[i]);
 		}
 
 		fileStorage.release();
 
-        int j;
-      for(int i=0;i<dm_exist.size();i++)
-      {
-        if(dm_exist[i])
-        {
-        // depth maps
-        std::ostringstream dm;
-        dm << path <<i <<dm_ext;
-        cv::FileStorage fs(dm.str().c_str(),FileStorage::WRITE);
-        fs << "depthmap"<<face_depthmaps[j];
-        fs.release();
-        j++;
-        }
-      }
+		int j=0;
+		for (unsigned int i = 0; i < dm_exist.size(); i++)
+		{
+			if (dm_exist[i])
+			{
+				// depth maps
+				std::ostringstream dm;
+				dm << path << i << dm_ext;
+				cv::FileStorage fs(dm.str().c_str(), FileStorage::WRITE);
+				fs << "depthmap" << face_depthmaps[j];
+				fs.release();
+				j++;
+			}
+		}
 		std::cout << "INFO: FaceRecognizer::saveTrainingData: " << face_images.size() << " images saved.\n" << std::endl;
 	}
 	else
@@ -1099,7 +1098,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps, std::vector<std::string>& identification_labels_to_train)
 {
 	bool use_all_data = false;
-  dm_exist.clear();
+	dm_exist.clear();
 	if (identification_labels_to_train.size() == 0)
 		use_all_data = true;
 
@@ -1109,10 +1108,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 	std::ostringstream complete;
 	complete << path << filename;
 
-	if(fs::is_directory(path.c_str()))
+	if (fs::is_directory(path.c_str()))
 	{
 		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::READ);
-		if(!fileStorage.isOpened())
+		if (!fileStorage.isOpened())
 		{
 			std::cout << "Error: FaceRecognizer::loadTrainingData: Can't open " << complete.str() << ".\n" << std::endl;
 			return ipa_Utils::RET_OK;
@@ -1121,9 +1120,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 		// labels
 		m_face_labels.clear();
 		face_images.clear();
-    cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
+		cv::Size norm_size = cv::Size(m_eigenface_size, m_eigenface_size);
 		int number_entries = (int)fileStorage["number_entries"];
-		for(int i=0; i<number_entries; i++)
+		for (int i = 0; i < number_entries; i++)
 		{
 			// labels
 			std::ostringstream tag_label;
@@ -1131,9 +1130,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			std::string label = (std::string)fileStorage[tag_label.str().c_str()];
 			// look up this label in the list of unique labels identification_labels_to_train
 			bool class_exists = false;
-			for(int j=0; j<(int)identification_labels_to_train.size(); j++)
+			for (int j = 0; j < (int)identification_labels_to_train.size(); j++)
 			{
-				if(!identification_labels_to_train[j].compare(label))
+				if (!identification_labels_to_train[j].compare(label))
 					class_exists = true;
 			}
 			// if it does not appear in the list either append it (use all data option) or neglect this piece of data
@@ -1153,54 +1152,54 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			m_face_labels.push_back(label);
 
 			// face images
-			std::ostringstream tag_image,tag_dm;
+			std::ostringstream tag_image, tag_dm;
 			tag_image << "image_" << i;
 			tag_dm << "depthmap_" << i;
 			std::string img_path = m_data_directory + (std::string)fileStorage[tag_image.str().c_str()];
 			std::string dm_path = m_data_directory + (std::string)fileStorage[tag_dm.str().c_str()];
-			cv::Mat temp = cv::imread(img_path.c_str(),-1);
-      //cv::imshow("T",temp);
-      //cv::waitKey(0);
+			cv::Mat temp = cv::imread(img_path.c_str(), -1);
+			//cv::imshow("T",temp);
+			//cv::waitKey(0);
 
-      if(m_depth_mode)
-      {
-        if(dm_path.compare(m_data_directory))
-        {
-          cv::Mat xyz_temp,dm_temp;
-          cv::FileStorage fs(dm_path,FileStorage::READ);
-          fs["depthmap"]>>xyz_temp;
+			if (m_depth_mode)
+			{
+				if (dm_path.compare(m_data_directory))
+				{
+					cv::Mat xyz_temp, dm_temp;
+					cv::FileStorage fs(dm_path, FileStorage::READ);
+					fs["depthmap"] >> xyz_temp;
 
-          face_normalizer_.normalizeFace(temp,xyz_temp,norm_size,dm_temp);
+					face_normalizer_.normalizeFace(temp, xyz_temp, norm_size, dm_temp);
 
-          face_depthmaps.push_back(dm_temp);
-          dm_exist.push_back(true);
-          fs.release();
-        }
-        else dm_exist.push_back(false);
-        {
-          face_normalizer_.normalizeFace(temp,norm_size);
-        face_images.push_back(temp);
-        }
-    }
-    else
-    {
-      face_normalizer_.normalizeFace(temp,norm_size);
-    }
-    }
-
+					face_depthmaps.push_back(dm_temp);
+					dm_exist.push_back(true);
+					fs.release();
+				}
+				else
+					dm_exist.push_back(false);
+				{
+					face_normalizer_.normalizeFace(temp, norm_size);
+					face_images.push_back(temp);
+				}
+			}
+			else
+			{
+				face_normalizer_.normalizeFace(temp, norm_size);
+			}
+		}
 
 		// clean identification_labels_to_train -> only keep those labels that appear in the training data
-		for(int j=0; j<(int)identification_labels_to_train.size(); j++)
+		for (int j = 0; j < (int)identification_labels_to_train.size(); j++)
 		{
 			bool class_exists = false;
-			for (int k=0; k<(int)m_face_labels.size(); k++)
+			for (int k = 0; k < (int)m_face_labels.size(); k++)
 			{
-				if(identification_labels_to_train[j].compare(m_face_labels[k]) == 0)
+				if (identification_labels_to_train[j].compare(m_face_labels[k]) == 0)
 					class_exists = true;
 			}
 			if (class_exists == false)
 			{
-				identification_labels_to_train.erase(identification_labels_to_train.begin()+j);
+				identification_labels_to_train.erase(identification_labels_to_train.begin() + j);
 				j--;
 			}
 		}

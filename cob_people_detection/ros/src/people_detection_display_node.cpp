@@ -125,7 +125,7 @@ unsigned long PeopleDetectionDisplayNode::convertColorImageMessageToMat(const se
 //void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg)
 void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& colorimage_msg)
 {
-	ROS_INFO("callback on");
+	// ROS_INFO("callback on");
 
 	// convert color image to cv::Mat
 	cv_bridge::CvImageConstPtr color_image_ptr;
