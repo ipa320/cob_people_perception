@@ -99,6 +99,7 @@ protected:
 
 	/// Callback for incoming head detections
 	void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions);
+	//void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageCropArray::ConstPtr& face_positions);
 
 	/// Computes the 3D coordinate of a detected face.
 	/// @param depth_image Coordinate image in format CV32FC3
@@ -121,6 +122,7 @@ protected:
 	LoadModelServer* load_model_server_;				///< Action server that handles load requests for a new recognition model
 
 	FaceRecognizer face_recognizer_;		///< implementation of the face recognizer
+
 
 	// parameters
 	std::string data_directory_;	///< path to the classifier model

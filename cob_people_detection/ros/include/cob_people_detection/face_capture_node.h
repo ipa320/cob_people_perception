@@ -127,6 +127,7 @@ protected:
 	// face recognizer trainer
 	FaceRecognizer face_recognizer_trainer_;
 	std::vector<cv::Mat> face_images_;			///< Vector of face images
+	std::vector<cv::Mat> face_depthmaps_;			///< Vector of face depthmaps
 	std::string current_label_;					///< Label of currently captured images
 	bool capture_image_;						///<
 	int number_captured_images_;				///<
@@ -172,6 +173,7 @@ protected:
 
 	/// Converts a color image message to cv::Mat format.
 	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image);
+  unsigned long convertDepthImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image);
 
 	bool captureImageCallback(cob_people_detection::captureImage::Request &req, cob_people_detection::captureImage::Response &res);
 

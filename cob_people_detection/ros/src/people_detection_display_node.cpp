@@ -117,6 +117,7 @@ unsigned long PeopleDetectionDisplayNode::convertColorImageMessageToMat(const se
 	}
 	image = image_ptr->image;
 
+
 	return ipa_Utils::RET_OK;
 }
     

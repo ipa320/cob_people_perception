@@ -61,6 +61,9 @@
 
 using namespace ipa_PeopleDetector;
 
+// Prevent deleting memory twice, when using smart pointer
+void voidDeleter(const sensor_msgs::Image* const) {}
+
 FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
@@ -69,11 +72,13 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	capture_image_ = false;
 	finish_image_capture_ = false;
 	face_images_.clear();
+	face_depthmaps_.clear();
 
 	// parameters
 	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 	int eigenface_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
 	bool debug;								// enables some debug outputs
+  bool use_depth;
 
 	std::cout << "\n---------------------------\nFace Capture Node Parameters:\n---------------------------\n";
 	node_handle_.param("data_directory", data_directory_, data_directory_);
@@ -82,9 +87,11 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	std::cout << "eigenface_size = " << eigenface_size << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
+  node_handle_.param("use_depth",use_depth,false);
+  std::cout<< "use depth: "<<use_depth<<"\n";
 
 	// face recognizer trainer
-	face_recognizer_trainer_.initTraining(data_directory_, eigenface_size, debug, face_images_);
+	face_recognizer_trainer_.initTraining(data_directory_, eigenface_size, debug, face_images_,face_depthmaps_,use_depth);
 
 	// subscribers
 	it_ = new image_transport::ImageTransport(node_handle_);
@@ -107,7 +114,7 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 
 	std::cout << "FaceCaptureNode initialized." << std::endl;
 }
-    
+
 FaceCaptureNode::~FaceCaptureNode()
 {
 	if (it_ != 0) delete it_;
@@ -151,7 +158,7 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		service_server_finish_recording_.shutdown();
 
 		// save new database status
-		face_recognizer_trainer_.saveTrainingData(face_images_);
+		face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 		// close action
 		cob_people_detection::addDataResult result;
@@ -168,7 +175,9 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		}
 
 		// save new database status
-		face_recognizer_trainer_.saveTrainingData(face_images_);
+  std::cout<<"before saving2:"<<std::endl;
+  std::cout<<face_depthmaps_.back()<<std::endl;
+		face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 		// close action
 		cob_people_detection::addDataResult result;
@@ -214,15 +223,31 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 
 		// convert color image to cv::Mat
 		cv_bridge::CvImageConstPtr color_image_ptr;
-		cv::Mat color_image;
+		cv::Mat color_image,depth_image;
 		convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
 
+    sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_detection_msg->head_detections[headIndex].depth_image), voidDeleter);
+		convertDepthImageMessageToMat(msgPtr, color_image_ptr, depth_image);
+
 		// store image and label
+// merge todo: check whether new coordinate convention (face_bounding box uses coordinates of head and face) hold in this code as well
+//		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
+//		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
+//		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
 		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[headIndex].face_detections[0];
 		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[headIndex].head_detection;
 		cv::Rect face_bounding_box(head_rect.x+face_rect.x, head_rect.y+face_rect.y, face_rect.width, face_rect.height);
-		cv::Mat img = color_image.clone();
-		face_recognizer_trainer_.addFace(img, face_bounding_box, current_label_, face_images_);
+		cv::Rect head_bounding_box(head_rect.x, head_rect.y, head_rect.width, head_rect.height);
+		cv::Mat img_color = color_image;
+		cv::Mat img_depth = depth_image;
+    // normalize face
+		//if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_)==ipa_Utils::RET_FAILED)
+		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_,face_depthmaps_)==ipa_Utils::RET_FAILED)
+		//if (face_recognizer_trainer_.addFace(img_color, face_bounding_box, current_label_, face_images_)==ipa_Utils::RET_FAILED)
+     {
+      ROS_WARN("Normalizing failed");
+     return;
+     }
 
 		// only after successful recording
 		capture_image_ = false;			// reset trigger for recording
@@ -238,6 +263,23 @@ unsigned long FaceCaptureNode::convertColorImageMessageToMat(const sensor_msgs::
 	try
 	{
 		image_ptr = cv_bridge::toCvShare(image_msg, sensor_msgs::image_encodings::BGR8);
+	}
+	catch (cv_bridge::Exception& e)
+	{
+		ROS_ERROR("PeopleDetection: cv_bridge exception: %s", e.what());
+		return ipa_Utils::RET_FAILED;
+	}
+	image = image_ptr->image;
+
+	return ipa_Utils::RET_OK;
+}
+
+/// Converts a depth image message to cv::Mat format.
+unsigned long FaceCaptureNode::convertDepthImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image)
+{
+	try
+	{
+		image_ptr = cv_bridge::toCvShare(image_msg, sensor_msgs::image_encodings::TYPE_32FC3);
 	}
 	catch (cv_bridge::Exception& e)
 	{
@@ -291,7 +333,9 @@ void FaceCaptureNode::updateDataServerCallback(const cob_people_detection::updat
 	}
 
 	// save new database status
-	face_recognizer_trainer_.saveTrainingData(face_images_);
+  std::cout<<"before saving1:"<<std::endl;
+  std::cout<<face_depthmaps_.back()<<std::endl;
+	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 	// close action
 	update_data_server_->setSucceeded(result, "Database update finished successfully.");
@@ -308,12 +352,12 @@ void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::delet
 	if (goal->delete_mode == BY_INDEX)
 	{
 		// delete only one entry identified by its index
-		face_recognizer_trainer_.deleteFace(goal->delete_index, face_images_);
+		face_recognizer_trainer_.deleteFace(goal->delete_index, face_images_,face_depthmaps_);
 	}
 	else if (goal->delete_mode == BY_LABEL)
 	{
 		// delete all entries identified by their label
-		face_recognizer_trainer_.deleteFaces(goal->label, face_images_);
+		face_recognizer_trainer_.deleteFaces(goal->label, face_images_,face_depthmaps_);
 	}
 	else
 	{
@@ -323,7 +367,9 @@ void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::delet
 	}
 
 	// save new database status
-	face_recognizer_trainer_.saveTrainingData(face_images_);
+  std::cout<<"before saving1:"<<std::endl;
+  std::cout<<face_depthmaps_.back()<<std::endl;
+	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 	// close action
 	delete_data_server_->setSucceeded(result, "Deleting entries from the database finished successfully.");
