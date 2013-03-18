@@ -6,9 +6,9 @@
 #include <kdl/frames.hpp>
 #include "cob_people_detection/SceneDrawer.h"
 
-#include <XnOpenNI.h>
-#include <XnCodecIDs.h>
-#include <XnCppWrapper.h>
+#include <openni/XnOpenNI.h>
+#include <openni/XnCodecIDs.h>
+#include <openni/XnCppWrapper.h>
 
 using std::string;
 
