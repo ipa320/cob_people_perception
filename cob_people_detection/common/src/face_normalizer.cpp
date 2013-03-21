@@ -294,7 +294,8 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
 bool FaceNormalizer::normalize_radiometry(cv::Mat& img)
 {
 
-  dct(img);
+   dct(img);
+    //tan(img);
   //logAbout(img);
 
   return true;
@@ -342,6 +343,36 @@ void FaceNormalizer::eqHist(cv::Mat& img)
 
 }
 
+void FaceNormalizer::tan(cv::Mat& input_img)
+{
+  cv::Mat img=cv::Mat(input_img.rows,input_img.cols,CV_8UC1);
+  if(input_img.channels()==3)
+  {
+    extractVChannel(input_img,img);
+    std::cout<<"extracting"<<std::endl;
+  }
+  else
+  {
+    img=input_img;
+  }
+
+
+  img.convertTo(img,CV_32FC1);
+
+  // gamma correction
+  cv::pow(img,0.2,img);
+  //dog
+  cv::Mat g2,g1;
+  cv::GaussianBlur(img,g1,cv::Size(9,9),1);
+  cv::GaussianBlur(img,g2,cv::Size(9,9),2);
+  cv::subtract(g2,g1,img);
+  //cv::normalize(img,img,0,255,cv::NORM_MINMAX);
+  img.convertTo(img,CV_8UC1,255);
+  cv::equalizeHist(img,img);
+
+  input_img=img;
+}
+
 void FaceNormalizer::dct(cv::Mat& input_img)
 {
 
@@ -369,8 +400,10 @@ void FaceNormalizer::dct(cv::Mat& input_img)
 
   double C_00=log(mu.val[0])*sqrt(img.cols*img.rows);
 
-  img=img+1;
-  cv::log(img,img);
+  //img=img+1;
+  //cv::log(img,img);
+//----------------------------
+  cv::pow(img,0.2,img);
   cv::dct(img,img);
 
   //---------------------------------------
@@ -388,7 +421,6 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   cv::normalize(img,img,0,255,cv::NORM_MINMAX);
   cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
 
-  //img.convertTo(img,CV_8UC1);
   //cv::blur(img,img,cv::Size(3,3));
 
   if(input_img.channels()==3)
@@ -408,12 +440,12 @@ void FaceNormalizer::logAbout(cv::Mat& img)
   img.convertTo(img,CV_32FC1);
   float mask_arr[]={-1, -1, -1 , -1 , 9 , -1, -1 , -1 ,-1};
   cv::Mat mask=cv::Mat(3,3,CV_32FC1,mask_arr);
-  cv::filter2D(img,img,-1,mask);
+  cv::Mat filtered;
+  cv::filter2D(img,filtered,-1,mask);
   img=img+1;
   cv::log(img,img);
-  cv::convertScaleAbs(img,img);
   cv::normalize(img,img,0,255,cv::NORM_MINMAX);
-  img.convertTo(img,CV_8UC1);
+  //img.convertTo(img,CV_8UC1);
 }
 
 
