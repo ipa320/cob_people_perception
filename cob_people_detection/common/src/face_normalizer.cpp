@@ -272,18 +272,19 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
   if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
   }
 
-  if(config_.eq_ill)
-  {
-  // radiometric normalization
-  if(!normalize_radiometry(img)) valid=false;
-  if(debug_)dump_img(img,"1_radiometry");
-  }
 
   if(config_.align)
   //geometric normalization
   {
   if(!normalize_geometry(img,FaceNormalizer::AFFINE)) valid= false;
   if(debug_)dump_img(img,"1_geometryRGB");
+  }
+
+  if(config_.eq_ill)
+  {
+  // radiometric normalization
+  if(!normalize_radiometry(img)) valid=false;
+  if(debug_)dump_img(img,"1_radiometry");
   }
 
   if(config_.resize)

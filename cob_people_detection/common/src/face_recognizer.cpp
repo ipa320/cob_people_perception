@@ -983,17 +983,23 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 		}
 
 		fileStorage.release();
+  std::cout<<"1"<<std::endl;
 
-        int j;
+std::cout<<face_depthmaps.size()<<std::endl;
+        int j=0;
       for(int i=0;i<dm_exist.size();i++)
       {
+  std::cout<<"2"<<std::endl;
         if(dm_exist[i])
         {
         // depth maps
         std::ostringstream dm;
         dm << path <<i <<dm_ext;
+  std::cout<<"3"<<std::endl;
         cv::FileStorage fs(dm.str().c_str(),FileStorage::WRITE);
+  std::cout<<"4"<<std::endl;
         fs << "depthmap"<<face_depthmaps[j];
+  std::cout<<"5"<<std::endl;
         fs.release();
         j++;
         }

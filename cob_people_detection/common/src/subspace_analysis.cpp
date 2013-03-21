@@ -1,4 +1,4 @@
-#include<cob_people_detection/subspace_analysis_fuerte.h>
+#include<cob_people_detection/subspace_analysis.h>
 
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/convenience.hpp"
