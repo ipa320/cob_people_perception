@@ -933,7 +933,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   //input data checks
   //check if input has the same size
   ss_dim_=red_dim;
-  if(img_vec.size()<ss_dim_+1)
+  if(img_vec.size()<ss_dim_)
   {
     error_prompt("trainModel()","Invalid subspace dimension");
     return false;

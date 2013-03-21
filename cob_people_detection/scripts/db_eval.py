@@ -549,35 +549,67 @@ class dlg(wx.Frame):
    #       self.ts_list.remove(file)
 
 
-    ss=[[] for i in range(5)]
-    for item in files:
-      if (int(item[-11:-8]) <=12 and int(item[-6:-4]) <=12):
-      #if int(item[-11:-8]) <=12:
-        ss[0].append(item)
-        continue
-      elif (int(item[-11:-8]) <=25 and  int(item[-6:-4]) <=25):
-      #elif int(item[-11:-8]) <=25:
-        ss[1].append(item)
-        continue
-      elif (int(item[-11:-8]) <=50 and int(item[-6:-4]) <=50):
-      #elif int(item[-11:-8]) <=50:
-        ss[2].append(item)
-        continue
-      elif (int(item[-11:-8]) <=77 and int(item[-6:-4]) <=77):
-      #elif int(item[-11:-8]) <=77:
-        ss[3].append(item)
-        continue
-      elif ( int(item[-11:-8]) >77 or int(item[-6:-4]) >77):
-      #elif  int(item[-11:-8]) >77:
-        ss[4].append(item)
-        continue
+     ss=[[] for i in range(5)]
+     for item in files:
+       if (int(item[-11:-8]) <=12 and int(item[-6:-4]) <=12):
+       #if int(item[-11:-8]) <=12:
+         ss[0].append(item)
+         continue
+       elif (int(item[-11:-8]) <=25 and  int(item[-6:-4]) <=25):
+       #elif int(item[-11:-8]) <=25:
+         ss[1].append(item)
+         continue
+       elif (int(item[-11:-8]) <=50 and int(item[-6:-4]) <=50):
+       #elif int(item[-11:-8]) <=50:
+         ss[2].append(item)
+         continue
+       elif (int(item[-11:-8]) <=77 and int(item[-6:-4]) <=77):
+       #elif int(item[-11:-8]) <=77:
+         ss[3].append(item)
+         continue
+       elif ( int(item[-11:-8]) >77 or int(item[-6:-4]) >77):
+       #elif  int(item[-11:-8]) >77:
+         ss[4].append(item)
+         continue
 
-    self.pf_list.append(ss[k-1])
-    for s in ss[1:]:
-      for f in s:
-          for c in self.ts_list:
-            if f in c:
-              c.remove(f)
+     self.pf_list.append(ss[k-1])
+     for s in ss[1:]:
+       for f in s:
+           for c in self.ts_list:
+             if f in c:
+               c.remove(f)
+
+    #  ss=[[] for i in range(6)]
+    #  for item in files:
+    #    if (int(item[-11:-8]) ==0 and int(item[-6:-4]) ==0):
+    #      ss[0].append(item)
+    #    elif (int(item[-11:-8]) <=12 and int(item[-6:-4]) <=12):
+    #    #if int(item[-11:-8]) <=12:
+    #      ss[1].append(item)
+    #      continue
+    #    elif (int(item[-11:-8]) <=25 and  int(item[-6:-4]) <=25):
+    #    #elif int(item[-11:-8]) <=25:
+    #      ss[2].append(item)
+    #      continue
+    #    elif (int(item[-11:-8]) <=50 and int(item[-6:-4]) <=50):
+    #    #elif int(item[-11:-8]) <=50:
+    #      ss[3].append(item)
+    #      continue
+    #    elif (int(item[-11:-8]) <=77 and int(item[-6:-4]) <=77):
+    #    #elif int(item[-11:-8]) <=77:
+    #      ss[4].append(item)
+    #      continue
+    #    elif ( int(item[-11:-8]) >77 or int(item[-6:-4]) >77):
+    #    #elif  int(item[-11:-8]) >77:
+    #      ss[5].append(item)
+    #      continue
+
+    #  self.pf_list.append(ss[k])
+    #  for s in ss[1:]:
+    #    for f in s:
+    #        for c in self.ts_list:
+    #          if f in c:
+    #            c.remove(f)
 
 
 
@@ -736,14 +768,46 @@ class epoch():
 
   def calc_error_rate(self):
     error_list=list()
+    #true positive
+    tp_list=list()
+    #true negative
+    tn_list=list()
+    #false positive
+    fp_list=list()
+    #false negative
+    fn_list=list()
     for i in xrange(len(self.gt)):
         if (int(self.gt[i]) == int(self.res[i])):
           error_list.append(0)
+          if int(self.gt[i]) >-1:
+            fp_list.append(0)
+            fn_list.append(0)
+            tn_list.append(0)
+            tp_list.append(1)
+          elif int(self.gt[i]) ==-1:
+            fp_list.append(0)
+            fn_list.append(0)
+            tn_list.append(1)
+            tp_list.append(0)
         else:
           error_list.append(1)
+          if int(self.gt[i])==-1:
+            fp_list.append(1)
+            fn_list.append(0)
+            tn_list.append(0)
+            tp_list.append(0)
+          elif int(self.gt[i]) >-1:
+            fp_list.append(0)
+            fn_list.append(1)
+            tn_list.append(0)
+            tp_list.append(0)
 
     n=len(error_list)
     self.error_rate=float(sum(error_list))/float(n)
+    self.tp=sum(tp_list)
+    self.tn=sum(tn_list)
+    self.fp=sum(fp_list)
+    self.fn=sum(fn_list)
 
 class Evaluator():
   def __init__(self,invalid_list=0):
@@ -786,7 +850,14 @@ class Evaluator():
     else:
       sigma=0.0
 
+
+    print self.epochs[-1].tp
+    print self.epochs[-1].tn
+    print self.epochs[-1].fp
+    print self.epochs[-1].fn
     stats={"succes_rate":1-mean_error_rate,"m_err":mean_error_rate,"sigma":sigma,"reps":len(self.epochs)}
+
+
     return stats
 
   def show_all(self):
