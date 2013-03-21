@@ -4,7 +4,10 @@
 #include "boost/filesystem/convenience.hpp"
 #include "boost/filesystem/path.hpp"
 #include <boost/thread/mutex.hpp>
-
+#include<opencv/cv.h>
+#include <opencv/cvaux.h>
+#include <opencv/highgui.h>
+#include <opencv/ml.h>
 void SubspaceAnalysis::error_prompt(std::string fct,std::string desc)
 {
   std::cerr<<"ERROR\n";
@@ -132,6 +135,11 @@ void SubspaceAnalysis::XFaces::project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Ma
 {
 
 
+  //for(int i=0;i<src_mat.rows;i++)
+  //{
+  //  cv::Mat c_row=src_mat.row(i);
+  //  cv::subtract(c_row,avg_mat,c_row);
+  //}
 
   //calculate coefficients
   //
@@ -284,7 +292,6 @@ void SubspaceAnalysis::XFaces::projectToSubspace(cv::Mat& probe_mat,cv::Mat& coe
   //}
 
   //cv::normalize(src_arr,src_arr,1.0,0.0,cv::NORM_L1);
-  //cv::subtract(src_arr,avg_arr_,src_arr);
   project(src_arr,eigenvector_arr_,avg_arr_,coeff_arr);
 
   cv::Mat rec_mat=cv::Mat(src_arr.rows,eigenvector_arr_.rows,CV_64FC1);
@@ -511,12 +518,6 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
       cv::Mat model_mat=proj_model_data_arr_.row(r);
       cv::Mat diff_row;
       cv::subtract(probe_mat,model_mat,diff_row);
-      diff_row=diff_row.mul(diff_row);
-      //std::cout<<diff_row.rows<<","<<diff_row.cols<<std::endl;
-      //std::cout<<eigenvalue_arr_.rows<<","<<eigenvalue_arr_.cols<<std::endl;
-      //std::cout<<eigenvalue_arr_<<std::endl;
-      //diff_row=diff_row/eigenvalue_arr_;
-
       temp=cv::norm(diff_row,cv::NORM_L2);
       if(temp < minDIFS )
       {
@@ -605,7 +606,7 @@ bool SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vecto
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
   proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
   eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
-  eigenvalue_arr_=cv::Mat(1,ss_dim_,CV_64FC1);
+  eigenvalue_arr_=cv::Mat(ss_dim_,ss_dim_,CV_64FC1);
 
   calcDataMat(img_vec,model_data_arr_);
 
@@ -932,7 +933,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   //input data checks
   //check if input has the same size
   ss_dim_=red_dim;
-  if(img_vec.size()<ss_dim_+1)
+  if(img_vec.size()<ss_dim_)
   {
     error_prompt("trainModel()","Invalid subspace dimension");
     return false;
@@ -960,7 +961,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
   proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
   eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
-  eigenvalue_arr_=cv::Mat(1,ss_dim_-1,CV_64FC1);
+  eigenvalue_arr_=cv::Mat(ss_dim_,ss_dim_,CV_64FC1);
 
   for(int i=0;i<label_vec.size();i++)
   {
@@ -1008,7 +1009,6 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
         cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
 
         eigenvector_arr_=eigenvector_arr_.t();
-        eigenvalue_arr_=lda_.eigenvals;
         break;
 
     case SubspaceAnalysis::METH_IFLDA: 
@@ -1048,7 +1048,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
       }
       }
 
-    case SubspaceAnalysis::METH_EIGEN: 
+    case SubspaceAnalysis::METH_EIGEN:
       {
         std::cout<<"EIGENFACES"<<std::endl;
         //initiate PCA
@@ -1056,6 +1056,17 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
         eigenvector_arr_=pca_.eigenvecs;
         eigenvalue_arr_=pca_.eigenvals;
         avg_arr_=pca_.mean;
+        break;
+      }
+    case SubspaceAnalysis::METH_OCV_FISHER:
+      {
+        std::cout<<"OpenCv Fisherfaces"<<std::endl;
+        cv::Ptr<cv::FaceRecognizer> model =cv::createFisherFaceRecognizer();
+        model->train(img_vec, label_vec);
+        //initiate PCA
+        eigenvector_arr_=model->getMat("eigenvectors").t();
+        eigenvalue_arr_=model->getMat("eigenvalues");
+        avg_arr_=model->getMat("mean");
         break;
       }
 

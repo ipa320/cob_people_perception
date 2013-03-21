@@ -1,5 +1,5 @@
 
-#include<cob_people_detection/subspace_analysis.h>
+#include<cob_people_detection/subspace_analysis_fuerte.h>
 #include<cob_people_detection/face_normalizer.h>
 #include<opencv/cv.h>
 #include<opencv/highgui.h>
@@ -116,8 +116,8 @@ int main(int argc, const char *argv[])
   if(!method_str.compare("FISHER"))
   {
     std::cout<<"FISHER"<<std::endl;
-    //method=SubspaceAnalysis::METH_OCV_FISHER;
-    method = SubspaceAnalysis::METH_FISHER;
+    method=SubspaceAnalysis::METH_OCV_FISHER;
+    //method = SubspaceAnalysis::METH_FISHER;
   }
   else if(!method_str.compare("IFLDA"))
   {
@@ -261,6 +261,7 @@ int main(int argc, const char *argv[])
  std::vector<cv::Mat> dm_vec;
 
   std::string invalid_path="/share/goa-tz/people_detection/eval/eval_tool_files/nrm_failed";
+  //std::string invalid_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/eval/eval_tool_files/nrm_failed";
   std::ofstream os_inv(invalid_path.c_str() );
   bool valid;
  for(int i =0;i<in_vec.size();i++)
@@ -282,7 +283,8 @@ int main(int argc, const char *argv[])
    if(i==0)
    {
     aspect_ratio=double(img.cols)/double(img.rows);
-    norm_size=cv::Size(round(160*aspect_ratio),160);
+    //norm_size=cv::Size(round(160*aspect_ratio),160);
+    norm_size=cv::Size(img.rows,img.cols);
    }
    valid=true;
    cv::Mat dm;
@@ -307,8 +309,8 @@ int main(int argc, const char *argv[])
  for(int i =0 ;i<probe_file_vec.size();i++)
  {
   std::stringstream ostr,nstr;
-  nstr<<"/share/goa-tz/people_detection/eval/picdump/";
-  //nstr<<"/home/om/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
+  //nstr<<"/share/goa-tz/people_detection/eval/picdump/";
+  nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
   ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
 
   cv::Mat probe_xyz,probe_img;
@@ -355,7 +357,6 @@ int main(int argc, const char *argv[])
   int ss_dim=num_classes;
 
   SubspaceAnalysis::FishEigFaces* EFF=new SubspaceAnalysis::FishEigFaces();
-
   // calculate Model
   EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
   std::cout<<"EFF model computed"<<std::endl;
@@ -376,6 +377,7 @@ int main(int argc, const char *argv[])
 
   //opencv
   //cv::Ptr<cv::FaceRecognizer> model = cv::createFisherFaceRecognizer();
+  //cv::Ptr<cv::FaceRecognizer> model=cv::createLBPHFaceRecognizer();
   //model->train(img_vec, label_vec);
 
   for(int i=0;i<probe_mat_vec.size();i++)
@@ -386,6 +388,7 @@ int main(int argc, const char *argv[])
   double DFFS_EFF;
   EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
   EFF->classify(coeff_EFF,classifier,c_EFF);
+  //c_EFF=model->predict(probe);
   //std::cout<<"RGB CLASS"<<c_EFF<<std::endl;
 
   //For use with depth data
