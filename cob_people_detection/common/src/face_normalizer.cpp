@@ -44,7 +44,7 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   vis_debug_(false)
 {
   config_.eq_ill=  true;
-  config_.align=   true;
+  config_.align=   false;
   config_.resize=  true;
   config_.cvt2gray=true;
   this->init();
@@ -67,16 +67,16 @@ void FaceNormalizer::init()
   }
   else
   {
-     eye_r_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_righteye.xml";
-     eye_path=    "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
-     eye_l_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
-     nose_path=   "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
-     mouth_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
-     //eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
-     //eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-     //eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-     //nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
-     //mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
+    // eye_r_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_righteye.xml";
+    // eye_path=    "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
+    // eye_l_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
+    // nose_path=   "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
+    // mouth_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
+     eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
+     eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+     eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
+     nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
+     mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
 
   }
   eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
@@ -495,12 +495,12 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
 
    //y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2]);
-   y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],0;
-   //y_new<<0,1,0;
+   //y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],0;
+   y_new<<0,1,0;
    x_new.normalize();
    y_new.normalize();
 
-   //y_new<<0,1,0;
+   y_new<<0,1,0;
    z_new=x_new.cross(y_new);
 
    //std::cout<<"new x\n"<<x_new<<std::endl;

@@ -32,7 +32,7 @@ classification_method: 0
 
 # is unknown threshold supposed to be utilized: true = use unknown threshold, false = do not use threshold
 # bool
-use_unknown_thresh: false
+use_unknown_thresh: true
 
 # use depth
 use_depth: false
