@@ -158,6 +158,13 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
     }
   };
 
+  //FaceNormalizer::FNConfig fn_cfg;
+  //fn_cfg.eq_ill=  true;
+  //fn_cfg.align=   false;
+  //fn_cfg.resize=  true;
+  //fn_cfg.cvt2gray=true;
+  //face_normalizer_=new FaceNormalizer(fn_cfg);
+
 
 
 
@@ -203,7 +210,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Mat roi_depth;
   //TODO MAKE TEMPORARY SWITCH OFF
   //if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) ;
+  std::cout<<"adding face1\n";
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) return ipa_Utils::RET_FAILED;
+  std::cout<<"adding face2\n";
 
 
 
@@ -235,8 +244,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Mat roi_depth;
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) return ipa_Utils::RET_FAILED;
   //if(!face_normalizer_.normalizeFace(roi_color,norm_size)) return ipa_Utils::RET_FAILED;
-  cv::imshow("FACE TO ADD",roi_color);
-  cv::waitKey(50);
 
 
 
@@ -764,7 +771,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
      cv::Mat DM_crop=cv::Mat::zeros(m_eigenface_size,m_eigenface_size,CV_8UC1);
     cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
     if(!face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,norm_size,DM_crop));
-    return ipa_Utils::RET_FAILED ;
+		//return ipa_Utils::RET_FAILED;
 
 
      double DFFS;

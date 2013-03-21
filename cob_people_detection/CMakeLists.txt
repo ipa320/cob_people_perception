@@ -98,10 +98,10 @@ rosbuild_add_executable(ssa_test
      #  )
      #target_link_libraries(xml_test face_normalizer subspace_analysis opencv_core opencv_highgui )
 
-     #rosbuild_add_executable(scene_publisher
-     #  ros/src/scene_publisher.cpp
-     #  )
-     #target_link_libraries(scene_publisher opencv_core opencv_highgui )
+     rosbuild_add_executable(scene_publisher
+       ros/src/scene_publisher.cpp
+       )
+     target_link_libraries(scene_publisher opencv_core opencv_highgui )
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 

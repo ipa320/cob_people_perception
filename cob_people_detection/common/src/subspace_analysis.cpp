@@ -511,6 +511,12 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
       cv::Mat model_mat=proj_model_data_arr_.row(r);
       cv::Mat diff_row;
       cv::subtract(probe_mat,model_mat,diff_row);
+      diff_row=diff_row.mul(diff_row);
+      //std::cout<<diff_row.rows<<","<<diff_row.cols<<std::endl;
+      //std::cout<<eigenvalue_arr_.rows<<","<<eigenvalue_arr_.cols<<std::endl;
+      //std::cout<<eigenvalue_arr_<<std::endl;
+      //diff_row=diff_row/eigenvalue_arr_;
+
       temp=cv::norm(diff_row,cv::NORM_L2);
       if(temp < minDIFS )
       {
@@ -599,7 +605,7 @@ bool SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vecto
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
   proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
   eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
-  eigenvalue_arr_=cv::Mat(ss_dim_,ss_dim_,CV_64FC1);
+  eigenvalue_arr_=cv::Mat(1,ss_dim_,CV_64FC1);
 
   calcDataMat(img_vec,model_data_arr_);
 
@@ -954,7 +960,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
   proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
   eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
-  eigenvalue_arr_=cv::Mat(ss_dim_,ss_dim_,CV_64FC1);
+  eigenvalue_arr_=cv::Mat(1,ss_dim_-1,CV_64FC1);
 
   for(int i=0;i<label_vec.size();i++)
   {
@@ -1002,6 +1008,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
         cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
 
         eigenvector_arr_=eigenvector_arr_.t();
+        eigenvalue_arr_=lda_.eigenvals;
         break;
 
     case SubspaceAnalysis::METH_IFLDA: 

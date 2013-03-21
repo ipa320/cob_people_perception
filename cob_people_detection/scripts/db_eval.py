@@ -425,18 +425,19 @@ class dlg(wx.Frame):
     cl_ctr=0
     curr_files=list()
     with open(pf_path,"r") as input_stream:
-
       lines=input_stream.read().splitlines()
       for line in lines:
         if "$$" in line:
+          print line
           cl_ctr+=1
-          lines.remove("$$")
           self.cl_list.append(cl_ctr)
           self.pf_list.append(curr_files)
           curr_files=list()
         else:
           curr_files.append(line)
 
+
+    print self.pf_list
     self.pf_list.append([])
     self.sync_lists()
     self.print_lists()

@@ -24,15 +24,15 @@ debug: false
 
 #specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces
 # int
-subspace_method: 1
+subspace_method: 0
 
 # specifies classification algorithm: 0 = DIFS, 1 = KNN, 2 = SVM
 # int
-classification_method: 2
+classification_method: 0
 
 # is unknown threshold supposed to be utilized: true = use unknown threshold, false = do not use threshold
 # bool
-use_unknown_thresh: true
+use_unknown_thresh: false
 
 # use depth
-use_depth: true
+use_depth: false

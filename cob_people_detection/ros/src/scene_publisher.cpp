@@ -227,19 +227,26 @@ int main (int argc, char** argv)
   scene_publisher sp;
 
 
-	ros::Rate loop_rate(5);
+	ros::Rate loop_rate(1);
 	while (ros::ok())
 	{
-    sp.shot++;
-    if(sp.shot==4)
     {
-      sp.shot=1;
-      sp.persp++;
-    }
+      sp.shot++;
+      std::cout<<"PERSPECTIVE:"<<sp.persp<<std::endl;
+      if(sp.shot==4)
+      {
+        sp.shot=1;
+        sp.persp++;
+      }
     if(sp.persp==18) break;
+
+    if(sp.persp==14)
+    {
     sp.process();
     sp.publish();
 		ros::spinOnce ();
 		loop_rate.sleep();
-	}
+    }
+    }
+}
 }

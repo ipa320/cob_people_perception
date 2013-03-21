@@ -10,9 +10,9 @@ int main(int argc, const char *argv[])
 
   std::cout<<"[FaceNormalizer] running scene no. "<<argv[1]<<"...\n";
   FaceNormalizer::FNConfig cfg;
-  cfg.eq_ill=true;
+  cfg.eq_ill=false;
   cfg.align=true;
-  cfg.resize=true;
+  cfg.resize=false;
   cfg.cvt2gray=true;
 
   FaceNormalizer fn(cfg);
