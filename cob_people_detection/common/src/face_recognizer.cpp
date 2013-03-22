@@ -444,11 +444,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
   if(m_depth_mode)
   {
   if(face_depthmaps.size()>0)initModel(eff_depth,face_depthmaps,depth_num_labels);
-  eff_depth.saveModel(path_depth);
+  //eff_depth.saveModel(path_depth);
   }
 
   if(face_images.size()>0)initModel(eff_color,face_images,m_label_num);
-  eff_color.saveModel(path_color);
+  //eff_color.saveModel(path_color);
 
 	//TODO ALWAYS TRAINING NECESSARY - NO INTERFACE FOR SSA CLASS FOR MODEL ASSOCIATION
   //saveRecognitionModel();
@@ -984,7 +984,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 
 		fileStorage.release();
 
-        int j;
+        int j=0;
       for(int i=0;i<dm_exist.size();i++)
       {
         if(dm_exist[i])
