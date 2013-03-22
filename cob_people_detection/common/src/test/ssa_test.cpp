@@ -1,5 +1,5 @@
 
-#include<cob_people_detection/subspace_analysis_fuerte.h>
+#include<cob_people_detection/subspace_analysis.h>
 #include<cob_people_detection/face_normalizer.h>
 #include<opencv/cv.h>
 #include<opencv/highgui.h>
@@ -116,8 +116,7 @@ int main(int argc, const char *argv[])
   if(!method_str.compare("FISHER"))
   {
     std::cout<<"FISHER"<<std::endl;
-    method=SubspaceAnalysis::METH_OCV_FISHER;
-    //method = SubspaceAnalysis::METH_FISHER;
+    method = SubspaceAnalysis::METH_FISHER;
   }
   else if(!method_str.compare("IFLDA"))
   {
@@ -283,8 +282,8 @@ int main(int argc, const char *argv[])
    if(i==0)
    {
     aspect_ratio=double(img.cols)/double(img.rows);
-    //norm_size=cv::Size(round(160*aspect_ratio),160);
-    norm_size=cv::Size(img.rows,img.cols);
+   norm_size=cv::Size(round(160*aspect_ratio),160);
+    //norm_size=cv::Size(img.rows,img.cols);
    }
    valid=true;
    cv::Mat dm;
@@ -309,8 +308,8 @@ int main(int argc, const char *argv[])
  for(int i =0 ;i<probe_file_vec.size();i++)
  {
   std::stringstream ostr,nstr;
-  //nstr<<"/share/goa-tz/people_detection/eval/picdump/";
-  nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
+  nstr<<"/share/goa-tz/people_detection/eval/picdump/";
+  //nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
   ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
 
   cv::Mat probe_xyz,probe_img;

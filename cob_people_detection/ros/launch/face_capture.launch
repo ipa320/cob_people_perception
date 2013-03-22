@@ -3,7 +3,7 @@
 <launch>
   <!-- face capture node (captures faces and stores them in the database) -->
   <rosparam command="load" ns="/cob_people_detection/face_capture" file="$(find cob_people_detection)/ros/launch/face_recognizer_params.yaml"/>
-  <node name="face_capture" pkg="cob_people_detection" ns="/cob_people_detection/face_capture" type="face_capture_node" output="screen"> <!--launch-prefix="gdb -ex run args"> launch-prefix="valgrind"-->
+  <node name="face_capture" pkg="cob_people_detection" ns="/cob_people_detection/face_capture" type="face_capture_node" output="screen"> <!--launch-prefix="gdb -ex run args"--><!--launch-prefix="valgrind"-->
     <remap from="face_detections" to="/cob_people_detection/face_detector/face_positions"/>
     <remap from="color_image" to="/camera/rgb/image_color"/>
 	
