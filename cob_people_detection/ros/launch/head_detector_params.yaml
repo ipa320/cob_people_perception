@@ -10,9 +10,9 @@ fill_unassigned_depth_values: true
 # double
 depth_increase_search_scale: 1.1
 
-# Minimum number (minus 1) of neighbor rectangles that makes up an object.
+# Minimum number (minus 1) of neighbor rectangles that makes up an object. #68
 # int
-depth_drop_groups: 68
+depth_drop_groups: 40
 
 # Minimum search scale x
 # int

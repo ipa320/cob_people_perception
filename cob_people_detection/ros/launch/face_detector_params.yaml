@@ -6,7 +6,7 @@
 # double
 faces_increase_search_scale: 1.1
 
-# Minimum number (minus 1) of neighbor rectangles that makes up an object.
+# Minimum number (minus 1) of neighbor rectangles that makes up an object. #3
 # int
 faces_drop_groups: 3
 

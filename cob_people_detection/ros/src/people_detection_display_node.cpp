@@ -132,7 +132,7 @@ unsigned long PeopleDetectionDisplayNode::convertColorImageMessageToMat(const se
     
 /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
-{
+{ 
 	// convert color image to cv::Mat
 	cv_bridge::CvImageConstPtr color_image_ptr;
 	cv::Mat color_image;
@@ -154,7 +154,7 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 			cv::rectangle(color_image, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(191, 255, 148), 2, 8, 0);
 		}
 	}
-
+	
 	// insert recognized faces
 	for(int i=0; i<(int)face_recognition_msg->detections.size(); i++)
 	{
@@ -178,8 +178,8 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	}
 
 	// display image
-	cv::imshow("Detections and Recognitions", color_image);
-	cv::waitKey(10);
+	//cv::imshow("Detections and Recognitions", color_image);
+	//cv::waitKey(10);
 
 	// publish image
 	cv_bridge::CvImage cv_ptr;
