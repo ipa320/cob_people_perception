@@ -68,6 +68,7 @@
 
 // OpenCV
 #include "opencv/cv.h"
+//#include<opencv/highgui.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -75,13 +76,14 @@
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 
-#include<opencv/highgui.h>
+// timer
+#include <cob_people_detection/timer.h>
+
 using namespace ipa_PeopleDetector;
 
 HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
-  
 	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 
 	// Parameters
@@ -102,6 +104,8 @@ HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
 	std::cout << "depth_min_search_scale_x = " << depth_min_search_scale_x << "\n";
 	node_handle_.param("depth_min_search_scale_y", depth_min_search_scale_y, 20);
 	std::cout << "depth_min_search_scale_y = " << depth_min_search_scale_y << "\n";
+	node_handle_.param("display_timing", display_timing_, false);
+	std::cout << "display_timing = " << display_timing_ << "\n";
 
 	// initialize head detector
 	head_detector_.init(data_directory_, depth_increase_search_scale, depth_drop_groups, depth_min_search_scale_x, depth_min_search_scale_y);
@@ -112,6 +116,7 @@ HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh)
 	// subscribe to sensor topic
 	pointcloud_sub_ = nh.subscribe("pointcloud_rgb", 1, &HeadDetectorNode::pointcloud_callback, this);
 
+	std::cout << "HeadDetectorNode initialized." << std::endl;
 }
 
 HeadDetectorNode::~HeadDetectorNode(void)
@@ -120,6 +125,9 @@ HeadDetectorNode::~HeadDetectorNode(void)
 
 void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
 {
+//	Timer tim;
+//	tim.start();
+
 	// convert incoming colored point cloud to cv::Mat images
 	cv::Mat depth_image;
 	cv::Mat color_image;
@@ -150,6 +158,10 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 		image_array.head_detections[i].color_image = *(cv_ptr.toImageMsg());
 	}
 	head_position_publisher_.publish(image_array);
+
+	if (display_timing_ == true)
+		ROS_INFO("%d HeadDetection: Time stamp of pointcloud message: %f. Delay: %f.", pointcloud->header.seq, pointcloud->header.stamp.toSec(), ros::Time::now().toSec()-pointcloud->header.stamp.toSec());
+//	ROS_INFO("Head Detection took %f ms.", tim.getElapsedTimeInMilliSec());
 }
 
 unsigned long HeadDetectorNode::convertPclMessageToMat(const sensor_msgs::PointCloud2::ConstPtr& pointcloud, cv::Mat& depth_image, cv::Mat& color_image)

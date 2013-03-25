@@ -1,29 +1,9 @@
-<library path="lib/libcolor_face_detector">
-  <class name="people/FaceDetectorColor"
-         type="people::FaceDetectorColor"
+<library path="lib/libsensor_message_gateway_nodelet">
+  <class name="cob_people_detection/SensorMessageGatewayNodelet"
+         type="cob_people_detection::SensorMessageGatewayNodelet"
          base_class_type="nodelet::Nodelet">
     <description> 
-      The Nodelet for the face detector in the people package.
-    </description>
-  </class>
-</library>
-
-<library path="lib/libface_detector">
-  <class name="ipa_PeopleDetector/CobFaceDetectionNodelet"
-         type="ipa_PeopleDetector::CobFaceDetectionNodelet"
-         base_class_type="nodelet::Nodelet">
-    <description> 
-      The Nodelet for the face detector in the ipa_PeopleDetector namespace.
-    </description>
-  </class>
-</library>
-
-<library path="lib/libpeople_detector">
-  <class name="ipa_PeopleDetector/CobPeopleDetectionNodelet"
-         type="ipa_PeopleDetector::CobPeopleDetectionNodelet"
-         base_class_type="nodelet::Nodelet">
-    <description> 
-      The Nodelet for the people detector in the ipa_PeopleDetector namespace.
+      The Nodelet for libsensor_message_gateway in the cob_people_detection package.
     </description>
   </class>
 </library>

@@ -82,7 +82,7 @@ CoordinatorNode::CoordinatorNode(ros::NodeHandle nh)
 	service_server_start_recognition_ = node_handle_.advertiseService("start_recognition", &CoordinatorNode::startRecognitionCallback, this);
 	service_server_stop_recognition_ = node_handle_.advertiseService("stop_recognition", &CoordinatorNode::stopRecognitionCallback, this);
 
-	std::cout << "CoordinatorNode initialized.\n";
+	std::cout << "CoordinatorNode initialized." << std::endl;
 }
 
 CoordinatorNode::~CoordinatorNode()
@@ -108,7 +108,8 @@ void CoordinatorNode::getDetectionsServerCallback(const cob_people_detection::ge
 	if (sensor_message_gateway_open_ == false)
 	{
 		// open gateway
-		int retval = system("rosrun dynamic_reconfigure dynparam set /cob_people_detection/sensor_message_gateway/sensor_message_gateway target_publishing_rate 5.0");
+		std::string cmd = "rosrun dynamic_reconfigure dynparam set " + namespace_gateway_ + " target_publishing_rate 5.0";
+		int retval = system(cmd.c_str());
 	}
 
 	bool message_received = false;
@@ -138,7 +139,8 @@ void CoordinatorNode::getDetectionsServerCallback(const cob_people_detection::ge
 	if (sensor_message_gateway_open_ == false)
 	{
 		// close gateway
-		int retval = system("rosrun dynamic_reconfigure dynparam set /cob_people_detection/sensor_message_gateway/sensor_message_gateway target_publishing_rate 0.0");
+		std::string cmd = "rosrun dynamic_reconfigure dynparam set " + namespace_gateway_ + " target_publishing_rate 0.0";
+		int retval = system(cmd.c_str());
 	}
 
 	if (message_received == true)
@@ -154,7 +156,7 @@ bool CoordinatorNode::startRecognitionCallback(cob_people_detection::recognition
 
 	// set target frame rate
 	std::stringstream ss;
-	ss << "rosrun dynamic_reconfigure dynparam set /cob_people_detection/sensor_message_gateway/sensor_message_gateway target_publishing_rate " << req.target_frame_rate;
+	ss << "rosrun dynamic_reconfigure dynparam set " << namespace_gateway_ << " target_publishing_rate " << req.target_frame_rate;
 	int retval = system(ss.str().c_str());
 
 	sensor_message_gateway_open_ = true;
@@ -168,7 +170,8 @@ bool CoordinatorNode::stopRecognitionCallback(std_srvs::Empty::Request &req, std
 	boost::lock_guard<boost::mutex> lock(active_action_mutex_);
 
 	// set target frame rate
-	int retval = system("rosrun dynamic_reconfigure dynparam set /cob_people_detection/sensor_message_gateway/sensor_message_gateway target_publishing_rate 0");
+	std::string cmd = "rosrun dynamic_reconfigure dynparam set " + namespace_gateway_ + " target_publishing_rate 0.0";
+	int retval = system(cmd.c_str());
 
 	sensor_message_gateway_open_ = false;
 

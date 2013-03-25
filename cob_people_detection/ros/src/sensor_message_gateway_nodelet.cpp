@@ -24,8 +24,7 @@
 * \date Date of creation: 07.08.2012
 *
 * \brief
-* functions for detecting a face within a color image (patch)
-* current approach: haar detector on color image
+* gateway for sensor messages
 *
 *****************************************************************
 *
@@ -59,53 +58,53 @@
 ****************************************************************/
 
 
-#ifndef __FACE_DETECTOR_NODE_H__
-#define __FACE_DETECTOR_NODE_H__
 
-#ifdef __LINUX__
-	#include "cob_people_detection/face_detector.h"
-#else
-#endif
+#include "cob_people_detection/sensor_message_gateway_node.h"
+#include "cob_vision_utils/GlobalDefines.h"
 
-// ROS includes
-#include <ros/ros.h>
-#include <ros/package.h>		// use as: directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
+// ros
+#include <nodelet/nodelet.h>
 
-// ROS message includes
-#include <sensor_msgs/Image.h>
-#include <cob_people_detection_msgs/ColorDepthImageArray.h>
+// point cloud
+#include <pcl/point_types.h>
+#include <pcl_ros/point_cloud.h>
 
-namespace ipa_PeopleDetector {
+// boost
+#include <boost/bind.hpp>
 
 
-class FaceDetectorNode
+// this should really be in the implementation (.cpp file)
+#include <pluginlib/class_list_macros.h>
+
+
+namespace cob_people_detection
 {
-public:
-
-	/// Constructor
-	/// @param nh ROS node handle
-	FaceDetectorNode(ros::NodeHandle nh);
-	~FaceDetectorNode(void); ///< Destructor
-
-
+class SensorMessageGatewayNodelet : public nodelet::Nodelet
+{
 protected:
-
-	/// Callback for incoming head detections
-	void head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions);
-
 	ros::NodeHandle node_handle_;
+	SensorMessageGatewayNode* sensor_message_gateway_;
 
-	ros::Subscriber head_position_subscriber_;		///< subscribes to the positions of detected head regions
+public:
+	SensorMessageGatewayNodelet()
+	{
+		sensor_message_gateway_ = 0;
+	}
 
-	ros::Publisher face_position_publisher_;		///< publisher for the positions of the detected faces
+	~SensorMessageGatewayNodelet()
+	{
+		if (sensor_message_gateway_ != 0)
+			delete sensor_message_gateway_;
+	}
 
-	FaceDetector face_detector_;	///< implementation of the face detector
+	virtual void onInit()
+	{
+		node_handle_ = getNodeHandle();
 
-	// parameters
-	std::string data_directory_;	///< path to the classifier model
-	bool display_timing_;
+		sensor_message_gateway_ = new SensorMessageGatewayNode(node_handle_);
+	}
 };
 
-} // end namespace
-
-#endif // __FACE_DETECTOR_NODE_H__
+}
+// watch the capitalization carefully
+PLUGINLIB_DECLARE_CLASS(cob_people_detection, SensorMessageGatewayNodelet, cob_people_detection::SensorMessageGatewayNodelet, nodelet::Nodelet)

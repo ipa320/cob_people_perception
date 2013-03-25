@@ -34,6 +34,8 @@ rosbuild_gensrv()
 rosbuild_check_for_sse()
 #set(SSE_FLAGS "-msse2 -mfpmath=sse")
 
+rosbuild_add_boost_directories()
+
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
 #target_link_libraries(${PROJECT_NAME} another_library)
@@ -98,10 +100,10 @@ rosbuild_add_executable(ssa_test
      #  )
      #target_link_libraries(xml_test face_normalizer subspace_analysis opencv_core opencv_highgui )
 
-     rosbuild_add_executable(scene_publisher
-       ros/src/scene_publisher.cpp
-       )
-     target_link_libraries(scene_publisher opencv_core opencv_highgui )
+     #rosbuild_add_executable(scene_publisher
+     #  ros/src/scene_publisher.cpp
+     #  )
+     #target_link_libraries(scene_publisher opencv_core opencv_highgui )
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 
@@ -132,10 +134,12 @@ rosbuild_link_boost(face_recognizer_node filesystem system)
 add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 rosbuild_add_executable(detection_tracker_node
-			ros/src/detection_tracker_node.cpp)
+			ros/src/detection_tracker_node.cpp
+			common/src/munkres/munkres.cpp)
+rosbuild_link_boost(detection_tracker_node signals)
 
 ## FUERTE MIGRATION
-rosbuild_link_boost(detection_tracker_node signals)
+#rosbuild_link_boost(detection_tracker_node signals)
 
 rosbuild_add_executable(people_detection_display_node
 			ros/src/people_detection_display_node.cpp)
@@ -146,19 +150,20 @@ rosbuild_add_executable(face_capture_node
 			common/src/abstract_face_recognizer.cpp
 			common/src/face_recognizer.cpp
 			ros/src/face_capture_node.cpp)
-target_link_libraries(face_capture_node face_normalizer subspace_analysis)    
-## FUERTE MIGRATION
-rosbuild_link_boost(face_capture_node signals filesystem system) 
-
+rosbuild_link_boost(face_capture_node filesystem system signals)
+target_link_libraries(face_capture_node face_normalizer subspace_analysis)
 
 rosbuild_add_executable(sensor_message_gateway_node
-			ros/src/sensor_message_gateway_node.cpp)
-## FUERTE MIGRATION
+			ros/src/sensor_message_gateway_node.cpp
+			ros/src/sensor_message_gateway_main.cpp)
 rosbuild_link_boost(sensor_message_gateway_node signals)
+rosbuild_add_library(sensor_message_gateway_nodelet
+			ros/src/sensor_message_gateway_node.cpp
+			ros/src/sensor_message_gateway_nodelet.cpp)
+rosbuild_link_boost(sensor_message_gateway_nodelet signals)
 
 rosbuild_add_executable(coordinator_node
 			ros/src/coordinator_node.cpp)
-## FUERTE MIGRATION
 rosbuild_link_boost(coordinator_node signals)
 
 rosbuild_add_library(face_normalizer
@@ -191,6 +196,7 @@ rosbuild_add_compile_flags(detection_tracker_node -D__LINUX__)
 rosbuild_add_compile_flags(people_detection_display_node -D__LINUX__)
 rosbuild_add_compile_flags(face_capture_node -D__LINUX__)
 rosbuild_add_compile_flags(sensor_message_gateway_node -D__LINUX__)
+rosbuild_add_compile_flags(sensor_message_gateway_nodelet -D__LINUX__)
 rosbuild_add_compile_flags(coordinator_node -D__LINUX__)
 
 # rostest

@@ -75,6 +75,9 @@
 // Boost
 #include <boost/shared_ptr.hpp>
 
+// timer
+#include <cob_people_detection/timer.h>
+
 
 using namespace ipa_PeopleDetector;
 
@@ -90,10 +93,10 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	double threshold_unknown;				// Threshold to detect unknown faces
 	int metric; 							// metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 	bool debug;								// enables some debug outputs
-  int class_meth;           // choose classification method
-  int subs_meth;           // choose subspace method
-  bool use_unknown_thresh; // use threshold for unknown faces
-  bool use_depth;         // use depth for recognition
+	int class_meth;           // choose classification method
+	int subs_meth;           // choose subspace method
+	bool use_unknown_thresh; // use threshold for unknown faces
+	bool use_depth;         // use depth for recognition
 	std::vector<std::string> identification_labels_to_recognize;	// a list of labels of persons that shall be recognized
 	std::cout << "\n--------------------------\nFace Recognizer Parameters:\n--------------------------\n";
 	node_handle_.param("data_directory", data_directory_, data_directory_);
@@ -112,14 +115,16 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	std::cout << "metric = " << metric << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
-  node_handle_.param("subspace_method",subs_meth,0);
-  std::cout<< "subspace method: "<<subs_meth<<"\n";
-  node_handle_.param("classification_method",class_meth,0);
-  std::cout<< "classification method: "<<class_meth<<"\n";
-  node_handle_.param("use_unknown_thresh",use_unknown_thresh,true);
-  std::cout<< " use use unknown thresh: "<<use_unknown_thresh<<"\n";
-  node_handle_.param("use_depth",use_depth,true);
-  std::cout<< " use depth: "<<use_depth<<"\n";
+	node_handle_.param("subspace_method", subs_meth, 0);
+	std::cout << "subspace method: " << subs_meth << "\n";
+	node_handle_.param("classification_method", class_meth, 0);
+	std::cout << "classification method: " << class_meth << "\n";
+	node_handle_.param("use_unknown_thresh", use_unknown_thresh, true);
+	std::cout << " use use unknown thresh: " << use_unknown_thresh << "\n";
+	node_handle_.param("use_depth", use_depth, true);
+	std::cout << " use depth: " << use_depth << "\n";
+	node_handle_.param("display_timing", display_timing_, false);
+	std::cout << "display_timing = " << display_timing_ << "\n";
 
 	std::cout << "identification_labels_to_recognize: \n";
 	XmlRpc::XmlRpcValue identification_labels_to_recognize_list;
@@ -127,16 +132,16 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	if (identification_labels_to_recognize_list.getType() == XmlRpc::XmlRpcValue::TypeArray)
 	{
 		identification_labels_to_recognize.resize(identification_labels_to_recognize_list.size());
-		for (int i=0; i<identification_labels_to_recognize_list.size(); i++)
+		for (int i = 0; i < identification_labels_to_recognize_list.size(); i++)
 		{
-		  ROS_ASSERT(identification_labels_to_recognize_list[i].getType() == XmlRpc::XmlRpcValue::TypeString);
-		  identification_labels_to_recognize[i] = static_cast<std::string>(identification_labels_to_recognize_list[i]);
-		  std::cout << "          - " << identification_labels_to_recognize[i] << std::endl;
+			ROS_ASSERT(identification_labels_to_recognize_list[i].getType() == XmlRpc::XmlRpcValue::TypeString);
+			identification_labels_to_recognize[i] = static_cast<std::string>(identification_labels_to_recognize_list[i]);
+			std::cout << "          - " << identification_labels_to_recognize[i] << std::endl;
 		}
 	}
 
 	// initialize face recognizer
-	face_recognizer_.init(data_directory_, eigenface_size, metric, debug, identification_labels_to_recognize,subs_meth,class_meth,use_unknown_thresh,use_depth);
+	face_recognizer_.init(data_directory_, eigenface_size, metric, debug, identification_labels_to_recognize, subs_meth, class_meth, use_unknown_thresh, use_depth);
 
 	// advertise topics
 	face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_recognitions", 1);
@@ -147,6 +152,8 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	// launch LoadModel server
 	load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
 	load_model_server_->start();
+
+	std::cout << "FaceRecognizerNode initialized." << std::endl;
 }
 
 FaceRecognizerNode::~FaceRecognizerNode(void)
@@ -338,6 +345,9 @@ void voidDeleter(const sensor_msgs::Image* const) {}
 //}
 void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions)
 {
+//	Timer tim;
+//	tim.start();
+
 	// receive head and face positions and recognize faces in the face region, finally publish detected and recognized faces
 
 	// --- convert color image patches of head regions and contained face bounding boxes ---
@@ -479,6 +489,10 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 
 	// publish message
 	face_recognition_publisher_.publish(detection_msg);
+
+	if (display_timing_ == true)
+		ROS_INFO("%d FaceRecognition: Time stamp of pointcloud message: %f. Delay: %f.", face_positions->header.seq, face_positions->header.stamp.toSec(), ros::Time::now().toSec()-face_positions->header.stamp.toSec());
+//	ROS_INFO("Face recognition took %f ms", tim.getElapsedTimeInMilliSec());
 }
 
 

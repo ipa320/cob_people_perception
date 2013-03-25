@@ -4,13 +4,13 @@ use_people_segmentation: false
 
 # timespan during which a face is preserved in the list of tracked faces although it is currently not visible #4.0
 # double
-face_redetection_time: 2.0
+face_redetection_time: 4.0
 
 # the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker)
 # double
 min_segmented_people_ratio_face: 0.7
 
-# the minimum area inside the head rectangle found in the range image that has to be covered with positive people segmentation results (from openni_tracker)
+# the minimum area inside the head rectangle found in the depth image that has to be covered with positive people segmentation results (from openni_tracker)
 # double
 min_segmented_people_ratio_head: 0.2
 
@@ -33,3 +33,7 @@ fall_back_to_unknown_identification: false
 # enables some debug outputs
 # bool
 debug: false
+
+# display timing information
+# bool
+display_timing: false

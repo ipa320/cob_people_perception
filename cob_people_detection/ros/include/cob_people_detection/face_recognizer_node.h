@@ -127,6 +127,7 @@ protected:
 	// parameters
 	std::string data_directory_;	///< path to the classifier model
 	bool enable_face_recognition_;	///< this flag enables or disables the face recognition step
+	bool display_timing_;
 
 };
 

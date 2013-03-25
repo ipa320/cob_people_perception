@@ -61,6 +61,8 @@
 
 using namespace ipa_PeopleDetector;
 
+inline bool isnan_(double num) { return (num != num); };
+
 PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
@@ -69,41 +71,30 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh)
 
 	// parameters
 	std::cout << "\n---------------------------\nPeople Detection Display Parameters:\n---------------------------\n";
-//	node_handle_.param("display", display_, true);
-//	std::cout << "display = " << display_ << "\n";
-//	node_handle_.param("face_redetection_time", face_redetection_time_, 2.0);
-//	std::cout << "face_redetection_time = " << face_redetection_time_ << "\n";
-//	node_handle_.param("min_segmented_people_ratio_color", min_segmented_people_ratio_color_, 0.7);
-//	std::cout << "min_segmented_people_ratio_color = " << min_segmented_people_ratio_color_ << "\n";
-//	node_handle_.param("min_segmented_people_ratio_range", min_segmented_people_ratio_range_, 0.2);
-//	std::cout << "min_segmented_people_ratio_range = " << min_segmented_people_ratio_range_ << "\n";
-//	node_handle_.param("use_people_segmentation", use_people_segmentation_, true);
-//	std::cout << "use_people_segmentation = " << use_people_segmentation_ << "\n";
-//	node_handle_.param("tracking_range_m", tracking_range_m_, 0.3);
-//	std::cout << "tracking_range_m = " << tracking_range_m_ << "\n";
-//	node_handle_.param("face_identification_score_decay_rate", face_identification_score_decay_rate_, 0.9);
-//	std::cout << "face_identification_score_decay_rate = " << face_identification_score_decay_rate_ << "\n";
-//	node_handle_.param("min_face_identification_score_to_publish", min_face_identification_score_to_publish_, 0.9);
-//	std::cout << "min_face_identification_score_to_publish = " << min_face_identification_score_to_publish_ << "\n";
-//	node_handle_.param("fall_back_to_unknown_identification", fall_back_to_unknown_identification_, true);
-//	std::cout << "fall_back_to_unknown_identification = " << fall_back_to_unknown_identification_ << "\n";
+	node_handle_.param("display", display_, false);
+	std::cout << "display = " << display_ << "\n";
+	node_handle_.param("display_timing", display_timing_, false);
+	std::cout << "display_timing = " << display_timing_ << "\n";
 
 	// subscribers
-	it_ = new image_transport::ImageTransport(node_handle_);
 //	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
+	it_ = new image_transport::ImageTransport(node_handle_);
+	colorimage_sub_.subscribe(*it_, "colorimage_in", 1);
 	face_recognition_subscriber_.subscribe(node_handle_, "face_position_array", 1);
 	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
-	color_image_sub_.subscribe(*it_, "colorimage", 1);
+//	pointcloud_sub_.subscribe(node_handle_, "pointcloud_in", 1);
 
 	// input synchronization
-	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
-	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, color_image_sub_);
+//	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::PointCloud2> >(30);
+//	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, pointcloud_sub_);
+	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(60);
+	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, colorimage_sub_);
 	sync_input_3_->registerCallback(boost::bind(&PeopleDetectionDisplayNode::inputCallback, this, _1, _2, _3));
 
 	// publishers
 	people_detection_image_pub_ = it_->advertise("face_position_image", 1);
 
-	std::cout << "PeopleDetectionDisplay initialized.\n";
+	std::cout << "PeopleDetectionDisplay initialized." << std::endl;
 }
     
 PeopleDetectionDisplayNode::~PeopleDetectionDisplayNode()
@@ -131,12 +122,28 @@ unsigned long PeopleDetectionDisplayNode::convertColorImageMessageToMat(const se
 }
     
 /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
+//void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg)
 void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
-{ 
+{
 	// convert color image to cv::Mat
 	cv_bridge::CvImageConstPtr color_image_ptr;
 	cv::Mat color_image;
 	convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
+
+//	// get color image from point cloud
+//	pcl::PointCloud<pcl::PointXYZRGB> point_cloud_src;
+//	pcl::fromROSMsg(*pointcloud_msg, point_cloud_src);
+//
+//	cv::Mat color_image = cv::Mat::zeros(point_cloud_src.height, point_cloud_src.width, CV_8UC3);
+//	for (unsigned int v=0; v<point_cloud_src.height; v++)
+//	{
+//		for (unsigned int u=0; u<point_cloud_src.width; u++)
+//		{
+//			pcl::PointXYZRGB point = point_cloud_src(u,v);
+//			if (isnan_(point.z) == false)
+//				color_image.at<cv::Point3_<unsigned char> >(v,u) = cv::Point3_<unsigned char>(point.b, point.g, point.r);
+//		}
+//	}
 
 	// insert all detected heads and faces
 	for (int i=0; i<(int)face_detection_msg->head_detections.size(); i++)
@@ -154,7 +161,7 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 			cv::rectangle(color_image, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(191, 255, 148), 2, 8, 0);
 		}
 	}
-	
+
 	// insert recognized faces
 	for(int i=0; i<(int)face_recognition_msg->detections.size(); i++)
 	{
@@ -178,14 +185,20 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	}
 
 	// display image
-	//cv::imshow("Detections and Recognitions", color_image);
-	//cv::waitKey(10);
+	if (display_ == true)
+	{
+		cv::imshow("Detections and Recognitions", color_image);
+		cv::waitKey(10);
+	}
 
 	// publish image
 	cv_bridge::CvImage cv_ptr;
 	cv_ptr.image = color_image;
 	cv_ptr.encoding = "bgr8";
 	people_detection_image_pub_.publish(cv_ptr.toImageMsg());
+
+	if (display_timing_ == true)
+		ROS_INFO("%d Display: Time stamp of image message: %f. Delay: %f.", colorimage_msg->header.seq, colorimage_msg->header.stamp.toSec(), ros::Time::now().toSec()-colorimage_msg->header.stamp.toSec());
 }
 
 

@@ -2,21 +2,21 @@
 # string
 # data_directory: path_to_data -> please change this parameter in the launch file
 
-# The factor by which the search window is scaled between the subsequent scans
+# the factor by which the search window is scaled between the subsequent scans (default: 1.1)
 # double
-faces_increase_search_scale: 1.1
+faces_increase_search_scale: 1.2
 
 # Minimum number (minus 1) of neighbor rectangles that makes up an object. #3
 # int
 faces_drop_groups: 3
 
-# Minimum search scale x
+# width of smallest search rectangle (default: 20)
 # int
-faces_min_search_scale_x: 20
+faces_min_search_scale_x: 30
 
-# Minimum search scale y
+# height of smallest search rectangle (default: 20)
 # int
-faces_min_search_scale_y: 20
+faces_min_search_scale_y: 30
 
 # when this flag is activated, the 3d size of a face is determined and only reasonable sizes may continue in the processing pipeline
 # bool
@@ -37,3 +37,7 @@ max_face_z_m: 8.0
 # enables some debug outputs
 # bool
 debug: false
+
+# display timing information
+# bool
+display_timing: false

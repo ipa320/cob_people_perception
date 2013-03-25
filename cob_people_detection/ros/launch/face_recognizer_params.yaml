@@ -14,7 +14,7 @@ enable_face_recognition: true
 # int
 eigenface_size: 160
 
-# metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
+# metric for nearest neighbor search in face space: 0 = Euclidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 # int
 metric: 0
 
@@ -36,3 +36,7 @@ use_unknown_thresh: true
 
 # use depth
 use_depth: false
+
+# display timing information
+# bool
+display_timing: false

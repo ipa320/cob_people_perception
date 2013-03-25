@@ -24,8 +24,7 @@
 * \date Date of creation: 07.08.2012
 *
 * \brief
-* functions for detecting a face within a color image (patch)
-* current approach: haar detector on color image
+* gateway for sensor messages
 *
 *****************************************************************
 *
@@ -59,53 +58,28 @@
 ****************************************************************/
 
 
-#ifndef __FACE_DETECTOR_NODE_H__
-#define __FACE_DETECTOR_NODE_H__
-
-#ifdef __LINUX__
-	#include "cob_people_detection/face_detector.h"
-#else
-#endif
-
-// ROS includes
-#include <ros/ros.h>
-#include <ros/package.h>		// use as: directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
-
-// ROS message includes
-#include <sensor_msgs/Image.h>
-#include <cob_people_detection_msgs/ColorDepthImageArray.h>
-
-namespace ipa_PeopleDetector {
+#include "cob_people_detection/sensor_message_gateway_node.h"
 
 
-class FaceDetectorNode
+//#######################
+//#### main programm ####
+int main(int argc, char** argv)
 {
-public:
+	// Initialize ROS, specify name of node
+	ros::init(argc, argv, "sensor_message_gateway");
 
-	/// Constructor
-	/// @param nh ROS node handle
-	FaceDetectorNode(ros::NodeHandle nh);
-	~FaceDetectorNode(void); ///< Destructor
+	// Create a handle for this node, initialize node
+	ros::NodeHandle nh;
 
+	// Create SensorMessageGatewayNode class instance
+	cob_people_detection::SensorMessageGatewayNode sensor_message_gateway_node(nh);
 
-protected:
+	// Create action nodes
+	//DetectObjectsAction detect_action_node(object_detection_node, nh);
+	//AcquireObjectImageAction acquire_image_node(object_detection_node, nh);
+	//TrainObjectAction train_object_node(object_detection_node, nh);
 
-	/// Callback for incoming head detections
-	void head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions);
+	ros::spin();
 
-	ros::NodeHandle node_handle_;
-
-	ros::Subscriber head_position_subscriber_;		///< subscribes to the positions of detected head regions
-
-	ros::Publisher face_position_publisher_;		///< publisher for the positions of the detected faces
-
-	FaceDetector face_detector_;	///< implementation of the face detector
-
-	// parameters
-	std::string data_directory_;	///< path to the classifier model
-	bool display_timing_;
-};
-
-} // end namespace
-
-#endif // __FACE_DETECTOR_NODE_H__
+	return 0;
+}

@@ -6,19 +6,22 @@
 # bool
 fill_unassigned_depth_values: true
 
-# The factor by which the search window is scaled between the subsequent scans
+# the factor by which the search window is scaled between the subsequent scans (default: 1.1)
 # double
-depth_increase_search_scale: 1.1
+depth_increase_search_scale: 1.2
 
-# Minimum number (minus 1) of neighbor rectangles that makes up an object. #68
+# minimum number (minus 1) of neighbor rectangles that makes up an object. (default: 68)
 # int
 depth_drop_groups: 40
 
-# Minimum search scale x
+# width of smallest search rectangle (default: 20)
 # int
-depth_min_search_scale_x: 20
+depth_min_search_scale_x: 30
 
-# Minimum search scale y
+# height of smallest search rectangle (default: 20)
 # int
-depth_min_search_scale_y: 20
+depth_min_search_scale_y: 30
 
+# display timing information
+# bool
+display_timing: false

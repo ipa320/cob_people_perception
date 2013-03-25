@@ -1,8 +1,12 @@
 <?xml version="1.0"?>
 
 <launch>
+  <arg name="using_nodelets" />
+
   <!-- coordinator node for the detection pipeline -->
-  <rosparam command="load" ns="/cob_people_detection/coordinator" file="$(find cob_people_detection)/ros/launch/coordinator_params.yaml"/>
+  <!--rosparam command="load" ns="/cob_people_detection/coordinator" file="$(find cob_people_detection)/ros/launch/coordinator_params.yaml"/-->
+  <param if="$(arg using_nodelets)" name="cob_people_detection/coordinator/namespace_gateway" type="str" value="/cam3d_nodelet_manager"/>
+  <param unless="$(arg using_nodelets)" name="cob_people_detection/coordinator/namespace_gateway" type="str" value="/cob_people_detection/sensor_message_gateway/sensor_message_gateway"/>
   <node name="coordinator" pkg="cob_people_detection" ns="/cob_people_detection/coordinator" type="coordinator_node" output="screen">
     <remap from="detection_array" to="/cob_people_detection/detection_tracker/face_position_array"/>
   </node>

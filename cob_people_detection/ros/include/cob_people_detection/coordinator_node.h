@@ -109,7 +109,7 @@ protected:
 	ros::Subscriber detection_sub_;		///< recieves messages of detections
 
 	// actions
-	GetDetectionsServer* get_detections_server_;				///< Action server that handles add data requests
+	GetDetectionsServer* get_detections_server_;				///< Action server that handles requests for people detections
 
 	// services
 	ros::ServiceServer service_server_start_recognition_; 		///< Service server that starts the recognition pipeline
