@@ -198,7 +198,7 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	people_detection_image_pub_.publish(cv_ptr.toImageMsg());
 
 	if (display_timing_ == true)
-		ROS_INFO("%d Display: Time stamp of image message: %f. Delay: %f.", colorimage_msg->header.seq, colorimage_msg->header.stamp.toSec(), ros::Time::now().toSec()-colorimage_msg->header.stamp.toSec());
+		ROS_INFO("%d Display: Time stamp of image message: %f. Delay: %f.", color_image_msg->header.seq, color_image_msg->header.stamp.toSec(), ros::Time::now().toSec()-color_image_msg->header.stamp.toSec());
 }
 
 

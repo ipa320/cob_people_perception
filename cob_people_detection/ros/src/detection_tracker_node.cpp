@@ -511,11 +511,16 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 	{
 		// create the costs matrix (which consist of Eulidean distance in cm and a punishment for dissimilar labels)
 		std::vector< std::vector<int> > costs_matrix(face_position_accumulator_.size(), std::vector<int>(face_detection_indices.size(), 0));
+std::cout << "costs_matrix:\n";
 		for (unsigned int previous_det=0; previous_det<face_position_accumulator_.size(); previous_det++)
 		{
 			for (unsigned int i=0; i<face_detection_indices.size(); i++)
+{
 				costs_matrix[previous_det][i] = 100*computeFacePositionDistance(face_position_accumulator_[previous_det], face_position_msg_in->detections[face_detection_indices[i]])
 												+ 100*tracking_range_m_ * (face_position_msg_in->detections[face_detection_indices[i]].label.compare(face_position_accumulator_[previous_det].label)==0 ? 0 : 1);
+std::cout << costs_matrix[previous_det][i] << "\t";
+}
+std::cout << std::endl;
 		}
 		if (debug_)
 			std::cout << "Costs matrix.\n";

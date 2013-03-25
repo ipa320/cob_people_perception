@@ -32,7 +32,7 @@ fall_back_to_unknown_identification: false
 
 # enables some debug outputs
 # bool
-debug: false
+debug: true
 
 # display timing information
 # bool

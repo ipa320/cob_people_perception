@@ -375,7 +375,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::Fi
   int ss_dim =1;
 
   std::vector<cv::Mat> in_vec;
-  for(int i=0;i<data.size();i++)
+  for(unsigned int i=0;i<data.size();i++)
   {
 
     cv::Mat temp=data[i];
@@ -412,7 +412,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
     depth_str_labels_unique.clear();
     depth_num_labels.clear();
 
-    int lbl=0;
+    //int lbl=0;
     for(unsigned int i=0;i<dm_exist.size();i++)
     {
       if(dm_exist[i])
@@ -803,7 +803,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
-	int number_eigenvectors = m_eigenvectors.size();
+	//int number_eigenvectors = m_eigenvectors.size();
 	if (eff_depth.trained==false &&eff_color.trained==false )
 	{
 		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
@@ -982,7 +982,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps)
 {
-  std::cout<<"Size Vec "<<face_images.size()<<" "<<face_depthmaps.size()<<std::endl;
+	std::cout<<"Size Vec "<<face_images.size()<<" "<<face_depthmaps.size()<<std::endl;
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "tdata.xml";
 	std::string img_ext = ".bmp";
