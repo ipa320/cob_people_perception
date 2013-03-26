@@ -87,6 +87,8 @@ using namespace ipa_PeopleDetector;
 ipa_PeopleDetector::FaceRecognizer::FaceRecognizer(void)
 {
 	m_eigenvectors_ipl = 0;
+
+	// todo: make parameters for illumination and alignment normalization on/off in face_normalizer_
 }
 
 ipa_PeopleDetector::FaceRecognizer::~FaceRecognizer(void)
@@ -174,7 +176,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_
 	m_data_directory = data_directory;
 	m_eigenface_size = eigenface_size;
 	m_debug = debug;
-  m_depth_mode=use_depth;
+	m_depth_mode=use_depth;
 
 	// load model
 	m_current_label_set.clear();	 // keep empty to load all available data
@@ -401,45 +403,47 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
 	// load necessary data
 
-  // If depth mode is enabled load available depthmaps
-    std::vector<cv::Mat> face_images,face_depthmaps;
-  if(m_depth_mode)
-  {
-    loadTrainingData(face_images, face_depthmaps,identification_labels_to_train);
+	// If depth mode is enabled load available depthmaps
+	std::vector<cv::Mat> face_images, face_depthmaps;
+	if (m_depth_mode == true)
+	{
+		loadTrainingData(face_images, face_depthmaps, identification_labels_to_train);
 
-    //make label vec for depth
-    depth_str_labels.clear();
-    depth_str_labels_unique.clear();
-    depth_num_labels.clear();
+		//make label vec for depth
+		depth_str_labels.clear();
+		depth_str_labels_unique.clear();
+		depth_num_labels.clear();
 
-    //int lbl=0;
-    for(unsigned int i=0;i<dm_exist.size();i++)
-    {
-      if(dm_exist[i])
-       {
-        depth_str_labels.push_back(m_face_labels[i]);
-        bool unique=true;
-        for(unsigned int k=0;k<depth_str_labels_unique.size();k++)
-        {
-          if(depth_str_labels_unique[k].compare(m_face_labels[i])==0) unique=false;
-        }
-        if(unique==true) depth_str_labels_unique.push_back(m_face_labels[i]);
-       }
-    }
+		//int lbl=0;
+		for (unsigned int i = 0; i < dm_exist.size(); i++)
+		{
+			if (dm_exist[i])
+			{
+				depth_str_labels.push_back(m_face_labels[i]);
+				bool unique = true;
+				for (unsigned int k = 0; k < depth_str_labels_unique.size(); k++)
+				{
+					if (depth_str_labels_unique[k].compare(m_face_labels[i]) == 0)
+						unique = false;
+				}
+				if (unique == true)
+					depth_str_labels_unique.push_back(m_face_labels[i]);
+			}
+		}
 
-  for(unsigned int li=0;li<depth_str_labels.size();li++)
-  {
-    for(unsigned int lj=0;lj<depth_str_labels_unique.size();lj++)
-    {
-      if(depth_str_labels_unique[lj].compare(depth_str_labels[li])==0) depth_num_labels.push_back(lj);
-    }
-  }
-  
-  }
-  else if(!m_depth_mode)
-  {
-	loadTrainingData(face_images,identification_labels_to_train);
-  }
+		for (unsigned int li = 0; li < depth_str_labels.size(); li++)
+		{
+			for (unsigned int lj = 0; lj < depth_str_labels_unique.size(); lj++)
+			{
+				if (depth_str_labels_unique[lj].compare(depth_str_labels[li]) == 0)
+					depth_num_labels.push_back(lj);
+			}
+		}
+	}
+	else
+	{
+		loadTrainingData(face_images, identification_labels_to_train);
+	}
 
 	m_current_label_set = identification_labels_to_train;
 
@@ -457,53 +461,55 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	//	if (face_images[i].cols != m_eigenface_size || face_images[i].rows != m_eigenface_size)
 	//	{
 	//		cv::Mat temp = face_images[i];
-  //    //cv::imshow("k",temp);
-  //    //cv::waitKey(0);
-  //    std::cout<<"i="<<i<<std::endl;
-  //    std::cout<<"new_size"<<new_size.width<<" "<<new_size.height<<std::endl;
-  //    std::cout<<"face_i"<<temp.rows<<" "<<temp.cols<<std::endl;
+	//    //cv::imshow("k",temp);
+	//    //cv::waitKey(0);
+	//    std::cout<<"i="<<i<<std::endl;
+	//    std::cout<<"new_size"<<new_size.width<<" "<<new_size.height<<std::endl;
+	//    std::cout<<"face_i"<<temp.rows<<" "<<temp.cols<<std::endl;
 	//		cv::resize(temp, face_images[i], new_size);
 	//	}
 	//}
 
 
-//--------------------------------------------
-//--------------------------------------------
-//--------------------------------------------
+	//--------------------------------------------
+	//--------------------------------------------
+	//--------------------------------------------
 
-  m_label_num.clear();
-  for(unsigned int li=0;li<m_face_labels.size();li++)
-  {
-    for(unsigned int lj=0;lj<identification_labels_to_train.size();lj++)
-    {
-      if(identification_labels_to_train[lj].compare(m_face_labels[li])==0) m_label_num.push_back(lj);
-    }
-  }
+	m_label_num.clear();
+	for (unsigned int li = 0; li < m_face_labels.size(); li++)
+	{
+		for (unsigned int lj = 0; lj < identification_labels_to_train.size(); lj++)
+		{
+			if (identification_labels_to_train[lj].compare(m_face_labels[li]) == 0)
+				m_label_num.push_back(lj);
+		}
+	}
 
-  //alocate memory for eigenvectors
-  m_eigenvectors.clear();
+	//alocate memory for eigenvectors
+	m_eigenvectors.clear();
 
-  // reset effs
-  eff_depth.releaseModel();
-  eff_color.releaseModel();
-
+	// reset effs
+	eff_depth.releaseModel();
+	eff_color.releaseModel();
 
 	std::string path = m_data_directory + "training_data/";
-  std::string path_color=m_data_directory +"training_data/"+ "rdata_color.xml" ;
-  std::string path_depth=m_data_directory +"training_data/"+ "rdata_depth.xml" ;
+	std::string path_color = m_data_directory + "training_data/" + "rdata_color.xml";
+	std::string path_depth = m_data_directory + "training_data/" + "rdata_depth.xml";
 
-  //--> INIT MODEL
-  if(m_depth_mode)
-  {
-  if(face_depthmaps.size()>0)initModel(eff_depth,face_depthmaps,depth_num_labels);
-  //eff_depth.saveModel(path_depth);
-  }
+	//--> INIT MODEL
+	if (m_depth_mode)
+	{
+		if (face_depthmaps.size() > 0)
+			initModel(eff_depth, face_depthmaps, depth_num_labels);
+		//eff_depth.saveModel(path_depth);
+	}
 
-  if(face_images.size()>0)initModel(eff_color,face_images,m_label_num);
-  //eff_color.saveModel(path_color);
+	if (face_images.size() > 0)
+		initModel(eff_color, face_images, m_label_num);
+	//eff_color.saveModel(path_color);
 
 	//TODO ALWAYS TRAINING NECESSARY - NO INTERFACE FOR SSA CLASS FOR MODEL ASSOCIATION
-  //saveRecognitionModel();
+	//saveRecognitionModel();
 
 
 	// output
@@ -968,7 +974,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 
 		fileStorage.release();
 
-		std::cout << "INFO: FaceRecognizer::saveTrainingData: " << face_images.size() << " images saved.\n" << std::endl;
+		std::cout << "INFO: FaceRecognizer::saveTrainingData: " << face_images.size() << " color images saved.\n" << std::endl;
 	}
 	else
 	{
@@ -980,9 +986,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 }
 
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps)
+unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps)
 {
-	std::cout<<"Size Vec "<<face_images.size()<<" "<<face_depthmaps.size()<<std::endl;
 	std::string path = m_data_directory + "training_data/";
 	std::string filename = "tdata.xml";
 	std::string img_ext = ".bmp";
@@ -1013,36 +1018,36 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 			std::ostringstream img, shortname_img, shortname_depth;
 			img << path << i << img_ext;
 			shortname_img << "training_data/" << i << img_ext;
-			std::ostringstream tag2,tag3;
+			std::ostringstream tag2, tag3;
 			tag2 << "image_" << i;
 			fileStorage << tag2.str().c_str() << shortname_img.str().c_str();
 
-      if(dm_exist[i])
-      {
-        shortname_depth << "training_data/" << i << dm_ext;
-        tag3<< "depthmap_"<<i;
-        fileStorage << tag3.str().c_str() << shortname_depth.str().c_str();
-      }
+			if (dm_exist[i])
+			{
+				shortname_depth << "training_data/" << i << dm_ext;
+				tag3 << "depthmap_" << i;
+				fileStorage << tag3.str().c_str() << shortname_depth.str().c_str();
+			}
 			cv::imwrite(img.str().c_str(), face_images[i]);
 		}
 
 		fileStorage.release();
 
-        int j=0;
-      for(unsigned int i=0;i<dm_exist.size();i++)
-      {
-        if(dm_exist[i])
-        {
-        // depth maps
-        std::ostringstream dm;
-        dm << path <<i <<dm_ext;
-        cv::FileStorage fs(dm.str().c_str(),FileStorage::WRITE);
-        fs << "depthmap"<<face_depthmaps[j];
-        fs.release();
-        j++;
-        }
-      }
-		std::cout << "INFO: FaceRecognizer::saveTrainingData: " << face_images.size() << " images saved.\n" << std::endl;
+		int j = 0;
+		for (unsigned int i = 0; i < dm_exist.size(); i++)
+		{
+			if (dm_exist[i])
+			{
+				// depth maps
+				std::ostringstream dm;
+				dm << path << i << dm_ext;
+				cv::FileStorage fs(dm.str().c_str(), FileStorage::WRITE);
+				fs << "depthmap" << face_depthmaps[j];
+				fs.release();
+				j++;
+			}
+		}
+		std::cout << "INFO: FaceRecognizer::saveTrainingData: " << face_images.size() << " color images and " << face_depthmaps.size() << " depth images saved.\n" << std::endl;
 	}
 	else
 	{
@@ -1077,7 +1082,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 		// labels
 		m_face_labels.clear();
 		face_images.clear();
-    cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
+		cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
 		int number_entries = (int)fileStorage["number_entries"];
 		for(int i=0; i<number_entries; i++)
 		{
@@ -1113,7 +1118,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			tag_image << "image_" << i;
 			std::string path = m_data_directory + (std::string)fileStorage[tag_image.str().c_str()];
 			cv::Mat temp = cv::imread(path.c_str(),-1);
-      face_normalizer_.normalizeFace(temp,norm_size);
+			face_normalizer_.normalizeFace(temp,norm_size);
 			face_images.push_back(temp);
 		}
 
@@ -1138,7 +1143,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 
 		fileStorage.release();
 
-		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " images loaded.\n" << std::endl;
+		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " color images loaded.\n" << std::endl;
 	}
 	else
 	{
@@ -1148,10 +1153,13 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 
 	return ipa_Utils::RET_OK;
 }
-unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps, std::vector<std::string>& identification_labels_to_train)
+
+
+unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps,
+		std::vector<std::string>& identification_labels_to_train)
 {
 	bool use_all_data = false;
-  dm_exist.clear();
+	dm_exist.clear();
 	if (identification_labels_to_train.size() == 0)
 		use_all_data = true;
 
@@ -1161,10 +1169,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 	std::ostringstream complete;
 	complete << path << filename;
 
-	if(fs::is_directory(path.c_str()))
+	if (fs::is_directory(path.c_str()))
 	{
 		cv::FileStorage fileStorage(complete.str().c_str(), cv::FileStorage::READ);
-		if(!fileStorage.isOpened())
+		if (!fileStorage.isOpened())
 		{
 			std::cout << "Error: FaceRecognizer::loadTrainingData: Can't open " << complete.str() << ".\n" << std::endl;
 			return ipa_Utils::RET_OK;
@@ -1173,9 +1181,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 		// labels
 		m_face_labels.clear();
 		face_images.clear();
-    cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
+		cv::Size norm_size = cv::Size(m_eigenface_size, m_eigenface_size);
 		int number_entries = (int)fileStorage["number_entries"];
-		for(int i=0; i<number_entries; i++)
+		for (int i = 0; i < number_entries; i++)
 		{
 			// labels
 			std::ostringstream tag_label;
@@ -1183,9 +1191,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			std::string label = (std::string)fileStorage[tag_label.str().c_str()];
 			// look up this label in the list of unique labels identification_labels_to_train
 			bool class_exists = false;
-			for(int j=0; j<(int)identification_labels_to_train.size(); j++)
+			for (int j = 0; j < (int)identification_labels_to_train.size(); j++)
 			{
-				if(!identification_labels_to_train[j].compare(label))
+				if (!identification_labels_to_train[j].compare(label))
 					class_exists = true;
 			}
 			// if it does not appear in the list either append it (use all data option) or neglect this piece of data
@@ -1205,53 +1213,48 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			m_face_labels.push_back(label);
 
 			// face images
-			std::ostringstream tag_image,tag_dm;
+			std::ostringstream tag_image, tag_dm;
 			tag_image << "image_" << i;
 			tag_dm << "depthmap_" << i;
 			std::string img_path = m_data_directory + (std::string)fileStorage[tag_image.str().c_str()];
 			std::string dm_path = m_data_directory + (std::string)fileStorage[tag_dm.str().c_str()];
-			cv::Mat temp = cv::imread(img_path.c_str(),-1);
-      //cv::imshow("T",temp);
-      //cv::waitKey(0);
+			cv::Mat temp = cv::imread(img_path.c_str(), -1);
+			//cv::imshow("T",temp);
+			//cv::waitKey(0);
 
-      if(m_depth_mode)
-      {
-        if(dm_path.compare(m_data_directory))
-        {
-          cv::Mat xyz_temp,dm_temp;
-          cv::FileStorage fs(dm_path,FileStorage::READ);
-          fs["depthmap"]>>xyz_temp;
-
-          face_normalizer_.normalizeFace(temp,xyz_temp,norm_size,dm_temp);
-
-          face_depthmaps.push_back(dm_temp);
-          dm_exist.push_back(true);
-          fs.release();
-        }
-        else dm_exist.push_back(false);
-        {
-          face_normalizer_.normalizeFace(temp,norm_size);
-        face_images.push_back(temp);
-        }
-    }
-    else
-    {
-      face_normalizer_.normalizeFace(temp,norm_size);
-    }
-    }
+//			if (m_depth_mode)
+//			{
+			if (dm_path.compare(m_data_directory))
+			{
+				cv::Mat xyz_temp, dm_temp;
+				cv::FileStorage fs(dm_path, FileStorage::READ);
+				fs["depthmap"] >> xyz_temp;
+				face_normalizer_.normalizeFace(temp, xyz_temp, norm_size, dm_temp);
+				face_depthmaps.push_back(dm_temp);
+				dm_exist.push_back(true);
+				fs.release();
+			}
+			else
+			{
+				dm_exist.push_back(false);
+			}
+//			}
+			face_normalizer_.normalizeFace(temp, norm_size);
+			face_images.push_back(temp);
+		}
 
 		// clean identification_labels_to_train -> only keep those labels that appear in the training data
-		for(int j=0; j<(int)identification_labels_to_train.size(); j++)
+		for (int j = 0; j < (int)identification_labels_to_train.size(); j++)
 		{
 			bool class_exists = false;
-			for (int k=0; k<(int)m_face_labels.size(); k++)
+			for (int k = 0; k < (int)m_face_labels.size(); k++)
 			{
-				if(identification_labels_to_train[j].compare(m_face_labels[k]) == 0)
+				if (identification_labels_to_train[j].compare(m_face_labels[k]) == 0)
 					class_exists = true;
 			}
 			if (class_exists == false)
 			{
-				identification_labels_to_train.erase(identification_labels_to_train.begin()+j);
+				identification_labels_to_train.erase(identification_labels_to_train.begin() + j);
 				j--;
 			}
 		}
@@ -1261,7 +1264,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 
 		fileStorage.release();
 
-		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " images loaded.\n" << std::endl;
+		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " images loaded (" << face_images.size() << " color images and " << face_depthmaps.size() << " depth images).\n" << std::endl;
 	}
 	else
 	{

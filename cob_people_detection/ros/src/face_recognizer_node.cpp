@@ -126,6 +126,8 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	node_handle_.param("display_timing", display_timing_, false);
 	std::cout << "display_timing = " << display_timing_ << "\n";
 
+	// todo: make parameters for illumination and alignment normalization on/off
+
 	std::cout << "identification_labels_to_recognize: \n";
 	XmlRpc::XmlRpcValue identification_labels_to_recognize_list;
 	node_handle_.getParam("identification_labels_to_recognize", identification_labels_to_recognize_list);
@@ -136,12 +138,14 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 		{
 			ROS_ASSERT(identification_labels_to_recognize_list[i].getType() == XmlRpc::XmlRpcValue::TypeString);
 			identification_labels_to_recognize[i] = static_cast<std::string>(identification_labels_to_recognize_list[i]);
-			std::cout << "          - " << identification_labels_to_recognize[i] << std::endl;
 		}
 	}
 
 	// initialize face recognizer
 	face_recognizer_.init(data_directory_, eigenface_size, metric, debug, identification_labels_to_recognize, subs_meth, class_meth, use_unknown_thresh, use_depth);
+	std::cout << "Recognition model trained or loaded for:\n";
+	for (unsigned int i = 0; i < identification_labels_to_recognize.size(); i++)
+		std::cout << "   - " << identification_labels_to_recognize[i] << std::endl;
 
 	// advertise topics
 	face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_recognitions", 1);
@@ -153,7 +157,7 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
 	load_model_server_->start();
 
-	std::cout << "FaceRecognizerNode initialized." << std::endl;
+	std::cout << "FaceRecognizerNode initialized.\n" << std::endl;
 }
 
 FaceRecognizerNode::~FaceRecognizerNode(void)
