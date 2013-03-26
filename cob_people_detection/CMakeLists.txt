@@ -70,8 +70,6 @@ rosbuild_add_boost_directories()
 #      ros/src/face_normalizer_node.cpp)
 #    target_link_libraries(face_normalizer_node virtual_camera)
 
-rosbuild_add_boost_directories()
-
 rosbuild_add_library(virtual_camera
   common/src/virtual_camera.cpp)
 target_link_libraries(virtual_camera  opencv_core )
@@ -129,7 +127,6 @@ rosbuild_add_executable(face_recognizer_node
 			common/src/face_recognizer.cpp
 			ros/src/face_recognizer_node.cpp)
 target_link_libraries(face_recognizer_node face_normalizer subspace_analysis)    
-## FUERTE MIGRATION
 rosbuild_link_boost(face_recognizer_node filesystem system)
 add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
@@ -138,12 +135,8 @@ rosbuild_add_executable(detection_tracker_node
 			common/src/munkres/munkres.cpp)
 rosbuild_link_boost(detection_tracker_node signals)
 
-## FUERTE MIGRATION
-#rosbuild_link_boost(detection_tracker_node signals)
-
 rosbuild_add_executable(people_detection_display_node
 			ros/src/people_detection_display_node.cpp)
-## FUERTE MIGRATION
 rosbuild_link_boost(people_detection_display_node signals)
 
 rosbuild_add_executable(face_capture_node

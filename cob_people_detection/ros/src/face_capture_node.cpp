@@ -158,6 +158,7 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		service_server_finish_recording_.shutdown();
 
 		// save new database status
+		std::cout << "from addDataServer1\n";
 		face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 		// close action
@@ -333,11 +334,12 @@ void FaceCaptureNode::updateDataServerCallback(const cob_people_detection::updat
 	}
 
 	// save new database status
-  std::cout<<"before saving1:"<<std::endl;
-  std::cout<<face_depthmaps_.back()<<std::endl;
+	std::cout<<"before saving1:"<<std::endl;
+	std::cout<<face_depthmaps_.back()<<std::endl;
 	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 	// close action
+	std::cout << "from updateDataServer\n";
 	update_data_server_->setSucceeded(result, "Database update finished successfully.");
 }
 
@@ -367,8 +369,10 @@ void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::delet
 	}
 
 	// save new database status
-  std::cout<<"before saving1:"<<std::endl;
-  std::cout<<face_depthmaps_.back()<<std::endl;
+	std::cout<<"before saving1:"<<std::endl;
+	std::cout<<face_depthmaps_.back()<<std::endl;
+
+	std::cout << "from deleteDataServer\n";
 	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
 
 	// close action
