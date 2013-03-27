@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<launch>
+  <include file="$(find cob_people_detection)/ros/launch/head_detector.launch"/>
+  <include file="$(find cob_people_detection)/ros/launch/face_detector.launch"/>
+  <include file="$(find cob_people_detection)/ros/launch/face_normalizer.launch"/>
+  <include file="$(find cob_people_detection)/ros/launch/sensor_message_gateway.launch"/>
+  
+
+</launch>

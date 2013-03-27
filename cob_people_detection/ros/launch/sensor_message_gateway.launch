@@ -4,9 +4,9 @@
   <!-- sensor message gateway node (forwards sensor messages in a desired rate) -->
   <rosparam command="load" ns="/cob_people_detection/sensor_message_gateway" file="$(find cob_people_detection)/ros/launch/sensor_message_gateway_params.yaml"/>
   <node name="sensor_message_gateway" pkg="cob_people_detection" ns="/cob_people_detection/sensor_message_gateway" type="sensor_message_gateway_node" output="screen"> <!--launch-prefix="valgrind"-->
-    <remap from="pointcloud_rgb_in" to="/cam3d/rgb/points"/>
+    <remap from="pointcloud_rgb_in" to="/camera/depth_registered/points"/>
     <remap from="pointcloud_rgb_out" to="/cob_people_detection/sensor_message_gateway/pointcloud_rgb_out"/>
-    <remap from="colorimage_in" to="/cam3d/rgb/image_color"/>
+    <remap from="colorimage_in" to="/camera/rgb/image_color"/>
     <remap from="colorimage_out" to="/cob_people_detection/sensor_message_gateway/colorimage_out"/>
   </node>
 

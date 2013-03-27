@@ -98,6 +98,22 @@ unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color
 		if (result_state == ipa_Utils::RET_FAILED)
 			return ipa_Utils::RET_FAILED;
 	}
+	return ipa_Utils::RET_OK;
+}
+unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color_images,std::vector<cv::Mat>& depth_images, std::vector< std::vector<cv::Rect> >& face_coordinates, std::vector< std::vector<std::string> >& identification_labels)
+{
+	// prepare index list
+	identification_labels.clear();
+	identification_labels.resize(face_coordinates.size());
+
+	// find identification indices
+	for (unsigned int i=0; i<color_images.size(); i++)
+	{
+		identification_labels[i].resize(face_coordinates[i].size());
+		unsigned long result_state = recognizeFace(color_images[i],depth_images[i], face_coordinates[i], identification_labels[i]);
+		if (result_state == ipa_Utils::RET_FAILED)
+			return ipa_Utils::RET_FAILED;
+	}
 
 	return ipa_Utils::RET_OK;
 }
