@@ -155,7 +155,11 @@ public:
 
 	/// Computes the Euclidean distance of a recent faces detection to a current face detection.
 	/// If the current face detection is outside the neighborhood of the previous detection, DBL_MAX is returned.
-	/// @return The Euclidian distance of both faces or DBL_MAX.
+	/// @return The squared Euclidian distance of both faces or DBL_MAX.
+	double computeFacePositionDistanceTrackingRange(const cob_people_detection_msgs::Detection& previous_detection, const cob_people_detection_msgs::Detection& current_detection);
+
+	/// Computes the Euclidean distance of a recent faces detection to a current face detection.
+	/// @return Always returns the Euclidian distance of both faces.
 	double computeFacePositionDistance(const cob_people_detection_msgs::Detection& previous_detection, const cob_people_detection_msgs::Detection& current_detection);
 
 	/// Removes multiple instances of a label by renaming the detections with lower score to Unknown.

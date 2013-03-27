@@ -1,6 +1,6 @@
 # display the results if true
 # bool
-display: false
+display: true
 
 # display timing information
 # bool
