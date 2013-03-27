@@ -1,0 +1,76 @@
+\section{gnuplot\_\-i.hpp File Reference}
+\label{d1/dd8/gnuplot__i_8hpp}\index{gnuplot\_\-i.hpp@{gnuplot\_\-i.hpp}}
+{\ttfamily \#include $<$iostream$>$}\par
+{\ttfamily \#include $<$string$>$}\par
+{\ttfamily \#include $<$vector$>$}\par
+{\ttfamily \#include $<$fstream$>$}\par
+{\ttfamily \#include $<$sstream$>$}\par
+{\ttfamily \#include $<$stdexcept$>$}\par
+{\ttfamily \#include $<$cstdio$>$}\par
+{\ttfamily \#include $<$cstdlib$>$}\par
+{\ttfamily \#include $<$list$>$}\par
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class {\bf GnuplotException}
+\begin{DoxyCompactList}\small\item\em A C++ interface to gnuplot. \item\end{DoxyCompactList}\item 
+class {\bf Gnuplot}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename Container $>$ }\\void {\bf stringtok} (Container \&container, std::string const \&in, const char $\ast$const delimiters=\char`\"{} $\backslash$t$\backslash$n\char`\"{})
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\index{gnuplot\_\-i.hpp@{gnuplot\_\-i.hpp}!stringtok@{stringtok}}
+\index{stringtok@{stringtok}!gnuplot_i.hpp@{gnuplot\_\-i.hpp}}
+\subsubsection[{stringtok}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename Container $>$ void stringtok (
+\begin{DoxyParamCaption}
+\item[{Container \&}]{ container, }
+\item[{std::string const \&}]{ in, }
+\item[{const char $\ast$const }]{ delimiters = {\ttfamily \char`\"{}~$\backslash$t$\backslash$n\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d1/dd8/gnuplot__i_8hpp_a8dce6465408cd481ab4a9a7bf50bb6b4}
+
+
+Definition at line 905 of file gnuplot\_\-i.hpp.
+
+
+
+
+\begin{DoxyCode}
+{
+    const std::string::size_type len = in.length();
+          std::string::size_type i = 0;
+
+    while ( i < len )
+    {
+        // eat leading whitespace
+        i = in.find_first_not_of (delimiters, i);
+
+        if (i == std::string::npos)
+            return;   // nothing left but white space
+
+        // find the end of the token
+        std::string::size_type j = in.find_first_of (delimiters, i);
+
+        // push token
+        if (j == std::string::npos)
+        {
+            container.push_back (in.substr(i));
+            return;
+        }
+        else
+            container.push_back (in.substr(i, j-i));
+
+        // set up for next loop
+        i = j + 1;
+    }
+
+    return;
+}
+\end{DoxyCode}
+
+
