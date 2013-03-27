@@ -1,7 +1,7 @@
 #include<cob_people_detection/face_normalizer.h>
 #include<pcl/common/transform.h>
-#include<pcl/common/eigen.h>
 #include<pcl/common/common.h>
+#include<pcl/common/eigen.h>
 #include<fstream>
 
 using namespace cv;
