@@ -37,7 +37,7 @@ struct cell
 	int weight;
 	//Values for whether the cell is primed or starred
 	bool starred, primed;
-	
+
 	//initialize starred and primed values to false
 	cell()
 	{
@@ -58,19 +58,19 @@ class munkres
 public:
 	munkres(void);
 	~munkres(void);
-	
+
 	//turn diagnostics on or off
 	void set_diag(bool a)
 	{
 		diag_on = a;
 	}
-	
+
 	//assign a matching
 	//returns the total weight of the matching
 	//takes a pointer to integer as a parameter and this
 	//will be the matching in the form of an array
 	int assign(ordered_pair *matching);
-	
+
 	//Load weight array from a vector of vectors of integers
 	//Accepts an object of type vector< vector<int> >, which is
 	//a matrix of any dimensions with integer values > -1
@@ -89,7 +89,7 @@ private:
 
 	//array to show which rows and columns are covered
 	std::vector<bool> row_cov, column_cov;
-	
+
 	//A boolean value to turn daignostics on or off
 	bool diag_on;
 
@@ -117,7 +117,7 @@ private:
 	bool step3(void);
 	bool step4(void);
 	bool step5(int, int);
-	bool step6(int sub);
+	bool step6();
 
 	//The function that will call each of step of Munkres' algorithm in turn
 	//We're using this since multiple functions use the algorithm

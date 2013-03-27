@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <launch>
-  <arg name="using_nodelets" default="true"/>
+  <arg name="using_nodelets" default="false"/>
 
   <!-- coordinator node for the detection pipeline -->
   <!--rosparam command="load" ns="/cob_people_detection/coordinator" file="$(find cob_people_detection)/ros/launch/coordinator_params.yaml"/-->

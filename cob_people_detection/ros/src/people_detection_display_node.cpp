@@ -117,19 +117,18 @@ unsigned long PeopleDetectionDisplayNode::convertColorImageMessageToMat(const se
 	}
 	image = image_ptr->image;
 
+
 	return ipa_Utils::RET_OK;
 }
     
 /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 //void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg)
-void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& colorimage_msg)
+void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
-	ROS_INFO("callback on");
-
 	// convert color image to cv::Mat
 	cv_bridge::CvImageConstPtr color_image_ptr;
 	cv::Mat color_image;
-	convertColorImageMessageToMat(colorimage_msg, color_image_ptr, color_image);
+	convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
 
 //	// get color image from point cloud
 //	pcl::PointCloud<pcl::PointXYZRGB> point_cloud_src;
@@ -199,7 +198,7 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	people_detection_image_pub_.publish(cv_ptr.toImageMsg());
 
 	if (display_timing_ == true)
-		ROS_INFO("%d Display: Time stamp of image message: %f. Delay: %f.", colorimage_msg->header.seq, colorimage_msg->header.stamp.toSec(), ros::Time::now().toSec()-colorimage_msg->header.stamp.toSec());
+		ROS_INFO("%d Display: Time stamp of image message: %f. Delay: %f.", color_image_msg->header.seq, color_image_msg->header.stamp.toSec(), ros::Time::now().toSec()-color_image_msg->header.stamp.toSec());
 }
 
 
