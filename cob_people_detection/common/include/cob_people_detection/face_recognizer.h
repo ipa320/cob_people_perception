@@ -63,6 +63,7 @@
 
 #ifdef __LINUX__
 	#include <cob_people_detection/abstract_face_recognizer.h>
+	#include <cob_people_detection/face_normalizer.h>
 #else
 	#include "cob_vision/cob_vision_ipa_utils/common/include/cob_vision_ipa_utils/MathUtils.h"
 	#include "cob_vision/cob_sensor_fusion/common/include/cob_sensor_fusion/ColoredPointCloud.h"	// todo: necessary?
@@ -75,6 +76,8 @@
 // boost
 #include <boost/thread/mutex.hpp>
 
+#include"cob_people_detection/subspace_analysis.h"
+#include<algorithm>
 namespace ipa_PeopleDetector {
 
 class FaceRecognizer : public AbstractFaceRecognizer
@@ -90,14 +93,14 @@ public:
 	/// @param data_directory The directory for data files
 	/// @param identification_labels_to_recognize A list of labels of persons that shall be recognized
 	/// @return Return code
-	virtual unsigned long init(std::string data_directory, int eigenface_size, int eigenvectors_per_person, double threshold_facespace, double threshold_unknown, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize);
+virtual unsigned long init(std::string data_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth);
 
 	/// Initialization function for training purposes (only for capturing images, not the training of recognition models).
 	/// Parameters: see class member explanations.
 	/// @param data_directory The directory for data files
 	/// @param face_images A list of images of persons that shall be recognized which will be loaded by the function.
 	/// @return Return code
-	virtual unsigned long initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images);
+	virtual unsigned long initTraining(std::string data_directory, int eigenface_size, bool debug, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps,bool use_depth);
 
 	/// Function to add a new face
 	/// The function adds a new face to the trained images. The labels are stored internally in m_face_labels. The face_images are stored externally to avoid waste of memory.
@@ -107,6 +110,8 @@ public:
 	/// @param face_images Vector containing all trained images
 	/// @return Return code
 	virtual unsigned long addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
+	virtual unsigned long addFace(cv::Mat& color_image,cv::Mat& depth_image,cv::Rect& face_bounding_box, cv::Rect& head_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
+  virtual unsigned long addFace(cv::Mat& color_image, cv::Mat& depth_image,cv::Rect& face_bounding_box,cv::Rect& head_bounding_box,std::string label, std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps);
 
 	/// Updates the labels of a stored person.
 	/// @param old_label The label in the database which shall be replaced by the new label
@@ -124,17 +129,18 @@ public:
 	/// @param label The label of the database entries which shall be deleted
 	/// @param face_images Vector containing all trained images
 	/// @return Return code
-	virtual unsigned long deleteFaces(std::string label, std::vector<cv::Mat>& face_images);
+	virtual unsigned long deleteFaces(std::string label, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps);
 
 	/// Deletes the database entry with the provided index.
 	/// @param index The index of the database entry which shall be deleted
 	/// @param face_images Vector containing all trained images
 	/// @return Return code
-	virtual unsigned long deleteFace(int index, std::vector<cv::Mat>& face_images);
+	virtual unsigned long deleteFace(int index, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps);
 
 	/// Saves the training data
 	/// @param face_images A vector containing all training images
 	/// @return Return code
+	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps);
 	virtual unsigned long saveTrainingData(std::vector<cv::Mat>& face_images);
 
 	/// Trains a model for the recognition of a given set of faces.
@@ -162,6 +168,7 @@ protected:
 	/// @param identification_labels Vector of labels of classified faces, vector indices correspond with bounding boxes in face_coordinates
 	/// @return Return code
 	virtual unsigned long recognizeFace(cv::Mat& color_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels);
+	virtual unsigned long recognizeFace(cv::Mat& color_image,cv::Mat& depth_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels);
 
 	/// Function to find the closest face class
 	/// The function calculates the distance of each sample image to the trained face class
@@ -169,44 +176,40 @@ protected:
 	/// @param face_label Label of closest face, or 'Unknown' if the face is unknown
 	/// @param number_eigenvectors Number of eigenvalues
 	/// @return Return code
-	virtual unsigned long classifyFace(float *eigen_vector_weights, std::string& face_label, int number_eigenvectors);
-
-	/// Function to Run the Eigenface-PCA algorithm
-	/// @param number_eigenvectors Target number of eigenvectors
-	/// @param face_images Face images for training
-	/// @return Return code
-	virtual unsigned long PCA(int number_eigenvectors, std::vector<cv::Mat>& face_images);
-
-	/// Function to calculate the average eigenvector decomposition factors for each face class.
-	/// The function calculates the average eigenvector decomposition factors for each face class. Assumes that PCA() was executed before.
-	/// @return Return code
-	virtual unsigned long computeAverageFaceProjections();
-
-	/// Applies some preprocessing to the grayscale face images to obtain a more robust identification.
-	/// todo: not implemented yet
-	/// @param input_image Grayscale face image.
-	/// @return Preprocessed image.
-	virtual cv::Mat preprocessImage(cv::Mat& input_image);
-
-	/// Function to Convert and Resizes a given image
-	/// The function converts a 8U3 image from camera to an 8U1 image and resizes the face to new_size.
-	/// @param img Image from camera
-	/// @param resized Resized image patch from bounding box face
-	/// @param face The face bounding box
-	/// @param new_size The target size of the resized image
-	/// @return Return code
 	virtual unsigned long convertAndResize(cv::Mat& img, cv::Mat& resized, cv::Rect& face, cv::Size new_size);
 
-	/// Just converts m_eigenvectors to m_eigenvectors_ipl which is a conversion of std::vector<cv::Mat> to IplImage**.
-	/// Necessary to avoid in-place conversion each time recognizeFace is called.
-	/// @param old_number_eigenvectors The number of eigenvectors previously stored in m_eigenvectors_ipl. Needed for correct memory release.
-	virtual unsigned long convertEigenvectorsToIpl(int old_number_eigenvectors);
 
 	/// Loads the training data for the persons specified in identification_labels_to_train
 	/// @param face_images A vector containing all training images
 	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
 	/// @return Return code
 	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<std::string>& identification_labels_to_train);
+	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps, std::vector<std::string>& identification_labels_to_train);
+//----------------------------------------------------
+//----------------------------------------------------
+
+
+
+// DEPTH
+  SubspaceAnalysis::FishEigFaces depth_eff_;
+  std::vector<std::string> depth_str_labels;
+  std::vector<std::string> depth_str_labels_unique;
+  std::vector<int> depth_num_labels;
+//
+  FaceNormalizer face_normalizer_;
+
+  SubspaceAnalysis::FishEigFaces eff_depth;
+  SubspaceAnalysis::FishEigFaces eff_color;
+  std::vector<int> m_label_num;
+  int             m_rec_method;
+  std::vector<bool> dm_exist;
+  bool m_depth_mode;
+  SubspaceAnalysis::Classifier m_class_meth;
+  SubspaceAnalysis::Method m_subs_meth;
+  bool m_use_unknown_thresh;
+unsigned long initModel(SubspaceAnalysis::FishEigFaces& eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
+//----------------------------------------------------
+//----------------------------------------------------
 
 	// data
 	std::vector<cv::Mat> m_eigenvectors;			///< Eigenvectors (spanning the face space)

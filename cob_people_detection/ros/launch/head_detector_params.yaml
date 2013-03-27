@@ -12,8 +12,7 @@ depth_increase_search_scale: 1.2
 
 # minimum number (minus 1) of neighbor rectangles that makes up an object. (default: 68)
 # int
-depth_drop_groups: 38
-#depth_drop_groups: 3
+depth_drop_groups: 40
 
 # width of smallest search rectangle (default: 20)
 # int

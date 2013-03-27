@@ -1,0 +1,2835 @@
+\section{Gnuplot Class Reference}
+\label{d3/d27/class_gnuplot}\index{Gnuplot@{Gnuplot}}
+
+
+{\ttfamily \#include $<$gnuplot\_\-i.hpp$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\bf Gnuplot} (const std::string \&style=\char`\"{}points\char`\"{})
+\begin{DoxyCompactList}\small\item\em set a style during construction \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} (const std::vector$<$ double $>$ \&x, const std::string \&title=\char`\"{}\char`\"{}, const std::string \&style=\char`\"{}points\char`\"{}, const std::string \&labelx=\char`\"{}x\char`\"{}, const std::string \&labely=\char`\"{}y\char`\"{})
+\begin{DoxyCompactList}\small\item\em plot a single std::vector at one go \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} (const std::vector$<$ double $>$ \&x, const std::vector$<$ double $>$ \&y, const std::string \&title=\char`\"{}\char`\"{}, const std::string \&style=\char`\"{}points\char`\"{}, const std::string \&labelx=\char`\"{}x\char`\"{}, const std::string \&labely=\char`\"{}y\char`\"{})
+\begin{DoxyCompactList}\small\item\em plot pairs std::vector at one go \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} (const std::vector$<$ double $>$ \&x, const std::vector$<$ double $>$ \&y, const std::vector$<$ double $>$ \&z, const std::string \&title=\char`\"{}\char`\"{}, const std::string \&style=\char`\"{}points\char`\"{}, const std::string \&labelx=\char`\"{}x\char`\"{}, const std::string \&labely=\char`\"{}y\char`\"{}, const std::string \&labelz=\char`\"{}z\char`\"{})
+\begin{DoxyCompactList}\small\item\em plot triples std::vector at one go \item\end{DoxyCompactList}\item 
+{\bf $\sim$Gnuplot} ()
+\begin{DoxyCompactList}\small\item\em destructor: needed to delete temporary files \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf cmd} (const std::string \&cmdstr)
+\begin{DoxyCompactList}\small\item\em send a command to gnuplot \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf operator$<$$<$} (const std::string \&cmdstr)
+\begin{DoxyCompactList}\small\item\em Sends a command to an active gnuplot session, identical to \doxyref{cmd()}{p.}{d3/d27/class_gnuplot_a07607803ede8dd5416906df0a1924fc5} send a command to gnuplot using the $<$$<$ operator. \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf showonscreen} ()
+\begin{DoxyCompactList}\small\item\em sets terminal type to terminal\_\-std \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf savetops} (const std::string \&filename=\char`\"{}gnuplot\_\-output\char`\"{})
+\begin{DoxyCompactList}\small\item\em saves a gnuplot session to a postscript file, filename without extension \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-style} (const std::string \&stylestr=\char`\"{}points\char`\"{})
+\item 
+{\bf Gnuplot} \& {\bf set\_\-smooth} (const std::string \&stylestr=\char`\"{}csplines\char`\"{})
+\item 
+{\bf Gnuplot} \& {\bf unset\_\-smooth} ()
+\begin{DoxyCompactList}\small\item\em unset smooth attention: smooth is not set by default \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-pointsize} (const double pointsize=1.0)
+\begin{DoxyCompactList}\small\item\em scales the size of the points used in plots \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-grid} ()
+\begin{DoxyCompactList}\small\item\em turns grid on/off \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf unset\_\-grid} ()
+\begin{DoxyCompactList}\small\item\em grid is not set by default \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-multiplot} ()
+\item 
+{\bf Gnuplot} \& {\bf unset\_\-multiplot} ()
+\item 
+{\bf Gnuplot} \& {\bf set\_\-samples} (const int samples=100)
+\begin{DoxyCompactList}\small\item\em set sampling rate of functions, or for interpolating data \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-isosamples} (const int isolines=10)
+\begin{DoxyCompactList}\small\item\em set isoline density (grid) for plotting functions as surfaces (for 3d plots) \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-hidden3d} ()
+\item 
+{\bf Gnuplot} \& {\bf unset\_\-hidden3d} ()
+\item 
+{\bf Gnuplot} \& {\bf set\_\-contour} (const std::string \&position=\char`\"{}base\char`\"{})
+\item 
+{\bf Gnuplot} \& {\bf unset\_\-contour} ()
+\item 
+{\bf Gnuplot} \& {\bf set\_\-surface} ()
+\item 
+{\bf Gnuplot} \& {\bf unset\_\-surface} ()
+\item 
+{\bf Gnuplot} \& {\bf set\_\-legend} (const std::string \&position=\char`\"{}default\char`\"{})
+\item 
+{\bf Gnuplot} \& {\bf unset\_\-legend} ()
+\begin{DoxyCompactList}\small\item\em Switches legend off attention:legend is set by default. \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-title} (const std::string \&title=\char`\"{}\char`\"{})
+\begin{DoxyCompactList}\small\item\em sets and clears the title of a gnuplot session \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf unset\_\-title} ()
+\begin{DoxyCompactList}\small\item\em Clears the title of a gnuplot session The title is not set by default. \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-ylabel} (const std::string \&label=\char`\"{}x\char`\"{})
+\begin{DoxyCompactList}\small\item\em set x axis label \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-xlabel} (const std::string \&label=\char`\"{}y\char`\"{})
+\begin{DoxyCompactList}\small\item\em set y axis label \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-zlabel} (const std::string \&label=\char`\"{}z\char`\"{})
+\begin{DoxyCompactList}\small\item\em set z axis label \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-xrange} (const double iFrom, const double iTo)
+\begin{DoxyCompactList}\small\item\em set axis -\/ ranges \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-yrange} (const double iFrom, const double iTo)
+\begin{DoxyCompactList}\small\item\em set y-\/axis -\/ ranges \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-zrange} (const double iFrom, const double iTo)
+\begin{DoxyCompactList}\small\item\em set z-\/axis -\/ ranges \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-xautoscale} ()
+\item 
+{\bf Gnuplot} \& {\bf set\_\-yautoscale} ()
+\item 
+{\bf Gnuplot} \& {\bf set\_\-zautoscale} ()
+\item 
+{\bf Gnuplot} \& {\bf set\_\-xlogscale} (const double base=10)
+\begin{DoxyCompactList}\small\item\em turns on/off log scaling for the specified xaxis (logscale is not set by default) \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-ylogscale} (const double base=10)
+\begin{DoxyCompactList}\small\item\em turns on/off log scaling for the specified yaxis (logscale is not set by default) \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf set\_\-zlogscale} (const double base=10)
+\begin{DoxyCompactList}\small\item\em turns on/off log scaling for the specified zaxis (logscale is not set by default) \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf unset\_\-xlogscale} ()
+\item 
+{\bf Gnuplot} \& {\bf unset\_\-ylogscale} ()
+\item 
+{\bf Gnuplot} \& {\bf unset\_\-zlogscale} ()
+\item 
+{\bf Gnuplot} \& {\bf set\_\-cbrange} (const double iFrom, const double iTo)
+\begin{DoxyCompactList}\small\item\em set palette range (autoscale by default) \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf plotfile\_\-x} (const std::string \&filename, const unsigned int column=1, const std::string \&title=\char`\"{}\char`\"{})
+\item 
+{\footnotesize template$<$typename X $>$ }\\{\bf Gnuplot} \& {\bf plot\_\-x} (const X \&x, const std::string \&title=\char`\"{}\char`\"{})
+\begin{DoxyCompactList}\small\item\em from std::vector \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf plotfile\_\-xy} (const std::string \&filename, const unsigned int column\_\-x=1, const unsigned int column\_\-y=2, const std::string \&title=\char`\"{}\char`\"{})
+\item 
+{\footnotesize template$<$typename X , typename Y $>$ }\\{\bf Gnuplot} \& {\bf plot\_\-xy} (const X \&x, const Y \&y, const std::string \&title=\char`\"{}\char`\"{})
+\begin{DoxyCompactList}\small\item\em from data \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf plotfile\_\-xy\_\-err} (const std::string \&filename, const unsigned int column\_\-x=1, const unsigned int column\_\-y=2, const unsigned int column\_\-dy=3, const std::string \&title=\char`\"{}\char`\"{})
+\item 
+{\footnotesize template$<$typename X , typename Y , typename E $>$ }\\{\bf Gnuplot} \& {\bf plot\_\-xy\_\-err} (const X \&x, const Y \&y, const E \&dy, const std::string \&title=\char`\"{}\char`\"{})
+\begin{DoxyCompactList}\small\item\em from data \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf plotfile\_\-xyz} (const std::string \&filename, const unsigned int column\_\-x=1, const unsigned int column\_\-y=2, const unsigned int column\_\-z=3, const std::string \&title=\char`\"{}\char`\"{})
+\item 
+{\footnotesize template$<$typename X , typename Y , typename Z $>$ }\\{\bf Gnuplot} \& {\bf plot\_\-xyz} (const X \&x, const Y \&y, const Z \&z, const std::string \&title=\char`\"{}\char`\"{})
+\begin{DoxyCompactList}\small\item\em from std::vector \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf plot\_\-slope} (const double a, const double b, const std::string \&title=\char`\"{}\char`\"{})
+\begin{DoxyCompactList}\small\item\em plot an equation of the form: y = ax + b, you supply a and b \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf plot\_\-equation} (const std::string \&equation, const std::string \&title=\char`\"{}\char`\"{})
+\item 
+{\bf Gnuplot} \& {\bf plot\_\-equation3d} (const std::string \&equation, const std::string \&title=\char`\"{}\char`\"{})
+\item 
+{\bf Gnuplot} \& {\bf plot\_\-image} (const unsigned char $\ast$ucPicBuf, const unsigned int iWidth, const unsigned int iHeight, const std::string \&title=\char`\"{}\char`\"{})
+\begin{DoxyCompactList}\small\item\em plot image \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf replot} (void)
+\begin{DoxyCompactList}\small\item\em replot repeats the last plot or splot command. this can be useful for viewing a plot with different set options, or when generating the same plot for several devices (showonscreen, savetops) \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf reset\_\-plot} ()
+\begin{DoxyCompactList}\small\item\em resets a gnuplot session (next plot will erase previous ones) \item\end{DoxyCompactList}\item 
+{\bf Gnuplot} \& {\bf reset\_\-all} ()
+\begin{DoxyCompactList}\small\item\em resets a gnuplot session and sets all variables to default \item\end{DoxyCompactList}\item 
+void {\bf remove\_\-tmpfiles} ()
+\begin{DoxyCompactList}\small\item\em deletes temporary files \item\end{DoxyCompactList}\item 
+bool {\bf is\_\-valid} ()
+\begin{DoxyCompactList}\small\item\em Is the gnuplot session valid ?? \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static bool {\bf set\_\-GNUPlotPath} (const std::string \&path)
+\begin{DoxyCompactList}\small\item\em optional function: set \doxyref{Gnuplot}{p.}{d3/d27/class_gnuplot} path manual attention: for windows: path with slash '/' not backslash '$\backslash$' \item\end{DoxyCompactList}\item 
+static void {\bf set\_\-terminal\_\-std} (const std::string \&type)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 68 of file gnuplot\_\-i.hpp.
+
+
+
+\subsection{Constructor \& Destructor Documentation}
+\index{Gnuplot@{Gnuplot}!Gnuplot@{Gnuplot}}
+\index{Gnuplot@{Gnuplot}!Gnuplot@{Gnuplot}}
+\subsubsection[{Gnuplot}]{\setlength{\rightskip}{0pt plus 5cm}Gnuplot::Gnuplot (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ style = {\ttfamily \char`\"{}points\char`\"{}}}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a187eb517b362cf379492fe7f1621ee50}
+
+
+set a style during construction 
+
+
+
+Definition at line 612 of file gnuplot\_\-i.hpp.
+
+
+
+References set\_\-style().
+
+
+
+
+\begin{DoxyCode}
+                           :gnucmd(NULL) ,valid(false) ,two_dim(false) ,nplots(0)
+      
+
+{
+    init();
+    set_style(style);
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!Gnuplot@{Gnuplot}}
+\index{Gnuplot@{Gnuplot}!Gnuplot@{Gnuplot}}
+\subsubsection[{Gnuplot}]{\setlength{\rightskip}{0pt plus 5cm}Gnuplot::Gnuplot (
+\begin{DoxyParamCaption}
+\item[{const std::vector$<$ double $>$ \&}]{ x, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}, }
+\item[{const std::string \&}]{ style = {\ttfamily \char`\"{}points\char`\"{}}, }
+\item[{const std::string \&}]{ labelx = {\ttfamily \char`\"{}x\char`\"{}}, }
+\item[{const std::string \&}]{ labely = {\ttfamily \char`\"{}y\char`\"{}}}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a8ceac5808e42665c1dee305ae7ea9070}
+
+
+plot a single std::vector at one go 
+
+
+
+Definition at line 624 of file gnuplot\_\-i.hpp.
+
+
+
+References plot\_\-x(), set\_\-style(), set\_\-xlabel(), and set\_\-ylabel().
+
+
+
+
+\begin{DoxyCode}
+                           :gnucmd(NULL) ,valid(false) ,two_dim(false) ,nplots(0)
+      
+{
+    init();
+
+    set_style(style);
+    set_xlabel(labelx);
+    set_ylabel(labely);
+
+    plot_x(x,title);
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!Gnuplot@{Gnuplot}}
+\index{Gnuplot@{Gnuplot}!Gnuplot@{Gnuplot}}
+\subsubsection[{Gnuplot}]{\setlength{\rightskip}{0pt plus 5cm}Gnuplot::Gnuplot (
+\begin{DoxyParamCaption}
+\item[{const std::vector$<$ double $>$ \&}]{ x, }
+\item[{const std::vector$<$ double $>$ \&}]{ y, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}, }
+\item[{const std::string \&}]{ style = {\ttfamily \char`\"{}points\char`\"{}}, }
+\item[{const std::string \&}]{ labelx = {\ttfamily \char`\"{}x\char`\"{}}, }
+\item[{const std::string \&}]{ labely = {\ttfamily \char`\"{}y\char`\"{}}}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a24327b6116c71acdc195eadf665c67cb}
+
+
+plot pairs std::vector at one go 
+
+
+
+Definition at line 645 of file gnuplot\_\-i.hpp.
+
+
+
+References plot\_\-xy(), set\_\-style(), set\_\-xlabel(), and set\_\-ylabel().
+
+
+
+
+\begin{DoxyCode}
+                           :gnucmd(NULL) ,valid(false) ,two_dim(false) ,nplots(0)
+      
+{
+    init();
+
+    set_style(style);
+    set_xlabel(labelx);
+    set_ylabel(labely);
+
+    plot_xy(x,y,title);
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!Gnuplot@{Gnuplot}}
+\index{Gnuplot@{Gnuplot}!Gnuplot@{Gnuplot}}
+\subsubsection[{Gnuplot}]{\setlength{\rightskip}{0pt plus 5cm}Gnuplot::Gnuplot (
+\begin{DoxyParamCaption}
+\item[{const std::vector$<$ double $>$ \&}]{ x, }
+\item[{const std::vector$<$ double $>$ \&}]{ y, }
+\item[{const std::vector$<$ double $>$ \&}]{ z, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}, }
+\item[{const std::string \&}]{ style = {\ttfamily \char`\"{}points\char`\"{}}, }
+\item[{const std::string \&}]{ labelx = {\ttfamily \char`\"{}x\char`\"{}}, }
+\item[{const std::string \&}]{ labely = {\ttfamily \char`\"{}y\char`\"{}}, }
+\item[{const std::string \&}]{ labelz = {\ttfamily \char`\"{}z\char`\"{}}}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a14191e89154f2716608f6907975cc012}
+
+
+plot triples std::vector at one go 
+
+
+
+Definition at line 667 of file gnuplot\_\-i.hpp.
+
+
+
+References plot\_\-xyz(), set\_\-style(), set\_\-xlabel(), set\_\-ylabel(), and set\_\-zlabel().
+
+
+
+
+\begin{DoxyCode}
+                           :gnucmd(NULL) ,valid(false) ,two_dim(false) ,nplots(0)
+      
+{
+    init();
+
+    set_style(style);
+    set_xlabel(labelx);
+    set_ylabel(labely);
+    set_zlabel(labelz);
+
+    plot_xyz(x,y,z,title);
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!$\sim$Gnuplot@{$\sim$Gnuplot}}
+\index{$\sim$Gnuplot@{$\sim$Gnuplot}!Gnuplot@{Gnuplot}}
+\subsubsection[{$\sim$Gnuplot}]{\setlength{\rightskip}{0pt plus 5cm}Gnuplot::$\sim$Gnuplot (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a78a68f621caa87d1f34324fcd093c7bd}
+
+
+destructor: needed to delete temporary files 
+
+
+
+Definition at line 944 of file gnuplot\_\-i.hpp.
+
+
+
+
+\begin{DoxyCode}
+{
+//  remove_tmpfiles();
+
+    // A stream opened by popen() should be closed by pclose()
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN_
+      _)
+    if (_pclose(gnucmd) == -1)
+#elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
+      
+    if (pclose(gnucmd) == -1)
+#endif
+        throw GnuplotException("Problem closing communication to gnuplot");
+}
+\end{DoxyCode}
+
+
+
+
+\subsection{Member Function Documentation}
+\index{Gnuplot@{Gnuplot}!cmd@{cmd}}
+\index{cmd@{cmd}!Gnuplot@{Gnuplot}}
+\subsubsection[{cmd}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::cmd (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ cmdstr}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a07607803ede8dd5416906df0a1924fc5}
+
+
+send a command to gnuplot 
+
+
+
+Definition at line 1641 of file gnuplot\_\-i.hpp.
+
+
+
+Referenced by main(), operator$<$$<$(), plot\_\-equation(), plot\_\-equation3d(), plot\_\-image(), plot\_\-slope(), plotfile\_\-x(), plotfile\_\-xy(), plotfile\_\-xy\_\-err(), plotfile\_\-xyz(), replot(), reset\_\-all(), savetops(), set\_\-cbrange(), set\_\-contour(), set\_\-grid(), set\_\-hidden3d(), set\_\-isosamples(), set\_\-legend(), set\_\-multiplot(), set\_\-pointsize(), set\_\-samples(), set\_\-surface(), set\_\-xautoscale(), set\_\-xlabel(), set\_\-xlogscale(), set\_\-xrange(), set\_\-yautoscale(), set\_\-ylabel(), set\_\-ylogscale(), set\_\-yrange(), set\_\-zautoscale(), set\_\-zlabel(), set\_\-zlogscale(), set\_\-zrange(), showonscreen(), unset\_\-contour(), unset\_\-grid(), unset\_\-hidden3d(), unset\_\-legend(), unset\_\-multiplot(), unset\_\-surface(), unset\_\-xlogscale(), unset\_\-ylogscale(), and unset\_\-zlogscale().
+
+
+
+
+\begin{DoxyCode}
+{
+    if( !(valid) )
+    {
+        return *this;
+    }
+
+
+    // int fputs ( const char * str, FILE * stream );
+    // writes the string str to the stream.
+    // The function begins copying from the address specified (str) until it 
+    // reaches the terminating null character ('\0'). This final 
+    // null-character is not copied to the stream.
+    fputs( (cmdstr+"\n").c_str(), gnucmd );
+
+    // int fflush ( FILE * stream );
+    // If the given stream was open for writing and the last i/o operation was 
+    // an output operation, any unwritten data in the output buffer is written 
+    // to the file.  If the argument is a null pointer, all open files are 
+    // flushed.  The stream remains open after this call.
+    fflush(gnucmd);
+
+
+    if( cmdstr.find("replot") != std::string::npos )
+    {
+        return *this;
+    }
+    else if( cmdstr.find("splot") != std::string::npos )
+    {
+        two_dim = false;
+        nplots++;
+    }
+    else if( cmdstr.find("plot") != std::string::npos )
+    {
+        two_dim = true;
+        nplots++;
+    }
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!is\_\-valid@{is\_\-valid}}
+\index{is\_\-valid@{is\_\-valid}!Gnuplot@{Gnuplot}}
+\subsubsection[{is\_\-valid}]{\setlength{\rightskip}{0pt plus 5cm}bool Gnuplot::is\_\-valid (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a3135ffebb308b50c4f3178a62b23ab03}
+
+
+Is the gnuplot session valid ?? 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if valid, false if not 
+\end{DoxyReturn}
+
+
+Definition at line 582 of file gnuplot\_\-i.hpp.
+
+
+
+
+\begin{DoxyCode}
+{return(valid);};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!Gnuplot@{Gnuplot}}
+\subsubsection[{operator$<$$<$}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::operator$<$$<$ (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ cmdstr}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_afb69631c7a498077e378a3cbb56f38c8}
+
+
+Sends a command to an active gnuplot session, identical to \doxyref{cmd()}{p.}{d3/d27/class_gnuplot_a07607803ede8dd5416906df0a1924fc5} send a command to gnuplot using the $<$$<$ operator. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em cmdstr}]-\/-\/$>$ the command string\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ a reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 220 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+                                                       {
+        cmd(cmdstr);
+        return(*this);
+    }
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plot\_\-equation@{plot\_\-equation}}
+\index{plot\_\-equation@{plot\_\-equation}!Gnuplot@{Gnuplot}}
+\subsubsection[{plot\_\-equation}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::plot\_\-equation (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ equation, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a42dfb8c9d4636745c7be277ed818e849}
+plot an equation supplied as a std::string y=f(x), write only the function f(x) not y= the independent variable has to be x binary operators: $\ast$$\ast$ exponentiation, $\ast$ multiply, / divide, + add, -\/ substract, \% modulo unary operators: -\/ minus, ! factorial elementary functions: rand(x), abs(x), sgn(x), ceil(x), floor(x), int(x), imag(x), real(x), arg(x), sqrt(x), exp(x), log(x), log10(x), sin(x), cos(x), tan(x), asin(x), acos(x), atan(x), atan2(y,x), sinh(x), cosh(x), tanh(x), asinh(x), acosh(x), atanh(x) special functions: erf(x), erfc(x), inverf(x), gamma(x), igamma(a,x), lgamma(x), ibeta(p,q,x), besj0(x), besj1(x), besy0(x), besy1(x), lambertw(x) statistical fuctions: norm(x), invnorm(x) 
+
+Definition at line 1345 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+    //
+    // command to be sent to gnuplot
+    //
+    if (nplots > 0  &&  two_dim == true)
+        cmdstr << "replot ";
+    else
+        cmdstr << "plot ";
+
+    cmdstr << equation << " title \"";
+
+    if (title == "")
+        cmdstr << "f(x) = " << equation;
+    else
+        cmdstr << title;
+
+    cmdstr << "\" with " << pstyle;
+
+    //
+    // Do the actual plot
+    //
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plot\_\-equation3d@{plot\_\-equation3d}}
+\index{plot\_\-equation3d@{plot\_\-equation3d}!Gnuplot@{Gnuplot}}
+\subsubsection[{plot\_\-equation3d}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::plot\_\-equation3d (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ equation, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a79aed3a6927f7d1d3497cba441e8a943}
+plot an equation supplied as a std::string z=f(x,y), write only the function f(x,y) not z= the independent variables have to be x and y 
+
+Definition at line 1378 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+    //
+    // command to be sent to gnuplot
+    //
+    if (nplots > 0  &&  two_dim == false)
+        cmdstr << "replot ";
+    else
+        cmdstr << "splot ";
+
+    cmdstr << equation << " title \"";
+
+    if (title == "")
+        cmdstr << "f(x,y) = " << equation;
+    else
+        cmdstr << title;
+
+    cmdstr << "\" with " << pstyle;
+
+    //
+    // Do the actual plot
+    //
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plot\_\-image@{plot\_\-image}}
+\index{plot\_\-image@{plot\_\-image}!Gnuplot@{Gnuplot}}
+\subsubsection[{plot\_\-image}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::plot\_\-image (
+\begin{DoxyParamCaption}
+\item[{const unsigned char $\ast$}]{ ucPicBuf, }
+\item[{const unsigned int}]{ iWidth, }
+\item[{const unsigned int}]{ iHeight, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_aae22c0470a6fbbc1f5e84dec8d023381}
+
+
+plot image 
+
+$\ast$ note that this function is not valid for versions of GNUPlot below 4.2 
+
+Definition at line 1586 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ofstream tmp;
+    std::string name = create_tmpfile(tmp);
+    if (name == "")
+        return *this;
+
+    //
+    // write the data to file
+    //
+    int iIndex = 0;
+    for(int iRow = 0; iRow < iHeight; iRow++)
+    {
+        for(int iColumn = 0; iColumn < iWidth; iColumn++)
+        {
+            tmp << iColumn << " " << iRow  << " " 
+                << static_cast<float>(ucPicBuf[iIndex++]) << std::endl;
+        }
+    }
+
+    tmp.flush();
+    tmp.close();
+
+
+    std::ostringstream cmdstr;
+    //
+    // command to be sent to gnuplot
+    //
+    if (nplots > 0  &&  two_dim == true)
+        cmdstr << "replot ";
+    else
+        cmdstr << "plot ";
+
+    if (title == "")
+        cmdstr << "\"" << name << "\" with image";
+    else
+        cmdstr << "\"" << name << "\" title \"" << title << "\" with image";
+
+    //
+    // Do the actual plot
+    //
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plot\_\-slope@{plot\_\-slope}}
+\index{plot\_\-slope@{plot\_\-slope}!Gnuplot@{Gnuplot}}
+\subsubsection[{plot\_\-slope}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::plot\_\-slope (
+\begin{DoxyParamCaption}
+\item[{const double}]{ a, }
+\item[{const double}]{ b, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a51ea5105eb87285820bb93910f8d346c}
+
+
+plot an equation of the form: y = ax + b, you supply a and b 
+
+
+
+Definition at line 1311 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+    //
+    // command to be sent to gnuplot
+    //
+    if (nplots > 0  &&  two_dim == true)
+        cmdstr << "replot ";
+    else
+        cmdstr << "plot ";
+
+    cmdstr << a << " * x + " << b << " title \"";
+
+    if (title == "")
+        cmdstr << "f(x) = " << a << " * x + " << b;
+    else
+        cmdstr << title;
+
+    cmdstr << "\" with " << pstyle;
+
+    //
+    // Do the actual plot
+    //
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plot\_\-x@{plot\_\-x}}
+\index{plot\_\-x@{plot\_\-x}!Gnuplot@{Gnuplot}}
+\subsubsection[{plot\_\-x}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename X $>$ {\bf Gnuplot} \& Gnuplot::plot\_\-x (
+\begin{DoxyParamCaption}
+\item[{const X \&}]{ x, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_aa00fcd4061a34332f8695276527b9f61}
+
+
+from std::vector 
+
+Plots a 2d graph from a list of doubles: x. 
+
+Definition at line 693 of file gnuplot\_\-i.hpp.
+
+
+
+References plotfile\_\-x().
+
+
+
+Referenced by Gnuplot(), and main().
+
+
+
+
+\begin{DoxyCode}
+{
+    if (x.size() == 0)
+    {
+        throw GnuplotException("std::vector too small");
+        return *this;
+    }
+
+    std::ofstream tmp;
+    std::string name = create_tmpfile(tmp);
+    if (name == "")
+        return *this;
+
+    //
+    // write the data to file
+    //
+    for (unsigned int i = 0; i < x.size(); i++)
+        tmp << x[i] << std::endl;
+
+    tmp.flush();
+    tmp.close();
+
+
+    plotfile_x(name, 1, title);
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plot\_\-xy@{plot\_\-xy}}
+\index{plot\_\-xy@{plot\_\-xy}!Gnuplot@{Gnuplot}}
+\subsubsection[{plot\_\-xy}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename X , typename Y $>$ {\bf Gnuplot} \& Gnuplot::plot\_\-xy (
+\begin{DoxyParamCaption}
+\item[{const X \&}]{ x, }
+\item[{const Y \&}]{ y, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a2a7ded45a0d9bd6f6149866810540c5a}
+
+
+from data 
+
+Plots a 2d graph from a list of doubles: x y. 
+
+Definition at line 727 of file gnuplot\_\-i.hpp.
+
+
+
+References plotfile\_\-xy().
+
+
+
+Referenced by Gnuplot(), and main().
+
+
+
+
+\begin{DoxyCode}
+{
+    if (x.size() == 0 || y.size() == 0)
+    {
+        throw GnuplotException("std::vectors too small");
+        return *this;
+    }
+
+    if (x.size() != y.size())
+    {
+        throw GnuplotException("Length of the std::vectors differs");
+        return *this;
+    }
+
+
+    std::ofstream tmp;
+    std::string name = create_tmpfile(tmp);
+    if (name == "")
+        return *this;
+
+    //
+    // write the data to file
+    //
+    for (unsigned int i = 0; i < x.size(); i++)
+        tmp << x[i] << " " << y[i] << std::endl;
+
+    tmp.flush();
+    tmp.close();
+
+
+    plotfile_xy(name, 1, 2, title);
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plot\_\-xy\_\-err@{plot\_\-xy\_\-err}}
+\index{plot\_\-xy\_\-err@{plot\_\-xy\_\-err}!Gnuplot@{Gnuplot}}
+\subsubsection[{plot\_\-xy\_\-err}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename X , typename Y , typename E $>$ {\bf Gnuplot} \& Gnuplot::plot\_\-xy\_\-err (
+\begin{DoxyParamCaption}
+\item[{const X \&}]{ x, }
+\item[{const Y \&}]{ y, }
+\item[{const E \&}]{ dy, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_acf63292d401a8012a82ac69ec2726d67}
+
+
+from data 
+
+-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/
+
+plot x,y pairs with dy errorbars 
+
+Definition at line 767 of file gnuplot\_\-i.hpp.
+
+
+
+References plotfile\_\-xy\_\-err().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    if (x.size() == 0 || y.size() == 0 || dy.size() == 0)
+    {
+        throw GnuplotException("std::vectors too small");
+        return *this;
+    }
+
+    if (x.size() != y.size() || y.size() != dy.size())
+    {
+        throw GnuplotException("Length of the std::vectors differs");
+        return *this;
+    }
+
+
+    std::ofstream tmp;
+    std::string name = create_tmpfile(tmp);
+    if (name == "")
+        return *this;
+
+    //
+    // write the data to file
+    //
+    for (unsigned int i = 0; i < x.size(); i++)
+        tmp << x[i] << " " << y[i] << " " << dy[i] << std::endl;
+
+    tmp.flush();
+    tmp.close();
+
+
+    // Do the actual plot
+    plotfile_xy_err(name, 1, 2, 3, title);
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plot\_\-xyz@{plot\_\-xyz}}
+\index{plot\_\-xyz@{plot\_\-xyz}!Gnuplot@{Gnuplot}}
+\subsubsection[{plot\_\-xyz}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename X , typename Y , typename Z $>$ {\bf Gnuplot} \& Gnuplot::plot\_\-xyz (
+\begin{DoxyParamCaption}
+\item[{const X \&}]{ x, }
+\item[{const Y \&}]{ y, }
+\item[{const Z \&}]{ z, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a3e97777ee0695e5aa6b038054bd781d2}
+
+
+from std::vector 
+
+
+
+Definition at line 812 of file gnuplot\_\-i.hpp.
+
+
+
+References plotfile\_\-xyz().
+
+
+
+Referenced by Gnuplot(), and main().
+
+
+
+
+\begin{DoxyCode}
+{
+    if (x.size() == 0 || y.size() == 0 || z.size() == 0)
+    {
+        throw GnuplotException("std::vectors too small");
+        return *this;
+    }
+
+    if (x.size() != y.size() || x.size() != z.size())
+    {
+        throw GnuplotException("Length of the std::vectors differs");
+        return *this;
+    }
+
+
+    std::ofstream tmp;
+    std::string name = create_tmpfile(tmp);
+    if (name == "")
+        return *this;
+
+    //
+    // write the data to file
+    //
+    for (unsigned int i = 0; i < x.size(); i++)
+        tmp << x[i] << " " << y[i] << " " << z[i] <<std::endl;
+
+    tmp.flush();
+    tmp.close();
+
+
+    plotfile_xyz(name, 1, 2, 3, title);
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plotfile\_\-x@{plotfile\_\-x}}
+\index{plotfile\_\-x@{plotfile\_\-x}!Gnuplot@{Gnuplot}}
+\subsubsection[{plotfile\_\-x}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::plotfile\_\-x (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ filename, }
+\item[{const unsigned int}]{ column = {\ttfamily 1}, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a4fc34218cdfdd27a65b92eea1f1f9e84}
+plot a single std::vector: x from file 
+
+Definition at line 1412 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by plot\_\-x().
+
+
+
+
+\begin{DoxyCode}
+{
+    //
+    // check if file exists
+    //
+    file_available(filename);
+
+
+    std::ostringstream cmdstr;
+    //
+    // command to be sent to gnuplot
+    //
+    if (nplots > 0  &&  two_dim == true)
+        cmdstr << "replot ";
+    else
+        cmdstr << "plot ";
+
+    cmdstr << "\"" << filename << "\" using " << column;
+
+    if (title == "")
+        cmdstr << " notitle ";
+    else
+        cmdstr << " title \"" << title << "\" ";
+
+    if(smooth == "")
+        cmdstr << "with " << pstyle;
+    else
+        cmdstr << "smooth " << smooth;
+
+    //
+    // Do the actual plot
+    //
+    cmd(cmdstr.str()); //nplots++; two_dim = true;  already in cmd();
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plotfile\_\-xy@{plotfile\_\-xy}}
+\index{plotfile\_\-xy@{plotfile\_\-xy}!Gnuplot@{Gnuplot}}
+\subsubsection[{plotfile\_\-xy}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::plotfile\_\-xy (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ filename, }
+\item[{const unsigned int}]{ column\_\-x = {\ttfamily 1}, }
+\item[{const unsigned int}]{ column\_\-y = {\ttfamily 2}, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a10e1fc7344bd726faa2d70cd5ced5e5e}
+plot x,y pairs: x y from file 
+
+Definition at line 1457 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by plot\_\-xy().
+
+
+
+
+\begin{DoxyCode}
+{
+    //
+    // check if file exists
+    //
+    file_available(filename);
+
+
+    std::ostringstream cmdstr;
+    //
+    // command to be sent to gnuplot
+    //
+    if (nplots > 0  &&  two_dim == true)
+        cmdstr << "replot ";
+    else
+        cmdstr << "plot ";
+
+    cmdstr << "\"" << filename << "\" using " << column_x << ":" << column_y;
+
+    if (title == "")
+        cmdstr << " notitle ";
+    else
+        cmdstr << " title \"" << title << "\" ";
+
+    if(smooth == "")
+        cmdstr << "with " << pstyle;
+    else
+        cmdstr << "smooth " << smooth;
+
+    //
+    // Do the actual plot
+    //
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plotfile\_\-xy\_\-err@{plotfile\_\-xy\_\-err}}
+\index{plotfile\_\-xy\_\-err@{plotfile\_\-xy\_\-err}!Gnuplot@{Gnuplot}}
+\subsubsection[{plotfile\_\-xy\_\-err}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::plotfile\_\-xy\_\-err (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ filename, }
+\item[{const unsigned int}]{ column\_\-x = {\ttfamily 1}, }
+\item[{const unsigned int}]{ column\_\-y = {\ttfamily 2}, }
+\item[{const unsigned int}]{ column\_\-dy = {\ttfamily 3}, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_afe9d44ba12f617188111ab915010f3ab}
+plot x,y pairs with dy errorbars: x y dy from file 
+
+Definition at line 1502 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by plot\_\-xy\_\-err().
+
+
+
+
+\begin{DoxyCode}
+{
+    //
+    // check if file exists
+    //
+    file_available(filename);
+
+    std::ostringstream cmdstr;
+    //
+    // command to be sent to gnuplot
+    //
+    if (nplots > 0  &&  two_dim == true)
+        cmdstr << "replot ";
+    else
+        cmdstr << "plot ";
+
+    cmdstr << "\"" << filename << "\" using " 
+           << column_x << ":" << column_y << ":" << column_dy 
+           << " with errorbars ";
+
+    if (title == "")
+        cmdstr << " notitle ";
+    else
+        cmdstr << " title \"" << title << "\" ";
+
+    //
+    // Do the actual plot
+    //
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!plotfile\_\-xyz@{plotfile\_\-xyz}}
+\index{plotfile\_\-xyz@{plotfile\_\-xyz}!Gnuplot@{Gnuplot}}
+\subsubsection[{plotfile\_\-xyz}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::plotfile\_\-xyz (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ filename, }
+\item[{const unsigned int}]{ column\_\-x = {\ttfamily 1}, }
+\item[{const unsigned int}]{ column\_\-y = {\ttfamily 2}, }
+\item[{const unsigned int}]{ column\_\-z = {\ttfamily 3}, }
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a9dbde2a91eb816481657f3a22c9b0046}
+plot x,y,z triples: x y z from file 
+
+Definition at line 1544 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by plot\_\-xyz().
+
+
+
+
+\begin{DoxyCode}
+{
+    //
+    // check if file exists
+    //
+    file_available(filename);
+
+    std::ostringstream cmdstr;
+    //
+    // command to be sent to gnuplot
+    //
+    if (nplots > 0  &&  two_dim == false)
+        cmdstr << "replot ";
+    else
+        cmdstr << "splot ";
+
+    cmdstr << "\"" << filename << "\" using " << column_x << ":" << column_y 
+           << ":" << column_z;
+
+    if (title == "")
+        cmdstr << " notitle with " << pstyle;
+    else
+        cmdstr << " title \"" << title << "\" with " << pstyle;
+
+    //
+    // Do the actual plot
+    //
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!remove\_\-tmpfiles@{remove\_\-tmpfiles}}
+\index{remove\_\-tmpfiles@{remove\_\-tmpfiles}!Gnuplot@{Gnuplot}}
+\subsubsection[{remove\_\-tmpfiles}]{\setlength{\rightskip}{0pt plus 5cm}void Gnuplot::remove\_\-tmpfiles (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a2e449552587b0055f40f4ee079d62a8d}
+
+
+deletes temporary files 
+
+
+
+Definition at line 1948 of file gnuplot\_\-i.hpp.
+
+
+
+
+\begin{DoxyCode}
+                             {
+    if ((tmpfile_list).size() > 0)
+    {
+        for (unsigned int i = 0; i < tmpfile_list.size(); i++)
+            remove( tmpfile_list[i].c_str() );
+
+        Gnuplot::tmpfile_num -= tmpfile_list.size();
+    }
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!replot@{replot}}
+\index{replot@{replot}!Gnuplot@{Gnuplot}}
+\subsubsection[{replot}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::replot (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a34c1b3e877d246a841a29f857a29f502}
+
+
+replot repeats the last plot or splot command. this can be useful for viewing a plot with different set options, or when generating the same plot for several devices (showonscreen, savetops) 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+-\/-\/-\/ 
+\end{DoxyReturn}
+
+
+Definition at line 563 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{if (nplots > 0) cmd("replot");return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!reset\_\-all@{reset\_\-all}}
+\index{reset\_\-all@{reset\_\-all}!Gnuplot@{Gnuplot}}
+\subsubsection[{reset\_\-all}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::reset\_\-all (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a9aedfe8371083a1a3ac2b9493810049c}
+
+
+resets a gnuplot session and sets all variables to default 
+
+
+
+Definition at line 976 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd(), and showonscreen().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+//  remove_tmpfiles();
+
+    nplots = 0;
+    cmd("reset");
+    cmd("clear");
+    pstyle = "points";
+    smooth = "";
+    showonscreen();
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!reset\_\-plot@{reset\_\-plot}}
+\index{reset\_\-plot@{reset\_\-plot}!Gnuplot@{Gnuplot}}
+\subsubsection[{reset\_\-plot}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::reset\_\-plot (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a6797761712d3c311e3685bcccba65dd4}
+
+
+resets a gnuplot session (next plot will erase previous ones) 
+
+
+
+Definition at line 962 of file gnuplot\_\-i.hpp.
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+//  remove_tmpfiles();
+
+    nplots = 0;
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!savetops@{savetops}}
+\index{savetops@{savetops}!Gnuplot@{Gnuplot}}
+\subsubsection[{savetops}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::savetops (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ filename = {\ttfamily \char`\"{}gnuplot\_\-output\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a032072c7c01b508a7535a17fb08562b1}
+
+
+saves a gnuplot session to a postscript file, filename without extension 
+
+
+
+Definition at line 1077 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    cmd("set terminal postscript color");
+
+    std::ostringstream cmdstr;
+    cmdstr << "set output \"" << filename << ".ps\"";
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-cbrange@{set\_\-cbrange}}
+\index{set\_\-cbrange@{set\_\-cbrange}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-cbrange}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-cbrange (
+\begin{DoxyParamCaption}
+\item[{const double}]{ iFrom, }
+\item[{const double}]{ iTo}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a2228f5ab4cce2da463fc90383076a598}
+
+
+set palette range (autoscale by default) 
+
+
+
+Definition at line 1295 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set cbrange[" << iFrom << ":" << iTo << "]";
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-contour@{set\_\-contour}}
+\index{set\_\-contour@{set\_\-contour}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-contour}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-contour (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ position = {\ttfamily \char`\"{}base\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_af845efc728a90d7e10de764eff0b2423}
+enables/disables contour drawing for surfaces (for 3d plot) base, surface, both 
+
+Definition at line 1190 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    if (position.find("base")    == std::string::npos  &&
+        position.find("surface") == std::string::npos  &&
+        position.find("both")    == std::string::npos  )
+    {
+        cmd("set contour base");
+    }
+    else
+    {
+        cmd("set contour " + position);
+    }
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-GNUPlotPath@{set\_\-GNUPlotPath}}
+\index{set\_\-GNUPlotPath@{set\_\-GNUPlotPath}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-GNUPlotPath}]{\setlength{\rightskip}{0pt plus 5cm}bool Gnuplot::set\_\-GNUPlotPath (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ path}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [static]}}\label{d3/d27/class_gnuplot_a67cae885c26ced821e335d98986f1967}
+
+
+optional function: set \doxyref{Gnuplot}{p.}{d3/d27/class_gnuplot} path manual attention: for windows: path with slash '/' not backslash '$\backslash$' 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em path}]-\/-\/$>$ the gnuplot path\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true on success, false otherwise 
+\end{DoxyReturn}
+
+
+Definition at line 856 of file gnuplot\_\-i.hpp.
+
+
+
+
+\begin{DoxyCode}
+{
+
+    std::string tmp = path + "/" + Gnuplot::m_sGNUPlotFileName;
+
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN_
+      _)
+    if ( Gnuplot::file_exists(tmp,0) ) // check existence
+#elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
+      
+    if ( Gnuplot::file_exists(tmp,1) ) // check existence and execution permissio
+      n
+#endif
+    {
+        Gnuplot::m_sGNUPlotPath = path;
+        return true;
+    }
+    else
+    {
+        Gnuplot::m_sGNUPlotPath.clear();
+        return false;
+    }
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-grid@{set\_\-grid}}
+\index{set\_\-grid@{set\_\-grid}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::set\_\-grid (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a5416c8e81f1b9945b9631fa85a8d4f47}
+
+
+turns grid on/off 
+
+
+
+Definition at line 266 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{cmd("set grid");return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-hidden3d@{set\_\-hidden3d}}
+\index{set\_\-hidden3d@{set\_\-hidden3d}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-hidden3d}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::set\_\-hidden3d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a891f9800705eddc3f73886f265c009b8}
+enables/disables hidden line removal for surface plotting (for 3d plot)
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 302 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{cmd("set hidden3d");return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-isosamples@{set\_\-isosamples}}
+\index{set\_\-isosamples@{set\_\-isosamples}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-isosamples}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-isosamples (
+\begin{DoxyParamCaption}
+\item[{const int}]{ isolines = {\ttfamily 10}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_ab810fa4c02fb49ae197786c305b78702}
+
+
+set isoline density (grid) for plotting functions as surfaces (for 3d plots) 
+
+
+
+Definition at line 1175 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+    cmdstr << "set isosamples " << isolines;
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-legend@{set\_\-legend}}
+\index{set\_\-legend@{set\_\-legend}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-legend}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-legend (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ position = {\ttfamily \char`\"{}default\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_ad64a717dac18167f656c4f09239973f8}
+switches legend on/off position: inside/outside, left/center/right, top/center/bottom, nobox/box 
+
+Definition at line 1092 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+    cmdstr << "set key " << position;
+
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-multiplot@{set\_\-multiplot}}
+\index{set\_\-multiplot@{set\_\-multiplot}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-multiplot}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::set\_\-multiplot (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a67efc4d4dc46b6100d14ba2f7366ef11}
+set the mulitplot mode
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 277 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{cmd("set multiplot") ;return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-pointsize@{set\_\-pointsize}}
+\index{set\_\-pointsize@{set\_\-pointsize}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-pointsize}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-pointsize (
+\begin{DoxyParamCaption}
+\item[{const double}]{ pointsize = {\ttfamily 1.0}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a95ec1636a871447dfe99463b769339c7}
+
+
+scales the size of the points used in plots 
+
+
+
+Definition at line 1148 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+    cmdstr << "set pointsize " << pointsize;
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-samples@{set\_\-samples}}
+\index{set\_\-samples@{set\_\-samples}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-samples}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-samples (
+\begin{DoxyParamCaption}
+\item[{const int}]{ samples = {\ttfamily 100}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a671cbe7b18a267ea59f532c83a0035f6}
+
+
+set sampling rate of functions, or for interpolating data 
+
+
+
+Definition at line 1161 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+    cmdstr << "set samples " << samples;
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-smooth@{set\_\-smooth}}
+\index{set\_\-smooth@{set\_\-smooth}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-smooth}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-smooth (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ stylestr = {\ttfamily \char`\"{}csplines\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_aa18386919da2ec4c994f1f9c7195d384}
+interpolation and approximation of data, arguments: csplines, bezier, acsplines (for data values $>$ 0), sbezier, unique, frequency (works only with plot\_\-x, plot\_\-xy, plotfile\_\-x, plotfile\_\-xy (if smooth is set, set\_\-style has no effekt on data plotting) 
+
+Definition at line 1041 of file gnuplot\_\-i.hpp.
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    if (stylestr.find("unique")    == std::string::npos  &&
+        stylestr.find("frequency") == std::string::npos  &&
+        stylestr.find("csplines")  == std::string::npos  &&
+        stylestr.find("acsplines") == std::string::npos  &&
+        stylestr.find("bezier")    == std::string::npos  &&
+        stylestr.find("sbezier")   == std::string::npos  )
+    {
+        smooth = "";
+    }
+    else
+    {
+        smooth = stylestr;
+    }
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-style@{set\_\-style}}
+\index{set\_\-style@{set\_\-style}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-style}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-style (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ stylestr = {\ttfamily \char`\"{}points\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_acfdcda292650775ebed4683e8e1515b5}
+set line style (some of these styles require additional information): lines, points, linespoints, impulses, dots, steps, fsteps, histeps, boxes, histograms, filledcurves 
+
+Definition at line 995 of file gnuplot\_\-i.hpp.
+
+
+
+Referenced by Gnuplot(), and main().
+
+
+
+
+\begin{DoxyCode}
+{
+    if (stylestr.find("lines")          == std::string::npos  &&
+        stylestr.find("points")         == std::string::npos  &&
+        stylestr.find("linespoints")    == std::string::npos  &&
+        stylestr.find("impulses")       == std::string::npos  &&
+        stylestr.find("dots")           == std::string::npos  &&
+        stylestr.find("steps")          == std::string::npos  &&
+        stylestr.find("fsteps")         == std::string::npos  &&
+        stylestr.find("histeps")        == std::string::npos  &&
+        stylestr.find("boxes")          == std::string::npos  &&  // 1-4 columns 
+      of data are required
+        stylestr.find("filledcurves")   == std::string::npos  &&
+        stylestr.find("histograms")     == std::string::npos  )   //only for one 
+      data column
+//        stylestr.find("labels")         == std::string::npos  &&  // 3 columns 
+      of data are required
+//        stylestr.find("xerrorbars")     == std::string::npos  &&  // 3-4 column
+      s of data are required
+//        stylestr.find("xerrorlines")    == std::string::npos  &&  // 3-4 column
+      s of data are required
+//        stylestr.find("errorbars")      == std::string::npos  &&  // 3-4 column
+      s of data are required
+//        stylestr.find("errorlines")     == std::string::npos  &&  // 3-4 column
+      s of data are required
+//        stylestr.find("yerrorbars")     == std::string::npos  &&  // 3-4 column
+      s of data are required
+//        stylestr.find("yerrorlines")    == std::string::npos  &&  // 3-4 column
+      s of data are required
+//        stylestr.find("boxerrorbars")   == std::string::npos  &&  // 3-5 column
+      s of data are required
+//        stylestr.find("xyerrorbars")    == std::string::npos  &&  // 4,6,7 colu
+      mns of data are required
+//        stylestr.find("xyerrorlines")   == std::string::npos  &&  // 4,6,7 colu
+      mns of data are required
+//        stylestr.find("boxxyerrorbars") == std::string::npos  &&  // 4,6,7 colu
+      mns of data are required
+//        stylestr.find("financebars")    == std::string::npos  &&  // 5 columns 
+      of data are required
+//        stylestr.find("candlesticks")   == std::string::npos  &&  // 5 columns 
+      of data are required
+//        stylestr.find("vectors")        == std::string::npos  &&
+//        stylestr.find("image")          == std::string::npos  &&
+//        stylestr.find("rgbimage")       == std::string::npos  &&
+//        stylestr.find("pm3d")           == std::string::npos  )
+    {
+        pstyle = std::string("points");
+    }
+    else
+    {
+        pstyle = stylestr;
+    }
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-surface@{set\_\-surface}}
+\index{set\_\-surface@{set\_\-surface}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-surface}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::set\_\-surface (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a9825bd26500e30ca88404c4807e6607a}
+enables/disables the display of surfaces (for 3d plot)
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 332 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{cmd("set surface");return *this;}; 
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-terminal\_\-std@{set\_\-terminal\_\-std}}
+\index{set\_\-terminal\_\-std@{set\_\-terminal\_\-std}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-terminal\_\-std}]{\setlength{\rightskip}{0pt plus 5cm}void Gnuplot::set\_\-terminal\_\-std (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ type}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [static]}}\label{d3/d27/class_gnuplot_a21feba7a3916708b742c3dc25850ab2f}
+optional: set standart terminal, used by showonscreen defaults: Windows -\/ win, Linux -\/ x11, Mac -\/ aqua 
+\begin{DoxyParams}{Parameters}
+\item[{\em type}]-\/-\/$>$ the terminal type\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+-\/-\/-\/ 
+\end{DoxyReturn}
+
+
+Definition at line 884 of file gnuplot\_\-i.hpp.
+
+
+
+
+\begin{DoxyCode}
+{
+#if defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
+    if (type.find("x11") != std::string::npos && getenv("DISPLAY") == NULL)
+    {
+        throw GnuplotException("Can't find DISPLAY variable");
+    }
+#endif
+
+
+    Gnuplot::terminal_std = type;
+    return;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-title@{set\_\-title}}
+\index{set\_\-title@{set\_\-title}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-title}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::set\_\-title (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ title = {\ttfamily \char`\"{}\char`\"{}}}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a4f93bac0e69dd83806652ca7226c6b3b}
+
+
+sets and clears the title of a gnuplot session 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em title}]-\/-\/$>$ the title of the plot [optional, default == \char`\"{}\char`\"{}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 366 of file gnuplot\_\-i.hpp.
+
+
+
+Referenced by main(), and unset\_\-title().
+
+
+
+
+\begin{DoxyCode}
+    {
+        std::string cmdstr;
+        cmdstr = "set title \"";
+        cmdstr+=title;
+        cmdstr+="\"";
+        *this<<cmdstr;
+        return *this;
+    }
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-xautoscale@{set\_\-xautoscale}}
+\index{set\_\-xautoscale@{set\_\-xautoscale}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-xautoscale}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::set\_\-xautoscale (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a11a62a04c203f01607c3c21a727e318d}
+autoscale axis (set by default) of xaxis
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 409 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{cmd("set xrange restore");cmd("set autoscale x");return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-xlabel@{set\_\-xlabel}}
+\index{set\_\-xlabel@{set\_\-xlabel}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-xlabel}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-xlabel (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ label = {\ttfamily \char`\"{}y\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_aa93589a95aeab869ba731e2583843ae4}
+
+
+set y axis label 
+
+
+
+Definition at line 1211 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by Gnuplot(), and main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set xlabel \"" << label << "\"";
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-xlogscale@{set\_\-xlogscale}}
+\index{set\_\-xlogscale@{set\_\-xlogscale}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-xlogscale}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-xlogscale (
+\begin{DoxyParamCaption}
+\item[{const double}]{ base = {\ttfamily 10}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_aff546fad227d93babeb5d2cc9f047b89}
+
+
+turns on/off log scaling for the specified xaxis (logscale is not set by default) 
+
+
+
+Definition at line 1106 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set logscale x " << base;
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-xrange@{set\_\-xrange}}
+\index{set\_\-xrange@{set\_\-xrange}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-xrange}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-xrange (
+\begin{DoxyParamCaption}
+\item[{const double}]{ iFrom, }
+\item[{const double}]{ iTo}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a4b8d96018f2d2d4e2922d4df153d6a84}
+
+
+set axis -\/ ranges 
+
+
+
+Definition at line 1252 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set xrange[" << iFrom << ":" << iTo << "]";
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-yautoscale@{set\_\-yautoscale}}
+\index{set\_\-yautoscale@{set\_\-yautoscale}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-yautoscale}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::set\_\-yautoscale (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a5b9e1a4e68f94d418a8e9194f168b448}
+autoscale axis (set by default) of yaxis
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 418 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{cmd("set yrange restore");cmd("set autoscale y");return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-ylabel@{set\_\-ylabel}}
+\index{set\_\-ylabel@{set\_\-ylabel}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-ylabel}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-ylabel (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ label = {\ttfamily \char`\"{}x\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_afcb311938827f8718f19ed52d66bad7c}
+
+
+set x axis label 
+
+
+
+Definition at line 1224 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by Gnuplot(), and main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set ylabel \"" << label << "\"";
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-ylogscale@{set\_\-ylogscale}}
+\index{set\_\-ylogscale@{set\_\-ylogscale}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-ylogscale}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-ylogscale (
+\begin{DoxyParamCaption}
+\item[{const double}]{ base = {\ttfamily 10}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a201a802d2f27fece0d39809c4eb3bce0}
+
+
+turns on/off log scaling for the specified yaxis (logscale is not set by default) 
+
+
+
+Definition at line 1120 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set logscale y " << base;
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-yrange@{set\_\-yrange}}
+\index{set\_\-yrange@{set\_\-yrange}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-yrange}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-yrange (
+\begin{DoxyParamCaption}
+\item[{const double}]{ iFrom, }
+\item[{const double}]{ iTo}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a461271b7bfd4f84bdfc0055457226f28}
+
+
+set y-\/axis -\/ ranges 
+
+
+
+Definition at line 1266 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set yrange[" << iFrom << ":" << iTo << "]";
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-zautoscale@{set\_\-zautoscale}}
+\index{set\_\-zautoscale@{set\_\-zautoscale}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-zautoscale}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::set\_\-zautoscale (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_aef3e84e793836158e1ddd773d1465c37}
+autoscale axis (set by default) of zaxis
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 427 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{cmd("set zrange restore");cmd("set autoscale z");return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-zlabel@{set\_\-zlabel}}
+\index{set\_\-zlabel@{set\_\-zlabel}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-zlabel}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-zlabel (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ label = {\ttfamily \char`\"{}z\char`\"{}}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_ab3206e715d20f05cc0dd1eec89ce8b07}
+
+
+set z axis label 
+
+
+
+Definition at line 1237 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by Gnuplot(), and main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set zlabel \"" << label << "\"";
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-zlogscale@{set\_\-zlogscale}}
+\index{set\_\-zlogscale@{set\_\-zlogscale}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-zlogscale}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-zlogscale (
+\begin{DoxyParamCaption}
+\item[{const double}]{ base = {\ttfamily 10}}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a1da3838163b0dbde8809b55c5b5c56b1}
+
+
+turns on/off log scaling for the specified zaxis (logscale is not set by default) 
+
+
+
+Definition at line 1134 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set logscale z " << base;
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!set\_\-zrange@{set\_\-zrange}}
+\index{set\_\-zrange@{set\_\-zrange}!Gnuplot@{Gnuplot}}
+\subsubsection[{set\_\-zrange}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::set\_\-zrange (
+\begin{DoxyParamCaption}
+\item[{const double}]{ iFrom, }
+\item[{const double}]{ iTo}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a7273f6a48024117b4d234d0251106e78}
+
+
+set z-\/axis -\/ ranges 
+
+
+
+Definition at line 1280 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{
+    std::ostringstream cmdstr;
+
+    cmdstr << "set zrange[" << iFrom << ":" << iTo << "]";
+    cmd(cmdstr.str());
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!showonscreen@{showonscreen}}
+\index{showonscreen@{showonscreen}!Gnuplot@{Gnuplot}}
+\subsubsection[{showonscreen}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot} \& Gnuplot::showonscreen (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\label{d3/d27/class_gnuplot_a356d2faaa79f08d13fec9718b776b28d}
+
+
+sets terminal type to terminal\_\-std 
+
+
+
+Definition at line 1065 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main(), and reset\_\-all().
+
+
+
+
+\begin{DoxyCode}
+{
+    cmd("set output");
+    cmd("set terminal " + Gnuplot::terminal_std);
+
+    return *this;
+}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-contour@{unset\_\-contour}}
+\index{unset\_\-contour@{unset\_\-contour}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-contour}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-contour (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a0b8522cb81e46dd4f5a22b7b48f977b1}
+contour is not set by default, it disables contour drawing for surfaces
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 323 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{cmd("unset contour");return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-grid@{unset\_\-grid}}
+\index{unset\_\-grid@{unset\_\-grid}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-grid}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-grid (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a53183e1487bc6977f0d46bf75d19b4d3}
+
+
+grid is not set by default 
+
+
+
+Definition at line 268 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{cmd("unset grid");return *this;}; 
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-hidden3d@{unset\_\-hidden3d}}
+\index{unset\_\-hidden3d@{unset\_\-hidden3d}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-hidden3d}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-hidden3d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_ab8688182047f746090e1e5f2a8c11c9e}
+hidden3d is not set by default
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 311 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{cmd("unset hidden3d"); return *this;}; 
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-legend@{unset\_\-legend}}
+\index{unset\_\-legend@{unset\_\-legend}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-legend}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-legend (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_ace901a18ab1a459213afd3ee0233b5ce}
+
+
+Switches legend off attention:legend is set by default. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 357 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{cmd("unset key"); return *this;}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-multiplot@{unset\_\-multiplot}}
+\index{unset\_\-multiplot@{unset\_\-multiplot}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-multiplot}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-multiplot (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_aad76cdec16cfb5fdf82f45ed2786f4d8}
+unsets the mulitplot mode
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 286 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{cmd("unset multiplot");return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-smooth@{unset\_\-smooth}}
+\index{unset\_\-smooth@{unset\_\-smooth}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-smooth}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-smooth (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_ad9dfbccd66dece1dbe5803605c6ab08c}
+
+
+unset smooth attention: smooth is not set by default 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ a reference to a gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 259 of file gnuplot\_\-i.hpp.
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{ smooth = ""; return *this;}; 
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-surface@{unset\_\-surface}}
+\index{unset\_\-surface@{unset\_\-surface}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-surface}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-surface (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a4ebddacbec61aa3e7bc4b89f508ad621}
+surface is set by default, it disables the display of surfaces (for 3d plot)
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 342 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{cmd("unset surface"); return *this;}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-title@{unset\_\-title}}
+\index{unset\_\-title@{unset\_\-title}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-title}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-title (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_aca0aeb1dc0ac8d7e68ba6a15a977be28}
+
+
+Clears the title of a gnuplot session The title is not set by default. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 384 of file gnuplot\_\-i.hpp.
+
+
+
+References set\_\-title().
+
+
+
+Referenced by main().
+
+
+
+
+\begin{DoxyCode}
+{this->set_title();return *this;}
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-xlogscale@{unset\_\-xlogscale}}
+\index{unset\_\-xlogscale@{unset\_\-xlogscale}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-xlogscale}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-xlogscale (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a7b178184260f1498cd0c11a197ea0ac2}
+turns off log scaling for the x axis
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 444 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{cmd("unset logscale x"); return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-ylogscale@{unset\_\-ylogscale}}
+\index{unset\_\-ylogscale@{unset\_\-ylogscale}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-ylogscale}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-ylogscale (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_a9217543dd49c4802b1194d42c5e10b6d}
+turns off log scaling for the y axis
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 453 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{cmd("unset logscale y"); return *this;};
+\end{DoxyCode}
+
+
+\index{Gnuplot@{Gnuplot}!unset\_\-zlogscale@{unset\_\-zlogscale}}
+\index{unset\_\-zlogscale@{unset\_\-zlogscale}!Gnuplot@{Gnuplot}}
+\subsubsection[{unset\_\-zlogscale}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Gnuplot}\& Gnuplot::unset\_\-zlogscale (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d3/d27/class_gnuplot_afa67f022ca344593b054d7f2e3406c7e}
+turns off log scaling for the z axis
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em -\/-\/-\/}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+$<$-\/-\/ reference to the gnuplot object 
+\end{DoxyReturn}
+
+
+Definition at line 462 of file gnuplot\_\-i.hpp.
+
+
+
+References cmd().
+
+
+
+
+\begin{DoxyCode}
+{cmd("unset logscale z"); return *this;};
+\end{DoxyCode}
+
+
+
+
+The documentation for this class was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+{\bf gnuplot\_\-i.hpp}\end{DoxyCompactItemize}

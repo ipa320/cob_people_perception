@@ -4,4 +4,4 @@ display: false
 
 # display timing information
 # bool
-display_timing: true
+display_timing: false

@@ -1,0 +1,54 @@
+\section{GnuplotException Class Reference}
+\label{d1/dd4/class_gnuplot_exception}\index{GnuplotException@{GnuplotException}}
+
+
+A C++ interface to gnuplot.  
+
+
+
+
+{\ttfamily \#include $<$gnuplot\_\-i.hpp$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\bf GnuplotException} (const std::string \&msg)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+A C++ interface to gnuplot. The interface uses pipes and so won't run on a system that doesn't have POSIX pipe support Tested on Windows (MinGW and Visual C++) and Linux (GCC)
+
+Version history: 0. C interface by N. Devillard (27/01/03) 1. C++ interface: direct translation from the C interface by Rajarshi Guha (07/03/03) 2. corrections for Win32 compatibility by V. Chyzhdzenka (20/05/03) 3. some member functions added, corrections for Win32 and Linux compatibility by M. Burgis (10/03/08)
+
+Requirements: gnuplot has to be installed ({\tt http://www.gnuplot.info/download.html}) for Windows: set Path-\/Variable for \doxyref{Gnuplot}{p.}{d3/d27/class_gnuplot} path (e.g. C:/program files/gnuplot/bin) or set \doxyref{Gnuplot}{p.}{d3/d27/class_gnuplot} path with: \doxyref{Gnuplot::set\_\-GNUPlotPath(const std::string \&path)}{p.}{d3/d27/class_gnuplot_a67cae885c26ced821e335d98986f1967}; 
+
+Definition at line 60 of file gnuplot\_\-i.hpp.
+
+
+
+\subsection{Constructor \& Destructor Documentation}
+\index{GnuplotException@{GnuplotException}!GnuplotException@{GnuplotException}}
+\index{GnuplotException@{GnuplotException}!GnuplotException@{GnuplotException}}
+\subsubsection[{GnuplotException}]{\setlength{\rightskip}{0pt plus 5cm}GnuplotException::GnuplotException (
+\begin{DoxyParamCaption}
+\item[{const std::string \&}]{ msg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  [inline]}}\label{d1/dd4/class_gnuplot_exception_a8b324a9ef4d3f75079d41ecd61c62d44}
+
+
+Definition at line 63 of file gnuplot\_\-i.hpp.
+
+
+
+
+\begin{DoxyCode}
+: std::runtime_error(msg){}
+\end{DoxyCode}
+
+
+
+
+The documentation for this class was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+{\bf gnuplot\_\-i.hpp}\end{DoxyCompactItemize}

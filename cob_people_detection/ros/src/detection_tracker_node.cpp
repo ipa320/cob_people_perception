@@ -61,6 +61,7 @@
 //#### includes ####
 
 #include <cob_people_detection/detection_tracker_node.h>
+#include <munkres/munkres.h>
 
 // standard includes
 //--
@@ -263,7 +264,7 @@ inline double abs(double x) { return ((x<0) ? -x : x); }
 /// Computes the Euclidean distance of a recent faces detection to a current face detection.
 /// If the current face detection is outside the neighborhood of the previous detection, DBL_MAX is returned.
 /// @return The Euclidian distance of both faces or DBL_MAX.
-double DetectionTrackerNode::computeFacePositionDistance(const cob_people_detection_msgs::Detection& previous_detection, const cob_people_detection_msgs::Detection& current_detection)
+double DetectionTrackerNode::computeFacePositionDistanceTrackingRange(const cob_people_detection_msgs::Detection& previous_detection, const cob_people_detection_msgs::Detection& current_detection)
 {
 	const geometry_msgs::Point* point_1 = &(previous_detection.pose.pose.position);
 	const geometry_msgs::Point* point_2 = &(current_detection.pose.pose.position);
@@ -282,6 +283,19 @@ double DetectionTrackerNode::computeFacePositionDistance(const cob_people_detect
 	// return Euclidian distance if both faces are sufficiently close
 	double dist = dx*dx+dy*dy+dz*dz;
 	return dist;
+}
+
+
+double DetectionTrackerNode::computeFacePositionDistance(const cob_people_detection_msgs::Detection& previous_detection, const cob_people_detection_msgs::Detection& current_detection)
+{
+	const geometry_msgs::Point* point_1 = &(previous_detection.pose.pose.position);
+	const geometry_msgs::Point* point_2 = &(current_detection.pose.pose.position);
+
+	double dx = point_1->x - point_2->x;
+	double dy = point_1->y - point_2->y;
+	double dz = point_1->z - point_2->z;
+
+	return sqrt(dx*dx+dy*dy+dz*dz);
 }
 
 
@@ -357,7 +371,7 @@ unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_people_detect
 /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg)
 {
-	// todo: make update rates time dependent!
+	// todo? make update rates time dependent!
 	// NOT USEFUL, as true detections occur with same rate as decay -> so computing power only affects response time to a changed situation
 
 //	Timer tim;
@@ -435,58 +449,123 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 	}
 
 	// match current detections with previous detections
-	// build distance matrix
-	std::map<int, std::map<int, double> > distance_matrix; // 1. index = face_position_accumulator_ index of previous detections, 2. index = index of current detections, content = spatial distance between the indexed faces
-	std::map<int, std::map<int, double> >::iterator distance_matrix_it;
-	for (unsigned int previous_det=0; previous_det<face_position_accumulator_.size(); previous_det++)
-	{
-		std::map<int, double> distance_row;
-		for (unsigned int i=0; i<face_detection_indices.size(); i++)
-			distance_row[face_detection_indices[i]] = computeFacePositionDistance(face_position_accumulator_[previous_det], face_position_msg_in->detections[face_detection_indices[i]]);
-		distance_matrix[previous_det] = distance_row;
-	}
-	if (debug_)
-		std::cout << "Distance matrix.\n";
-
-	// find matching faces between previous and current detections
-	unsigned int number_matchings = (face_position_accumulator_.size() < face_detection_indices.size()) ? face_position_accumulator_.size() : face_detection_indices.size();
 	std::vector<bool> current_detection_has_matching(face_detection_indices.size(), false); // index set for face_detection_indices: contains the indices of face_detection_indices and whether these faces could be matched to previously found faces
-	for (unsigned int m=0; m<number_matchings; m++)
+	// Option 1: greedy procedure
+	if (false)
 	{
-		// find minimum matching distance between any two elements of the distance_matrix
-		double min_dist = DBL_MAX;
-		int previous_min_index, current_min_index;
-		for (distance_matrix_it=distance_matrix.begin(); distance_matrix_it!=distance_matrix.end(); distance_matrix_it++)
+		// build distance matrix
+		std::map<int, std::map<int, double> > distance_matrix; // 1. index = face_position_accumulator_ index of previous detections, 2. index = index of current detections, content = spatial distance between the indexed faces
+		std::map<int, std::map<int, double> >::iterator distance_matrix_it;
+		for (unsigned int previous_det=0; previous_det<face_position_accumulator_.size(); previous_det++)
 		{
-			for (std::map<int, double>::iterator distance_row_it=distance_matrix_it->second.begin(); distance_row_it!=distance_matrix_it->second.end(); distance_row_it++)
+			std::map<int, double> distance_row;
+			for (unsigned int i=0; i<face_detection_indices.size(); i++)
+				distance_row[face_detection_indices[i]] = computeFacePositionDistanceTrackingRange(face_position_accumulator_[previous_det], face_position_msg_in->detections[face_detection_indices[i]]);
+			distance_matrix[previous_det] = distance_row;
+		}
+		if (debug_)
+			std::cout << "Distance matrix.\n";
+
+		// find matching faces between previous and current detections
+		unsigned int number_matchings = (face_position_accumulator_.size() < face_detection_indices.size()) ? face_position_accumulator_.size() : face_detection_indices.size();
+		for (unsigned int m=0; m<number_matchings; m++)
+		{
+			// find minimum matching distance between any two elements of the distance_matrix
+			double min_dist = DBL_MAX;
+			int previous_min_index, current_min_index;
+			for (distance_matrix_it=distance_matrix.begin(); distance_matrix_it!=distance_matrix.end(); distance_matrix_it++)
 			{
-				if (distance_row_it->second < min_dist)
+				for (std::map<int, double>::iterator distance_row_it=distance_matrix_it->second.begin(); distance_row_it!=distance_matrix_it->second.end(); distance_row_it++)
 				{
-					min_dist = distance_row_it->second;
-					previous_min_index = distance_matrix_it->first;
-					current_min_index = distance_row_it->first;
+					if (distance_row_it->second < min_dist)
+					{
+						min_dist = distance_row_it->second;
+						previous_min_index = distance_matrix_it->first;
+						current_min_index = distance_row_it->first;
+					}
 				}
 			}
+
+			// todo: this is a greedy strategy that is likely to fail -> replace by global matching
+			// todo: consider size relation between color and depth image face frames!
+
+			// if there is no matching pair of detections interrupt the search for matchings at this point
+			if (min_dist == DBL_MAX)
+				break;
+
+			// instantiate the matching
+			copyDetection(face_position_msg_in->detections[current_min_index], face_position_accumulator_[previous_min_index], true, previous_min_index);
+			// mark the respective entry in face_detection_indices as labeled
+			for (unsigned int i=0; i<face_detection_indices.size(); i++)
+				if (face_detection_indices[i] == current_min_index)
+					current_detection_has_matching[i] = true;
+
+			// delete the row and column of the found matching so that both detections cannot be involved in any further matching again
+			distance_matrix.erase(previous_min_index);
+			for (distance_matrix_it=distance_matrix.begin(); distance_matrix_it!=distance_matrix.end(); distance_matrix_it++)
+				distance_matrix_it->second.erase(current_min_index);
+		}
+	}
+	// Option 2: global optimum with Hungarian method
+	else
+	{
+		// create the costs matrix (which consist of Eulidean distance in cm and a punishment for dissimilar labels)
+		std::vector< std::vector<int> > costs_matrix(face_position_accumulator_.size(), std::vector<int>(face_detection_indices.size(), 0));
+		if (debug_)
+			std::cout << "Costs matrix.\n";
+		for (unsigned int previous_det=0; previous_det<face_position_accumulator_.size(); previous_det++)
+		{
+			for (unsigned int i=0; i<face_detection_indices.size(); i++)
+			{
+				costs_matrix[previous_det][i] = 100*computeFacePositionDistance(face_position_accumulator_[previous_det], face_position_msg_in->detections[face_detection_indices[i]])
+												+ 100*tracking_range_m_ * (face_position_msg_in->detections[face_detection_indices[i]].label.compare(face_position_accumulator_[previous_det].label)==0 ? 0 : 1);
+				if (debug_)
+					std::cout << costs_matrix[previous_det][i] << "\t";
+			}
+			if (debug_)
+				std::cout << std::endl;
 		}
 
-		// todo: this is a greedy strategy that is likely to fail -> replace by global matching
-		// todo: consider size relation between color and depth image face frames!
+		if (face_position_accumulator_.size()!=0 && face_detection_indices.size()!=0)
+		{
+			// solve assignment problem
+			munkres assignmentProblem;
+			assignmentProblem.set_diag(false);
+			assignmentProblem.load_weights(costs_matrix);
+			int num_rows = std::min(costs_matrix.size(), costs_matrix[0].size());
+			//int num_columns = std::max(costs_matrix.size(), costs_matrix[0].size());
+			ordered_pair *optimalAssignment = new ordered_pair[num_rows];
+			assignmentProblem.assign(optimalAssignment);
+			if (debug_)
+				std::cout << "Assignment problem solved.\n";
 
-		// if there is no matching pair of detections interrupt the search for matchings at this point
-		if (min_dist == DBL_MAX)
-			break;
+			// read out solutions, update face_position_accumulator
+			for (int i = 0; i < num_rows; i++)
+			{
+				int current_match_index = 0, previous_match_index = 0;
+				if (face_position_accumulator_.size() < face_detection_indices.size())
+				{
+					// results are reported with original row and column
+					previous_match_index = optimalAssignment[i].row;
+					current_match_index = optimalAssignment[i].col;
+				}
+				else
+				{
+					// rows and columns are switched in results
+					previous_match_index = optimalAssignment[i].col;
+					current_match_index = optimalAssignment[i].row;
+				}
 
-		// instantiate the matching
-		copyDetection(face_position_msg_in->detections[current_min_index], face_position_accumulator_[previous_min_index], true, previous_min_index);
-		// mark the respective entry in face_detection_indices as labeled
-		for (unsigned int i=0; i<face_detection_indices.size(); i++)
-			if (face_detection_indices[i] == current_min_index)
-				current_detection_has_matching[i] = true;
+				// instantiate the matching
+				copyDetection(face_position_msg_in->detections[current_match_index], face_position_accumulator_[previous_match_index], true, previous_match_index);
+				// mark the respective entry in face_detection_indices as labeled
+				for (unsigned int i=0; i<face_detection_indices.size(); i++)
+					if (face_detection_indices[i] == current_match_index)
+						current_detection_has_matching[i] = true;
+			}
 
-		// delete the row and column of the found matching so that both detections cannot be involved in any further matching again
-		distance_matrix.erase(previous_min_index);
-		for (distance_matrix_it=distance_matrix.begin(); distance_matrix_it!=distance_matrix.end(); distance_matrix_it++)
-			distance_matrix_it->second.erase(current_min_index);
+			delete optimalAssignment;
+		}
 	}
 	if (debug_)
 		std::cout << "Matches found.\n";

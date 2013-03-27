@@ -23,7 +23,7 @@
 #ifndef XNV_POINT_DRAWER_H_
 #define XNV_POINT_DRAWER_H_
 
-#include <XnCppWrapper.h>
+#include <openni/XnCppWrapper.h>
 
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
