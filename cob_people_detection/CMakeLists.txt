@@ -85,7 +85,8 @@ rosbuild_link_boost(face_recognizer_node filesystem system)
 add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 rosbuild_add_executable(detection_tracker_node
-			ros/src/detection_tracker_node.cpp)
+			ros/src/detection_tracker_node.cpp
+			common/src/munkres/munkres.cpp)
 rosbuild_link_boost(detection_tracker_node signals)
 
 rosbuild_add_executable(people_detection_display_node
@@ -105,6 +106,7 @@ rosbuild_link_boost(sensor_message_gateway_node signals)
 rosbuild_add_library(sensor_message_gateway_nodelet
 			ros/src/sensor_message_gateway_node.cpp
 			ros/src/sensor_message_gateway_nodelet.cpp)
+rosbuild_link_boost(sensor_message_gateway_nodelet signals)
 
 rosbuild_add_executable(coordinator_node
 			ros/src/coordinator_node.cpp)
