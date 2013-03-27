@@ -36,6 +36,9 @@ rosbuild_check_for_sse()
 
 rosbuild_add_boost_directories()
 
+find_package(PCL)
+message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
+
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
 #target_link_libraries(${PROJECT_NAME} another_library)
