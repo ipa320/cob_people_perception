@@ -343,7 +343,7 @@ class dlg(wx.Frame):
           self.yale_flag=5
           self.process_protocol(self.process_yale,method,classifier)
         elif(prot_choice==8):
-          self.process_kinect()
+          self.process_protocol(self.process_kinect,method,classifier)
 
     if self.use_xyz_data.Value==True:
       xyz_tag="1"
@@ -399,6 +399,7 @@ class dlg(wx.Frame):
     self.reset_lists()
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
+    print self.cl_list
     protocol_fn()
     self.sync_lists()
     self.print_lists()
@@ -406,6 +407,13 @@ class dlg(wx.Frame):
 
   def run_bin(self,method,classifier,normalize,xyz):
     subprocess.call(["./ssa_test",method,classifier,normalize,xyz])
+
+  def process_kinect2(self):
+    self.ts_list=list()
+    self.pf_list=list()
+    self.file_ops(self.kinect2)
+    ##append empty list for unknown calssifications
+    self.pf_list.append([])
 
   def process_kinect(self):
     self.reset_lists()
@@ -437,7 +445,6 @@ class dlg(wx.Frame):
           curr_files.append(line)
 
 
-    print self.pf_list
     self.pf_list.append([])
     self.sync_lists()
     self.print_lists()
@@ -539,6 +546,40 @@ class dlg(wx.Frame):
         ts.append(f)
     self.pf_list.append(pf)
     self.ts_list.append(ts)
+
+  def kinect2(self,files):
+    ts_list=list()
+    pf_list=list()
+    for file in files:
+      persp=(int(file[-8]))
+      if (persp == 7 or 
+          persp == 11 or
+          persp == 13 or
+          persp == 11 or
+          persp == 1
+         # persp == 14 or
+         # persp==  15 or
+         # persp==  16 or
+         # persp == 17 
+          #persp == 3 or
+          #persp == 2 or
+          #persp == 4 or
+          #persp == 10 or
+          #persp == 12 
+          ):
+        ts_list.append(file)
+      #elif (persp == 7 or 
+      #    persp == 3 or
+      #    persp == 2 or
+      #    persp == 4 or
+      #    persp == 10 or
+      #    persp == 12 
+      #    ):
+      #  pf_list.append(file)
+      else:
+        pf_list.append(file)
+    self.pf_list.append(pf_list)
+    self.ts_list.append(ts_list)
 
   def yale(self, files,k):
    # remove files from ts list

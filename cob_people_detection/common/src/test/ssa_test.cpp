@@ -5,6 +5,7 @@
 #include<opencv/highgui.h>
 #include<iostream>
 #include<fstream>
+#include <sys/time.h>
 
 
 bool preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::Size& norm_size,cv::Mat& dm) {
@@ -274,10 +275,10 @@ int main(int argc, const char *argv[])
   fs["color"]>> img;
   fs.release();
   }
-  else
-  {
-    img=cv::imread(in_vec[i],0);
-  }
+  //else
+  //{
+     img=cv::imread(in_vec[i],0);
+ //}
 
    if(i==0)
    {
@@ -320,10 +321,11 @@ int main(int argc, const char *argv[])
   fs["color"]>> probe_img;
   fs.release();
   }
-  else
-  {
+  //else
+  //{
   probe_img=cv::imread(probe_file_vec[i],0);
-  }
+  //}
+  
 
   cv::imwrite(ostr.str().c_str(),probe_img);
 
@@ -352,6 +354,7 @@ int main(int argc, const char *argv[])
  os_inv.close();
 
   std::cout<<"Size Training Set= "<<img_vec.size()<<std::endl;
+  std::cout<<"Size Test Set= "<<probe_file_vec.size()<<std::endl;
 
   int ss_dim=num_classes;
 
@@ -385,8 +388,13 @@ int main(int argc, const char *argv[])
   int c_EFF;
   cv::Mat coeff_EFF;
   double DFFS_EFF;
+  timeval t1,t2;
+  gettimeofday(&t1,NULL);
   EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
   EFF->classify(coeff_EFF,classifier,c_EFF);
+  gettimeofday(&t2,NULL);
+
+  std::cout<<"classification time" <<(t2.tv_sec - t1.tv_sec) * 1000.0<<std::endl;
   //c_EFF=model->predict(probe);
   //std::cout<<"RGB CLASS"<<c_EFF<<std::endl;
 

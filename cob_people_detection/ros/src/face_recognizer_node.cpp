@@ -75,6 +75,8 @@
 // Boost
 #include <boost/shared_ptr.hpp>
 
+#include <sys/time.h>
+
 
 using namespace ipa_PeopleDetector;
 
@@ -401,9 +403,15 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	bool identification_failed = false;
 	if (enable_face_recognition_ == true)
 	{
+
 		// recognize faces
 		//unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
+
+    //timeval t1,t2;
+    //gettimeofday(&t1,NULL);
 		unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images,heads_depth_images, face_bounding_boxes, identification_labels);
+    //gettimeofday(&t2,NULL);
+    //std::cout<<(t2.tv_sec - t1.tv_sec) * 1000.0<<std::endl;
 		if (result_state == ipa_Utils::RET_FAILED)
 		{
 			ROS_ERROR("FaceRecognizerNode::face_positions_callback: Please load a face recognition model at first.");

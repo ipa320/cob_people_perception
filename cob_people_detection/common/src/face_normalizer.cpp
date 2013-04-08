@@ -44,7 +44,7 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   vis_debug_(false)
 {
   config_.eq_ill=  true;
-  config_.align=   false;
+  config_.align=   true;
   config_.resize=  true;
   config_.cvt2gray=true;
   this->init();
@@ -54,6 +54,7 @@ void FaceNormalizer::init()
 {
   bool home=false;
   fail_ctr=0;
+  succ_ctr=0;
 
   std::string eye_r_path,eye_path,eye_l_path,nose_path,mouth_path;
   if(home)
@@ -140,16 +141,11 @@ void FaceNormalizer::set_norm_face(cv::Size& input_size)
 }
 
 
-bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth)
+bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,std::string path)
 {
-  input_size_=cv::Size(img.cols,img.rows);
-
-
 
   std::cout<<"SAVING SCENE"<<std::endl;
   //std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
-  std::string path_root="/share/goa-tz/people_detection/eval/kinect3d_crops/scene";
-  std::string path= path_root;
   path.append(boost::lexical_cast<std::string>(epoch_ctr));
   save_scene(depth,img,path);
 
@@ -163,7 +159,6 @@ bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth)
 //  cv::imshow("saving rgb...",channels_rgb[2]);
 
 
-  epoch_ctr++;
 
   return true;
 }
@@ -185,9 +180,9 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(record_scene)
   {
     std::cout<<"RECORDING SCENE - NO NORMALIZATION"<<std::endl;
-    captureScene(img,depth);
-    return true;
-  }
+    std::string facepath = "/share/goa-tz/people_detection/eval/kinect3d_face/scene_";
+    captureScene(img,depth,facepath);
+  } 
 
   //std::vector<cv::Mat> channels;
   //cv::split(depth,channels);
@@ -214,6 +209,24 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   //  dump_img(temp_mat,"0_originalRGBD");
   //}
 
+
+
+  //geometric normalization
+  if(config_.align)
+  {
+    if(!normalize_geometry_depth(img,depth))
+    {
+      valid=false ;
+      fail_ctr++;
+      //std::cout<<"FAIL "<< fail_ctr<<std::endl;
+    }
+    else{
+
+      succ_ctr++;
+      //std::cout<<"GOOD "<< succ_ctr<<std::endl;
+    }
+  }
+
   if(config_.cvt2gray)
   {
     if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
@@ -226,18 +239,8 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
     if(debug_)dump_img(img,"1_radiometry");
   }
 
-  //geometric normalization
-  if(config_.align)
-  {
-    if(!normalize_geometry_depth(img,depth)) 
-    {
-      valid=false ;
-      fail_ctr++;
-      std::cout<<"FAIL "<< fail_ctr<<std::endl;
-    }
-    
     if(debug_ && valid)dump_img(img,"1_geometry");
-  }
+  
 
 
   if(config_.resize)
@@ -253,6 +256,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
    cv::waitKey(5);
    }
 
+  epoch_ctr++;
   return valid;
 }
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
@@ -468,6 +472,12 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   //if(debug_)dump_features(img);
   //dump_features(img);
 
+  if(record_scene)
+  {
+    std::cout<<"RECORDING SCENE - NO NORMALIZATION"<<std::endl;
+    std::string featurepath = "/share/goa-tz/people_detection/eval/kinect3d_features/scene_";
+    captureScene(img,depth,featurepath);
+  }
 
 
    //ident_face();
@@ -501,7 +511,6 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    x_new.normalize();
    y_new.normalize();
 
-   y_new<<0,1,0;
    z_new=x_new.cross(y_new);
 
    //std::cout<<"new x\n"<<x_new<<std::endl;

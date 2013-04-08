@@ -160,7 +160,7 @@ class FaceNormalizer{
     void showImg(cv::Mat& img,std::string window_name);
     bool save_scene(cv::Mat& depth,cv::Mat& color,std::string path);
     bool read_scene(cv::Mat& depth,cv::Mat& color,std::string path);
-    bool captureScene( cv::Mat& img,cv::Mat& depth);
+    bool captureScene( cv::Mat& img,cv::Mat& depth,std::string path);
     bool get_feature_correspondences( cv::Mat& img,  cv::Mat& depth, std::vector<cv::Point2f>& img_pts,std::vector<cv::Point3f>& obj_pts);
     bool face_coordinate_system(FACE::FaceFeatures<cv::Point3f>& feat_world,FACE::FaceFeatures<cv::Point3f>& feat_local);
 
@@ -237,6 +237,7 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
 
   void init();
   int fail_ctr;
+  int succ_ctr;
   int epoch_ctr;
   bool debug_;
   bool vis_debug_;

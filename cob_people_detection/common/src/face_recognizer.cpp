@@ -81,6 +81,7 @@
 #include "boost/filesystem/path.hpp"
 
 
+#include <sys/time.h>
 
 
 namespace fs = boost::filesystem;
@@ -748,6 +749,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 }
 unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_image,cv::Mat& depth_image, std::vector<cv::Rect>& face_coordinates, std::vector<std::string>& identification_labels)
 {
+  timeval t1,t2;
+  gettimeofday(&t1,NULL);
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
@@ -776,8 +779,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
     //cv::imshow("color_norm",show_mat);
     //cv::waitKey(5);
     }
-		//return ipa_Utils::RET_FAILED;
 
+    //enable this , when recording
+		//return ipa_Utils::RET_FAILED;
 
      double DFFS;
      cv::Mat temp,temp2;
@@ -794,7 +798,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
       if((eff_depth.trained)&& (m_depth_mode==true))
       {
-        std::cout<<"classification with depth"<<std::endl;
+        //std::cout<<"classification with depth"<<std::endl;
         eff_depth.projectToSubspace(DM_crop,coeff_arr_depth,DFFS);
         eff_depth.classify(coeff_arr_depth,m_class_meth,res_label_depth);
         if(res_label_depth==-1)
@@ -809,7 +813,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
       if(eff_color.trained)
       {
-        std::cout<<"classification with color"<<std::endl;
+        //std::cout<<"classification with color"<<std::endl;
         eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
         eff_color.classify(coeff_arr_color,m_class_meth,res_label_color);
         if(res_label_color==-1)
@@ -858,12 +862,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	//	else
 	//	{
 
-      std::cout<<"CLASS COLOR= "<<class_color<<std::endl;
-      std::cout<<"CLASS DEPTH= "<<class_depth<<std::endl;
+      //std::cout<<"CLASS COLOR= "<<class_color<<std::endl;
+      //std::cout<<"CLASS DEPTH= "<<class_depth<<std::endl;
       identification_labels.push_back(class_color);
 		//}
 	}
 
+  gettimeofday(&t2,NULL);
+  std::cout<< "time ="<<(t2.tv_usec-t1.tv_usec)/1000.0<<std::endl;
 
 	return ipa_Utils::RET_OK;
 }
