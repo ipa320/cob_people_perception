@@ -918,7 +918,6 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   trainModel( img_vec,label_vec, red_dim, method, true,true);
 }
 bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh)
-
 {
   fallback_=fallback;
   use_unknown_thresh_= use_unknown_thresh;

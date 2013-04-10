@@ -32,6 +32,7 @@
 <depend package="cob_image_flip"/>
 <depend package="openni_launch"/>
 <depend package="dynamic_reconfigure"/>
+<depend package="image_view"/>
 
 <export>
   <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>

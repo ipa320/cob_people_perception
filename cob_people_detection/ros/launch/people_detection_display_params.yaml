@@ -1,0 +1,7 @@
+# display the results if true
+# bool
+display: false
+
+# display timing information
+# bool
+display_timing: false

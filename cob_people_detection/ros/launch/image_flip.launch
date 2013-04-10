@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- sensor message gateway node (forwards sensor messages in a desired rate) -->
+  <node name="kinect_image_flip" pkg="cob_image_flip" ns="/cob_image_flip" type="kinect_image_flip" output="screen"> <!--launch-prefix="valgrind"-->
+    <rosparam command="load" file="$(find cob_people_detection)/ros/launch/image_flip_params.yaml"/>
+    <remap from="~pointcloud_in" to="/cob_people_detection/sensor_message_gateway/pointcloud_rgb_out"/>
+    <remap from="~pointcloud_out" to="/cob_people_detection/image_flip/pointcloud_rgb_out"/>
+    <remap from="~colorimage_in" to="/cob_people_detection/sensor_message_gateway/colorimage_out"/>
+    <remap from="~colorimage_out" to="/cob_people_detection/image_flip/colorimage_out"/>
+  </node>
+
+</launch>

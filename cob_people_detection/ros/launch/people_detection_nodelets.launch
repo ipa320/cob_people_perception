@@ -1,20 +1,19 @@
 <?xml version="1.0"?>
 
 <launch>
-  <arg name="using_nodelets" value="false"/>
+  <arg name="using_nodelets" value="true"/>
 
+  <include file="$(find cob_people_detection)/ros/launch/image_flip_nodelet.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/head_detector.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/face_detector.launch"/>
-  <!--include file="$(find cob_people_detection)/ros/launch/face_normalizer.launch"/-->
   <include file="$(find cob_people_detection)/ros/launch/face_recognizer.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/detection_tracker.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/people_detection_display.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/face_capture.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/sensor_message_gateway.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/image_flip.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/coordinator.launch">
     <arg name="using_nodelets" value="$(arg using_nodelets)"/>
   </include>
+  <include file="$(find cob_people_detection)/ros/launch/sensor_message_gateway_nodelet.launch"/>
 
 
 

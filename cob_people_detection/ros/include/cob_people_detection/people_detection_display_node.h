@@ -72,6 +72,7 @@
 
 // ROS message includes
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <cob_people_detection_msgs/DetectionArray.h>
 #include <cob_people_detection_msgs/ColorDepthImageArray.h>
 
@@ -91,6 +92,10 @@
 // boost
 #include <boost/bind.hpp>
 
+// point cloud
+#include <pcl/point_types.h>
+#include <pcl_ros/point_cloud.h>
+
 // external includes
 #include "cob_vision_utils/GlobalDefines.h"
 
@@ -101,10 +106,13 @@ class PeopleDetectionDisplayNode
 {
 protected:
 	//message_filters::Subscriber<sensor_msgs::PointCloud2> shared_image_sub_; ///< Shared xyz image and color image topic
-	image_transport::ImageTransport* it_;
 //	image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
-	image_transport::SubscriberFilter color_image_sub_; ///< Color camera image topic
+
+	image_transport::ImageTransport* it_;
+	image_transport::SubscriberFilter colorimage_sub_; ///< Color camera image topic
 	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_3_;
+//	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::PointCloud2> >* sync_input_3_;
+//	message_filters::Subscriber<sensor_msgs::PointCloud2> pointcloud_sub_;
 	message_filters::Subscriber<cob_people_detection_msgs::ColorDepthImageArray> face_detection_subscriber_; ///< receives the face messages from the face detector
 	message_filters::Subscriber<cob_people_detection_msgs::DetectionArray> face_recognition_subscriber_; ///< receives the face messages from the detection tracker
 
@@ -112,16 +120,9 @@ protected:
 
 	ros::NodeHandle node_handle_; ///< ROS node handle
 
-//	// parameters
-//	bool display_; ///< if on, several debug outputs are activated
-//	bool use_people_segmentation_; ///< enables the combination of face detections with the openni people segmentation
-//	double face_redetection_time_; ///< timespan during which a face is preserved in the list of tracked faces although it is currently not visible
-//	double min_segmented_people_ratio_color_; ///< the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker)
-//	double min_segmented_people_ratio_range_; ///< the minimum area inside the face rectangle found in the range image that has to be covered with positive people segmentation results (from openni_tracker)
-//	double tracking_range_m_; ///< maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked
-//	double face_identification_score_decay_rate_; ///< face identification score decay rate (0 < x < 1), i.e. the score for each label at a certain detection location is multiplied by this factor
-//	double min_face_identification_score_to_publish_; ///< minimum face identification score to publish (0 <= x < max_score), i.e. this score must be exceeded by a label at a detection location before the person detection is published (higher values increase robustness against short misdetections, but consider the maximum possible score max_score w.r.t. the face_identification_score_decay_rate: new_score = (old_score+1)*face_identification_score_decay_rate --> max_score = face_identification_score_decay_rate/(1-face_identification_score_decay_rate))
-//	bool fall_back_to_unknown_identification_; ///< if this is true, the unknown label will be assigned for the identification of a person if it has the highest score, otherwise, the last detection of a name will display as label even if there has been a detection of Unknown recently for that face
+	// parameters
+	bool display_; ///< if on, several debug outputs are activated
+	bool display_timing_;
 
 public:
 
@@ -132,7 +133,8 @@ public:
 	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image);
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-	void inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
+	void inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& colorimage_msg);
+//	void inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg);
 };
 
 };

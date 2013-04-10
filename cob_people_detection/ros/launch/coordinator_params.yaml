@@ -1,3 +1,4 @@
-# namespace of the pipeline's sensor message gateway
+# namespace of the pipeline's sensor message gateway -> now automatically set in launch file
 # string
-namespace_gateway: "/cob_people_detection"
+#namespace_gateway: "/cam3d_nodelet_manager"
+#namespace_gateway: "/cob_people_detection/sensor_message_gateway/sensor_message_gateway"
