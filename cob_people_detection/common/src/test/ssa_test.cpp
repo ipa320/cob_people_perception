@@ -54,7 +54,7 @@ int main(int argc, const char *argv[])
 
   FaceNormalizer::FNConfig config;
   config.eq_ill=true;
-  config.align=true;
+  config.align=false;
   config.resize=true;
   config.cvt2gray=true;
   FaceNormalizer* fn=new FaceNormalizer(config);
