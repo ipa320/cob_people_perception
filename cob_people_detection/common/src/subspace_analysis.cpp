@@ -603,7 +603,6 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
         //diff_row=diff_row/eigenvalue_arr_;
 
         temp=cv::norm(diff_row,cv::NORM_L2);
-        std::cout<<temp<<std::endl;
         if(temp < minDIFS )
         {
           minDIFSindex=r;
@@ -1152,9 +1151,9 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
         std::cout<<"2DLDA"<<std::endl;
         //initiate PCA
         lda2d_=SubspaceAnalysis::LDA2D(img_vec,label_vec,num_classes_,ss_dim_);
-        eigenvector_arr_=lda2d_.eigenvecs.clone();
-        eigenvalue_arr_=lda2d_.eigenvals.clone();
-        avg_arr_=lda2d_.mean.clone();
+        eigenvector_arr_=lda2d_.eigenvecs;
+        eigenvalue_arr_=lda2d_.eigenvals;
+        avg_arr_=lda2d_.mean;
         break;
       }
 
@@ -1397,7 +1396,7 @@ SubspaceAnalysis::LDA2D::LDA2D(std::vector<cv::Mat>& input_data,std::vector<int>
  cv::Mat P;
  gemm(S_intra_inv,S_inter,1.0,cv::Mat(),0.0,P);
 
- decompose(P);
+ decompose3(P);
 
 
  eigenvecs=eigenvecs(cv::Rect(0,0,input_data[0].cols,ss_dim));

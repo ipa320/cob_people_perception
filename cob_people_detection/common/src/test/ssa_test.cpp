@@ -365,7 +365,13 @@ int main(int argc, const char *argv[])
   SubspaceAnalysis::FishEigFaces* EFF=new SubspaceAnalysis::FishEigFaces();
   // calculate Model
   //method=SubspaceAnalysis::METH_LDA2D;
+  timeval t1,t2,t3,t4;
+  gettimeofday(&t1,NULL);
   EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
+  gettimeofday(&t2,NULL);
+
+  std::cout<<">>>>>>>>>>training time" <<(t2.tv_usec - t1.tv_usec) / 1000.0<<std::endl;
+
   std::cout<<"EFF model computed"<<std::endl;
   //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
@@ -387,14 +393,13 @@ int main(int argc, const char *argv[])
   //cv::Ptr<cv::FaceRecognizer> model=cv::createLBPHFaceRecognizer();
   //model->train(img_vec, label_vec);
 
+  gettimeofday(&t3,NULL);
   for(int i=0;i<probe_mat_vec.size();i++)
   {
     cv::Mat probe = probe_mat_vec[i];
   int c_EFF;
   cv::Mat coeff_EFF;
   double DFFS_EFF;
-  timeval t1,t2;
-  gettimeofday(&t1,NULL);
   if(method==SubspaceAnalysis::METH_LDA2D)
   {
   std::vector<cv::Mat> coeff_EFF_vec;
@@ -406,9 +411,6 @@ int main(int argc, const char *argv[])
   EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
   EFF->classify(coeff_EFF,classifier,c_EFF);
   }
-  gettimeofday(&t2,NULL);
-
-  //std::cout<<"classification time" <<(t2.tv_sec - t1.tv_sec) * 1000.0<<std::endl;
 
   //c_EFF=model->predict(probe);
   //std::cout<<"RGB CLASS"<<c_EFF<<std::endl;
@@ -429,6 +431,9 @@ int main(int argc, const char *argv[])
   //Output to classified file
   os<<c_EFF<<"\n";
   }
+  gettimeofday(&t4,NULL);
+  std::cout<<">>>>>>>>>>recognition time" <<(t4.tv_usec - t3.tv_usec) / 1000.0<<std::endl;
+
   os.close();
   std::cout<<"EFF classified"<<std::endl;
 
