@@ -129,6 +129,11 @@ int main(int argc, const char *argv[])
     std::cout<<"EIGEN"<<std::endl;
     method = SubspaceAnalysis::METH_EIGEN;
   }
+  else if(!method_str.compare("LDA2D"))
+  {
+    std::cout<<"LDA2D"<<std::endl;
+    method = SubspaceAnalysis::METH_LDA2D;
+  }
   else
   {
     std::cout<<"ERROR: invalid method - use FISHER or EIGEN"<<std::endl;
@@ -359,6 +364,7 @@ int main(int argc, const char *argv[])
 
   SubspaceAnalysis::FishEigFaces* EFF=new SubspaceAnalysis::FishEigFaces();
   // calculate Model
+  //method=SubspaceAnalysis::METH_LDA2D;
   EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
   std::cout<<"EFF model computed"<<std::endl;
   //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
@@ -389,11 +395,21 @@ int main(int argc, const char *argv[])
   double DFFS_EFF;
   timeval t1,t2;
   gettimeofday(&t1,NULL);
+  if(method==SubspaceAnalysis::METH_LDA2D)
+  {
+  std::vector<cv::Mat> coeff_EFF_vec;
+  EFF->projectToSubspace2D(probe,coeff_EFF_vec,DFFS_EFF);
+  EFF->classify(coeff_EFF_vec[0],classifier,c_EFF);
+  }
+  else
+  {
   EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
   EFF->classify(coeff_EFF,classifier,c_EFF);
+  }
   gettimeofday(&t2,NULL);
 
-  std::cout<<"classification time" <<(t2.tv_sec - t1.tv_sec) * 1000.0<<std::endl;
+  //std::cout<<"classification time" <<(t2.tv_sec - t1.tv_sec) * 1000.0<<std::endl;
+
   //c_EFF=model->predict(probe);
   //std::cout<<"RGB CLASS"<<c_EFF<<std::endl;
 

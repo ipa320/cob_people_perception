@@ -67,7 +67,8 @@ namespace SubspaceAnalysis{
   {
     METH_FISHER,
     METH_EIGEN,
-    METH_IFLDA
+    METH_IFLDA,
+    METH_LDA2D
     //METH_OCV_FISHER
   };
 
@@ -87,6 +88,7 @@ namespace SubspaceAnalysis{
     //void classify(cv::Mat& src_mat,int& class_index);
     void classify(cv::Mat& coeff_arr,Classifier method,int& class_index);
     void projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS);
+    void projectToSubspace2D(cv::Mat& probe_mat,std::vector<cv::Mat>& coeff_vec,double& DFFS);
     void releaseModel();
     bool verifyClassification(cv::Mat& sample,int& index);
     bool saveModel(std::string path);
@@ -96,6 +98,7 @@ namespace SubspaceAnalysis{
 
     protected:
     void project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,cv::Mat& coeff_mat);
+    void project2D(std::vector<cv::Mat>& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,std::vector<cv::Mat>& coeff_mat);
     void reconstruct(cv::Mat& coeffs,cv::Mat& proj_mat,cv::Mat& avg,cv::Mat& rec_im);
     void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
     void calcDFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS);
@@ -113,6 +116,7 @@ namespace SubspaceAnalysis{
     cv::Mat avg_arr_;
     cv::Mat model_data_arr_;
     cv::Mat proj_model_data_arr_;
+    std::vector<cv::Mat> proj_model_data_vec_;
     cv::Mat model_label_arr_;
 
     int num_classes_;
@@ -148,6 +152,7 @@ namespace SubspaceAnalysis{
       void decompose();
       void decompose(cv::Mat& data_mat);
       void decompose2(cv::Mat& data_mat);
+      void decompose3(cv::Mat& data_mat);
       //Interface methods
       void retrieve(cv::Mat& proj,cv::Mat& avg,cv::Mat& proj_model_data);
 
@@ -157,6 +162,34 @@ namespace SubspaceAnalysis{
       int ss_dim_;
   };
 
+  class PCA2D:public SSA
+  {
+
+    public:
+      PCA2D(){};
+      PCA2D(std::vector<cv::Mat>& input_data,std::vector<int>& input_labels,int& num_classes,int& ss_dim);
+      virtual ~PCA2D(){};
+
+
+      int num_classes_;
+      std::vector<int> unique_labels_;
+
+      cv::Mat class_mean_arr;
+  };
+  class LDA2D:public SSA
+  {
+
+    public:
+      LDA2D(){};
+      LDA2D(std::vector<cv::Mat>& input_data,std::vector<int>& input_labels,int& num_classes,int& ss_dim);
+      virtual ~LDA2D(){};
+
+
+      int num_classes_;
+      std::vector<int> unique_labels_;
+
+      cv::Mat class_mean_arr;
+  };
 
   class LDA:public SSA
   {
@@ -243,6 +276,7 @@ namespace SubspaceAnalysis{
     protected:
     SubspaceAnalysis::PCA pca_;
     SubspaceAnalysis::LDA lda_;
+    SubspaceAnalysis::LDA2D lda2d_;
     bool fallback_;
   };
 

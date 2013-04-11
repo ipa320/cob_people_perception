@@ -97,7 +97,7 @@ class dlg(wx.Frame):
     self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS","RandomForest"])
 
     method_choice_txt=wx.StaticText(parent,-1,"Select Method")
-    self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces","IFLDA"])
+    self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces","IFLDA","2D LDA"])
 
     self.nrm_checkbox=wx.CheckBox(parent,label="normalize")
 
@@ -228,6 +228,8 @@ class dlg(wx.Frame):
       method="EIGEN"
     elif self.method_choice.GetCurrentSelection()==2:
       method="IFLDA"
+    elif self.method_choice.GetCurrentSelection()==3:
+      method="LDA2D"
 
     if self.classifier_choice.GetCurrentSelection()==0:
       classifier="KNN"
@@ -302,6 +304,8 @@ class dlg(wx.Frame):
       method="EIGEN"
     elif self.method_choice.GetCurrentSelection()==2:
       method="IFLDA"
+    elif self.method_choice.GetCurrentSelection()==3:
+      method="LDA2D"
 
     if self.classifier_choice.GetCurrentSelection()==0:
       classifier="KNN"

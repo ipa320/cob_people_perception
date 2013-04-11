@@ -77,13 +77,13 @@ rosbuild_add_library(virtual_camera
   common/src/virtual_camera.cpp)
 target_link_libraries(virtual_camera  opencv_core )
 
-#-----------------------------------------------------------------------
-#-------------------Tests
-#-----------------------------------------------------------------------
 rosbuild_add_library(subspace_analysis
   common/src/subspace_analysis.cpp)
 target_link_libraries(subspace_analysis  opencv_core  opencv_highgui )
 rosbuild_link_boost(subspace_analysis system filesystem)
+#-----------------------------------------------------------------------
+#-------------------Tests
+#-----------------------------------------------------------------------
 
 rosbuild_add_executable(face_normalizer_test
       common/src/test/fn_test.cpp
