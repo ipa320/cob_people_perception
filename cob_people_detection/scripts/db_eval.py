@@ -97,7 +97,7 @@ class dlg(wx.Frame):
     self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS","RandomForest"])
 
     method_choice_txt=wx.StaticText(parent,-1,"Select Method")
-    self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces","IFLDA","2D LDA"])
+    self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces","IFLDA","2D LDA","2D PCA"])
 
     self.nrm_checkbox=wx.CheckBox(parent,label="normalize")
 
@@ -230,6 +230,8 @@ class dlg(wx.Frame):
       method="IFLDA"
     elif self.method_choice.GetCurrentSelection()==3:
       method="LDA2D"
+    elif self.method_choice.GetCurrentSelection()==4:
+      method="PCA2D"
 
     if self.classifier_choice.GetCurrentSelection()==0:
       classifier="KNN"
@@ -306,6 +308,8 @@ class dlg(wx.Frame):
       method="IFLDA"
     elif self.method_choice.GetCurrentSelection()==3:
       method="LDA2D"
+    elif self.method_choice.GetCurrentSelection()==4:
+      method="PCA2D"
 
     if self.classifier_choice.GetCurrentSelection()==0:
       classifier="KNN"
@@ -895,10 +899,11 @@ class Evaluator():
       sigma=0.0
 
 
-    print self.epochs[-1].tp
-    print self.epochs[-1].tn
-    print self.epochs[-1].fp
-    print self.epochs[-1].fn
+   # #remove comment to display true positive and fals positive
+   # print self.epochs[-1].tp
+   # print self.epochs[-1].tn
+   # print self.epochs[-1].fp
+   # print self.epochs[-1].fn
     stats={"succes_rate":1-mean_error_rate,"m_err":mean_error_rate,"sigma":sigma,"reps":len(self.epochs)}
 
 

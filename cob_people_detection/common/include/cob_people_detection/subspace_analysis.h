@@ -68,7 +68,8 @@ namespace SubspaceAnalysis{
     METH_FISHER,
     METH_EIGEN,
     METH_IFLDA,
-    METH_LDA2D
+    METH_LDA2D,
+    METH_PCA2D
     //METH_OCV_FISHER
   };
 
@@ -277,6 +278,7 @@ namespace SubspaceAnalysis{
     SubspaceAnalysis::PCA pca_;
     SubspaceAnalysis::LDA lda_;
     SubspaceAnalysis::LDA2D lda2d_;
+    SubspaceAnalysis::PCA2D pca2d_;
     bool fallback_;
   };
 

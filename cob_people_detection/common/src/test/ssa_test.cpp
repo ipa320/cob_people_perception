@@ -6,6 +6,7 @@
 #include<iostream>
 #include<fstream>
 #include <sys/time.h>
+#include <boost/timer.hpp>
 
 
 bool preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::Size& norm_size,cv::Mat& dm) {
@@ -133,6 +134,11 @@ int main(int argc, const char *argv[])
   {
     std::cout<<"LDA2D"<<std::endl;
     method = SubspaceAnalysis::METH_LDA2D;
+  }
+  else if(!method_str.compare("PCA2D"))
+  {
+    std::cout<<"PCA2D"<<std::endl;
+    method = SubspaceAnalysis::METH_PCA2D;
   }
   else
   {
@@ -364,13 +370,15 @@ int main(int argc, const char *argv[])
 
   SubspaceAnalysis::FishEigFaces* EFF=new SubspaceAnalysis::FishEigFaces();
   // calculate Model
-  //method=SubspaceAnalysis::METH_LDA2D;
-  timeval t1,t2,t3,t4;
-  gettimeofday(&t1,NULL);
+  
+ // timeval t1,t2,t3,t4;
+ // gettimeofday(&t1,NULL);
+  boost::timer::timer t;
   EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
-  gettimeofday(&t2,NULL);
+  //gettimeofday(&t2,NULL);jj
 
-  std::cout<<">>>>>>>>>>training time" <<(t2.tv_usec - t1.tv_usec) / 1000.0<<std::endl;
+
+  std::cout<<">>>>>>>>>>training time = " <<t.elapsed()<<std::endl;
 
   std::cout<<"EFF model computed"<<std::endl;
   //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
@@ -388,19 +396,16 @@ int main(int argc, const char *argv[])
   //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
   std::ofstream os(path.c_str() );
 
-  //opencv
-  //cv::Ptr<cv::FaceRecognizer> model = cv::createFisherFaceRecognizer();
-  //cv::Ptr<cv::FaceRecognizer> model=cv::createLBPHFaceRecognizer();
-  //model->train(img_vec, label_vec);
 
-  gettimeofday(&t3,NULL);
+  //restart timer
+  t.restart();
   for(int i=0;i<probe_mat_vec.size();i++)
   {
     cv::Mat probe = probe_mat_vec[i];
   int c_EFF;
   cv::Mat coeff_EFF;
   double DFFS_EFF;
-  if(method==SubspaceAnalysis::METH_LDA2D)
+  if(method==SubspaceAnalysis::METH_LDA2D || method==SubspaceAnalysis::METH_PCA2D)
   {
   std::vector<cv::Mat> coeff_EFF_vec;
   EFF->projectToSubspace2D(probe,coeff_EFF_vec,DFFS_EFF);
@@ -431,8 +436,7 @@ int main(int argc, const char *argv[])
   //Output to classified file
   os<<c_EFF<<"\n";
   }
-  gettimeofday(&t4,NULL);
-  std::cout<<">>>>>>>>>>recognition time" <<(t4.tv_usec - t3.tv_usec) / 1000.0<<std::endl;
+  std::cout<<">>>>>>>>>>recognition time = " <<t.elapsed()<<std::endl;
 
   os.close();
   std::cout<<"EFF classified"<<std::endl;
