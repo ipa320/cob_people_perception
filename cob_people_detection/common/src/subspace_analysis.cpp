@@ -492,6 +492,7 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 
       break;
     }
+    case SubspaceAnalysis::CLASS_SVM:
     {
       // train SVM when not already trained
       if(!svm_trained_)
@@ -570,10 +571,16 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
       {
         // subtract matrices
         cv::Mat work_mat;
+        //L1 norm
+        //cv::absdiff (probe_mat,proj_model_data_vec_[m],work_mat);
         cv::subtract (probe_mat,proj_model_data_vec_[m],work_mat);
         cv::pow(work_mat,2,work_mat);
+        //cv::sqrt(work_mat,work_mat);
         cv::Mat tmp_vec=cv::Mat::zeros(1,probe_mat.cols,CV_64FC1);
         cv::reduce(work_mat,tmp_vec,0,CV_REDUCE_SUM);
+
+        //maha. dist
+        //tmp_vec=tmp_vec/eigenvalue_arr_;
         cv::Scalar temp=cv::sum(tmp_vec);
 
         //temp=0;
@@ -608,7 +615,7 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
         //std::cout<<eigenvalue_arr_<<std::endl;
         //diff_row=diff_row/eigenvalue_arr_;
 
-        temp=cv::norm(diff_row,cv::NORM_L2);
+        temp=cv::norm(diff_row,cv::NORM_L1);
         if(temp < minDIFS )
         {
           minDIFSindex=r;
@@ -1025,7 +1032,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   ss_dim_=red_dim;
   // set subspace dimension here for 2D* and Eigenfaces methods
   //ss_dim_=num_classes_-1;
-  ss_dim_=5;
+  //ss_dim_=50;
   if(img_vec.size()<ss_dim_+1)
   {
     error_prompt("trainModel()","Invalid subspace dimension");
