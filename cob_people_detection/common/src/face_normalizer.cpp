@@ -49,7 +49,7 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
                                   vis_debug_(false)
 {
   config_.eq_ill=  true;
-  config_.align=   true;
+  config_.align=   false;
   config_.resize=  true;
   config_.cvt2gray=true;
   this->init();

@@ -4,7 +4,7 @@
 
 # this flag enables or disables the face recognition step
 # bool
-enable_face_recognition: false
+enable_face_recognition: true
 
 # this list specifies the persons who shall be recognized by the face recognizer, comment out this line to avoid any specification at startup
 # string[] e.g. ['albert', 'bernhard', 'caesar']
@@ -32,7 +32,7 @@ classification_method: 0
 
 # is unknown threshold supposed to be utilized: true = use unknown threshold, false = do not use threshold
 # bool
-use_unknown_thresh: true
+use_unknown_thresh: false
 
 # use depth
 use_depth: false
