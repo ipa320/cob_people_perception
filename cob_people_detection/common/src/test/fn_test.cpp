@@ -41,7 +41,7 @@ int main(int argc, const char *argv[])
   cv::equalizeHist(depth,depth);
 
   //fn.normalizeFace(wmat1,norm_size);
- fn.dump_img(wmat1,"processedRGB");
+ fn.dump_img(wmat1,"processed_color");
 
   std::cout<<"..done\n";
   return 0;

@@ -308,8 +308,8 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
 
 bool FaceNormalizer::normalize_radiometry(cv::Mat& img)
 {
-   dct(img);
-    //tan(img);
+   //dct(img);
+    tan(img);
   //logAbout(img);
 
   return true;
@@ -487,28 +487,32 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
    if(!features_from_depth(depth)) return false;
 
-   Eigen::Vector3f x_new,y_new,z_new,lefteye,nose,righteye,eye_middle;
+   Eigen::Vector3f temp,x_new,y_new,z_new,lefteye,nose,righteye,eye_middle;
 
    nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
    lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
    righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
+   eye_middle=lefteye+((righteye-lefteye)*0.5);
+
    x_new<<f_det_xyz_.righteye.x-f_det_xyz_.lefteye.x,f_det_xyz_.righteye.y-f_det_xyz_.lefteye.y,f_det_xyz_.righteye.z-f_det_xyz_.lefteye.z;
+   temp<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2]);
+   z_new=x_new.cross(temp);
+   x_new.normalize();
+   z_new.normalize();
+   y_new=x_new.cross(z_new);
+
+   if(y_new[1]<0) y_new*=-1;
 
    Eigen::Vector3f nose_flat=nose;
    nose_flat[2]+=0.03;
-   eye_middle=lefteye+((x_new.dot(nose_flat-lefteye))/(x_new.dot(x_new)))*x_new;
 //   std::cout<<"left"<<lefteye<<std::endl;
 //   std::cout<<"middle"<<eye_middle<<std::endl;
 //   std::cout<<"right"<<righteye<<std::endl;
   //eye_middle<<(f_det_xyz_.righteye.x+ f_det_xyz_.lefteye.x)*0.5,(f_det_xyz_.righteye.y+ f_det_xyz_.lefteye.y)*0.5,(f_det_xyz_.righteye.z+ f_det_xyz_.lefteye.z)*0.5;
 
-   //y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2]);
    //y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],0;
-   y_new<<0,1,0;
-   x_new.normalize();
-   y_new.normalize();
+   //y_new<<0,1,0;
 
-   z_new=x_new.cross(y_new);
 
    //std::cout<<"new x\n"<<x_new<<std::endl;
    //std::cout<<"new y\n"<<y_new<<std::endl;
@@ -528,30 +532,31 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    // }
    Eigen::Affine3f trafo;
    Eigen::Vector3f origin;
-   origin<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
    origin=nose;
-   //origin[2]=0;
-   //origin<< 0,0,0;
-   //origin[2]=0;
+   //origin=eye_middle;
 
    pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,origin,trafo);
    //trafo.setIdentity();
 
-  float roll,pitch,yaw;
-  //pcl::getEulerAngles(trafo,roll,pitch,yaw);
-  //std::cout<<"roll= "<<roll<<"pitch= "<<pitch<<"yaw= "<<yaw<<std::endl;
+
+    double view_offset=0.8;
+
+    Eigen::AngleAxis<float> roll(-0.78, Eigen::Vector3f(1,0,0));
+    //Eigen::AngleAxis<float> roll(-0.7, x_new);
+
 
 
    cv::Vec3f* ptr=depth.ptr<cv::Vec3f>(0,0);
    Eigen::Vector3f pt;
-   //double view_offset=2.2;
-   double view_offset=0.5;
+   //double view_offset=0.5;
+
+   trafo=Eigen::Translation<float,3>(0, 0, view_offset)*roll*trafo;
 
    for(int i=0;i<img.total();i++)
    {
      pt<<(*ptr)[0],(*ptr)[1],(*ptr)[2];
      pt=trafo*pt;
-     pt[2]+=view_offset;
+
     (*ptr)[0]=pt[0];
     (*ptr)[1]=pt[1];
     (*ptr)[2]=pt[2];
@@ -580,27 +585,31 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
    //determine bounding box
 
-   float s=2.2;
+   //TODO value used normaly 2.2
+   float s=3.5;
    int dim_x=(righteye_uv.x-lefteye_uv.x)*s;
    int off_x=((righteye_uv.x-lefteye_uv.x)*s -(righteye_uv.x-lefteye_uv.x))/2;
-   int off_y=off_x+10;
+   int off_y=off_x;
    //int dim_y=(nose_uv.y-lefteye_uv.y)*4;
    int dim_y=dim_x;
 
    //cv::Rect roi=cv::Rect(round(lefteye_uv.x-off_x),round(lefteye_uv.y-off_y),dim_x,dim_y);
-   cv::Rect roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5-20),dim_x,dim_y);
+   cv::Rect roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5),dim_x,dim_y);
 
   cv::Mat imgres;
   if(img.channels()==3)imgres=cv::Mat::zeros(480,640,CV_8UC3);
   if(img.channels()==1)imgres=cv::Mat::zeros(480,640,CV_8UC1);
   cv::Mat dmres=cv::Mat::zeros(480,640,CV_32FC3);
 
-  kinect.sample_pc(depth,img,imgres,dmres);
+  kinect.sample_pc_NEW(depth,img,imgres,dmres);
   //cv::imshow("img",imgres);
   //cv::waitKey(0);
 
-  //TODO
-  if(roi.height<=0 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows) return false;
+  if(roi.height<=1 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows)
+  {
+    std::cout<<"image ROI out of limits"<<std::endl;
+    return false;
+  }
 
  // std::cout<<"imgres "<<imgres.rows<<" "<<imgres.cols<<std::endl;
  // std::cout<<"depthres "<<dmres.rows<<" "<<dmres.cols<<std::endl;
@@ -614,8 +623,10 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 //imgres.copyTo(img);
 //dmres.copyTo(depth);
 
+  //TODO temporary switch off
   despeckle<unsigned char>(img,img);
-  cv::blur(img,img,cv::Size(3,3));
+  //cv::blur(img,img,cv::Size(3,3));
+
   //only take central region
   img=img(cv::Rect(2,2,img.cols-4,img.rows-4));
 

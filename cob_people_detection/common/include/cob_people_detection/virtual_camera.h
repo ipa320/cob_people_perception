@@ -25,6 +25,7 @@ public:
   void calc_intrinsics();
 
   void sample_pc(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img,cv::Mat& depth_map);
+  void sample_pc_NEW(cv::Mat& pc_xyzPtr,cv::Mat& pc_rgbPtr,cv::Mat& img,cv::Mat& depth_map);
   void sample_point(cv::Point3f& p_xyz,cv::Point2f& p_uv);
   void resample_pc_indirect(cv::Mat& src,cv::Mat& dst,cv::Mat& homo);
   bool calc_homography(std::vector<cv::Point2f> src_pts, std::vector<cv::Point2f> dst_pts,cv::Mat& homo);
