@@ -514,8 +514,8 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 
       // predict using svm
       cv::Mat sample;
+      coeff_arr=coeff_arr.reshape(1,1);
       coeff_arr.convertTo(sample,CV_32FC1);
-      //class_index=(int)svm_.predict(sample);
      class_index=(int)svm_.predict(sample);
 
       break;
@@ -565,6 +565,7 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
 {
     double temp;
     minDIFS=std::numeric_limits<int>::max();
+    // if feature matrices not feature vectors ( 2D methods)
     if(probe_mat.rows>1)
     {
       for(int m=0;m<proj_model_data_vec_.size();m++)
@@ -1032,7 +1033,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   ss_dim_=red_dim;
   // set subspace dimension here for 2D* and Eigenfaces methods
   //ss_dim_=num_classes_-1;
-  //ss_dim_=50;
+  ss_dim_=5;
   if(img_vec.size()<ss_dim_+1)
   {
     error_prompt("trainModel()","Invalid subspace dimension");
@@ -1059,9 +1060,18 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
   model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
-  proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
   eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
   eigenvalue_arr_=cv::Mat(1,ss_dim_-1,CV_64FC1);
+
+  if (method==SubspaceAnalysis::METH_LDA2D || method==SubspaceAnalysis::METH_PCA2D)
+  {
+    proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_*img_vec[0].rows,CV_64FC1);
+  }
+  else
+  {
+
+    proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
+  }
 
   for(int i=0;i<label_vec.size();i++)
   {
@@ -1085,8 +1095,13 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
         }
         //subspace dimension is num classes -1
         ss_dim_=num_classes_ -1;
+
         // pca dimension  is N- num classes
         pca_dim=model_data_arr_.rows-num_classes_;
+        if(pca_dim<1)
+        {
+          pca_dim=num_classes_;
+        }
         // Reduce dimension to  N - c via PCA
         pca_=SubspaceAnalysis::PCA(model_data_arr_,pca_dim);
         proj_model_data_arr_PCA=cv::Mat(model_data_arr_.rows,pca_dim,CV_64FC1);
@@ -1192,6 +1207,14 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   if (method==SubspaceAnalysis::METH_LDA2D || method == SubspaceAnalysis::METH_PCA2D)
   {
     project2D(img_vec,eigenvector_arr_,avg_arr_,proj_model_data_vec_);
+
+    for(int i=0;i<proj_model_data_vec_.size();i++)
+    {
+      cv::Mat curr_row=proj_model_data_arr_.row(i);
+
+      curr_row=proj_model_data_vec_[i].reshape(1,1);
+    }
+
   }
   else
   {

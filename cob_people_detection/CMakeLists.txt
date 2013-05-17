@@ -34,6 +34,7 @@ rosbuild_gensrv()
 rosbuild_check_for_sse()
 #set(SSE_FLAGS "-msse2 -mfpmath=sse")
 
+find_package(Boost 1.42.0)
 rosbuild_add_boost_directories()
 
 find_package(PCL)

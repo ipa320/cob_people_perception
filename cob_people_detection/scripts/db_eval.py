@@ -493,7 +493,7 @@ class dlg(wx.Frame):
     self.pf_list.append([])
 
   def process_leave_1_out(self):
-    self.file_ops(self.leave_k_out,1)
+    self.file_ops(self.leave_k_out,9)
     ##append empty list for unknown calssifications
     self.pf_list.append([])
 
@@ -548,7 +548,7 @@ class dlg(wx.Frame):
     for f in files:
       name=os.path.split(f)[1]
       if name[0]=="_":
-        print name
+        #print name
         pf.append(f)
       else:
         ts.append(f)

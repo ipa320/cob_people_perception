@@ -26,7 +26,7 @@ FaceNormalizer::FaceNormalizer(int i_epoch_ctr,bool i_debug,bool i_record_scene,
   this->init();
 }
 FaceNormalizer::FaceNormalizer(FNConfig& config): epoch_ctr(0),
-                                  debug_(false),
+                                  debug_(true),
                                   record_scene(false),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
@@ -253,6 +253,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   cv::resize(depth,depth,norm_size_,0,0);
   }
 
+  if(debug_)dump_img(img,"2_size");
    if(vis_debug_)
    {
    cv::imshow("resized",img);
@@ -471,7 +472,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
   // detect features
   if(!features_from_color(img))return false;
-  //if(debug_)dump_features(img);
+  if(debug_)dump_features(img);
   //dump_features(img);
 
   if(record_scene)
@@ -586,7 +587,8 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
    //determine bounding box
 
    //TODO value used normaly 2.2
-   float s=3.5;
+   //float s=3.5;
+   float s=3.8;
    int dim_x=(righteye_uv.x-lefteye_uv.x)*s;
    int off_x=((righteye_uv.x-lefteye_uv.x)*s -(righteye_uv.x-lefteye_uv.x))/2;
    int off_y=off_x;
@@ -602,6 +604,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
   cv::Mat dmres=cv::Mat::zeros(480,640,CV_32FC3);
 
   kinect.sample_pc_NEW(depth,img,imgres,dmres);
+  if(debug_)dump_img(imgres,"uncropped");
   //cv::imshow("img",imgres);
   //cv::waitKey(0);
 
@@ -891,7 +894,7 @@ void FaceNormalizer::dump_features(cv::Mat& img)
    //cv::circle(img2,cv::Point(f_det_img_.mouth.x,f_det_img_.mouth.y),5,CV_RGB(0,255,0));
    cv::circle(img2,cv::Point(f_det_img_.lefteye.x,f_det_img_.lefteye.y),5,CV_RGB(255,255,0));
    cv::circle(img2,cv::Point(f_det_img_.righteye.x,f_det_img_.righteye.y),5,CV_RGB(255,0,255));
-   dump_img(img2,"2a_features");
+   if(debug_)dump_img(img2,"2a_features");
    if(vis_debug_)
    {
    cv::imshow("features",img2);

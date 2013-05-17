@@ -12,7 +12,7 @@ int main(int argc, const char *argv[])
   FaceNormalizer::FNConfig cfg;
   cfg.eq_ill=false;
   cfg.align=true;
-  cfg.resize=false;
+  cfg.resize=true;
   cfg.cvt2gray=true;
 
   FaceNormalizer fn(cfg);
@@ -32,7 +32,7 @@ int main(int argc, const char *argv[])
   img.copyTo(wmat1);
   img.copyTo(wmat2);
   fn.dump_img(wmat1,"original");
-  cv::Size norm_size=cv::Size(160,160);
+  cv::Size norm_size=cv::Size(100,100);
   //cv::cvtColor(wmat1,wmat1,CV_RGB2BGR);
 
   cv::Mat depth_res;

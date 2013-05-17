@@ -55,7 +55,7 @@ int main(int argc, const char *argv[])
 
   FaceNormalizer::FNConfig config;
   config.eq_ill=true;
-  config.align=true;
+  config.align=false;
   config.resize=true;
   config.cvt2gray=true;
   FaceNormalizer* fn=new FaceNormalizer(config);
@@ -370,14 +370,17 @@ int main(int argc, const char *argv[])
 
   SubspaceAnalysis::FishEigFaces* EFF=new SubspaceAnalysis::FishEigFaces();
   // calculate Model
-  
+
  // timeval t1,t2,t3,t4;
  // gettimeofday(&t1,NULL);
   boost::timer::timer t;
   EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
   //gettimeofday(&t2,NULL);jj
 
+  std::string timing_path = "/share/goa-tz/people_detection/eval/eval_tool_files/timing";
+  std::ofstream os_timing(timing_path.c_str(),std::ofstream::app );
 
+  os_timing<<t.elapsed()<<",";
   std::cout<<">>>>>>>>>>training time = " <<t.elapsed()<<std::endl;
 
   std::cout<<"EFF model computed"<<std::endl;
@@ -437,6 +440,7 @@ int main(int argc, const char *argv[])
   os<<c_EFF<<"\n";
   }
   std::cout<<">>>>>>>>>>recognition time = " <<t.elapsed()<<std::endl;
+  os_timing<<t.elapsed()<<std::endl;
 
   os.close();
   std::cout<<"EFF classified"<<std::endl;
