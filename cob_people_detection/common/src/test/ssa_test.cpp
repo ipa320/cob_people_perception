@@ -373,7 +373,7 @@ int main(int argc, const char *argv[])
 
  // timeval t1,t2,t3,t4;
  // gettimeofday(&t1,NULL);
-  boost::timer::timer t;
+  boost::timer t;
   EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
   //gettimeofday(&t2,NULL);jj
 
