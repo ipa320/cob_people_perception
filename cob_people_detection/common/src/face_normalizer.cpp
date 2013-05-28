@@ -26,7 +26,7 @@ FaceNormalizer::FaceNormalizer(int i_epoch_ctr,bool i_debug,bool i_record_scene,
   this->init();
 }
 FaceNormalizer::FaceNormalizer(FNConfig& config): epoch_ctr(0),
-                                  debug_(true),
+                                  debug_(false),
                                   record_scene(false),
                                   //HOME
                                   //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
@@ -309,8 +309,8 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
 
 bool FaceNormalizer::normalize_radiometry(cv::Mat& img)
 {
-   //dct(img);
-    tan(img);
+   dct(img);
+    //tan(img);
   //logAbout(img);
 
   return true;
@@ -420,11 +420,11 @@ void FaceNormalizer::dct(cv::Mat& input_img)
 
   //---------------------------------------
   img.at<float>(0,0)=C_00;
-  img.at<float>(0,1)/=50;
-  img.at<float>(0,2)/=50;
+  img.at<float>(0,1)/=10;
+  img.at<float>(0,2)/=10;
 
-  img.at<float>(1,0)/=50;
-  img.at<float>(1,1)/=50;
+  img.at<float>(1,0)/=10;
+  img.at<float>(1,1)/=10;
 
   //img.at<float>(1,0)=0;
   //--------------------------------------
@@ -588,7 +588,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
    //TODO value used normaly 2.2
    //float s=3.5;
-   float s=3.8;
+   float s=3.3;
    int dim_x=(righteye_uv.x-lefteye_uv.x)*s;
    int off_x=((righteye_uv.x-lefteye_uv.x)*s -(righteye_uv.x-lefteye_uv.x))/2;
    int off_y=off_x;
@@ -597,6 +597,8 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
    //cv::Rect roi=cv::Rect(round(lefteye_uv.x-off_x),round(lefteye_uv.y-off_y),dim_x,dim_y);
    cv::Rect roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5),dim_x,dim_y);
+
+   if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
 
   cv::Mat imgres;
   if(img.channels()==3)imgres=cv::Mat::zeros(480,640,CV_8UC3);

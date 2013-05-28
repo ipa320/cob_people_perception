@@ -38,10 +38,11 @@ class dlg(wx.Frame):
     self.invalid_list=list()
 
 
-    with open(self.invalid_file_path,"r") as input_stream:
-      self.invalid_list=input_stream.read().splitlines()
-
-    print self.invalid_list
+    if os.path.isfile(self.invalid_file_path):
+      with open(self.invalid_file_path,"r") as input_stream:
+        self.invalid_list=input_stream.read().splitlines()
+      print "invalid list loaded"
+      print self.invalid_list
 
 
     self.makeLayout(self.f)
@@ -94,10 +95,10 @@ class dlg(wx.Frame):
     self.spin_rep=wx.SpinCtrl(parent,-1,size=wx.Size(50,30),min=1,max=60)
 
     #classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
-    self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS","RandomForest"])
+    self.classifier_choice=wx.Choice(parent,-1,choices=["MIN DIFFS","KNN","SVM","RandomForest"])
 
     method_choice_txt=wx.StaticText(parent,-1,"Select Method")
-    self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces","IFLDA","2D LDA","2D PCA"])
+    self.method_choice=wx.Choice(parent,-1,choices=["2D LDA","Fisherfaces","Eigenfaces","IFLDA","2D PCA"])
 
     self.nrm_checkbox=wx.CheckBox(parent,label="normalize")
 
@@ -223,22 +224,22 @@ class dlg(wx.Frame):
     classifier=str()
     xyz_tag=str()
     if self.method_choice.GetCurrentSelection()==0:
-      method="FISHER"
-    elif self.method_choice.GetCurrentSelection()==1:
-      method="EIGEN"
-    elif self.method_choice.GetCurrentSelection()==2:
-      method="IFLDA"
-    elif self.method_choice.GetCurrentSelection()==3:
       method="LDA2D"
+    elif self.method_choice.GetCurrentSelection()==1:
+      method="FISHER"
+    elif self.method_choice.GetCurrentSelection()==2:
+      method="EIGEN"
+    elif self.method_choice.GetCurrentSelection()==3:
+      method="IFLDA"
     elif self.method_choice.GetCurrentSelection()==4:
       method="PCA2D"
 
     if self.classifier_choice.GetCurrentSelection()==0:
-      classifier="KNN"
-    elif self.classifier_choice.GetCurrentSelection()==1:
-      classifier="SVM"
-    elif self.classifier_choice.GetCurrentSelection()==2:
       classifier="DIFFS"
+    elif self.classifier_choice.GetCurrentSelection()==1:
+      classifier="KNN"
+    elif self.classifier_choice.GetCurrentSelection()==2:
+      classifier="SVM"
     elif self.classifier_choice.GetCurrentSelection()==3:
       classifier="RF"
 
@@ -301,22 +302,22 @@ class dlg(wx.Frame):
     classifier=str()
     xyz_tag=str()
     if self.method_choice.GetCurrentSelection()==0:
-      method="FISHER"
-    elif self.method_choice.GetCurrentSelection()==1:
-      method="EIGEN"
-    elif self.method_choice.GetCurrentSelection()==2:
-      method="IFLDA"
-    elif self.method_choice.GetCurrentSelection()==3:
       method="LDA2D"
+    elif self.method_choice.GetCurrentSelection()==1:
+      method="FISHER"
+    elif self.method_choice.GetCurrentSelection()==2:
+      method="EIGEN"
+    elif self.method_choice.GetCurrentSelection()==3:
+      method="IFLDA"
     elif self.method_choice.GetCurrentSelection()==4:
       method="PCA2D"
 
     if self.classifier_choice.GetCurrentSelection()==0:
-      classifier="KNN"
-    elif self.classifier_choice.GetCurrentSelection()==1:
-      classifier="SVM"
-    elif self.classifier_choice.GetCurrentSelection()==2:
       classifier="DIFFS"
+    elif self.classifier_choice.GetCurrentSelection()==1:
+      classifier="KNN"
+    elif self.classifier_choice.GetCurrentSelection()==2:
+      classifier="SVM"
     elif self.classifier_choice.GetCurrentSelection()==3:
       classifier="RF"
 
@@ -337,6 +338,7 @@ class dlg(wx.Frame):
         elif(self.protocol_choice.GetCurrentSelection()==2):
           self.process_protocol(self.process_manual,method,classifier)
         elif(self.protocol_choice.GetCurrentSelection()==3):
+          output_file=os.path.join(self.output_path,"eval_file")
           self.process_protocol(self.process_unknown,method,classifier)
         elif(prot_choice==4):
           self.yale_flag=2
@@ -396,7 +398,7 @@ class dlg(wx.Frame):
     del self.ts_list[:]
     del self.pf_list[:]
     del self.cl_list[:]
-
+    del self.unknown_list[:]
 
 
 #*****************************************************
@@ -407,7 +409,7 @@ class dlg(wx.Frame):
     self.reset_lists()
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
-    print self.cl_list
+    #print self.cl_list
     protocol_fn()
     self.sync_lists()
     self.print_lists()
@@ -486,6 +488,8 @@ class dlg(wx.Frame):
 
     self.file_ops(self.unknown,k)
     self.pf_list.append(self.unknown_list)
+    del k[:]
+    del rnd_list[:]
 
   def process_leave_half_out(self):
     self.file_ops(self.leave_k_out,"half")
@@ -493,7 +497,7 @@ class dlg(wx.Frame):
     self.pf_list.append([])
 
   def process_leave_1_out(self):
-    self.file_ops(self.leave_k_out,9)
+    self.file_ops(self.leave_k_out,1)
     ##append empty list for unknown calssifications
     self.pf_list.append([])
 
@@ -668,6 +672,7 @@ class dlg(wx.Frame):
       else:
         num_samples=len(files)
         n=num_samples/2
+        #n=9
         success_ctr=0
         rnd_list=list()
         pf_list=list()
@@ -709,6 +714,8 @@ class dlg(wx.Frame):
             if s in ts:
               ts.remove(s)
 
+    #print "length list%i"%len(self.pf_list[0])
+    #print "length list%i"%len(self.ts_list[0])
 
   def evaluate(self):
 
@@ -824,6 +831,8 @@ class epoch():
     fp_list=list()
     #false negative
     fn_list=list()
+    #false id
+    fi_list=list()
     for i in xrange(len(self.gt)):
         if (int(self.gt[i]) == int(self.res[i])):
           error_list.append(0)
@@ -832,11 +841,13 @@ class epoch():
             fn_list.append(0)
             tn_list.append(0)
             tp_list.append(1)
+            fi_list.append(0)
           elif int(self.gt[i]) ==-1:
             fp_list.append(0)
             fn_list.append(0)
             tn_list.append(1)
             tp_list.append(0)
+            fi_list.append(0)
         else:
           error_list.append(1)
           if int(self.gt[i])==-1:
@@ -844,11 +855,15 @@ class epoch():
             fn_list.append(0)
             tn_list.append(0)
             tp_list.append(0)
-          elif int(self.gt[i]) >-1:
+            fi_list.append(0)
+          elif int(self.gt[i]) >-1 and int(self.res[i])==-1:
             fp_list.append(0)
             fn_list.append(1)
             tn_list.append(0)
             tp_list.append(0)
+            fi_list.append(0)
+          elif int(self.gt[i]) >-1 and int(self.res[i])>-1:
+            fi_list.append(1)
 
     n=len(error_list)
     self.error_rate=float(sum(error_list))/float(n)
@@ -856,14 +871,19 @@ class epoch():
     self.tn=sum(tn_list)
     self.fp=sum(fp_list)
     self.fn=sum(fn_list)
+    self.fi=sum(fi_list)
 
 class Evaluator():
   def __init__(self,invalid_list=0):
     if invalid_list==0:
       self.invalid_files=list()
     else:
-      with open(invalid_list,"r") as input_stream:
-        self.invalid_files=input_stream.read().splitlines()
+      if os.path.exists(invalid_list):
+        with open(invalid_list,"r") as input_stream:
+            self.invalid_files=input_stream.read().splitlines()
+      else:
+        self.invalid_files=list()
+
     print "EVALUATOR instantiated"
     self.epochs=list()
     self.epoch_ctr=0
@@ -900,10 +920,8 @@ class Evaluator():
 
 
    # #remove comment to display true positive and fals positive
-   # print self.epochs[-1].tp
-   # print self.epochs[-1].tn
-   # print self.epochs[-1].fp
-   # print self.epochs[-1].fn
+
+    self.print_ave_values(self.epochs)
     stats={"succes_rate":1-mean_error_rate,"m_err":mean_error_rate,"sigma":sigma,"reps":len(self.epochs)}
 
 
@@ -915,6 +933,30 @@ class Evaluator():
       err.append(e.error_rate)
 
     return err
+
+  def print_ave_values(self,l):
+    ave_tp=0.0
+    ave_tn=0.0
+    ave_fp=0.0
+    ave_fn=0.0
+    ave_fi=0.0
+    for el in l:
+      ave_tp+=el.tp
+      ave_tn+=el.tn
+      ave_fp+=el.fp
+      ave_fn+=el.fn
+      ave_fi+=el.fi
+    ave_tp/=len(l)
+    ave_tn/=len(l)
+    ave_fp/=len(l)
+    ave_fn/=len(l)
+    ave_fi/=len(l)
+
+    print "True positives:   %f"%   ave_tp
+    print "True negatives:   %f"%   ave_tn
+    print "False positives:  %f"%  ave_fp
+    print "False negatives:  %f"%  ave_fn
+    print "False identities: %f"% ave_fi
 
   def show_last(self):
     err=self.epochs[-1].error_rate

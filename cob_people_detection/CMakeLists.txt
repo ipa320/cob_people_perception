@@ -80,8 +80,12 @@ target_link_libraries(virtual_camera  opencv_core )
 
 rosbuild_add_library(subspace_analysis
   common/src/subspace_analysis.cpp)
-target_link_libraries(subspace_analysis  opencv_core  opencv_highgui )
+target_link_libraries(subspace_analysis  opencv_core  opencv_highgui decomposition)
 rosbuild_link_boost(subspace_analysis system filesystem)
+
+#library for eigenvalue decomposition of asymmetric matrices
+rosbuild_add_library(decomposition
+  common/src/decomposition.cpp)
 #-----------------------------------------------------------------------
 #-------------------Tests
 #-----------------------------------------------------------------------

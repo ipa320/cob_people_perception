@@ -106,7 +106,9 @@ namespace SubspaceAnalysis{
     void calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& minDIFScoeffs);
     void mat2arr(cv::Mat& src_mat,cv::Mat& dst_mat);
     void calc_threshold(cv::Mat& data,double& thresh);
+    void calc_threshold2d(std::vector<cv::Mat>& data,double& thresh);
     void calc_threshold(cv::Mat& data,std::vector<cv::Mat>& thresh);
+    bool is_known(double& d,double& thresh);
 
 
 
@@ -150,10 +152,9 @@ namespace SubspaceAnalysis{
       virtual ~SSA(){};
       void calcDataMat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
       void calcDataMatMean(cv::Mat& data,cv::Mat& mean_row);
-      void decompose();
-      void decompose(cv::Mat& data_mat);
-      void decompose2(cv::Mat& data_mat);
-      void decompose3(cv::Mat& data_mat);
+      void decomposeSVD(cv::Mat& data_mat);
+      void decomposeSymmetricMatrix(cv::Mat& data_mat);
+      void decomposeAsymmetricMatrix(cv::Mat& data_mat);
       //Interface methods
       void retrieve(cv::Mat& proj,cv::Mat& avg,cv::Mat& proj_model_data);
 
@@ -232,6 +233,7 @@ namespace SubspaceAnalysis{
     PCA(cv::Mat& input_data,int& ss_dim);
     virtual ~PCA(){};
     virtual void calcProjMatrix(cv::Mat& data);
+    void PCA_OpenCv(cv::Mat& input_data,int& ss_dim);
   };
 
   class Eigenfaces:public XFaces

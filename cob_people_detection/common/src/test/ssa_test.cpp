@@ -286,10 +286,10 @@ int main(int argc, const char *argv[])
   fs["color"]>> img;
   fs.release();
   }
-  //else
-  //{
+  else
+  {
      img=cv::imread(in_vec[i],0);
- //}
+ }
 
    if(i==0)
    {
@@ -332,10 +332,10 @@ int main(int argc, const char *argv[])
   fs["color"]>> probe_img;
   fs.release();
   }
-  //else
-  //{
+  else
+  {
   probe_img=cv::imread(probe_file_vec[i],0);
-  //}
+  }
   
 
   cv::imwrite(ostr.str().c_str(),probe_img);

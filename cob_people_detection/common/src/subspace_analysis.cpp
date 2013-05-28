@@ -4,6 +4,7 @@
 #include "boost/filesystem/convenience.hpp"
 #include "boost/filesystem/path.hpp"
 #include <boost/thread/mutex.hpp>
+#include<thirdparty/decomposition.hpp>
 
 void SubspaceAnalysis::error_prompt(std::string fct,std::string desc)
 {
@@ -142,6 +143,7 @@ void SubspaceAnalysis::XFaces::project2D(std::vector<cv::Mat>& src_mats,cv::Mat&
   cv::Mat tmp;
   //std::cout<<src_mats[i].rows<<" "<<src_mats[i].cols<<std::endl;
   //std::cout<<proj_mat.rows<<" "<<proj_mat.cols<<std::endl;
+  
   cv::gemm(src_mats[i],proj_mat,1.0,cv::Mat(),0.0,tmp,cv::GEMM_2_T);
   coeff_mat_vec.push_back(tmp);
   }
@@ -391,6 +393,65 @@ void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,std::vector<cv::Mat>
     thresh[j]=sigma*curr_row;
   }
 }
+void SubspaceAnalysis::XFaces::calc_threshold2d(std::vector<cv::Mat>& data,double& thresh)
+{
+  //TODO implemented brute force method -> optimization
+  // implement for case when Di>Pi
+  //  don't use until that....
+  std::vector<double> P(num_classes_,std::numeric_limits<double>::max());
+  std::vector<double> D(num_classes_,std::numeric_limits<double>::min());
+  std::vector<double> Phi(num_classes_,std::numeric_limits<double>::max());
+
+      for(int m=0;m<proj_model_data_vec_.size();m++)
+      {
+    }
+
+  for(int i=0;i<data.size();i++)
+  {
+    for(int n=0;n<data.size();n++)
+    {
+      if(n==i) continue;
+
+        // subtract matrices
+        cv::Mat work_mat;
+        //L1 norm
+        //cv::absdiff (probe_mat,proj_model_data_vec_[m],work_mat);
+        cv::subtract (data[i],data[n],work_mat);
+        cv::pow(work_mat,2,work_mat);
+        //cv::sqrt(work_mat,work_mat);
+        cv::Mat tmp_vec=cv::Mat::zeros(1,data[i].cols,CV_64FC1);
+        cv::reduce(work_mat,tmp_vec,0,CV_REDUCE_SUM);
+
+        //maha. dist
+        //tmp_vec=tmp_vec/eigenvalue_arr_;
+        cv::Scalar temp=cv::sum(tmp_vec);
+      double dist = temp.val[0];
+      if(model_label_arr_.at<float>(n)==model_label_arr_.at<float>(i))
+      {
+        D[model_label_arr_.at<float>(i)]=std::max(dist,D[model_label_arr_.at<float>(i)]);
+      }
+      else
+      {
+        P[model_label_arr_.at<float>(i)]=std::min(dist,P[model_label_arr_.at<float>(i)]);
+      }
+    }
+  }
+
+  // if only one class - P =D
+  if(num_classes_==1)
+  {
+    P[0]=D[0];
+  }
+
+  for(int c=0;c<num_classes_;c++)
+  {
+    thresh=std::min(thresh,(P[c]+D[c]) *0.2);
+    //std::cout<<"c"<<c<<": "<<D[c]<<" "<<P[c]<<std::endl;
+  }
+  std::cout<<"THRESH for db: "<<thresh<<std::endl;
+
+
+}
 void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,double& thresh)
 {
   //TODO implemented brute force method -> optimization
@@ -454,11 +515,11 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
   }
 
 
+  double minDIFS;
   switch(method)
   {
     case SubspaceAnalysis::CLASS_DIFS:
     {
-      double minDIFS;
       cv::Mat minDIFScoeffs;
       int minDIFSindex;
       calcDIFS(coeff_arr,minDIFSindex,minDIFS,minDIFScoeffs);
@@ -553,7 +614,9 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 
   if(use_unknown_thresh_)
   {
-    verifyClassification(coeff_arr,class_index);
+    //if(! verifyClassification(coeff_arr,class_index))class_index=-1;
+    if(! is_known(minDIFS,thresh_))class_index=-1;
+
   }
   return;
 
@@ -603,20 +666,21 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
           }
         }
     }
+    // for 1D methods
     else
     {
       for(int r=0;r<proj_model_data_arr_.rows;r++)
       {
         cv::Mat model_mat=proj_model_data_arr_.row(r);
         cv::Mat diff_row;
-        cv::subtract(probe_mat,model_mat,diff_row);
-        diff_row=diff_row.mul(diff_row);
+        //cv::subtract(probe_mat,model_mat,diff_row);
+        //diff_row=diff_row.mul(diff_row);
         //std::cout<<diff_row.rows<<","<<diff_row.cols<<std::endl;
         //std::cout<<eigenvalue_arr_.rows<<","<<eigenvalue_arr_.cols<<std::endl;
         //std::cout<<eigenvalue_arr_<<std::endl;
         //diff_row=diff_row/eigenvalue_arr_;
 
-        temp=cv::norm(diff_row,cv::NORM_L1);
+        temp=cv::norm(probe_mat,model_mat,cv::NORM_L2);
         if(temp < minDIFS )
         {
           minDIFSindex=r;
@@ -650,6 +714,15 @@ void SubspaceAnalysis::XFaces::releaseModel()
 
 }
 
+
+bool SubspaceAnalysis::XFaces::is_known(double& d,double& thresh)
+{
+
+  if( d>thresh) return false;
+  else return true;
+
+}
+
 bool SubspaceAnalysis::XFaces::verifyClassification(cv::Mat& sample,int& index)
 {
 
@@ -664,9 +737,11 @@ bool SubspaceAnalysis::XFaces::verifyClassification(cv::Mat& sample,int& index)
       minDIFS=std::min(dist,minDIFS);
     }
   }
+
+  // Decision
   if(minDIFS>thresh_)
   {
-    std::cout<<"NEW threshold: unknown "<<minDIFS<<std::endl;
+    //std::cout<<"NEW threshold: unknown "<<minDIFS<<std::endl;
     index=-1;
     return false;
   }
@@ -827,7 +902,7 @@ bool SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vect
 
 
   // combine projection matrices
-  cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
+  cv::gemm(P_pca.t(),P_lda,1.0,cv::Mat(),0.0,eigenvector_arr_);
   //cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
 
   eigenvector_arr_=eigenvector_arr_.t();
@@ -1032,8 +1107,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   //check if input has the same size
   ss_dim_=red_dim;
   // set subspace dimension here for 2D* and Eigenfaces methods
-  //ss_dim_=num_classes_-1;
-  ss_dim_=5;
+  ss_dim_=num_classes_-1;
   if(img_vec.size()<ss_dim_+1)
   {
     error_prompt("trainModel()","Invalid subspace dimension");
@@ -1097,6 +1171,8 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
         ss_dim_=num_classes_ -1;
 
         // pca dimension  is N- num classes
+        std::cout<< num_classes_<<"<-> C"<<std::endl;
+        std::cout<< model_data_arr_.rows - num_classes_<<"<-> N-C"<<std::endl;
         pca_dim=model_data_arr_.rows-num_classes_;
         if(pca_dim<1)
         {
@@ -1224,10 +1300,15 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
 
 
   //calc_threshold(proj_model_data_arr_,thresholds_);
-  //// TODO NOT WORKING FOR 2DLDA
-  if(method!=SubspaceAnalysis::METH_LDA2D || method!=SubspaceAnalysis::METH_PCA2D)
-  {
   if(use_unknown_thresh_)
+  {
+  if(method==SubspaceAnalysis::METH_LDA2D || method==SubspaceAnalysis::METH_PCA2D)
+  {
+  std::cout<<"calculating threshold 2d..";
+  calc_threshold2d(proj_model_data_vec_,thresh_);
+  std::cout<<"done"<<std::endl;
+  }
+  else
   {
   std::cout<<"calculating threshold...";
   calc_threshold(proj_model_data_arr_,thresh_);
@@ -1265,24 +1346,22 @@ void SubspaceAnalysis::SSA::calcDataMatMean(cv::Mat& data,cv::Mat& mean_row)
 }
 
 
-void SubspaceAnalysis::SSA::decompose2(cv::Mat& data_mat)
+void SubspaceAnalysis::SSA::decomposeAsymmetricMatrix(cv::Mat& data_mat)
 {
-
-  cv::Mat zero_mat=cv::Mat::zeros(1,data_mat.cols,CV_64FC1);
-  cv::PCA pca(data_mat,zero_mat,CV_PCA_DATA_AS_ROW,ss_dim_);
-  eigenvecs=pca.eigenvectors;
-  //svd.u.copyTo(eigenvecs);
-  //svd.w.copyTo(eigenvals);
-  eigenvals=pca.eigenvalues;
-
+EigenvalueDecomposition es(data_mat);
+eigenvals=es.eigenvalues();
+eigenvals=eigenvals.reshape(1,1).t();
+eigenvecs=es.eigenvectors();
+eigenvecs=eigenvecs.t();
 
 }
-void SubspaceAnalysis::SSA::decompose(cv::Mat& data_mat)
+void SubspaceAnalysis::SSA::decomposeSVD(cv::Mat& data_mat)
 {
 
   data_mat.convertTo(data_mat,CV_64F,1/sqrt(data_mat.rows));
   cv::SVD svd(data_mat.t());
   eigenvecs=svd.u;
+  //svd output is transposed
   //svd.u.copyTo(eigenvecs);
   eigenvecs=eigenvecs.t();
   //svd.w.copyTo(eigenvals);
@@ -1291,7 +1370,7 @@ void SubspaceAnalysis::SSA::decompose(cv::Mat& data_mat)
 
 }
 
-void SubspaceAnalysis::SSA::decompose3(cv::Mat& data_mat)
+void SubspaceAnalysis::SSA::decomposeSymmetricMatrix(cv::Mat& data_mat)
 {
 
   cv::eigen(data_mat,eigenvals,eigenvecs);
@@ -1333,7 +1412,7 @@ SubspaceAnalysis::PCA2D::PCA2D(std::vector<cv::Mat>& input_data,std::vector<int>
   }
 
   P/=input_data.size();
-  decompose3(P);
+  decomposeSymmetricMatrix(P);
  eigenvecs=eigenvecs(cv::Rect(0,0,input_data[0].cols,ss_dim));
  eigenvals=eigenvals(cv::Rect(0,0,1,ss_dim)).t();
 
@@ -1432,8 +1511,7 @@ SubspaceAnalysis::LDA2D::LDA2D(std::vector<cv::Mat>& input_data,std::vector<int>
  cv::Mat P;
  gemm(S_intra_inv,S_inter,1.0,cv::Mat(),0.0,P);
 
- decompose3(P);
-
+ decomposeSymmetricMatrix(P);
 
  eigenvecs=eigenvecs(cv::Rect(0,0,input_data[0].cols,ss_dim));
  eigenvals=eigenvals(cv::Rect(0,0,1,ss_dim)).t();
@@ -1536,7 +1614,7 @@ void SubspaceAnalysis::LDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& l
   cv::Mat P;
   gemm(S_intra_inv,S_inter,1.0,cv::Mat(),0.0,P);
 
-  decompose(P);
+  decomposeAsymmetricMatrix(P);
 
   return;
 
@@ -1642,7 +1720,7 @@ void SubspaceAnalysis::ILDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& 
   cv::Mat P;
   gemm(S_intra_inv,S_inter,1.0,cv::Mat(),0.0,P);
 
-  decompose(P);
+  decomposeAsymmetricMatrix(P);
 
   return;
 
@@ -1653,7 +1731,10 @@ void SubspaceAnalysis::ILDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& 
 //
 SubspaceAnalysis::PCA::PCA(cv::Mat& input_data,int& ss_dim)
 {
+
   ss_dim_=ss_dim;
+  PCA_OpenCv(input_data,ss_dim);
+  return;
   cv::Mat data_work=input_data.clone();
   mean=cv::Mat::zeros(1,data_work.cols,CV_64FC1);
   calcDataMatMean(data_work,mean);
@@ -1672,6 +1753,21 @@ SubspaceAnalysis::PCA::PCA(cv::Mat& input_data,int& ss_dim)
 
 
 }
+void SubspaceAnalysis::PCA::PCA_OpenCv(cv::Mat& input_data,int& ss_dim)
+{
+  ss_dim_=ss_dim;
+  cv::PCA ocv_pca(input_data,cv::Mat(),CV_PCA_DATA_AS_ROW,ss_dim);
+
+    eigenvecs=ocv_pca.eigenvectors.clone();
+    eigenvals=ocv_pca.eigenvalues.clone();
+    mean=ocv_pca.mean.reshape(1,1).clone();
+
+  //truncate eigenvectors and eigenvals
+  eigenvecs=eigenvecs(cv::Rect(0,0,input_data.cols,ss_dim));
+  eigenvals=eigenvals(cv::Rect(0,0,1,ss_dim)).t();
+  //cv::normalize(eigenvecs,eigenvecs);
+
+}
 
 void SubspaceAnalysis::PCA::calcProjMatrix(cv::Mat& data)
 {
@@ -1683,7 +1779,7 @@ void SubspaceAnalysis::PCA::calcProjMatrix(cv::Mat& data)
        cv::subtract(data_row,mean,data_row);
      }
 
-     decompose(data);
+     decomposeSVD(data);
 }
 
 
