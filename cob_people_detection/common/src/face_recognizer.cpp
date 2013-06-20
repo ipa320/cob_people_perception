@@ -129,6 +129,16 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
       m_subs_meth=SubspaceAnalysis::METH_EIGEN;
       break;
     }
+    case 2:
+    {
+      m_subs_meth=SubspaceAnalysis::METH_LDA2D;
+      break;
+    }
+    case 3:
+    {
+      m_subs_meth=SubspaceAnalysis::METH_PCA2D;
+      break;
+    }
     default:
     {
       m_subs_meth=SubspaceAnalysis::METH_FISHER;
@@ -374,7 +384,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vec
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::FishEigFaces& eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
+unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::FaceRecognizer& eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
 {
   //TODO set ss_dim dynamically
   int ss_dim =1;

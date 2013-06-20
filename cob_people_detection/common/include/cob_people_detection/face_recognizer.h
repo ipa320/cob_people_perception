@@ -191,15 +191,15 @@ protected:
 
 
 // DEPTH
-  SubspaceAnalysis::FishEigFaces depth_eff_;
+  SubspaceAnalysis::FaceRecognizer depth_eff_;
   std::vector<std::string> depth_str_labels;
   std::vector<std::string> depth_str_labels_unique;
   std::vector<int> depth_num_labels;
 //
   FaceNormalizer face_normalizer_;
 
-  SubspaceAnalysis::FishEigFaces eff_depth;
-  SubspaceAnalysis::FishEigFaces eff_color;
+  SubspaceAnalysis::FaceRecognizer eff_depth;
+  SubspaceAnalysis::FaceRecognizer eff_color;
   std::vector<int> m_label_num;
   int             m_rec_method;
   std::vector<bool> dm_exist;
@@ -207,7 +207,7 @@ protected:
   SubspaceAnalysis::Classifier m_class_meth;
   SubspaceAnalysis::Method m_subs_meth;
   bool m_use_unknown_thresh;
-unsigned long initModel(SubspaceAnalysis::FishEigFaces& eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
+unsigned long initModel(SubspaceAnalysis::FaceRecognizer& eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
 //----------------------------------------------------
 //----------------------------------------------------
 

@@ -52,6 +52,7 @@ FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
   config_.align=   false;
   config_.resize=  true;
   config_.cvt2gray=true;
+  config_.extreme_illumination_condtions=false;
   this->init();
 }
 
@@ -189,12 +190,6 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
     captureScene(img,depth,facepath);
   } 
 
-  //std::vector<cv::Mat> channels;
-  //cv::split(depth,channels);
-  //channels[2].convertTo(channels[2],CV_8UC1,255);
-  //cv::equalizeHist(channels[2],channels[2]);
-  //cv::imwrite("/home/goa-tz/Desktop/depth.jpg",channels[2]);
-  //cv::imwrite("/home/goa-tz/Desktop/color.jpg",img);
 
   norm_size_=norm_size;
   input_size_=cv::Size(img.cols,img.rows);
@@ -206,11 +201,6 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   //norm size from input image
   set_norm_face(input_size_);
 
-  //if(debug_)
-  //{
-  //  cv::Mat temp_mat;
-  //  dump_img(temp_mat,"0_originalRGBD");
-  //}
 
 
 
@@ -221,12 +211,10 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
     {
       valid=false ;
       fail_ctr++;
-      //std::cout<<"FAIL "<< fail_ctr<<std::endl;
     }
     else{
 
       succ_ctr++;
-      //std::cout<<"GOOD "<< succ_ctr<<std::endl;
     }
   }
 
@@ -309,10 +297,9 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
 
 bool FaceNormalizer::normalize_radiometry(cv::Mat& img)
 {
-   dct(img);
-    //tan(img);
-  //logAbout(img);
-
+  
+  if(config_.extreme_illumination_condtions==true)tan(img);
+  else  dct(img);
   return true;
 }
 
@@ -349,12 +336,6 @@ void FaceNormalizer::subVChannel(cv::Mat& img,cv::Mat& V)
 }
 
 
-void FaceNormalizer::eqHist(cv::Mat& img)
-{
-
-  cv::equalizeHist(img,img);
-
-}
 
 void FaceNormalizer::tan(cv::Mat& input_img)
 {
@@ -400,11 +381,22 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   }
 
   // Dct conversion on logarithmic image
+  ///TODO fast and dirty
   cv::resize(img,img,cv::Size(input_img.cols*2,input_img.rows*2));
+  if( img.rows&2!=0 )
+  {
+    img=img(cv::Rect(0,0,img.cols,img.rows-1));
+  }
+  if( img.cols&2!=0 )
+  {
+    img=img(cv::Rect(0,0,img.cols-1,img.rows));
+  }
+
   //float mask_arr[]={-1, -1, -1 , -1 , 9 , -1, -1 , -1 ,-1};
   //cv::Mat mask=cv::Mat(3,3,CV_32FC1,mask_arr);
   //cv::filter2D(img,img,-1,mask);
   cv::equalizeHist(img,img);
+  this->dump_img(img,"eq");
   img.convertTo(img,CV_32FC1);
   //cv::Scalar mu=cv::mean(img);
   cv::Scalar mu,sigma;
@@ -416,6 +408,8 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   //cv::log(img,img);
 //----------------------------
   cv::pow(img,0.2,img);
+  cv::Mat imgdummy;
+  img.convertTo(imgdummy,CV_8UC1);
   cv::dct(img,img);
 
   //---------------------------------------
@@ -431,8 +425,6 @@ void FaceNormalizer::dct(cv::Mat& input_img)
 
   cv::idct(img,img);
   cv::normalize(img,img,0,255,cv::NORM_MINMAX);
-
-  cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
 
   img.convertTo(img,CV_8UC1);
   //cv::blur(img,img,cv::Size(3,3));

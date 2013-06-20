@@ -22,9 +22,9 @@ metric: 0
 # bool
 debug: false 
 
-#specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces
+#specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces, 2 = LDA2D, 3 = PCA2D
 # int
-subspace_method: 0
+subspace_method: 2
 
 # specifies classification algorithm: 0 = DIFS, 1 = KNN, 2 = SVM
 # int

@@ -131,34 +131,19 @@ void SubspaceAnalysis::XFaces::mat2arr(cv::Mat& src_mat,cv::Mat& dst_mat)
 }
 void SubspaceAnalysis::XFaces::project2D(std::vector<cv::Mat>& src_mats,cv::Mat& proj_mat,cv::Mat& avg_mat,std::vector<cv::Mat>& coeff_mat_vec)
 {
-
-
-
   //calculate coefficients
-  //
-
   for(int i=0;i<src_mats.size();i++)
   {
-
   cv::Mat tmp;
-  //std::cout<<src_mats[i].rows<<" "<<src_mats[i].cols<<std::endl;
-  //std::cout<<proj_mat.rows<<" "<<proj_mat.cols<<std::endl;
-  
   cv::gemm(src_mats[i],proj_mat,1.0,cv::Mat(),0.0,tmp,cv::GEMM_2_T);
   coeff_mat_vec.push_back(tmp);
   }
-
 }
+
 void SubspaceAnalysis::XFaces::project(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& avg_mat,cv::Mat& coeff_mat)
 {
-
-
-
   //calculate coefficients
-  //
-
   cv::gemm(src_mat,proj_mat,1.0,cv::Mat(),0.0,coeff_mat,cv::GEMM_2_T);
-
 }
 
 void SubspaceAnalysis::XFaces::reconstruct(cv::Mat& coeffs,cv::Mat& proj_mat,cv::Mat& avg,cv::Mat& rec_im)
@@ -181,55 +166,9 @@ void SubspaceAnalysis::XFaces::calcDataMat(std::vector<cv::Mat>& input_data,cv::
     cv::Mat src_mat;
       src_mat=input_data[i];
       src_mat=src_mat.reshape(1,1);
-      //convert images to unit norm
-      //cv::normalize(src_mat,src_mat,1.0,0.0,cv::NORM_L1);
       cv::Mat dst_row=data_mat.row(i);
       src_mat.copyTo(dst_row);
       }
-
-    
-
-//    double* src_ptr;
-//    double*  dst_ptr;
-//    cv::Mat src_mat;
-//    for(int i = 0;i<input_data.size();i++)
-//    {
-//      input_data[i].copyTo(src_mat);
-//
-//      src_ptr = src_mat.ptr<double>(0,0);
-//      //src_ptr = input_data[i].ptr<double>(0,0);
-//      dst_ptr = data_mat.ptr<double>(i,0);
-//
-//      for(int j=0;j<input_data[i].rows;j++)
-//      {
-//        src_ptr=src_mat.ptr<double>(j,0);
-//        //src_ptr=input_data[i].ptr<double>(j,0);
-//        for(int col=0;col<input_data[i].cols;col++)
-//        {
-//        *dst_ptr=*src_ptr;
-//        src_ptr++;
-//        dst_ptr++;
-//        }
-//      }
-//
-//    }
-
-
-    //cv::Mat src_mat=cv::Mat(120,120,CV_64FC1);
-    //src_mat= input_data[0].clone();
-    ////src_mat.convertTo(src_mat,CV_64F);
-    //std::cout<<"src"<<src_mat.rows<<","<<src_mat.cols<<std::endl;
-    //src_mat=src_mat.reshape(1,1);
-    //src_mat.clone();
-    //std::cout<<"src"<<src_mat.rows<<","<<src_mat.cols<<std::endl;
-    //cv::Mat dst_mat;
-    //dst_mat.push_back(src_mat);
-
-    //std::cout<<"dst"<<dst_mat.rows<<","<<dst_mat.cols<<std::endl;
-    //dst_mat=dst_mat.reshape(1,120);
-    //dst_mat.convertTo(dst_mat,CV_8UC1);
-    //cv::imshow("DST",dst_mat);
-    //cv::waitKey(0);
 
   return;
 }
@@ -489,11 +428,23 @@ void SubspaceAnalysis::XFaces::calc_threshold(cv::Mat& data,double& thresh)
   for(int c=0;c<num_classes_;c++)
   {
     thresh=std::min(thresh,(P[c]+D[c]) *0.5);
-    //std::cout<<"c"<<c<<": "<<D[c]<<" "<<P[c]<<std::endl;
   }
   std::cout<<"THRESH for db: "<<thresh<<std::endl;
 
 
+}
+
+
+void SubspaceAnalysis::XFaces::prediction(cv::Mat& query_image,int& max_prob_index)
+{
+  //check whether model is 2d or 1 D and the choose ProjectToSubspace
+  //accordingly
+
+}
+void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& max_prob_index,cv::Mat& probabilities)
+{
+  classify(coeff_arr,method,max_prob_index);
+  probabilities=class_cost_;
 }
 
 void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& class_index)
@@ -503,11 +454,6 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
     std::cout<<"XFaces --> Model not trained - aborting classify\n";
     return;
   }
-  //if(coeff_arr.rows>1)
-  //{
-  //  std::cout<<"[CLASSIFICATION] only implemented for single sample in single row"<<std::endl;
-  //  return;
-  //}
 
   if(num_classes_<2)
   {
@@ -619,8 +565,6 @@ void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int
 
   }
   return;
-
-
 }
 
 
@@ -628,6 +572,7 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
 {
     double temp;
     minDIFS=std::numeric_limits<int>::max();
+    class_cost_*=  std::numeric_limits<float>::max();
     // if feature matrices not feature vectors ( 2D methods)
     if(probe_mat.rows>1)
     {
@@ -664,6 +609,8 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
             //minDIFScoeffs=diff_row;
             minDIFS=temp[0];
           }
+        //calculate cost for classification to every class in database
+        class_cost_.at<float>(model_label_arr_.at<float>(m))=std::min(class_cost_.at<float>(model_label_arr_.at<float>(m)),(float)temp[0]);
         }
     }
     // for 1D methods
@@ -673,12 +620,6 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
       {
         cv::Mat model_mat=proj_model_data_arr_.row(r);
         cv::Mat diff_row;
-        //cv::subtract(probe_mat,model_mat,diff_row);
-        //diff_row=diff_row.mul(diff_row);
-        //std::cout<<diff_row.rows<<","<<diff_row.cols<<std::endl;
-        //std::cout<<eigenvalue_arr_.rows<<","<<eigenvalue_arr_.cols<<std::endl;
-        //std::cout<<eigenvalue_arr_<<std::endl;
-        //diff_row=diff_row/eigenvalue_arr_;
 
         temp=cv::norm(probe_mat,model_mat,cv::NORM_L2);
         if(temp < minDIFS )
@@ -687,8 +628,20 @@ void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,dou
           minDIFScoeffs=diff_row;
           minDIFS=temp;
         }
+        //calculate cost for classification to every class in database
+        class_cost_.at<float>(model_label_arr_.at<float>(r))=std::min(class_cost_.at<float>(model_label_arr_.at<float>(r)),(float)temp);
       }
     }
+
+
+    //process class_cost_
+    double min_cost,max_cost;
+    //class_cost_-=(float)(min_cost);
+    class_cost_=1/(class_cost_.mul(class_cost_));
+    cv::minMaxLoc(class_cost_,&min_cost,&max_cost,0,0);
+    //double class_cost_norm=cv::norm(class_cost_,cv::NORM_L1);
+    class_cost_/=max_cost;
+    //cv::normalize(class_cost_,class_cost_,1.0);
 
     return;
 }
@@ -747,189 +700,14 @@ bool SubspaceAnalysis::XFaces::verifyClassification(cv::Mat& sample,int& index)
   }
   return true;
 }
-//---------------------------------------------------------------------------------
-// EIGENFACES
-//---------------------------------------------------------------------------------
-//
-//
-bool SubspaceAnalysis::Eigenfaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
-{
-  svm_trained_=false;
-  knn_trained_=false;
-  thresh_=std::numeric_limits<double>::max();
-  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
-
-  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
-  for(int i=0;i<label_vec.size();i++)
-  {
-    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
-  }
-
-  ss_dim_=red_dim;
-
-  //check if input has the same size
-  if(img_vec.size()<ss_dim_+1)
-  {
-    //TODO: ROS ERROR
-    std::cout<<"EIGFACE: Invalid subspace dimension\n";
-    return false;
-  }
-
-  //initialize all matrices
-  model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
-  avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
-  proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
-  eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
-  eigenvalue_arr_=cv::Mat(1,ss_dim_,CV_64FC1);
-
-  calcDataMat(img_vec,model_data_arr_);
-
-  //initiate PCA
-  //
-  pca_=SubspaceAnalysis::PCA(model_data_arr_,ss_dim_);
-
-  eigenvector_arr_=pca_.eigenvecs;
-  eigenvalue_arr_=pca_.eigenvals;
-  avg_arr_=pca_.mean;
-
-  project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
-
-  return true;
-}
-
-
-
-void SubspaceAnalysis::Eigenfaces::meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs)
-{
-
-
-  mean_coeffs=cv::Mat::zeros(num_classes_,coeffs.cols,CV_64FC1);
-  std::vector<int>     samples_per_class(num_classes_);
-
-  //initialize vectors with zeros
-  for( int i =0;i<num_classes_;i++)
-  {
-   samples_per_class[i]=0;
-  }
-
-  int class_index;
-  for(int i =0;i<coeffs.rows;i++)
-  {
-    cv::Mat curr_row=coeffs.row(i);
-    class_index=label_vec[i];
-
-    cv::Mat mean_row=mean_coeffs.row(class_index);
-
-    add(mean_row,curr_row,mean_row);
-    samples_per_class[class_index]++;
-  }
-
-  for (int i = 0; i < num_classes_; i++) {
-  cv::Mat mean_row=mean_coeffs.row(i);
-  mean_row.convertTo(mean_row,CV_64FC1,1.0/static_cast<double>(samples_per_class[i]));
-
-  }
-}
 
 
 
 //---------------------------------------------------------------------------------
-// FIsherfaces
+// FaceRecognizer
 //---------------------------------------------------------------------------------
 
-
-bool SubspaceAnalysis::Fisherfaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec)
-{
-  svm_trained_=false;
-  knn_trained_=false;
-  thresh_=std::numeric_limits<double>::max();
-  // check if input data is valid
-  if(img_vec.size()!=label_vec.size())
-  {
-    std::cout<<"ERROR :  image and label vectors have to be of same length"<<std::endl;
-    return false;
-  }
-
-
-
-  model_label_arr_=cv::Mat(1,label_vec.size(),CV_32FC1);
-  for(int i=0;i<label_vec.size();i++)
-  {
-    model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
-  }
-
-  //initialize all matrices
-  model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
-  avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
-
-
-  //number of classes
-  SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
-
-  if(num_classes_<2)
-  {
-    std::cout<<"FISHERFACES ERROR : More than one class is necessary"<<std::endl;
-    return false;
-  }
-
-  //subspace dimension is num classes -1
-  ss_dim_=num_classes_ -1;
-  // pca dimension  is N- num classes
-  int pca_dim=model_data_arr_.rows-num_classes_;
-
-
-  calcDataMat(img_vec,model_data_arr_);
-
-  // Reduce dimension to  N - c via PCA
-  pca_=SubspaceAnalysis::PCA(model_data_arr_,pca_dim);
-
-  cv::Mat proj_model_data_arr_PCA=cv::Mat(model_data_arr_.rows,pca_dim,CV_64FC1);
-  project(model_data_arr_,pca_.eigenvecs,pca_.mean,proj_model_data_arr_PCA);
-
-  // get projection matrix pca
-  cv::Mat P_pca=cv::Mat(pca_dim,img_vec[0].total(),CV_64FC1);
-  P_pca=pca_.eigenvecs;
-  avg_arr_=pca_.mean;
-
-
-  //perform lda
-  lda_=SubspaceAnalysis::LDA(proj_model_data_arr_PCA,label_vec,num_classes_,ss_dim_);
-
-
-  // get projection matrix lda
-  cv::Mat P_lda=cv::Mat(ss_dim_,pca_dim,CV_64FC1);
-  P_lda=lda_.eigenvecs;
-
-
-  // combine projection matrices
-  cv::gemm(P_pca.t(),P_lda,1.0,cv::Mat(),0.0,eigenvector_arr_);
-  //cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
-
-  eigenvector_arr_=eigenvector_arr_.t();
-
- // cv::Mat ss=model_data_(cv::Rect(0,0,120*120,3));
- // projectToSubspace(ss,proj_model_data_,DFFS);
- // dump_matrix(proj_model_data_,"projection1");
-
- // cv::Mat ss2=model_data_(cv::Rect(0,2,120*120,3));
- // projectToSubspace(ss2,proj_model_data_,DFFS);
- // dump_matrix(proj_model_data_,"projection2");
-
-  proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
-
-
-  project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
-
-
-  return true;
-
-}
-
-//---------------------------------------------------------------------------------
-// FishEigFaces
-//---------------------------------------------------------------------------------
-
-SubspaceAnalysis::FishEigFaces::FishEigFaces()
+SubspaceAnalysis::FaceRecognizer::FaceRecognizer()
 {
 fallback_=false;
 svm_trained_=false;
@@ -947,15 +725,15 @@ num_classes_=-1;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //old interface - just for compability reasons  use new trainModel and
 //loadModel
-bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
+bool SubspaceAnalysis::FaceRecognizer::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
 {
   trainModel( img_vec, label_vec, red_dim);
 }
-bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method)
+bool SubspaceAnalysis::FaceRecognizer::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method)
 {
   trainModel(img_vec, label_vec, red_dim, method);
 }
-bool SubspaceAnalysis::FishEigFaces::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh)
+bool SubspaceAnalysis::FaceRecognizer::init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh)
 {
   trainModel( img_vec, label_vec, red_dim,method,fallback, use_unknown_thresh);
 }
@@ -984,6 +762,20 @@ bool SubspaceAnalysis::XFaces::saveModel(std::string path)
 			return false;
 		}
 
+    //create string describing model ( 1D or 2D)
+    std::string model_type_string;
+    if(method_==METH_FISHER ||method_==METH_EIGEN)
+    {
+      model_type_string="1D";
+    }
+    if(method_==METH_LDA2D ||method_==METH_PCA2D)
+    {
+      model_type_string="2D";
+    }
+
+    // Modeltype ( 1D or 2D)
+    fileStorage << "modeltype" << model_type_string;
+    // Eigenvectors
     fileStorage << "eigenvectors" << eigenvector_arr_;
 		// Eigenvalue matrix
 		fileStorage << "eigenvalues" << eigenvalue_arr_;
@@ -1039,7 +831,7 @@ bool SubspaceAnalysis::XFaces::loadModelFromFile(std::string path,bool use_unkno
     std::cout<<"done"<<std::endl;
     }
     this->trained=true;
-    std::cout<<"FishEigFaces --> model loaded successfully\n";
+    std::cout<<"FaceRecognizer --> model loaded successfully\n";
     return true;
 
 }
@@ -1078,21 +870,21 @@ bool SubspaceAnalysis::XFaces::loadModel(cv::Mat& eigenvec_arr,cv::Mat& eigenval
   std::cout<<"done"<<std::endl;
   }
   this->trained=true;
-  std::cout<<"FishEigFaces --> model loaded successfully\n";
+  std::cout<<"FaceRecognizer --> model loaded successfully\n";
   return true;
 }
 
 
 
-bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
+bool SubspaceAnalysis::FaceRecognizer::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim)
 {
   trainModel( img_vec,label_vec, red_dim, SubspaceAnalysis::METH_FISHER, true,true);
 }
-bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method)
+bool SubspaceAnalysis::FaceRecognizer::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method)
 {
   trainModel( img_vec,label_vec, red_dim, method, true,true);
 }
-bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh)
+bool SubspaceAnalysis::FaceRecognizer::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method,bool fallback,bool use_unknown_thresh)
 {
   fallback_=fallback;
   use_unknown_thresh_= use_unknown_thresh;
@@ -1104,6 +896,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   SubspaceAnalysis::condense_labels(label_vec);
 
   //input data checks
+ 
   //check if input has the same size
   ss_dim_=red_dim;
   // set subspace dimension here for 2D* and Eigenfaces methods
@@ -1119,12 +912,22 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
     return false;
   }
   //check if multiple classes and fallback  to eigenfaces if fallback_==true
-  if(num_classes_<2)
+  if(num_classes_<2 &&  method== SubspaceAnalysis::METH_FISHER)
   {
     if(fallback_)
     {
       method=SubspaceAnalysis::METH_EIGEN;
-      std::cout<<" Automatic Fallback to Eigenfaces"<<std::endl;
+      std::cout<<"[SubspaceAnalysis] Automatic Fallback from Fisherfaces to Eigenfaces ( only 1 class)"<<std::endl;
+    }
+    else return false;
+  }
+
+  if(num_classes_<2 &&  method== SubspaceAnalysis::METH_LDA2D)
+  {
+    if(fallback_)
+    {
+      method=SubspaceAnalysis::METH_PCA2D;
+      std::cout<<"[SubspaceAnalysis] Automatic Fallback from 2D LDA  to 2D PCA ( only 1 class)"<<std::endl;
     }
     else return false;
   }
@@ -1136,48 +939,54 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
   avg_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
   eigenvector_arr_=cv::Mat(ss_dim_,img_vec[0].total(),CV_64FC1);
   eigenvalue_arr_=cv::Mat(1,ss_dim_-1,CV_64FC1);
+  class_cost_=cv::Mat::ones(1,num_classes_,CV_32FC1);
+  class_cost_*=  std::numeric_limits<float>::max();
 
+  //Allocation for 2D Methods
   if (method==SubspaceAnalysis::METH_LDA2D || method==SubspaceAnalysis::METH_PCA2D)
   {
     proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_*img_vec[0].rows,CV_64FC1);
   }
+
+  //Allocation and preprocessing for 1D Methods
   else
   {
 
     proj_model_data_arr_=cv::Mat(img_vec.size(),ss_dim_,CV_64FC1);
+    calcDataMat(img_vec,model_data_arr_);
   }
 
+
+  //Labels cast to float
   for(int i=0;i<label_vec.size();i++)
   {
     model_label_arr_.at<float>(i)=static_cast<float>(label_vec[i]);
   }
 
 
-  calcDataMat(img_vec,model_data_arr_);
-
+  
   int pca_dim;
   cv::Mat proj_model_data_arr_PCA,P_pca,P_lda;
+
+
   switch (method)
   {
+    // Processing for Fisherfaces
     case SubspaceAnalysis::METH_FISHER:
       {
-        std::cout<<"FISHERFACES"<<std::endl;
-        if(num_classes_<2)
-        {
-          std::cout<<"FISHERFACES ERROR : More than one class is necessary"<<std::endl;
-          return false;
-        }
+        std::cout<<"[SubspaceAnalysis]Fisherfaces - computing recognition model"<<std::endl;
+        method_=SubspaceAnalysis::METH_FISHER;
         //subspace dimension is num classes -1
         ss_dim_=num_classes_ -1;
 
-        // pca dimension  is N- num classes
-        std::cout<< num_classes_<<"<-> C"<<std::endl;
-        std::cout<< model_data_arr_.rows - num_classes_<<"<-> N-C"<<std::endl;
+        // pca dimension  is N- num_classes
         pca_dim=model_data_arr_.rows-num_classes_;
+
         if(pca_dim<1)
         {
           pca_dim=num_classes_;
         }
+
         // Reduce dimension to  N - c via PCA
         pca_=SubspaceAnalysis::PCA(model_data_arr_,pca_dim);
         proj_model_data_arr_PCA=cv::Mat(model_data_arr_.rows,pca_dim,CV_64FC1);
@@ -1186,7 +995,6 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
         // get projection matrix pca
         P_pca=cv::Mat(pca_dim,img_vec[0].total(),CV_64FC1);
         P_pca=pca_.eigenvecs;
-        avg_arr_=pca_.mean;
 
         //perform lda
         lda_=SubspaceAnalysis::LDA(proj_model_data_arr_PCA,label_vec,num_classes_,ss_dim_);
@@ -1199,52 +1007,22 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
         // combine projection matrices
         cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
 
+        //Assign model to member variables
         eigenvector_arr_=eigenvector_arr_.t();
         eigenvalue_arr_=lda_.eigenvals;
-        break;
-
-    case SubspaceAnalysis::METH_IFLDA: 
-      {
-        if(num_classes_<2)
-        {
-          std::cout<<"Improved FISHERFACES ERROR : More than one class is necessary"<<std::endl;
-          return false;
-        }
-        //subspace dimension is num classes -1
-        ss_dim_=num_classes_ -1;
-        // pca dimension  is N- num classes
-        pca_dim=model_data_arr_.rows-num_classes_;
-        // Reduce dimension to  N - c via PCA
-        pca_=SubspaceAnalysis::PCA(model_data_arr_,pca_dim);
-        proj_model_data_arr_PCA=cv::Mat(model_data_arr_.rows,pca_dim,CV_64FC1);
-        project(model_data_arr_,pca_.eigenvecs,pca_.mean,proj_model_data_arr_PCA);
-
-        // get projection matrix pca
-        P_pca=cv::Mat(pca_dim,img_vec[0].total(),CV_64FC1);
-        P_pca=pca_.eigenvecs;
         avg_arr_=pca_.mean;
-
-        //perform lda
-        lda_=SubspaceAnalysis::ILDA(proj_model_data_arr_PCA,label_vec,num_classes_,ss_dim_);
-
-        // get projection matrix lda
-        P_lda=cv::Mat(ss_dim_,pca_dim,CV_64FC1);
-        P_lda=lda_.eigenvecs;
-
-
-        // combine projection matrices
-        cv::gemm(P_pca.t(),P_lda.t(),1.0,cv::Mat(),0.0,eigenvector_arr_);
-
-        eigenvector_arr_=eigenvector_arr_.t();
         break;
-      }
+
       }
 
     case SubspaceAnalysis::METH_EIGEN: 
       {
-        std::cout<<"EIGENFACES"<<std::endl;
+        std::cout<<"[SubspaceAnalysis]Eigenfaces - computing recognition model"<<std::endl;
+        method_=SubspaceAnalysis::METH_EIGEN;
         //initiate PCA
         pca_=SubspaceAnalysis::PCA(model_data_arr_,ss_dim_);
+
+        //Assign model to member variables
         eigenvector_arr_=pca_.eigenvecs;
         eigenvalue_arr_=pca_.eigenvals;
         avg_arr_=pca_.mean;
@@ -1253,11 +1031,12 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
 
     case SubspaceAnalysis::METH_LDA2D:
       {
-        //ss_dim_=img_vec[0].cols;
-        std::cout<<"2DLDA"<<std::endl;
-        //initiate PCA
+        std::cout<<"[SubspaceAnalysis] 2D-LDA - computing recognition model"<<std::endl;
+        method_=SubspaceAnalysis::METH_LDA2D;
+        //initiate 2D LDA
         lda2d_=SubspaceAnalysis::LDA2D(img_vec,label_vec,num_classes_,ss_dim_);
-        //lda2d_=SubspaceAnalysis::PCA2D(img_vec,label_vec,num_classes_,ss_dim_);
+
+        //Assign model to member variables
         eigenvector_arr_=lda2d_.eigenvecs;
         eigenvalue_arr_=lda2d_.eigenvals;
         avg_arr_=lda2d_.mean;
@@ -1265,11 +1044,12 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
       }
     case SubspaceAnalysis::METH_PCA2D:
       {
-        //ss_dim_=img_vec[0].cols;
-        std::cout<<"2DPCA"<<std::endl;
-        //initiate PCA
+        std::cout<<"[SubspaceAnalysis] 2D-PCA - computing recognition model"<<std::endl;
+        method_=SubspaceAnalysis::METH_PCA2D;
+        // initiate 2D PCA
         pca2d_=SubspaceAnalysis::PCA2D(img_vec,label_vec,num_classes_,ss_dim_);
-        //lda2d_=SubspaceAnalysis::PCA2D(img_vec,label_vec,num_classes_,ss_dim_);
+
+        //Assign model to member variables
         eigenvector_arr_=pca2d_.eigenvecs;
         eigenvalue_arr_= pca2d_.eigenvals;
         avg_arr_=pca2d_.mean;
@@ -1278,8 +1058,7 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
 
   }
 
-
-
+  // Project training data to subspace  - 2D methods
   if (method==SubspaceAnalysis::METH_LDA2D || method == SubspaceAnalysis::METH_PCA2D)
   {
     project2D(img_vec,eigenvector_arr_,avg_arr_,proj_model_data_vec_);
@@ -1290,44 +1069,29 @@ bool SubspaceAnalysis::FishEigFaces::trainModel(std::vector<cv::Mat>& img_vec,st
 
       curr_row=proj_model_data_vec_[i].reshape(1,1);
     }
-
-  }
-  else
-  {
-  proj_model_data_arr_=cv::Mat(model_data_arr_.rows,ss_dim_,CV_64FC1);
-    project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
-  }
-
-
-  //calc_threshold(proj_model_data_arr_,thresholds_);
   if(use_unknown_thresh_)
   {
-  if(method==SubspaceAnalysis::METH_LDA2D || method==SubspaceAnalysis::METH_PCA2D)
-  {
-  std::cout<<"calculating threshold 2d..";
-  calc_threshold2d(proj_model_data_vec_,thresh_);
-  std::cout<<"done"<<std::endl;
+    // unknown threshold
+    calc_threshold2d(proj_model_data_vec_,thresh_);
   }
+
+  }
+
+  // Project training data to subspace  - 1D methods
   else
   {
-  std::cout<<"calculating threshold...";
-  calc_threshold(proj_model_data_arr_,thresh_);
-  std::cout<<"done"<<std::endl;
+    proj_model_data_arr_=cv::Mat(model_data_arr_.rows,ss_dim_,CV_64FC1);
+    project(model_data_arr_,eigenvector_arr_,avg_arr_,proj_model_data_arr_);
+    if(use_unknown_thresh_)
+    {
+    calc_threshold(proj_model_data_arr_,thresh_);
+    }
   }
-  }
+
+  // set FaceRecognizer to trained
   this->trained=true;
 
-  return true;
-
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
 
 //---------------------------------------------------------------------------------
 // SSA
@@ -1478,18 +1242,12 @@ SubspaceAnalysis::LDA2D::LDA2D(std::vector<cv::Mat>& input_data,std::vector<int>
  {
    //reduce data matrix
    class_index=input_labels[i];
-  // std::cout<<"------------------------ "<<std::endl;
-  // std::cout<<"data before "<<data_arr.at<double>(i,0)<<std::endl;
-  // std::cout<<"data row before "<<data_row.at<double>(0)<<std::endl;
-  // std::cout<<"mean "<<class_mean_row.at<double>(0)<<std::endl;
    cv::Mat tmp;
 
    cv::subtract(input_data[i],class_means[class_index],tmp);
    cv::Mat temp;
    cv::mulTransposed(input_data[i],temp,true);
    cv::add(temp,S_intra,S_intra);
-  // std::cout<<"data row after" <<data_row.at<double>(0)<<std::endl;
-  // std::cout<<"data after " <<data_arr.at<double>(i,0)<<std::endl;
  }
  for(int c=0;c<num_classes_;c++)
  {
@@ -1586,15 +1344,9 @@ void SubspaceAnalysis::LDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& l
   {
     //reduce data matrix
     class_index=label_vec[i];
-   // std::cout<<"------------------------ "<<std::endl;
-   // std::cout<<"data before "<<data_arr.at<double>(i,0)<<std::endl;
     cv::Mat  data_row =data_arr.row(i);
     cv::Mat  class_mean_row=class_mean_arr.row(class_index);
-   // std::cout<<"data row before "<<data_row.at<double>(0)<<std::endl;
-   // std::cout<<"mean "<<class_mean_row.at<double>(0)<<std::endl;
     cv::subtract(data_row,class_mean_row,data_row);
-   // std::cout<<"data row after" <<data_row.at<double>(0)<<std::endl;
-   // std::cout<<"data after " <<data_arr.at<double>(i,0)<<std::endl;
   }
   for(int c=0;c<num_classes_;c++)
   {
@@ -1647,10 +1399,6 @@ SubspaceAnalysis::ILDA::ILDA(cv::Mat& input_data,std::vector<int>& input_labels,
 }
 void SubspaceAnalysis::ILDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& label_vec )
 {
-  //TODO:DOESNT WORK YET
- //reduce data matrix with class means and compute inter class scatter
-  // inter class scatter
-  //
 
     cv::Mat S_intra=cv::Mat::zeros(data_arr.cols,data_arr.cols,CV_64FC1);
     cv::Mat S_inter=cv::Mat::zeros(data_arr.cols,data_arr.cols,CV_64FC1);
@@ -1660,15 +1408,9 @@ void SubspaceAnalysis::ILDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& 
   {
     //reduce data matrix
     class_index=label_vec[i];
-   // std::cout<<"------------------------ "<<std::endl;
-   // std::cout<<"data before "<<data_arr.at<double>(i,0)<<std::endl;
     cv::Mat  data_row =data_arr.row(i);
     cv::Mat  class_mean_row=class_mean_arr.row(class_index);
-   // std::cout<<"data row before "<<data_row.at<double>(0)<<std::endl;
-   // std::cout<<"mean "<<class_mean_row.at<double>(0)<<std::endl;
     cv::subtract(data_row,class_mean_row,data_row);
-   // std::cout<<"data row after" <<data_row.at<double>(0)<<std::endl;
-   // std::cout<<"data after " <<data_arr.at<double>(i,0)<<std::endl;
   }
   for(int c=0;c<num_classes_;c++)
   {
@@ -1706,8 +1448,6 @@ void SubspaceAnalysis::ILDA::calcProjMatrix(cv::Mat& data_arr,std::vector<int>& 
     for(int  j=0;j<num_classes_;j++)
     {
     class_index=label_vec[j];
-   // std::cout<<"------------------------ "<<std::endl;
-   // std::cout<<"data before "<<data_arr.at<double>(i,0)<<std::endl;
     cv::Mat  s_intra_row =S_intra.row(j);
     cv::Mat  s_inter_row =S_inter.row(j);
     double  sigma_j=sigma.at<double>(class_index);

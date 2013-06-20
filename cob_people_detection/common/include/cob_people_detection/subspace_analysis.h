@@ -65,9 +65,9 @@ namespace SubspaceAnalysis{
 
   enum Method
   {
+    NONE,
     METH_FISHER,
     METH_EIGEN,
-    METH_IFLDA,
     METH_LDA2D,
     METH_PCA2D
     //METH_OCV_FISHER
@@ -79,7 +79,16 @@ namespace SubspaceAnalysis{
   class XFaces
   {
     public:
-    XFaces():trained(false),svm_trained_(false),knn_trained_(false),rf_trained_(false){};
+
+
+
+
+    XFaces():trained(false),
+             svm_trained_(false),
+             knn_trained_(false),
+             rf_trained_(false)
+    {
+    };
 
     virtual ~XFaces(){};
     // TODO: temporary fix - use this one for sqare sized input images
@@ -87,11 +96,16 @@ namespace SubspaceAnalysis{
     void retrieve(std::vector<cv::Mat>& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data,cv::Size output_dim);
     void getModel(cv::Mat& out_eigenvectors,cv::Mat& out_eigenvalues,cv::Mat& out_avg,cv::Mat& out_proj_model_data);
     //void classify(cv::Mat& src_mat,int& class_index);
-    void classify(cv::Mat& coeff_arr,Classifier method,int& class_index);
+
+    //first level of API -default methods
+    void prediction(cv::Mat& query_image,int& class_index);
+    // second level of API - more control access to coefficients etc.
     void projectToSubspace(cv::Mat& probe_mat,cv::Mat& coeff_arr,double& DFFS);
     void projectToSubspace2D(cv::Mat& probe_mat,std::vector<cv::Mat>& coeff_vec,double& DFFS);
-    void releaseModel();
+    void classify(cv::Mat& coeff_arr,Classifier method,int& class_index);
+    void classify(cv::Mat& coeff_arr,Classifier method,int& max_prob_index,cv::Mat& class_probabilities);
     bool verifyClassification(cv::Mat& sample,int& index);
+    void releaseModel();
     bool saveModel(std::string path);
     bool loadModel(cv::Mat& eigenvec_arr,cv::Mat& eigenval_arr,cv::Mat& proj_model,cv::Mat& avg_arr,std::vector<int>& label_vec,bool use_unknown_thresh);
     bool loadModelFromFile(std::string path,bool use_unknown_thresh);
@@ -113,6 +127,7 @@ namespace SubspaceAnalysis{
 
 
     //data
+    SubspaceAnalysis::Method method_;
     int ss_dim_;
     cv::Mat eigenvector_arr_;
     cv::Mat eigenvalue_arr_;
@@ -121,6 +136,7 @@ namespace SubspaceAnalysis{
     cv::Mat proj_model_data_arr_;
     std::vector<cv::Mat> proj_model_data_vec_;
     cv::Mat model_label_arr_;
+    cv::Mat class_cost_;
 
     int num_classes_;
     std::vector<int> unique_labels_;
@@ -236,37 +252,12 @@ namespace SubspaceAnalysis{
     void PCA_OpenCv(cv::Mat& input_data,int& ss_dim);
   };
 
-  class Eigenfaces:public XFaces
+
+  class FaceRecognizer:public XFaces
   {
     public:
-    Eigenfaces(){};
-    virtual ~Eigenfaces(){};
-
-    bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
-    void meanCoeffs(cv::Mat& coeffs,std::vector<int>& label_vec,cv::Mat& mean_coeffs);
-
-    protected:
-    SubspaceAnalysis::PCA pca_;
-  };
-
-  class Fisherfaces:public XFaces
-  {
-    public:
-    Fisherfaces(){};
-    virtual ~Fisherfaces(){};
-
-    bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec);
-
-    protected:
-    //void calcDIFS(cv::Mat& probe_mat,std::vector<double>& DFFS);
-    SubspaceAnalysis::PCA pca_;
-    SubspaceAnalysis::LDA lda_;
-  };
-  class FishEigFaces:public XFaces
-  {
-    public:
-    FishEigFaces();
-    virtual ~FishEigFaces(){};
+    FaceRecognizer();
+    virtual ~FaceRecognizer(){};
     //old interface TODO change to new
     bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim);
     bool init(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& red_dim,Method method);

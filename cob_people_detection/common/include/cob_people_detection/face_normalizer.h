@@ -112,6 +112,7 @@ class FaceNormalizer{
       bool align;
       bool resize;
       bool cvt2gray;
+      bool extreme_illumination_condtions;
       };
 
     FaceNormalizer();

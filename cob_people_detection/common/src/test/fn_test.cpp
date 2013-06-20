@@ -10,10 +10,11 @@ int main(int argc, const char *argv[])
 
   std::cout<<"[FaceNormalizer] running scene no. "<<argv[1]<<"...\n";
   FaceNormalizer::FNConfig cfg;
-  cfg.eq_ill=false;
-  cfg.align=true;
+  cfg.eq_ill=true;
+  cfg.align=false;
   cfg.resize=true;
-  cfg.cvt2gray=true;
+  cfg.cvt2gray=false;
+  cfg.extreme_illumination_condtions=false;
 
   FaceNormalizer fn(cfg);
   cv::Mat depth,img,xyz;
@@ -21,27 +22,24 @@ int main(int argc, const char *argv[])
   if(home)  i_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/kinect3d_crops/";
   //if(home)  i_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scenes/";
   //else      i_path="/share/goa-tz/people_detection/normalization/test_scenes/";
-  else      i_path="/share/goa-tz/people_detection/eval/Kinect3DSelect/";
+  else      i_path="/share/goa-tz/people_detection/eval/";
 
   i_path.append(argv[1]);
-  std::string xml_path=i_path;
-  xml_path.append(".xml");
+  std::string pgm_path=i_path;
+  std::cout<<"FN running on "<<pgm_path<<std::endl;
 
-  fn.read_scene(xyz,img,xml_path);
-  cv::Mat wmat1,wmat2;
+  img=cv::imread(pgm_path);
+  cv::Mat wmat1;
   img.copyTo(wmat1);
-  img.copyTo(wmat2);
   fn.dump_img(wmat1,"original");
-  cv::Size norm_size=cv::Size(100,100);
+  cv::Size norm_size=cv::Size(img.cols,img.rows);
   //cv::cvtColor(wmat1,wmat1,CV_RGB2BGR);
 
   cv::Mat depth_res;
-  fn.normalizeFace(wmat1,xyz,norm_size,depth);
-  depth.convertTo(depth,CV_8UC1,255);
-  cv::equalizeHist(depth,depth);
+  fn.normalizeFace(wmat1,norm_size);
 
   //fn.normalizeFace(wmat1,norm_size);
- fn.dump_img(wmat1,"processed_color");
+ fn.dump_img(wmat1,"ill_corr");
 
   std::cout<<"..done\n";
   return 0;

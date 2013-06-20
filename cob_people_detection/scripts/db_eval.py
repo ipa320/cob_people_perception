@@ -98,7 +98,7 @@ class dlg(wx.Frame):
     self.classifier_choice=wx.Choice(parent,-1,choices=["MIN DIFFS","KNN","SVM","RandomForest"])
 
     method_choice_txt=wx.StaticText(parent,-1,"Select Method")
-    self.method_choice=wx.Choice(parent,-1,choices=["2D LDA","Fisherfaces","Eigenfaces","IFLDA","2D PCA"])
+    self.method_choice=wx.Choice(parent,-1,choices=["2D LDA","Fisherfaces","Eigenfaces","2D PCA"])
 
     self.nrm_checkbox=wx.CheckBox(parent,label="normalize")
 
@@ -230,8 +230,6 @@ class dlg(wx.Frame):
     elif self.method_choice.GetCurrentSelection()==2:
       method="EIGEN"
     elif self.method_choice.GetCurrentSelection()==3:
-      method="IFLDA"
-    elif self.method_choice.GetCurrentSelection()==4:
       method="PCA2D"
 
     if self.classifier_choice.GetCurrentSelection()==0:
@@ -308,8 +306,6 @@ class dlg(wx.Frame):
     elif self.method_choice.GetCurrentSelection()==2:
       method="EIGEN"
     elif self.method_choice.GetCurrentSelection()==3:
-      method="IFLDA"
-    elif self.method_choice.GetCurrentSelection()==4:
       method="PCA2D"
 
     if self.classifier_choice.GetCurrentSelection()==0:
@@ -376,7 +372,6 @@ class dlg(wx.Frame):
     os.chdir(self.cwd)
     self.evaluate()
 
-
     print self.Evaluator.calc_stats()
     self.Evaluator.reset()
 
@@ -390,7 +385,7 @@ class dlg(wx.Frame):
 
   def delete_files(self):
     os.chdir(self.output_path)
-    str_list=["rm","classified_output","eval_file","class_overview","probe_file_list","probe_file_xyz_list","training_set_list","training_set_xyz_list"]
+    str_list=["rm","classification_labels","eval_file","class_overview","probe_file_list","probe_file_xyz_list","training_set_list","training_set_xyz_list"]
     subprocess.call(str_list)
 
 
@@ -723,7 +718,7 @@ class dlg(wx.Frame):
     groundtruth=list()
     files=list()
 
-    input_path=os.path.join(self.output_path,"classified_output")
+    input_path=os.path.join(self.output_path,"classification_labels")
     eval_file_path=os.path.join(self.output_path,"eval_file")
     with open(input_path,"r") as input_stream:
       classified_list=input_stream.read().splitlines()
@@ -821,6 +816,12 @@ class epoch():
 
     self.calc_error_rate()
 
+  def print_error_list(self,error_list_path):
+    error_list_stream = open(error_list_path,"w")
+    for s in self.fi_list:
+      o_str=str(s)+" \n"
+      error_list_stream.write(o_str)
+
   def calc_error_rate(self):
     error_list=list()
     #true positive
@@ -832,7 +833,7 @@ class epoch():
     #false negative
     fn_list=list()
     #false id
-    fi_list=list()
+    self.fi_list=list()
     for i in xrange(len(self.gt)):
         if (int(self.gt[i]) == int(self.res[i])):
           error_list.append(0)
@@ -841,13 +842,13 @@ class epoch():
             fn_list.append(0)
             tn_list.append(0)
             tp_list.append(1)
-            fi_list.append(0)
+            self.fi_list.append(0)
           elif int(self.gt[i]) ==-1:
             fp_list.append(0)
             fn_list.append(0)
             tn_list.append(1)
             tp_list.append(0)
-            fi_list.append(0)
+            self.fi_list.append(0)
         else:
           error_list.append(1)
           if int(self.gt[i])==-1:
@@ -855,15 +856,15 @@ class epoch():
             fn_list.append(0)
             tn_list.append(0)
             tp_list.append(0)
-            fi_list.append(0)
+            self.fi_list.append(0)
           elif int(self.gt[i]) >-1 and int(self.res[i])==-1:
             fp_list.append(0)
             fn_list.append(1)
             tn_list.append(0)
             tp_list.append(0)
-            fi_list.append(0)
+            self.fi_list.append(0)
           elif int(self.gt[i]) >-1 and int(self.res[i])>-1:
-            fi_list.append(1)
+            self.fi_list.append(1)
 
     n=len(error_list)
     self.error_rate=float(sum(error_list))/float(n)
@@ -871,10 +872,13 @@ class epoch():
     self.tn=sum(tn_list)
     self.fp=sum(fp_list)
     self.fn=sum(fn_list)
-    self.fi=sum(fi_list)
+    self.fi=sum(self.fi_list)
+
+    
 
 class Evaluator():
   def __init__(self,invalid_list=0):
+    self.error_list_path="/share/goa-tz/people_detection/eval/eval_tool_files/error_list"
     if invalid_list==0:
       self.invalid_files=list()
     else:
@@ -895,6 +899,7 @@ class Evaluator():
 
   def add_epoch(self,gt,res,files):
     e=epoch(gt,res,files,self.epoch_ctr)
+    e.print_error_list(self.error_list_path)
     self.epoch_ctr+=1
     self.epochs.append(e)
 

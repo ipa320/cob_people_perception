@@ -58,6 +58,7 @@ int main(int argc, const char *argv[])
   config.align=false;
   config.resize=true;
   config.cvt2gray=true;
+  config.extreme_illumination_condtions=false;
   FaceNormalizer* fn=new FaceNormalizer(config);
 
   // parse input arguments from command line
@@ -119,11 +120,6 @@ int main(int argc, const char *argv[])
   {
     std::cout<<"FISHER"<<std::endl;
     method = SubspaceAnalysis::METH_FISHER;
-  }
-  else if(!method_str.compare("IFLDA"))
-  {
-    std::cout<<"IFLDA"<<std::endl;
-    method = SubspaceAnalysis::METH_IFLDA;
   }
   else if(!method_str.compare("EIGEN"))
   {
@@ -368,7 +364,7 @@ int main(int argc, const char *argv[])
 
   int ss_dim=num_classes;
 
-  SubspaceAnalysis::FishEigFaces* EFF=new SubspaceAnalysis::FishEigFaces();
+  SubspaceAnalysis::FaceRecognizer* EFF=new SubspaceAnalysis::FaceRecognizer();
   // calculate Model
 
  // timeval t1,t2,t3,t4;
@@ -377,27 +373,29 @@ int main(int argc, const char *argv[])
   EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
   //gettimeofday(&t2,NULL);jj
 
+  //open output file
+  std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classification_labels";
+  std::string probabilities_path = "/share/goa-tz/people_detection/eval/eval_tool_files/classification_probabilities";
   std::string timing_path = "/share/goa-tz/people_detection/eval/eval_tool_files/timing";
-  std::ofstream os_timing(timing_path.c_str(),std::ofstream::app );
+  //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
+  std::ofstream os(path.c_str() );
+  std::ofstream probabilities_os(probabilities_path.c_str() );
+  std::ofstream timing_os(timing_path.c_str(),std::ofstream::app );
 
-  os_timing<<t.elapsed()<<",";
+  timing_os<<t.elapsed()<<",";
   std::cout<<">>>>>>>>>>training time = " <<t.elapsed()<<std::endl;
 
   std::cout<<"EFF model computed"<<std::endl;
   //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
 
-  //SubspaceAnalysis::FishEigFaces* EFF_depth=new SubspaceAnalysis::FishEigFaces();
+  //SubspaceAnalysis::FaceRecognizer* EFF_depth=new SubspaceAnalysis::FaceRecognizer();
   //if(use_xyz)
   //{
   //EFF_depth->trainModel(dm_vec,label_vec,ss_dim,method,true,false);
   //}
 
 
-  //open output file
-  std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classified_output";
-  //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
-  std::ofstream os(path.c_str() );
 
 
   //restart timer
@@ -408,16 +406,17 @@ int main(int argc, const char *argv[])
   int c_EFF;
   cv::Mat coeff_EFF;
   double DFFS_EFF;
+  cv::Mat probabilities;
   if(method==SubspaceAnalysis::METH_LDA2D || method==SubspaceAnalysis::METH_PCA2D)
   {
   std::vector<cv::Mat> coeff_EFF_vec;
   EFF->projectToSubspace2D(probe,coeff_EFF_vec,DFFS_EFF);
-  EFF->classify(coeff_EFF_vec[0],classifier,c_EFF);
+  EFF->classify(coeff_EFF_vec[0],classifier,c_EFF,probabilities);
   }
   else
   {
   EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
-  EFF->classify(coeff_EFF,classifier,c_EFF);
+  EFF->classify(coeff_EFF,classifier,c_EFF,probabilities);
   }
 
   //c_EFF=model->predict(probe);
@@ -438,9 +437,10 @@ int main(int argc, const char *argv[])
 
   //Output to classified file
   os<<c_EFF<<"\n";
+  probabilities_os<<probabilities<<"\n";
   }
   std::cout<<">>>>>>>>>>recognition time = " <<t.elapsed()<<std::endl;
-  os_timing<<t.elapsed()<<std::endl;
+  timing_os<<t.elapsed()<<std::endl;
 
   os.close();
   std::cout<<"EFF classified"<<std::endl;
@@ -451,7 +451,7 @@ int main(int argc, const char *argv[])
   //EFF->saveModel("/share/goa-tz/people_detection/debug/test.xml");
 
 
-  //SubspaceAnalysis::FishEigFaces* m2=new SubspaceAnalysis::FishEigFaces();
+  //SubspaceAnalysis::FaceRecognizer* m2=new SubspaceAnalysis::FaceRecognizer();
 
 
   //m2->loadModel(m1_evec,m1_eval,m1_avg,m1_pmd,label_vec,false);
