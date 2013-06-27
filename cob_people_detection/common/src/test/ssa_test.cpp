@@ -59,7 +59,9 @@ int main(int argc, const char *argv[])
   config.resize=true;
   config.cvt2gray=true;
   config.extreme_illumination_condtions=false;
-  FaceNormalizer* fn=new FaceNormalizer(config);
+
+  FaceNormalizer* fn=new FaceNormalizer();
+  fn->init(config);
 
   // parse input arguments from command line
   std::string method_str,classifier_str;

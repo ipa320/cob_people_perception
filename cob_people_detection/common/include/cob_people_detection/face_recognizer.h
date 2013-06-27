@@ -93,7 +93,7 @@ public:
 	/// @param data_directory The directory for data files
 	/// @param identification_labels_to_recognize A list of labels of persons that shall be recognized
 	/// @return Return code
-virtual unsigned long init(std::string data_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth);
+virtual unsigned long init(std::string data_directory,std::string classifier_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth);
 
 	/// Initialization function for training purposes (only for capturing images, not the training of recognition models).
 	/// Parameters: see class member explanations.

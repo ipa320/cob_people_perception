@@ -126,6 +126,7 @@ protected:
 
 	// parameters
 	std::string data_directory_;	///< path to the classifier model
+	std::string classifier_directory_;	///< path to the face feature haarcascades
 	bool enable_face_recognition_;	///< this flag enables or disables the face recognition step
 	bool display_timing_;
 

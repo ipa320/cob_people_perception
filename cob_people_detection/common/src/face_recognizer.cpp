@@ -104,7 +104,7 @@ ipa_PeopleDetector::FaceRecognizer::~FaceRecognizer(void)
 	}
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth)
+unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_directory, std::string classifier_directory,int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth)
 {
 	// parameters
 	m_data_directory = data_directory;
@@ -170,12 +170,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
     }
   };
 
-  //FaceNormalizer::FNConfig fn_cfg;
-  //fn_cfg.eq_ill=  true;
-  //fn_cfg.align=   false;
-  //fn_cfg.resize=  true;
-  //fn_cfg.cvt2gray=true;
-  //face_normalizer_=new FaceNormalizer(fn_cfg);
+  FaceNormalizer::FNConfig fn_cfg;
+  fn_cfg.eq_ill=  true;
+  fn_cfg.align=   false;
+  fn_cfg.resize=  true;
+  fn_cfg.cvt2gray=true;
+  fn_cfg.extreme_illumination_condtions=false;
+
+  face_normalizer_.init(classifier_directory,fn_cfg);
 
 	// load model
 	loadRecognitionModel(identification_labels_to_recognize);

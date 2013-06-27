@@ -97,7 +97,7 @@ rosbuild_add_executable(face_normalizer_test
 rosbuild_add_executable(ill_corr_test
       common/src/test/ill_corr_test.cpp
       )
-    target_link_libraries(ill_corr_test face_normalizer  )
+    target_link_libraries(ill_corr_test face_normalizer )
 
 rosbuild_add_executable(ssa_test
       common/src/test/ssa_test.cpp

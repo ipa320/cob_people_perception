@@ -4,16 +4,13 @@
 #include <opencv/ml.h>
 
 #include <iostream>
-
-
-#include <cob_people_detection/virtual_camera.h>
 #include <boost/lexical_cast.hpp>
 
 
 using namespace cv;
 
 namespace FACE{
-                      enum TYPE
+                      enum FEATURE_TYPE
                       {
                         LEFTEYE,
                         RIGHTEYE,
@@ -21,20 +18,16 @@ namespace FACE{
                         MOUTH,
                       };
 
-
 template <class T>
 class FaceFeatures{
                     public:
 
-
-
-
-                    T lefteye;
-                    T righteye;
-                    T nose;
-                    T mouth;
-                    FaceFeatures<T>(){};
-                    ~FaceFeatures<T>(){};
+                      T lefteye;
+                      T righteye;
+                      T nose;
+                      T mouth;
+                      FaceFeatures<T>(){};
+                      ~FaceFeatures<T>(){};
 
                     void sub_offset(int& ox,int& oy)
                     {
@@ -76,6 +69,7 @@ class FaceFeatures{
                      vec.push_back(mouth);
                      return vec;
                     };
+
                     bool valid()
                     {
                       if(std::isnan(lefteye.x)|| std::isnan(lefteye.y)) return false;
@@ -83,19 +77,6 @@ class FaceFeatures{
                       if(std::isnan(nose.x)|| std::isnan(nose.y)) return false;
                       //if(std::isnan(mouth.x)|| std::isnan(mouth.y)) return false;
                       else return true;
-                    }
-                    void print()
-                    {
-                      std::cout<<"--------------------"<<std::endl;
-                      std::cout<<"lefteye:\n";
-                      std::cout<<lefteye.x<<" , "<<lefteye.y<<" , "<<lefteye.z<<std::endl;
-                      std::cout<<"righteye:\n";
-                      std::cout<<righteye.x<<" , "<<righteye.y<<" , "<<righteye.z<<std::endl;
-                      std::cout<<"nose:\n";
-                      std::cout<<nose.x<<" , "<<nose.y<<" , "<<nose.z<<std::endl;
-                      std::cout<<"mouth:\n";
-                      std::cout<<mouth.x<<" , "<<mouth.y<<" , "<<mouth.y<<std::endl;
-                      std::cout<<"--------------------"<<std::endl;
                     }
 };
 
@@ -115,55 +96,20 @@ class FaceNormalizer{
       bool extreme_illumination_condtions;
       };
 
-    FaceNormalizer();
-    FaceNormalizer(FNConfig& config);
-    FaceNormalizer(int i_epoch_ctr,bool i_debug,bool i_record_scene,std::string i_dbg_path);
+    FaceNormalizer(){};
     ~FaceNormalizer();
-
-      enum TRAFO
-      {
-        AFFINE,
-        PERSPECTIVE,
-      };
-
-
+    void init();
+    void init(FNConfig& i_config);
+    void init(std::string i_classifier_directory,FNConfig& i_config);
+    void init(std::string i_classifier_directory,std::string i_storage_directory,FNConfig& i_config,int i_epoch_ctr,bool i_debug,bool i_record_scene,std::string i_debug_path);
 
 
     bool normalizeFace( cv::Mat & img,cv::Size& norm_size);
     bool normalizeFace( cv::Mat & img,cv::Mat& depth,cv::Size& norm_size);
     bool normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_size, cv::Mat& DM);
-    void set_norm_face(cv::Size& input_size);
-    bool normalize_geometry(cv::Mat& img,TRAFO model);
-    void get_transform_affine(cv::Mat& trafo);
-    void get_transform_perspective(cv::Mat& trafo);
-    bool features_from_color(cv::Mat& img);
-    bool detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE type);
-    void dyn_norm_face();
-    void ident_face();
 
-    bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
-    bool features_from_depth(cv::Mat& depth);
-    //void despeckle(cv::Mat& src,cv::Mat& dst);
-    void processDM(cv::Mat& dm,cv::Mat& dm_res);
-
-    // Methods for radiometric normalization
-    bool normalize_radiometry(cv::Mat& img);
-    void extractVChannel(cv::Mat& img,cv::Mat& V);
-    void subVChannel(cv::Mat& img,cv::Mat& V);
-    void eqHist(cv::Mat& img);
-    void dct(cv::Mat& img);
-    void tan(cv::Mat& img);
-    void logAbout(cv::Mat& img);
-
-    // Debug/Output methods
-    void dump_features(cv::Mat& img);
-    void dump_img(cv::Mat& data,std::string name);
-    void showImg(cv::Mat& img,std::string window_name);
     bool save_scene(cv::Mat& depth,cv::Mat& color,std::string path);
     bool read_scene(cv::Mat& depth,cv::Mat& color,std::string path);
-    bool captureScene( cv::Mat& img,cv::Mat& depth,std::string path);
-    bool get_feature_correspondences( cv::Mat& img,  cv::Mat& depth, std::vector<cv::Point2f>& img_pts,std::vector<cv::Point3f>& obj_pts);
-    bool face_coordinate_system(FACE::FaceFeatures<cv::Point3f>& feat_world,FACE::FaceFeatures<cv::Point3f>& feat_local);
 
 template <class T>
 void despeckle(cv::Mat& src,cv::Mat& dst)
@@ -236,16 +182,43 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
 
   protected:
 
-  void init();
+    bool features_from_color(cv::Mat& img);
+    bool detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::FEATURE_TYPE type);
+
+    bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
+    bool features_from_depth(cv::Mat& depth);
+    void processDM(cv::Mat& dm,cv::Mat& dm_res);
+
+    // Methods for radiometric normalization
+    bool normalize_radiometry(cv::Mat& img);
+    void extractVChannel(cv::Mat& img,cv::Mat& V);
+    void subVChannel(cv::Mat& img,cv::Mat& V);
+    void GammaDCT(cv::Mat& img);
+    void GammaDoG(cv::Mat& img);
+
+    // Debug/Output methods
+    void dump_features(cv::Mat& img);
+    void dump_img(cv::Mat& data,std::string name);
+    bool captureScene( cv::Mat& img,cv::Mat& depth,std::string path);
+    bool projectPointCloud(cv::Mat& img, cv::Mat& depth, cv::Mat& img_res, cv::Mat& depth_res);
+    bool projectPoint(cv::Point3f& xyz,cv::Point2f& uv);
+
+  bool initialized_;
   int fail_ctr;
   int succ_ctr;
   int epoch_ctr;
   bool debug_;
   bool vis_debug_;
+  bool record_scene_;
 
-  bool record_scene;
   std::string debug_path_;
+  std::string storage_directory_;
+  std::string classifier_directory_;
   FNConfig config_;
+
+  //intrinsics
+  cv::Mat cam_mat_;
+  cv::Mat dist_coeffs_;
 
   CvHaarClassifierCascade* nose_cascade_;
   CvMemStorage* nose_storage_;
@@ -269,5 +242,4 @@ void despeckle(cv::Mat& src,cv::Mat& dst)
   cv::Size  norm_size_;
   cv::Size  input_size_;
 
-  VirtualCamera kinect;
 };
