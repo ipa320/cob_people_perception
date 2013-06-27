@@ -44,7 +44,7 @@ class FaceFeatures{
                     {
                       this->lefteye.x+=ox;
                       this->lefteye.y+=oy;
-                      this->righteye.x+=ox; 
+                      this->righteye.x+=ox;
                       this->righteye.y+=oy;
                       this->mouth.x+=ox;
                       this->mouth.y+=oy;
