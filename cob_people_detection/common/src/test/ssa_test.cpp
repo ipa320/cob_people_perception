@@ -334,7 +334,7 @@ int main(int argc, const char *argv[])
   {
   probe_img=cv::imread(probe_file_vec[i],0);
   }
-  
+
 
   cv::imwrite(ostr.str().c_str(),probe_img);
 
@@ -391,7 +391,7 @@ int main(int argc, const char *argv[])
   //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
 
-  //SubspaceAnalysis::FaceRecognizer* EFF_depth=new SubspaceAnalysis::FaceRecognizer();
+  SubspaceAnalysis::FaceRecognizer* EFF_depth=new SubspaceAnalysis::FaceRecognizer();
   //if(use_xyz)
   //{
   //EFF_depth->trainModel(dm_vec,label_vec,ss_dim,method,true,false);
@@ -430,7 +430,7 @@ int main(int argc, const char *argv[])
   double DFFS_EFF_dm;
   //if(use_xyz)
   //{
-  //cv::Mat probe_dm = probe_dm_vec[i];
+  cv::Mat probe_dm = probe_dm_vec[i];
   //EFF_depth->projectToSubspace(probe_dm,coeff_EFF_dm,DFFS_EFF_dm);
   //EFF_depth->classify(coeff_EFF_dm,classifier,c_EFF_dm);
   ////std::cout<<"DM CLASS"<<c_EFF_dm<<std::endl;

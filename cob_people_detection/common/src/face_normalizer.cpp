@@ -17,12 +17,12 @@ using namespace cv;
 void FaceNormalizer::init(FNConfig& i_config)
 {
   std::string def_classifier_directory=     "/usr/share/OpenCV-2.3.1/";
-  this->init(def_classifier_directory,"",i_config,0,false,false,"");
+  this->init(def_classifier_directory,"",i_config,0,false,false);
 }
 
 void FaceNormalizer::init(std::string i_classifier_directory,FNConfig& i_config)
 {
-  this->init(i_classifier_directory,"",i_config,0,false,false,"");
+  this->init(i_classifier_directory,"",i_config,0,false,false);
 }
 
 //call initialize function with set default values
@@ -43,46 +43,35 @@ void FaceNormalizer::init()
 
   std::string def_classifier_directory=     "/usr/share/OpenCV-2.3.1/";
 
-  this->init(def_classifier_directory,"",def_config,0,false,false,"");
+  this->init(def_classifier_directory,"",def_config,0,false,false);
 }
 
 
 
-void FaceNormalizer::init(std::string i_classifier_directory,std::string i_storage_directory,FNConfig& i_config,int i_epoch_ctr,bool i_debug,bool i_record_scene,std::string i_debug_path)
+void FaceNormalizer::init(std::string i_classifier_directory,std::string i_storage_directory,FNConfig& i_config,int i_epoch_ctr,bool i_debug,bool i_record_scene)
 {
   classifier_directory_=i_classifier_directory;
   storage_directory_=   i_storage_directory;
   config_=              i_config;
-  epoch_ctr=            i_epoch_ctr;
+  epoch_ctr_=            i_epoch_ctr;
   debug_=               i_debug;
   record_scene_=        i_record_scene;
-  debug_path_=          i_debug_path;
-  fail_ctr=0;
-  succ_ctr=0;
 
   if (config_.align)
   {
     std::string eye_r_path,eye_path,eye_l_path,nose_path,mouth_path;
     eye_r_path=    classifier_directory_+ "haarcascades/haarcascade_mcs_righteye.xml";
-    eye_path=      classifier_directory_+ "haarcascades/haarcascade_mcs_lefteye.xml";
     eye_l_path=    classifier_directory_+ "haarcascades/haarcascade_mcs_lefteye.xml";
     nose_path=     classifier_directory_+ "haarcascades/haarcascade_mcs_nose.xml";
-    mouth_path=    classifier_directory_+ "haarcascades/haarcascade_mcs_mouth.xml";
 
     eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
     eye_r_storage_=cvCreateMemStorage(0);
-
-    eye_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_path.c_str(),0,0,0);
-    eye_storage_=cvCreateMemStorage(0);
 
     eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
     eye_l_storage_=cvCreateMemStorage(0);
 
     nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
     nose_storage_=cvCreateMemStorage(0);
-
-    mouth_cascade_=(CvHaarClassifierCascade*) cvLoad(mouth_path.c_str(),0,0,0);
-    mouth_storage_=cvCreateMemStorage(0);
 
     //intrinsics
     cv::Vec2f focal_length;
@@ -102,8 +91,6 @@ void FaceNormalizer::init(std::string i_classifier_directory,std::string i_stora
 FaceNormalizer::~FaceNormalizer(){
   if(config_.align)
   {
-	cvReleaseHaarClassifierCascade(&mouth_cascade_);
-	cvReleaseMemStorage(&mouth_storage_);
 	cvReleaseHaarClassifierCascade(&nose_cascade_);
 	cvReleaseMemStorage(&nose_storage_);
 	cvReleaseHaarClassifierCascade(&eye_l_cascade_);
@@ -123,26 +110,6 @@ FaceNormalizer::~FaceNormalizer(){
 
 
 
-bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth,std::string path)
-{
-
-  std::cout<<"SAVING SCENE"<<std::endl;
-  path.append(boost::lexical_cast<std::string>(epoch_ctr));
-  save_scene(depth,img,path);
-
-//  std::vector<cv::Mat> channels_xyz,channels_rgb;
-//  cv::split(depth,channels_xyz);
-//  channels_xyz[2].convertTo(channels_xyz[2],CV_8U,255);
-//  cv::imshow("saving depth...",channels_xyz[2]);
-//
-//  cv::split(img,channels_rgb);
-//  channels_rgb[2].convertTo(channels_rgb[2],CV_8U,255);
-//  cv::imshow("saving rgb...",channels_rgb[2]);
-
-
-
-  return true;
-}
 
 bool FaceNormalizer::normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_size, cv::Mat& DM)
 {
@@ -150,8 +117,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_s
   valid =normalizeFace(RGB,XYZ,norm_size);
   XYZ.copyTo(DM);
   //reducing z coordinate and performing whitening transformation
-  processDM(DM,DM);
-  //despeckle<float>(DM,DM);
+  create_DM(DM,DM);
   return valid;
 }
 
@@ -164,11 +130,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
 
   bool valid = true; // Flag only returned true if all steps have been completed successfully
 
-  epoch_ctr++;
-
-
-
-
+  epoch_ctr_++;
 
   //geometric normalization
   if(config_.align)
@@ -199,7 +161,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
 
   if(debug_)dump_img(img,"size");
 
-  epoch_ctr++;
+  epoch_ctr_++;
   return valid;
 }
 
@@ -242,7 +204,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
   if(debug_)dump_img(img,"2_resized");
   }
 
-  epoch_ctr++;
+  epoch_ctr_++;
   return valid;
 }
 
@@ -616,8 +578,8 @@ void FaceNormalizer::dump_img(cv::Mat& data,std::string name)
 
     std::cout<<"[FaceNomalizer] dump_img() only with set debug flag and path."<<std::endl;
   }
-  std::string filename =debug_path_;
-  filename.append(boost::lexical_cast<std::string>(epoch_ctr));
+  std::string filename =storage_directory_;
+  filename.append(boost::lexical_cast<std::string>(epoch_ctr_));
   filename.append("_");
   filename.append(name);
   filename.append(".jpg");
@@ -639,8 +601,9 @@ void FaceNormalizer::dump_features(cv::Mat& img)
    if(debug_)dump_img(img2,"features");
 }
 
-bool FaceNormalizer::save_scene(cv::Mat& depth,cv::Mat& color,std::string path)
+bool FaceNormalizer::save_scene(cv::Mat& RGB,cv::Mat& XYZ,std::string path)
 {
+  path.append(boost::lexical_cast<std::string>(epoch_ctr_));
   std::cout<<"[FaceNormalizer]Saving to "<<path<<std::endl;
   std::string depth_path,color_path;
   color_path=path;
@@ -648,10 +611,10 @@ bool FaceNormalizer::save_scene(cv::Mat& depth,cv::Mat& color,std::string path)
   depth_path=path;
   depth_path.append(".xml");
   cv::FileStorage fs(depth_path,FileStorage::WRITE);
-  fs << "depth"<<depth;
-  fs << "color"<<color;
+  fs << "depth"<<XYZ;
+  fs << "color"<<RGB;
   fs.release();
-  imwrite(color_path,color);
+  imwrite(color_path,RGB);
 
   return true;
 }
@@ -667,54 +630,45 @@ bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,std::string path)
 }
 
 
-void FaceNormalizer::processDM(cv::Mat& dm_xyz,cv::Mat& dm)
+void FaceNormalizer::create_DM(cv::Mat& XYZ,cv::Mat& DM)
 {
   //reducing to depth ( z - coordinate only)
-  if(dm_xyz.channels()==3)
+  if(XYZ.channels()==3)
   {
   std::vector<cv::Mat> cls;
-  cv::split(dm_xyz,cls);
-  dm=cls[2];
+  cv::split(XYZ,cls);
+  DM=cls[2];
   }
-  else if (dm_xyz.channels()==1)
+  else if (XYZ.channels()==1)
   {
-    dm=dm_xyz;
+    DM=XYZ;
   }
 
   //reduce z values
-  float minval=1000.0;
-  float mean=0.0;
-  int mean_ctr=0;
-  for(int r=0;r<dm.rows;r++)
+  float minval=std::numeric_limits<float>::max();
+  for(int r=0;r<DM.rows;r++)
   {
-    for(int c=0;c<dm.cols;c++)
+    for(int c=0;c<DM.cols;c++)
     {
-      if(dm.at<float>(r,c)!=0)
-      {
-        mean+=dm.at<float>(r,c);
-        mean_ctr ++;
-      }
-      if(dm.at<float>(r,c) < minval &&dm.at<float>(r,c)!=0)
-        minval =dm.at<float>(r,c);
+      if(DM.at<float>(r,c) < minval &&DM.at<float>(r,c)!=0) minval =DM.at<float>(r,c);
     }
   }
 
-  mean=(mean/mean_ctr )- minval;
-  for(int r=0;r<dm.rows;r++)
+  for(int r=0;r<DM.rows;r++)
   {
-    for(int c=0;c<dm.cols;c++)
+    for(int c=0;c<DM.cols;c++)
     {
-      if(dm.at<float>(r,c)!=0)
-        dm.at<float>(r,c) -=minval;
+      if(DM.at<float>(r,c)!=0)DM.at<float>(r,c)-=minval;
+      //if(DM.at<float>(r,c)==0)DM.at<float>(r,c)=255;
     }
   }
-  despeckle<float>(dm,dm);
-  cv::blur(dm,dm,cv::Size(3,3));
+  //despeckle<float>(DM,DM);
+  cv::medianBlur(DM,DM,5);
+  //cv::blur(DM,DM,cv::Size(3,3));
 }
 
 bool FaceNormalizer::projectPoint(cv::Point3f& xyz,cv::Point2f& uv)
 {
-  //TODO define rot trans cam_mat, dist_coeffs
     std::vector<cv::Point3f> m_xyz;
     std::vector<cv::Point2f> m_uv;
     m_xyz.push_back(xyz);

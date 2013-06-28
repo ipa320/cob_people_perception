@@ -67,17 +67,6 @@ message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
 #			ros/src/people_detection.cpp)
 #add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
-
-
-#rosbuild_add_executable(face_normalizer_node
-#      common/src/face_normalizer.cpp
-#      ros/src/face_normalizer_node.cpp)
-#    target_link_libraries(face_normalizer_node virtual_camera)
-
-rosbuild_add_library(virtual_camera
-  common/src/virtual_camera.cpp)
-target_link_libraries(virtual_camera  opencv_core )
-
 rosbuild_add_library(subspace_analysis
   common/src/subspace_analysis.cpp)
 target_link_libraries(subspace_analysis  opencv_core  opencv_highgui decomposition)
@@ -173,7 +162,6 @@ rosbuild_link_boost(coordinator_node signals)
 
 rosbuild_add_library(face_normalizer
 			common/src/face_normalizer.cpp)
-    target_link_libraries(face_normalizer virtual_camera)
 
 
 

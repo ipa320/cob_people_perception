@@ -191,22 +191,22 @@ protected:
 
 
 // DEPTH
-  SubspaceAnalysis::FaceRecognizer depth_eff_;
-  std::vector<std::string> depth_str_labels;
-  std::vector<std::string> depth_str_labels_unique;
-  std::vector<int> depth_num_labels;
+  SubspaceAnalysis::FaceRecognizer depth_eff_;    ///< FaceRecognizer for depth maps
+  std::vector<std::string> depth_str_labels;      ///< Vector for class label strings for depth training data
+  std::vector<std::string> depth_str_labels_unique; ///< Vector for class unique label strings for depth training data
+  std::vector<int> depth_num_labels;                ///< Number of classes for depth training data
 //
-  FaceNormalizer face_normalizer_;
+  FaceNormalizer face_normalizer_;                ///< Face normalizer object
 
-  SubspaceAnalysis::FaceRecognizer eff_depth;
-  SubspaceAnalysis::FaceRecognizer eff_color;
-  std::vector<int> m_label_num;
-  int             m_rec_method;
-  std::vector<bool> dm_exist;
-  bool m_depth_mode;
-  SubspaceAnalysis::Classifier m_class_meth;
-  SubspaceAnalysis::Method m_subs_meth;
-  bool m_use_unknown_thresh;
+  SubspaceAnalysis::FaceRecognizer eff_depth;     ///< FaceRecognizer for depth maps
+  SubspaceAnalysis::FaceRecognizer eff_color;     ///< FaceRecognizer for color images
+  std::vector<int> m_label_num ;                  
+  int             m_rec_method;                   ///< flag for recognition method
+  std::vector<bool> dm_exist;                     ///< vector indicating if depth map exists for corresponding color image
+  bool m_depth_mode;                              ///< flag indicates if depth maps are ignored or used
+  SubspaceAnalysis::Classifier m_class_meth;      ///< classification method
+  SubspaceAnalysis::Method m_subs_meth;           ///< recognition method
+  bool m_use_unknown_thresh;                      ///< flag indicates if unknown threshold is used
 unsigned long initModel(SubspaceAnalysis::FaceRecognizer& eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
 //----------------------------------------------------
 //----------------------------------------------------
