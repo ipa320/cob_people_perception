@@ -6,6 +6,199 @@
 #include <boost/thread/mutex.hpp>
 #include<thirdparty/decomposition.hpp>
 
+
+void SubspaceAnalysis::FaceRecognizer1D::calc_threshold(cv::Mat& data,double& thresh)
+{
+  std::vector<double> P(num_classes_,std::numeric_limits<double>::max());
+  std::vector<double> D(num_classes_,std::numeric_limits<double>::min());
+  std::vector<double> Phi(num_classes_,std::numeric_limits<double>::max());
+
+  for(int i=0;i<data.rows;i++)
+  {
+    cv::Mat i_row=data.row(i);
+    for(int n=0;n<data.rows;n++)
+    {
+      if(n==i) continue;
+      cv::Mat n_row=data.row(n);
+      double dist = cv::norm(i_row,n_row,cv::NORM_L2);
+      if(model_label_vec_[n]==model_label_vec_[i])
+      {
+        D[model_label_vec_[i]]=std::max(dist,D[model_label_vec_[i]]);
+      }
+      else
+      {
+        P[model_label_vec_[i]]=std::min(dist,P[model_label_vec_[i]]);
+      }
+    }
+  }
+
+  // if only one class - P =D
+  if(num_classes_==1)
+  {
+    P[0]=D[0];
+  }
+
+  for(int c=0;c<num_classes_;c++)
+  {
+    thresh=std::min(thresh,(P[c]+D[c]) *0.5);
+  }
+  std::cout<<"THRESH for db: "<<thresh<<std::endl;
+
+}
+
+
+void SubspaceAnalysis::FaceRecognizer1D::model_data_mat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat)
+{
+
+  // convert input to data matrix,with images as rows
+
+    for(int i = 0;i<input_data.size();i++)
+    {
+    cv::Mat src_mat;
+      src_mat=input_data[i];
+      src_mat=src_mat.reshape(1,1);
+      cv::Mat dst_row=data_mat.row(i);
+      src_mat.copyTo(dst_row);
+      }
+
+  return;
+}
+
+void SubspaceAnalysis::FaceRecognizer1D::extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat)
+{
+
+
+  //projection
+  cv::gemm(src_mat,proj_mat,1.0,cv::Mat(),0.0,coeff_mat,cv::GEMM_2_T);
+
+}
+
+void SubspaceAnalysis::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
+{
+
+  if(this->trained_ ==false)
+  {
+    std::cout<<"[FaceRecognizer] Model not trained - aborting classify"<<std::endl;
+    return;
+  }
+
+  if(num_classes_<2)
+  {
+    std::cout<<"[FaceRecognizer] Less than 2 classes in model - aborting classify"<<std::endl;
+    return;
+  }
+  //project query mat to feature space
+  cv::Mat feature_arr=cv::Mat(1,target_dim_,CV_64FC1);
+  // conversion from matrix format to array
+  cv::Mat probe_arr=cv::Mat(1,probe_mat.total(),probe_mat.type());
+  mat2arr(probe_mat,probe_arr);
+
+  extractFeatures(probe_arr,projection_mat_,feature_arr);
+
+  //calculate distance in face space DIFS
+  double minDIFS;
+  cv::Mat minDIFScoeffs;
+  int minDIFSindex;
+  calcDIFS(feature_arr,minDIFSindex,minDIFS,classification_probabilities);
+  max_prob_index=(int)model_label_vec_[minDIFSindex];
+
+  //check whether unknown threshold is exceeded
+  if(use_unknown_thresh_)
+  {
+    if(! is_known(minDIFS,unknown_thresh_))max_prob_index=-1;
+  }
+  return;
+}
+
+
+void SubspaceAnalysis::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities)
+{
+    double norm;
+    minDIFS=std::numeric_limits<int>::max();
+    probabilities *=  std::numeric_limits<float>::max();
+      for(int r=0;r<model_features_.rows;r++)
+      {
+        cv::Mat model_mat=model_features_.row(r);
+
+        //calculate L2 norm between probe amd all model mats
+        norm=cv::norm(probe_mat,model_mat,cv::NORM_L2);
+
+        // update minimum distance and index if required
+        if(norm < minDIFS )
+        {
+          minDIFSindex=r;
+          minDIFS=norm;
+        }
+        //calculate cost for classification to every class in database
+        probabilities.at<float>(model_label_vec_[r])=std::min(probabilities.at<float>(model_label_vec_[r]),(float)norm);
+      }
+
+    //process class_cost
+    double min_cost,max_cost;
+    probabilities=1/(probabilities.mul(probabilities));
+    cv::minMaxLoc(probabilities,&min_cost,&max_cost,0,0);
+    probabilities/=max_cost;
+
+    return;
+}
+
+void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
+{
+        SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
+        SubspaceAnalysis::condense_labels(label_vec);
+
+        //allocate all matrices
+        model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
+        model_label_vec_.resize(img_vec.size());
+        average_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
+        projection_mat_=cv::Mat(target_dim_,img_vec[0].total(),CV_64FC1);
+        eigenvalues_=cv::Mat(1,target_dim_-1,CV_64FC1);
+        model_features_=cv::Mat(model_data_arr_.rows,target_dim_,CV_64FC1);
+
+        model_data_mat(img_vec,model_data_arr_);
+        //initiate PCA
+        pca_=SubspaceAnalysis::PCA(model_data_arr_,target_dim_);
+
+        //Assign model to member variables
+        projection_mat_=pca_.eigenvecs;
+        eigenvalues_=pca_.eigenvals;
+        average_arr_=pca_.mean;
+
+
+        extractFeatures(model_data_arr_,projection_mat_,model_features_);
+        if(use_unknown_thresh_)
+        {
+        calc_threshold(model_features_,unknown_thresh_);
+        }
+
+  // set FaceRecognizer to trained
+  this->trained_=true;
+
+}
+
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------------------------------------------------<
+//---------------------------------------------------------------------------------------------------------------------<
+//---------------------------------------------------------------------------------------------------------------------<
+//---------------------------------------------------------------------------------------------------------------------<
+//---------------------------------------------------------------------------------------------------------------------<
+//---------------------------------------------------------------------------------------------------------------------<
+//---------------------------------------------------------------------------------------------------------------------<
+void SubspaceAnalysis::mat2arr(cv::Mat& src_mat,cv::Mat& dst_mat)
+{
+
+    dst_mat=src_mat.clone().reshape(1,1);
+
+  return;
+}
 void SubspaceAnalysis::error_prompt(std::string fct,std::string desc)
 {
   std::cerr<<"ERROR\n";

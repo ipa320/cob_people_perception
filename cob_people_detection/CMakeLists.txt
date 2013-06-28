@@ -72,6 +72,15 @@ rosbuild_add_library(subspace_analysis
 target_link_libraries(subspace_analysis  opencv_core  opencv_highgui decomposition)
 rosbuild_link_boost(subspace_analysis system filesystem)
 
+rosbuild_add_library(subspace_analysisNEW
+  common/src/subspace_analysisNEW.cpp)
+target_link_libraries(subspace_analysisNEW  opencv_core  opencv_highgui decomposition)
+rosbuild_link_boost(subspace_analysisNEW system filesystem)
+rosbuild_add_executable(ssaNEW
+      common/src/test/ssaNEW.cpp
+      )
+    target_link_libraries(ssaNEW subspace_analysisNEW face_normalizer )
+
 #library for eigenvalue decomposition of asymmetric matrices
 rosbuild_add_library(decomposition
   common/src/decomposition.cpp)

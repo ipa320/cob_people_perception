@@ -411,7 +411,7 @@ class dlg(wx.Frame):
 
 
   def run_bin(self,method,classifier,normalize,xyz):
-    subprocess.call(["./ssa_test",method,classifier,normalize,xyz])
+    subprocess.call(["./ssaNEW",method,classifier,normalize,xyz])
 
   def process_kinect2(self):
     self.ts_list=list()
