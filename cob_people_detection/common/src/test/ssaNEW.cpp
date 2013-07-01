@@ -1,5 +1,5 @@
 
-#include<cob_people_detection/subspace_analysisNEW.h>
+#include<cob_people_detection/face_recognition.h>
 #include<cob_people_detection/face_normalizer.h>
 #include<opencv/cv.h>
 #include<opencv/highgui.h>
@@ -115,28 +115,28 @@ int main(int argc, const char *argv[])
 
   //  Configure input params for subspace analysis
 
-  SubspaceAnalysis::Method method;
-  SubspaceAnalysis::Classifier classifier;
+  cob_people_detection::Method method;
+  cob_people_detection::Classifier classifier;
 
   if(!method_str.compare("FISHER"))
   {
     std::cout<<"FISHER"<<std::endl;
-    method = SubspaceAnalysis::METH_FISHER;
+    method = cob_people_detection::METH_FISHER;
   }
   else if(!method_str.compare("EIGEN"))
   {
     std::cout<<"EIGEN"<<std::endl;
-    method = SubspaceAnalysis::METH_EIGEN;
+    method = cob_people_detection::METH_EIGEN;
   }
   else if(!method_str.compare("LDA2D"))
   {
     std::cout<<"LDA2D"<<std::endl;
-    method = SubspaceAnalysis::METH_LDA2D;
+    method = cob_people_detection::METH_LDA2D;
   }
   else if(!method_str.compare("PCA2D"))
   {
     std::cout<<"PCA2D"<<std::endl;
-    method = SubspaceAnalysis::METH_PCA2D;
+    method = cob_people_detection::METH_PCA2D;
   }
   else
   {
@@ -146,22 +146,22 @@ int main(int argc, const char *argv[])
   if(!classifier_str.compare("KNN"))
   {
     std::cout<<"KNN"<<std::endl;
-    classifier = SubspaceAnalysis::CLASS_KNN;
+    classifier = cob_people_detection::CLASS_KNN;
   }
   else if(!classifier_str.compare("DIFFS"))
   {
     std::cout<<"DIFFS"<<std::endl;
-    classifier = SubspaceAnalysis::CLASS_DIFS;
+    classifier = cob_people_detection::CLASS_DIFS;
   }
   else if(!classifier_str.compare("SVM"))
   {
     std::cout<<"SVM"<<std::endl;
-    classifier = SubspaceAnalysis::CLASS_SVM;
+    classifier = cob_people_detection::CLASS_SVM;
   }
   else if(!classifier_str.compare("RF"))
   {
     std::cout<<"RF"<<std::endl;
-    classifier = SubspaceAnalysis::CLASS_RF;
+    classifier = cob_people_detection::CLASS_RF;
   }
   else
   {
@@ -366,7 +366,7 @@ int main(int argc, const char *argv[])
 
   int ss_dim=num_classes;
 
-  SubspaceAnalysis::FaceRecognizerBaseClass* EFF;
+  cob_people_detection::FaceRecognizerBaseClass* EFF;
   // calculate Model
 
  // timeval t1,t2,t3,t4;
@@ -374,30 +374,35 @@ int main(int argc, const char *argv[])
 
   switch (method)
   {
-    case SubspaceAnalysis::METH_EIGEN:
+    case cob_people_detection::METH_EIGEN:
       {
-        EFF=new SubspaceAnalysis::FaceRecognizer_Eigenfaces();
+        EFF=new cob_people_detection::FaceRecognizer_Eigenfaces();
         break;
       }
-    case SubspaceAnalysis::METH_FISHER:
+    case cob_people_detection::METH_FISHER:
       {
-        EFF=new SubspaceAnalysis::FaceRecognizer_Fisherfaces();
+        EFF=new cob_people_detection::FaceRecognizer_Fisherfaces();
         break;
       }
-    case SubspaceAnalysis::METH_PCA2D:
+    case cob_people_detection::METH_PCA2D:
       {
-        EFF=new SubspaceAnalysis::FaceRecognizer_PCA2D();
+        EFF=new cob_people_detection::FaceRecognizer_PCA2D();
+        break;
+      }
+    case cob_people_detection::METH_LDA2D:
+      {
+        EFF=new cob_people_detection::FaceRecognizer_LDA2D();
         break;
       }
     default:
       {
-        EFF=new SubspaceAnalysis::FaceRecognizer_Eigenfaces();
+        EFF=new cob_people_detection::FaceRecognizer_Eigenfaces();
         break;
       }
   }
   boost::timer t;
   EFF->trainModel(img_vec,label_vec,ss_dim);
-  //EFF.activate_unknown_treshold();
+  //EFF->activate_unknown_treshold();
   //gettimeofday(&t2,NULL);jj
 
   //open output file
@@ -467,7 +472,6 @@ int main(int argc, const char *argv[])
   //EFF->saveModel("/share/goa-tz/people_detection/debug/test.xml");
 
 
-  //SubspaceAnalysis::FaceRecognizer* m2=new SubspaceAnalysis::FaceRecognizer();
 
 
   //m2->loadModel(m1_evec,m1_eval,m1_avg,m1_pmd,label_vec,false);
