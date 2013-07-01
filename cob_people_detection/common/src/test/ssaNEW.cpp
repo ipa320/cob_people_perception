@@ -373,6 +373,7 @@ int main(int argc, const char *argv[])
  // gettimeofday(&t1,NULL);
   boost::timer t;
   EFF.trainModel(img_vec,label_vec,ss_dim);
+  //EFF.activate_unknown_treshold();
   //gettimeofday(&t2,NULL);jj
 
   //open output file

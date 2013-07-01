@@ -7,8 +7,13 @@
 #include<thirdparty/decomposition.hpp>
 
 
+void SubspaceAnalysis::FaceRecognizerBaseClass::activate_unknown_treshold()
+{
+  use_unknown_thresh_=true;
+}
 void SubspaceAnalysis::FaceRecognizer1D::calc_threshold(cv::Mat& data,double& thresh)
 {
+  thresh=std::numeric_limits<double>::max();
   std::vector<double> P(num_classes_,std::numeric_limits<double>::max());
   std::vector<double> D(num_classes_,std::numeric_limits<double>::min());
   std::vector<double> Phi(num_classes_,std::numeric_limits<double>::max());
@@ -73,6 +78,11 @@ void SubspaceAnalysis::FaceRecognizer1D::extractFeatures(cv::Mat& src_mat,cv::Ma
 
 }
 
+void SubspaceAnalysis::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& max_prob_index)
+{
+  cv::Mat classification_probabilities;
+  classifyImage(probe_mat,max_prob_index,classification_probabilities);
+}
 void SubspaceAnalysis::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
 {
 
@@ -114,7 +124,8 @@ void SubspaceAnalysis::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& m
 void SubspaceAnalysis::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities)
 {
     double norm;
-    minDIFS=std::numeric_limits<int>::max();
+    minDIFS=std::numeric_limits<float>::max();
+    probabilities=cv::Mat(1,num_classes_,CV_32FC1);
     probabilities *=  std::numeric_limits<float>::max();
       for(int r=0;r<model_features_.rows;r++)
       {
@@ -130,7 +141,6 @@ void SubspaceAnalysis::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& minDIF
           minDIFS=norm;
         }
         //calculate cost for classification to every class in database
-        probabilities.at<float>(model_label_vec_[r])=std::min(probabilities.at<float>(model_label_vec_[r]),(float)norm);
       }
 
     //process class_cost
@@ -155,6 +165,8 @@ void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat
         eigenvalues_=cv::Mat(1,target_dim_-1,CV_64FC1);
         model_features_=cv::Mat(model_data_arr_.rows,target_dim_,CV_64FC1);
 
+
+        model_label_vec_=label_vec;
         model_data_mat(img_vec,model_data_arr_);
         //initiate PCA
         pca_=SubspaceAnalysis::PCA(model_data_arr_,target_dim_);
@@ -166,14 +178,10 @@ void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat
 
 
         extractFeatures(model_data_arr_,projection_mat_,model_features_);
-        if(use_unknown_thresh_)
-        {
         calc_threshold(model_features_,unknown_thresh_);
-        }
 
-  // set FaceRecognizer to trained
-  this->trained_=true;
-
+        // set FaceRecognizer to trained
+        this->trained_=true;
 }
 
 
@@ -299,7 +307,6 @@ void SubspaceAnalysis::unique_elements(std::vector<int> & vec,int& unique_elemen
 //
 void SubspaceAnalysis::XFaces::calcDFFS(cv::Mat& orig_mat,cv::Mat& recon_mat,cv::Mat& avg,std::vector<double>& DFFS)
 {
-
   cv::Mat temp=cv::Mat(orig_mat.rows,orig_mat.cols,orig_mat.type());
   orig_mat.copyTo(temp);
   DFFS.resize(recon_mat.rows);
@@ -634,131 +641,130 @@ void SubspaceAnalysis::XFaces::prediction(cv::Mat& query_image,int& max_prob_ind
   //accordingly
 
 }
-void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& max_prob_index,cv::Mat& probabilities)
-{
-  classify(coeff_arr,method,max_prob_index);
-  probabilities=class_cost_;
-}
-
-void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& class_index)
-{
-  if(this->trained ==false)
-  {
-    std::cout<<"XFaces --> Model not trained - aborting classify\n";
-    return;
-  }
-
-  if(num_classes_<2)
-  {
-    method = SubspaceAnalysis::CLASS_DIFS;
-  }
-
-
-  double minDIFS;
-  switch(method)
-  {
-    case SubspaceAnalysis::CLASS_DIFS:
-    {
-      cv::Mat minDIFScoeffs;
-      int minDIFSindex;
-      calcDIFS(coeff_arr,minDIFSindex,minDIFS,minDIFScoeffs);
-      class_index=(int)model_label_arr_.at<float>(minDIFSindex);
-
-      break;
-    };
-
-    case SubspaceAnalysis::CLASS_KNN:
-    {
-      // train SVM when not already trained
-      if(!knn_trained_)
-      {
-
-        cv::Mat data_float;
-        proj_model_data_arr_.convertTo(data_float,CV_32FC1);
-
-
-        knn_.train(data_float,model_label_arr_);
-        knn_trained_=true;
-      }
-
-      // predict using knn
-      cv::Mat sample;
-      coeff_arr.convertTo(sample,CV_32FC1);
-      //class_index=(int)svm_.predict(sample);
-      cv::Mat result;
-
-      class_index=(int)knn_.find_nearest(sample,3);
-
-
-      break;
-    }
-    case SubspaceAnalysis::CLASS_SVM:
-    {
-      // train SVM when not already trained
-      if(!svm_trained_)
-      {
-        //train svm with model data
-        CvSVMParams params;
-        params.svm_type = CvSVM::C_SVC;
-        //params.kernel_type = CvSVM::LINEAR;
-        params.kernel_type = CvSVM::LINEAR;
-        params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER,50,1e-5);
-
-        cv::Mat data_float;
-        proj_model_data_arr_.convertTo(data_float,CV_32FC1);
-
-
-        svm_.train(data_float,model_label_arr_,cv::Mat(),cv::Mat(),params);
-        svm_trained_=true;
-      }
-
-      // predict using svm
-      cv::Mat sample;
-      coeff_arr=coeff_arr.reshape(1,1);
-      coeff_arr.convertTo(sample,CV_32FC1);
-     class_index=(int)svm_.predict(sample);
-
-      break;
-    };
-    case SubspaceAnalysis::CLASS_RF:
-    {
-      // train SVM when not already trained
-      if(!rf_trained_)
-      {
-        //train svm with model data
-        CvRTParams params;
-
-        cv::Mat data_float;
-        proj_model_data_arr_.convertTo(data_float,CV_32FC1);
-
-
-        rf_.train(data_float,CV_ROW_SAMPLE,model_label_arr_,cv::Mat(),cv::Mat(),cv::Mat(),cv::Mat(),params);
-        rf_trained_=true;
-      }
-
-      // predict using svm
-      cv::Mat sample;
-      coeff_arr.convertTo(sample,CV_32FC1);
-      //class_index=(int)svm_.predict(sample);
-     class_index=(int)rf_.predict(sample);
-
-      break;
-    };
-
-    default: {
-      std::cout<<"[CLASSIFICATION] method not implemented"<<std::endl;
-      break;
-    };
-  }
-
-  if(use_unknown_thresh_)
-  {
-    //if(! verifyClassification(coeff_arr,class_index))class_index=-1;
-    if(! is_known(minDIFS,thresh_))class_index=-1;
-
-  }
-  return;
-}
+//void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& max_prob_index,cv::Mat& probabilities)
+//{
+//  classify(coeff_arr,method,max_prob_index);
+//  probabilities=class_cost_;
+//}
+//
+//void SubspaceAnalysis::XFaces::classify(cv::Mat& coeff_arr,Classifier method,int& class_index)
+//{
+//  if(this->trained ==false)
+//  {
+//    std::cout<<"XFaces --> Model not trained - aborting classify\n";
+//    return;
+//  }
+//
+//  if(num_classes_<2)
+//  {
+//    method = SubspaceAnalysis::CLASS_DIFS;
+//  }
+//
+//
+//  double minDIFS;
+//  switch(method)
+//  {
+//    case SubspaceAnalysis::CLASS_DIFS:
+//    {
+//      int minDIFSindex;
+//      calcDIFS(coeff_arr,minDIFSindex,minDIFS,minDIFScoeffs);
+//      class_index=(int)model_label_arr_.at<float>(minDIFSindex);
+//
+//      break;
+//    };
+//
+//    case SubspaceAnalysis::CLASS_KNN:
+//    {
+//      // train SVM when not already trained
+//      if(!knn_trained_)
+//      {
+//
+//        cv::Mat data_float;
+//        proj_model_data_arr_.convertTo(data_float,CV_32FC1);
+//
+//
+//        knn_.train(data_float,model_label_arr_);
+//        knn_trained_=true;
+//      }
+//
+//      // predict using knn
+//      cv::Mat sample;
+//      coeff_arr.convertTo(sample,CV_32FC1);
+//      //class_index=(int)svm_.predict(sample);
+//      cv::Mat result;
+//
+//      class_index=(int)knn_.find_nearest(sample,3);
+//
+//
+//      break;
+//    }
+//    case SubspaceAnalysis::CLASS_SVM:
+//    {
+//      // train SVM when not already trained
+//      if(!svm_trained_)
+//      {
+//        //train svm with model data
+//        CvSVMParams params;
+//        params.svm_type = CvSVM::C_SVC;
+//        //params.kernel_type = CvSVM::LINEAR;
+//        params.kernel_type = CvSVM::LINEAR;
+//        params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER,50,1e-5);
+//
+//        cv::Mat data_float;
+//        proj_model_data_arr_.convertTo(data_float,CV_32FC1);
+//
+//
+//        svm_.train(data_float,model_label_arr_,cv::Mat(),cv::Mat(),params);
+//        svm_trained_=true;
+//      }
+//
+//      // predict using svm
+//      cv::Mat sample;
+//      coeff_arr=coeff_arr.reshape(1,1);
+//      coeff_arr.convertTo(sample,CV_32FC1);
+//     class_index=(int)svm_.predict(sample);
+//
+//      break;
+//    };
+//    case SubspaceAnalysis::CLASS_RF:
+//    {
+//      // train SVM when not already trained
+//      if(!rf_trained_)
+//      {
+//        //train svm with model data
+//        CvRTParams params;
+//
+//        cv::Mat data_float;
+//        proj_model_data_arr_.convertTo(data_float,CV_32FC1);
+//
+//
+//        rf_.train(data_float,CV_ROW_SAMPLE,model_label_arr_,cv::Mat(),cv::Mat(),cv::Mat(),cv::Mat(),params);
+//        rf_trained_=true;
+//      }
+//
+//      // predict using svm
+//      cv::Mat sample;
+//      coeff_arr.convertTo(sample,CV_32FC1);
+//      //class_index=(int)svm_.predict(sample);
+//     class_index=(int)rf_.predict(sample);
+//
+//      break;
+//    };
+//
+//    default: {
+//      std::cout<<"[CLASSIFICATION] method not implemented"<<std::endl;
+//      break;
+//    };
+//  }
+//
+//  if(use_unknown_thresh_)
+//  {
+//    //if(! verifyClassification(coeff_arr,class_index))class_index=-1;
+//    if(! is_known(minDIFS,thresh_))class_index=-1;
+//
+//  }
+//  return;
+//}
 
 
 void SubspaceAnalysis::XFaces::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& minDIFScoeffs)
