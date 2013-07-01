@@ -366,7 +366,7 @@ int main(int argc, const char *argv[])
 
   int ss_dim=num_classes;
 
-  SubspaceAnalysis::FaceRecognizer_Eigenfaces EFF;
+  SubspaceAnalysis::FaceRecognizer_Fisherfaces EFF;
   // calculate Model
 
  // timeval t1,t2,t3,t4;

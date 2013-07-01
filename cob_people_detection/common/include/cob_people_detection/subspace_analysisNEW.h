@@ -241,7 +241,6 @@ namespace SubspaceAnalysis{
       cv::Mat average_arr_;
       cv::Mat model_features_;
       cv::Mat model_data_arr_;
-      SubspaceAnalysis::PCA pca_;
 
   };
 
@@ -275,7 +274,10 @@ namespace SubspaceAnalysis{
       public:
         FaceRecognizer_Fisherfaces(){};
         virtual ~FaceRecognizer_Fisherfaces(){};
-        virtual void trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim){};
+        virtual void trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim);
+
+      protected:
+        SubspaceAnalysis::LDA lda_;
     };
 
     class FaceRecognizer_LDA2D: public FaceRecognizer2D

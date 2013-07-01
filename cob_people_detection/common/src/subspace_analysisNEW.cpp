@@ -154,8 +154,12 @@ void SubspaceAnalysis::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& minDIF
 
 void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
+      
         SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
         SubspaceAnalysis::condense_labels(label_vec);
+
+
+        SubspaceAnalysis::PCA PCA;
 
         //allocate all matrices
         model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
@@ -169,12 +173,12 @@ void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat
         model_label_vec_=label_vec;
         model_data_mat(img_vec,model_data_arr_);
         //initiate PCA
-        pca_=SubspaceAnalysis::PCA(model_data_arr_,target_dim_);
+        PCA=SubspaceAnalysis::PCA(model_data_arr_,target_dim_);
 
         //Assign model to member variables
-        projection_mat_=pca_.eigenvecs;
-        eigenvalues_=pca_.eigenvals;
-        average_arr_=pca_.mean;
+        projection_mat_=PCA.eigenvecs;
+        eigenvalues_=PCA.eigenvals;
+        average_arr_=PCA.mean;
 
 
         extractFeatures(model_data_arr_,projection_mat_,model_features_);
@@ -184,6 +188,64 @@ void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat
         this->trained_=true;
 }
 
+void SubspaceAnalysis::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
+{
+
+        SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
+        SubspaceAnalysis::condense_labels(label_vec);
+
+        SubspaceAnalysis::PCA PCA;
+        SubspaceAnalysis::LDA LDA;
+
+        // set target dimensions for subspace methods
+        target_dim_=num_classes_-1;
+        int target_dim_PCA=label_vec.size()-num_classes_;
+        if(target_dim_PCA<1)target_dim_PCA=num_classes_;
+
+        //allocate all matrices
+        model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
+        model_label_vec_.resize(img_vec.size());
+        average_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
+        projection_mat_=cv::Mat(target_dim_,img_vec[0].total(),CV_64FC1);
+        eigenvalues_=cv::Mat(1,target_dim_-1,CV_64FC1);
+        model_features_=cv::Mat(model_data_arr_.rows,target_dim_,CV_64FC1);
+
+
+        // local matrices for PCA
+        cv::Mat P_PCA=cv::Mat(target_dim_PCA,img_vec[0].total(),CV_64FC1);
+        cv::Mat model_features_PCA=cv::Mat(model_data_arr_.rows,target_dim_PCA,CV_64FC1);
+
+        // local matrices for LDA
+        cv::Mat P_LDA=cv::Mat(target_dim_,target_dim_PCA,CV_64FC1);
+
+        model_label_vec_=label_vec;
+        model_data_mat(img_vec,model_data_arr_);
+
+
+        //initiate PCA
+        PCA=SubspaceAnalysis::PCA(model_data_arr_,target_dim_PCA);
+        P_PCA=PCA.eigenvecs;
+        extractFeatures(model_data_arr_,P_PCA,model_features_PCA);
+
+        //perform LDA
+        LDA=SubspaceAnalysis::LDA(model_features_PCA,model_label_vec_,num_classes_,target_dim_);
+        P_LDA=LDA.eigenvecs;
+
+        // combine projection matrices
+        cv::gemm(P_PCA.t(),P_LDA.t(),1.0,cv::Mat(),0.0,projection_mat_);
+
+        //Assign model to member variables
+        projection_mat_=projection_mat_.t();
+        eigenvalues_=LDA.eigenvals;
+        average_arr_=PCA.mean;
+
+
+        extractFeatures(model_data_arr_,projection_mat_,model_features_);
+        calc_threshold(model_features_,unknown_thresh_);
+
+        // set FaceRecognizer to trained
+        this->trained_=true;
+}
 
 
 
