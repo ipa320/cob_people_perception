@@ -155,11 +155,14 @@ void SubspaceAnalysis::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& minDIF
 void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
       
+        std::cout<<"Training Eigenfaces"<<std::endl;
         SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
         SubspaceAnalysis::condense_labels(label_vec);
 
 
         SubspaceAnalysis::PCA PCA;
+
+        target_dim_=target_dim;
 
         //allocate all matrices
         model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
@@ -191,6 +194,7 @@ void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat
 void SubspaceAnalysis::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
 
+        std::cout<<"Training Fisherfaces"<<std::endl;
         SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
         SubspaceAnalysis::condense_labels(label_vec);
 

@@ -366,13 +366,32 @@ int main(int argc, const char *argv[])
 
   int ss_dim=num_classes;
 
-  SubspaceAnalysis::FaceRecognizer_Fisherfaces EFF;
+  SubspaceAnalysis::FaceRecognizerBaseClass* EFF;
   // calculate Model
 
  // timeval t1,t2,t3,t4;
  // gettimeofday(&t1,NULL);
+
+  switch (method)
+  {
+    case SubspaceAnalysis::METH_EIGEN:
+      {
+        EFF=new SubspaceAnalysis::FaceRecognizer_Eigenfaces();
+        break;
+      }
+    case SubspaceAnalysis::METH_FISHER:
+      {
+        EFF=new SubspaceAnalysis::FaceRecognizer_Fisherfaces();
+        break;
+      }
+    default:
+      {
+        EFF=new SubspaceAnalysis::FaceRecognizer_Eigenfaces();
+        break;
+      }
+  }
   boost::timer t;
-  EFF.trainModel(img_vec,label_vec,ss_dim);
+  EFF->trainModel(img_vec,label_vec,ss_dim);
   //EFF.activate_unknown_treshold();
   //gettimeofday(&t2,NULL);jj
 
@@ -409,7 +428,7 @@ int main(int argc, const char *argv[])
   cv::Mat coeff_EFF;
   double DFFS_EFF;
   cv::Mat probabilities;
-  EFF.classifyImage(probe,c_EFF,probabilities);
+  EFF->classifyImage(probe,c_EFF,probabilities);
 
   //c_EFF=model->predict(probe);
   //std::cout<<"RGB CLASS"<<c_EFF<<std::endl;
