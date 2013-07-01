@@ -182,21 +182,30 @@ namespace SubspaceAnalysis{
        virtual ~FaceRecognizerBaseClass(){};
 
       virtual void trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)=0;
-      virtual void extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat)=0;
+
+      virtual void extractFeatures(std::vector<cv::Mat>& src_vec,cv::Mat& proj_mat,std::vector<cv::Mat>& coeff_vec)=0;
+      virtual void extractFeatures(cv::Mat& src_vec,cv::Mat& proj_mat,cv::Mat& coeff_vec)=0;
+
       virtual void classifyImage(cv::Mat& probe_mat,int& max_prob_index)=0;
       virtual void classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)=0;
+
       virtual void calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities)=0;
       virtual void calc_threshold(cv::Mat& data,double& thresh)=0;
+      virtual void calc_threshold(std::vector<cv::Mat>& data,double& thresh)=0;
 
-      virtual void activate_unknown_treshold();
 
       virtual void saveModel()=0;
       virtual void loadModel()=0;
+      inline virtual void activate_unknown_treshold()
+        {
+          use_unknown_thresh_=true;
+        };
 
 
 
     protected:
 
+      virtual bool input_param_check(std::vector<cv::Mat>& imgs,std::vector<int>& labels,int& target_dim);
       inline  bool is_known(double& distance ,double& threshold)
         {
           if( distance >= threshold)return false;
@@ -224,11 +233,13 @@ namespace SubspaceAnalysis{
       FaceRecognizer1D(){};
       virtual ~FaceRecognizer1D(){};
 
-      virtual void extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat);
+      virtual void extractFeatures(std::vector<cv::Mat>& src_vec,cv::Mat& proj_mat,std::vector<cv::Mat>& coeff_vec){};
+      virtual void extractFeatures(cv::Mat& src_vec,cv::Mat& proj_mat,cv::Mat& coeff_vec);
       virtual void classifyImage(cv::Mat& probe_mat,int& max_prob_index);
       virtual void classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities);
       virtual void calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities);
       virtual void calc_threshold(cv::Mat& data,double& thresh);
+      virtual void calc_threshold(std::vector<cv::Mat>& data,double& thresh){};
 
 
       virtual void saveModel(){};
@@ -249,15 +260,22 @@ namespace SubspaceAnalysis{
   {
 
     public:
-      virtual void extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat){};
-      virtual void classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities){};
-      virtual void calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities){};
+      virtual void extractFeatures(std::vector<cv::Mat>& src_vec,cv::Mat& proj_mat,std::vector<cv::Mat>& coeff_vec);
+      virtual void extractFeatures(cv::Mat& src_vec,cv::Mat& proj_mat,cv::Mat& coeff_vec);
+      virtual void classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities);
+      virtual void classifyImage(cv::Mat& probe_mat,int& max_prob_index);
+      virtual void calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities);
       virtual void calc_threshold(cv::Mat& data,double& thresh){};
+      virtual void calc_threshold(std::vector<cv::Mat>& data,double& thresh);
 
 
       virtual void saveModel(){};
       virtual void loadModel(){};
 
+    protected:
+      cv::Mat average_mat_;
+      std::vector<cv::Mat> model_features_;
+      std::vector<cv::Mat> model_data_vec_;
   };
 
 
@@ -293,7 +311,7 @@ namespace SubspaceAnalysis{
       public:
         FaceRecognizer_PCA2D(){};
         virtual ~FaceRecognizer_PCA2D(){};
-        virtual void trainModel(){};
+        virtual void trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim);
     };
 
 

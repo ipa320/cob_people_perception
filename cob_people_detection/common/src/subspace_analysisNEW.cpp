@@ -7,9 +7,14 @@
 #include<thirdparty/decomposition.hpp>
 
 
-void SubspaceAnalysis::FaceRecognizerBaseClass::activate_unknown_treshold()
+bool SubspaceAnalysis::FaceRecognizerBaseClass::input_param_check(std::vector<cv::Mat>& imgs,std::vector<int>& labels,int& target_dim)
 {
-  use_unknown_thresh_=true;
+  if(imgs.size()!=labels.size()) return false;
+  if(imgs.size()==0) return false;
+  if(labels.size()==0) return false;
+  if(target_dim==0) return false;
+  if(target_dim>imgs.size()) return false;
+
 }
 void SubspaceAnalysis::FaceRecognizer1D::calc_threshold(cv::Mat& data,double& thresh)
 {
@@ -72,9 +77,9 @@ void SubspaceAnalysis::FaceRecognizer1D::model_data_mat(std::vector<cv::Mat>& in
 void SubspaceAnalysis::FaceRecognizer1D::extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat)
 {
 
-
   //projection
   cv::gemm(src_mat,proj_mat,1.0,cv::Mat(),0.0,coeff_mat,cv::GEMM_2_T);
+
 
 }
 
@@ -123,9 +128,10 @@ void SubspaceAnalysis::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& m
 
 void SubspaceAnalysis::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities)
 {
+
     double norm;
     minDIFS=std::numeric_limits<float>::max();
-    probabilities=cv::Mat(1,num_classes_,CV_32FC1);
+    probabilities=cv::Mat(1,num_classes_,CV_64FC1);
     probabilities *=  std::numeric_limits<float>::max();
       for(int r=0;r<model_features_.rows;r++)
       {
@@ -152,9 +158,138 @@ void SubspaceAnalysis::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& minDIF
     return;
 }
 
+void SubspaceAnalysis::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int& max_prob_index)
+{
+  cv::Mat classification_probabilities;
+  classifyImage(probe_mat,max_prob_index,classification_probabilities);
+}
+void SubspaceAnalysis::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
+{
+
+  //project query mat to feature space
+
+  cv::Mat feature_mat;
+  extractFeatures(probe_mat,projection_mat_,feature_mat);
+
+  //calculate distance in face space DIFS
+  double minDIFS;
+  cv::Mat minDIFScoeffs;
+  int minDIFSindex;
+  calcDIFS(feature_mat,minDIFSindex,minDIFS,classification_probabilities);
+  max_prob_index=(int)model_label_vec_[minDIFSindex];
+
+  //check whether unknown threshold is exceeded
+  if(use_unknown_thresh_)
+  {
+    if(! is_known(minDIFS,unknown_thresh_))max_prob_index=-1;
+  }
+  return;
+}
+void SubspaceAnalysis::FaceRecognizer2D::extractFeatures(std::vector<cv::Mat>& src_vec,cv::Mat& proj_mat,std::vector<cv::Mat>& coeff_mat_vec)
+{
+  //calculate coefficients
+  for(int i=0;i<src_vec.size();i++)
+  {
+  cv::Mat src_mat=cv::Mat(src_vec[0].rows,src_vec[0].cols,CV_64FC1);
+  src_vec[i].convertTo(src_mat,CV_64FC1);
+  cv::Mat coeff_mat=cv::Mat(src_mat.rows,src_mat.cols,CV_64FC1);
+  cv::gemm(src_mat,proj_mat,1.0,cv::Mat(),0.0,coeff_mat,cv::GEMM_2_T);
+  coeff_mat_vec[i]=coeff_mat;
+  }
+}
+void SubspaceAnalysis::FaceRecognizer2D::extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat)
+{
+
+  coeff_mat=cv::Mat(target_dim_,target_dim_,CV_64FC1);
+  cv::gemm(src_mat,proj_mat,1.0,cv::Mat(),0.0,coeff_mat,cv::GEMM_2_T);
+}
+
+void SubspaceAnalysis::FaceRecognizer2D::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities)
+{
+    minDIFS=std::numeric_limits<double>::max();
+    probabilities=cv::Mat(1,num_classes_,CV_32FC1);
+    probabilities*=  std::numeric_limits<float>::max();
+      for(int m=0;m<model_features_.size();m++)
+      {
+        // subtract matrices
+        cv::Mat work_mat;
+        cv::subtract (probe_mat,model_features_[m],work_mat);
+        cv::pow(work_mat,2,work_mat);
+        cv::Mat tmp_vec=cv::Mat::zeros(1,probe_mat.cols,CV_64FC1);
+        cv::reduce(work_mat,tmp_vec,0,CV_REDUCE_SUM);
+
+        cv::Scalar norm=cv::sum(tmp_vec);
+
+          if((double)norm[0] < minDIFS )
+          {
+            minDIFSindex=m;
+            minDIFS=(double)norm[0];
+          }
+        //calculate cost for classification to every class in database
+        probabilities.at<float>(model_label_vec_[m])=std::min(probabilities.at<float>(model_label_vec_[m]),(float)norm[0]);
+        }
+
+    //process class_cost
+    double min_cost,max_cost;
+    probabilities=1/(probabilities.mul(probabilities));
+    cv::minMaxLoc(probabilities,&min_cost,&max_cost,0,0);
+    probabilities/=max_cost;
+
+    return;
+}
+
+void SubspaceAnalysis::FaceRecognizer2D::calc_threshold(std::vector<cv::Mat>& data,double& thresh)
+{
+  std::vector<double> P(num_classes_,std::numeric_limits<double>::max());
+  std::vector<double> D(num_classes_,std::numeric_limits<double>::min());
+  std::vector<double> Phi(num_classes_,std::numeric_limits<double>::max());
+
+
+  for(int i=0;i<data.size();i++)
+  {
+    for(int n=0;n<data.size();n++)
+    {
+      if(n==i) continue;
+
+        // subtract matrices
+        cv::Mat work_mat=cv::Mat(data[0].rows,data[0].cols,CV_64FC1);
+        cv::subtract (data[i],data[n],work_mat);
+        cv::pow(work_mat,2,work_mat);
+        //cv::sqrt(work_mat,work_mat);
+        cv::Mat tmp_vec=cv::Mat::zeros(1,data[i].cols,CV_64FC1);
+        cv::reduce(work_mat,tmp_vec,0,CV_REDUCE_SUM);
+
+        cv::Scalar temp=cv::sum(tmp_vec);
+      double dist = temp.val[0];
+      if(model_label_vec_[n]==model_label_vec_[i])
+      {
+        D[model_label_vec_[i]]=std::max(dist,D[model_label_vec_[i]]);
+      }
+      else
+      {
+        P[model_label_vec_[i]]=std::min(dist,P[model_label_vec_[i]]);
+      }
+    }
+  }
+
+  // if only one class - P =D
+  if(num_classes_==1)
+  {
+    P[0]=D[0];
+  }
+
+  for(int c=0;c<num_classes_;c++)
+  {
+    thresh=std::min(thresh,(P[c]+D[c]) *0.2);
+  }
+  std::cout<<"THRESH for db: "<<thresh<<std::endl;
+}
+
 void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
-      
+
+        input_param_check(img_vec,label_vec,target_dim);
+
         std::cout<<"Training Eigenfaces"<<std::endl;
         SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
         SubspaceAnalysis::condense_labels(label_vec);
@@ -185,6 +320,7 @@ void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat
 
 
         extractFeatures(model_data_arr_,projection_mat_,model_features_);
+
         calc_threshold(model_features_,unknown_thresh_);
 
         // set FaceRecognizer to trained
@@ -193,6 +329,7 @@ void SubspaceAnalysis::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat
 
 void SubspaceAnalysis::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
+        input_param_check(img_vec,label_vec,target_dim);
 
         std::cout<<"Training Fisherfaces"<<std::endl;
         SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
@@ -229,6 +366,7 @@ void SubspaceAnalysis::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::Ma
         //initiate PCA
         PCA=SubspaceAnalysis::PCA(model_data_arr_,target_dim_PCA);
         P_PCA=PCA.eigenvecs;
+
         extractFeatures(model_data_arr_,P_PCA,model_features_PCA);
 
         //perform LDA
@@ -243,8 +381,8 @@ void SubspaceAnalysis::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::Ma
         eigenvalues_=LDA.eigenvals;
         average_arr_=PCA.mean;
 
-
         extractFeatures(model_data_arr_,projection_mat_,model_features_);
+
         calc_threshold(model_features_,unknown_thresh_);
 
         // set FaceRecognizer to trained
@@ -252,6 +390,47 @@ void SubspaceAnalysis::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::Ma
 }
 
 
+void SubspaceAnalysis::FaceRecognizer_PCA2D::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
+{
+
+        input_param_check(img_vec,label_vec,target_dim);
+
+        std::cout<<"Training PCA2D"<<std::endl;
+        SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels_);
+        SubspaceAnalysis::condense_labels(label_vec);
+
+
+        //SubspaceAnalysis::PCA2D PCA;
+
+        target_dim_=target_dim;
+
+        //allocate all matrices
+        model_data_vec_.resize(img_vec.size());
+        model_label_vec_.resize(img_vec.size());
+        average_mat_=cv::Mat(img_vec[0].rows,img_vec[0].cols,CV_64FC1);
+        projection_mat_=cv::Mat(target_dim_,img_vec[0].cols,CV_64FC1);
+        eigenvalues_=cv::Mat(1,target_dim_-1,CV_64FC1);
+        model_features_.resize(img_vec.size());
+
+
+        model_label_vec_=label_vec;
+        model_data_vec_=img_vec;
+        //initiate PCA
+        SubspaceAnalysis::PCA2D PCA2D(img_vec,model_label_vec_,num_classes_,target_dim_);
+
+        //Assign model to member variables
+        projection_mat_=PCA2D.eigenvecs;
+        eigenvalues_=PCA2D.eigenvals;
+        average_mat_=PCA2D.mean;
+
+
+        extractFeatures(model_data_vec_,projection_mat_,model_features_);
+        calc_threshold(model_features_,unknown_thresh_);
+
+        // set FaceRecognizer to trained
+        this->trained_=true;
+
+}
 
 
 

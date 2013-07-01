@@ -384,6 +384,11 @@ int main(int argc, const char *argv[])
         EFF=new SubspaceAnalysis::FaceRecognizer_Fisherfaces();
         break;
       }
+    case SubspaceAnalysis::METH_PCA2D:
+      {
+        EFF=new SubspaceAnalysis::FaceRecognizer_PCA2D();
+        break;
+      }
     default:
       {
         EFF=new SubspaceAnalysis::FaceRecognizer_Eigenfaces();
