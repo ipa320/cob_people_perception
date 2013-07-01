@@ -121,27 +121,27 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
   {
     case 0:
     {
-      m_subs_meth=SubspaceAnalysis::METH_FISHER;
+      m_subs_meth=cob_people_detection::METH_FISHER;
       break;
     }
     case 1:
     {
-      m_subs_meth=SubspaceAnalysis::METH_EIGEN;
+      m_subs_meth=cob_people_detection::METH_EIGEN;
       break;
     }
     case 2:
     {
-      m_subs_meth=SubspaceAnalysis::METH_LDA2D;
+      m_subs_meth=cob_people_detection::METH_LDA2D;
       break;
     }
     case 3:
     {
-      m_subs_meth=SubspaceAnalysis::METH_PCA2D;
+      m_subs_meth=cob_people_detection::METH_PCA2D;
       break;
     }
     default:
     {
-      m_subs_meth=SubspaceAnalysis::METH_FISHER;
+      m_subs_meth=cob_people_detection::METH_FISHER;
       break;
     }
   };
@@ -150,22 +150,22 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
   {
     case 0:
     {
-      m_class_meth=SubspaceAnalysis::CLASS_DIFS;
+      m_class_meth=cob_people_detection::CLASS_DIFS;
       break;
     }
     case 1:
     {
-      m_class_meth=SubspaceAnalysis::CLASS_KNN;
+      m_class_meth=cob_people_detection::CLASS_KNN;
       break;
     }
     case 2:
     {
-      m_class_meth=SubspaceAnalysis::CLASS_SVM;
+      m_class_meth=cob_people_detection::CLASS_SVM;
       break;
     }
     default:
     {
-      m_class_meth=SubspaceAnalysis::CLASS_DIFS;
+      m_class_meth=cob_people_detection::CLASS_DIFS;
       break;
     }
   };
@@ -386,7 +386,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vec
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::FaceRecognizer& eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
+unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(cob_people_detection::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
 {
   //TODO set ss_dim dynamically
   int ss_dim =1;
@@ -400,8 +400,38 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(SubspaceAnalysis::Fa
     in_vec.push_back(temp);
   }
 
-  m_rec_method=1;
-  if(!eff.trainModel(in_vec,labels,ss_dim,m_subs_meth,true,m_use_unknown_thresh))
+
+  switch (m_subs_meth)
+  {
+    case cob_people_detection::METH_EIGEN:
+      {
+        eff=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        break;
+      }
+    case cob_people_detection::METH_FISHER:
+      {
+        eff=new cob_people_detection::FaceRecognizer_Fisherfaces();
+        break;
+      }
+    case cob_people_detection::METH_PCA2D:
+      {
+        eff=new cob_people_detection::FaceRecognizer_PCA2D();
+        break;
+      }
+    case cob_people_detection::METH_LDA2D:
+      {
+        eff=new cob_people_detection::FaceRecognizer_LDA2D();
+        break;
+      }
+    default:
+      {
+        eff=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        break;
+      }
+  }
+
+
+  if(!eff->trainModel(in_vec,labels,ss_dim))
   {
       std::cout<<"[FACEREC] Reognition module could not be initialized ....!"<<std::endl;
       return ipa_Utils::RET_FAILED;
@@ -504,8 +534,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	m_eigenvectors.clear();
 
 	// reset effs
-	eff_depth.releaseModel();
-	eff_color.releaseModel();
+	//eff_depth.releaseModel();
+	//eff_color->releaseModel();
 
 	std::string path = m_data_directory + "training_data/";
 	std::string path_color = m_data_directory + "training_data/" + "rdata_color.xml";
@@ -515,12 +545,16 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	if (m_depth_mode)
 	{
 		if (face_depthmaps.size() > 0)
-			initModel(eff_depth, face_depthmaps, depth_num_labels);
+    {
+		//initModel(eff_depth, face_depthmaps, depth_num_labels);
 		//eff_depth.saveModel(path_depth);
+    }
 	}
 
 	if (face_images.size() > 0)
+  {
 		initModel(eff_color, face_images, m_label_num);
+  }
 	//eff_color.saveModel(path_color);
 
 	//TODO ALWAYS TRAINING NECESSARY - NO INTERFACE FOR SSA CLASS FOR MODEL ASSOCIATION
@@ -768,7 +802,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
-	if (eff_color.trained==false )
+	if (eff_color->trained_==false )
 	{
 		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
 		return ipa_Utils::RET_FAILED;
@@ -790,7 +824,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
      resized_8U1.convertTo(resized_8U1,CV_64FC1);
 
       cv::Mat coeff_arr;
-        eff_color.projectToSubspace(resized_8U1,coeff_arr,DFFS);
+        //eff_color.projectToSubspace(resized_8U1,coeff_arr,DFFS);
 
 		if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
     //TODO temporary turned off
@@ -803,7 +837,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		{
 
       int res_label;
-      eff_color.classify(coeff_arr,m_class_meth,res_label);
+      eff_color->classifyImage(resized_8U1,res_label);
       if(res_label==-1)
       {
         identification_labels.push_back("Unknown Face");
@@ -827,7 +861,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
 	//int number_eigenvectors = m_eigenvectors.size();
-	if (eff_depth.trained==false &&eff_color.trained==false )
+	if (eff_depth->trained_==false &&eff_color->trained_==false )
 	{
 		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
 		return ipa_Utils::RET_FAILED;
@@ -868,26 +902,27 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
       int res_label_color, res_label_depth;
       std::string class_depth,class_color;
 
-      if((eff_depth.trained)&& (m_depth_mode==true))
-      {
-        //std::cout<<"classification with depth"<<std::endl;
-        eff_depth.projectToSubspace(DM_crop,coeff_arr_depth,DFFS);
-        eff_depth.classify(coeff_arr_depth,m_class_meth,res_label_depth);
-        if(res_label_depth==-1)
-        {
-          class_depth="Unknown";
-        }
-        else
-        {
-          class_depth=depth_str_labels[res_label_depth];
-        }
-      }
+      //if((eff_depth.trained)&& (m_depth_mode==true))
+      //{
+      //  //std::cout<<"classification with depth"<<std::endl;
+      //  eff_depth.projectToSubspace(DM_crop,coeff_arr_depth,DFFS);
+      //  eff_depth.classify(coeff_arr_depth,m_class_meth,res_label_depth);
+      //  if(res_label_depth==-1)
+      //  {
+      //    class_depth="Unknown";
+      //  }
+      //  else
+      //  {
+      //    class_depth=depth_str_labels[res_label_depth];
+      //  }
+      //}
 
-      if(eff_color.trained)
+      if(eff_color->trained_)
       {
         //std::cout<<"classification with color"<<std::endl;
-        eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
-        eff_color.classify(coeff_arr_color,m_class_meth,res_label_color);
+        //eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
+        //eff_color.classify(coeff_arr_color,m_class_meth,res_label_color);
+        eff_color->classifyImage(color_crop,res_label_color);
         if(res_label_color==-1)
         {
           class_color="Unknown";

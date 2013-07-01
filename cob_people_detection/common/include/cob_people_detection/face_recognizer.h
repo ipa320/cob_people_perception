@@ -76,7 +76,7 @@
 // boost
 #include <boost/thread/mutex.hpp>
 
-#include"cob_people_detection/subspace_analysis.h"
+#include"cob_people_detection/face_recognition.h"
 #include<algorithm>
 namespace ipa_PeopleDetector {
 
@@ -191,23 +191,22 @@ protected:
 
 
 // DEPTH
-  SubspaceAnalysis::FaceRecognizer depth_eff_;    ///< FaceRecognizer for depth maps
   std::vector<std::string> depth_str_labels;      ///< Vector for class label strings for depth training data
   std::vector<std::string> depth_str_labels_unique; ///< Vector for class unique label strings for depth training data
   std::vector<int> depth_num_labels;                ///< Number of classes for depth training data
 //
   FaceNormalizer face_normalizer_;                ///< Face normalizer object
 
-  SubspaceAnalysis::FaceRecognizer eff_depth;     ///< FaceRecognizer for depth maps
-  SubspaceAnalysis::FaceRecognizer eff_color;     ///< FaceRecognizer for color images
+  cob_people_detection::FaceRecognizerBaseClass* eff_depth;     ///< FaceRecognizer for depth maps
+  cob_people_detection::FaceRecognizerBaseClass* eff_color;     ///< FaceRecognizer for color images
   std::vector<int> m_label_num ;                  
   int             m_rec_method;                   ///< flag for recognition method
   std::vector<bool> dm_exist;                     ///< vector indicating if depth map exists for corresponding color image
   bool m_depth_mode;                              ///< flag indicates if depth maps are ignored or used
-  SubspaceAnalysis::Classifier m_class_meth;      ///< classification method
-  SubspaceAnalysis::Method m_subs_meth;           ///< recognition method
+  cob_people_detection::Classifier m_class_meth;      ///< classification method
+  cob_people_detection::Method m_subs_meth;           ///< recognition method
   bool m_use_unknown_thresh;                      ///< flag indicates if unknown threshold is used
-unsigned long initModel(SubspaceAnalysis::FaceRecognizer& eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
+unsigned long initModel(cob_people_detection::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
 //----------------------------------------------------
 //----------------------------------------------------
 
