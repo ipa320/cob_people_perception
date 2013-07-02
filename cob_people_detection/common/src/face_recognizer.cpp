@@ -106,6 +106,7 @@ ipa_PeopleDetector::FaceRecognizer::~FaceRecognizer(void)
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_directory, std::string classifier_directory,int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth)
 {
+  std::cout<<"init facerec"<<std::endl;
 	// parameters
 	m_data_directory = data_directory;
 	m_eigenface_size = eigenface_size;
@@ -430,6 +431,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(cob_people_detection
       }
   }
 
+std::cout<<"DBG- initialized"<<std::endl;
 
   if(!eff->trainModel(in_vec,labels,ss_dim))
   {
@@ -437,6 +439,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(cob_people_detection
       return ipa_Utils::RET_FAILED;
   }
 
+std::cout<<"DBG- trained"<<std::endl;
 	return ipa_Utils::RET_OK;
 }
 
