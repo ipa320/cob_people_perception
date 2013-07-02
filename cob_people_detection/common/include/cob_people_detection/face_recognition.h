@@ -31,7 +31,9 @@ namespace cob_people_detection{
   {
     public:
        /// Constructor
-       FaceRecognizerBaseClass():use_unknown_thresh_(false){};
+       FaceRecognizerBaseClass():use_unknown_thresh_(false),
+                                 trained_(false)
+        {};
 
        /// Destructor
       virtual ~FaceRecognizerBaseClass(){};
@@ -74,8 +76,6 @@ namespace cob_people_detection{
         {
           use_unknown_thresh_=true;
         };
-
-
 
       bool trained_; ///< Flag indicates whether model is trained and ready for recognition.
     protected:

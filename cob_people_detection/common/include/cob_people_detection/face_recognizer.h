@@ -206,7 +206,8 @@ protected:
   cob_people_detection::Classifier m_class_meth;      ///< classification method
   cob_people_detection::Method m_subs_meth;           ///< recognition method
   bool m_use_unknown_thresh;                      ///< flag indicates if unknown threshold is used
-unsigned long initModel(cob_people_detection::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
+unsigned long trainFaceRecognition(cob_people_detection::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
+unsigned long initFaceRecognition(cob_people_detection::FaceRecognizerBaseClass* eff);
 //----------------------------------------------------
 //----------------------------------------------------
 

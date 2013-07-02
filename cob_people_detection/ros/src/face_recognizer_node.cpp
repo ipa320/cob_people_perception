@@ -417,7 +417,6 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	bool identification_failed = false;
 	if (enable_face_recognition_ == true)
 	{
-  std::cout<<"DBG facepositionCallback RUNNING"<<std::endl;
 
 		// recognize faces
 		//unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);

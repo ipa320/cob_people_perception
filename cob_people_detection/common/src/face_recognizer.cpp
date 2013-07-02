@@ -106,7 +106,6 @@ ipa_PeopleDetector::FaceRecognizer::~FaceRecognizer(void)
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_directory, std::string classifier_directory,int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth)
 {
-  std::cout<<"init facerec"<<std::endl;
 	// parameters
 	m_data_directory = data_directory;
 	m_eigenface_size = eigenface_size;
@@ -171,6 +170,38 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
     }
   };
 
+
+  //initialize FaceRecognition
+  switch (m_subs_meth)
+  {
+    case cob_people_detection::METH_EIGEN:
+      {
+        eff_color=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        break;
+      }
+    case cob_people_detection::METH_FISHER:
+      {
+        eff_color=new cob_people_detection::FaceRecognizer_Fisherfaces();
+        break;
+      }
+    case cob_people_detection::METH_PCA2D:
+      {
+        eff_color=new cob_people_detection::FaceRecognizer_PCA2D();
+        break;
+      }
+    case cob_people_detection::METH_LDA2D:
+      {
+        eff_color=new cob_people_detection::FaceRecognizer_LDA2D();
+        break;
+      }
+    default:
+      {
+        eff_color=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        break;
+      }
+  }
+
+
   FaceNormalizer::FNConfig fn_cfg;
   fn_cfg.eq_ill=  true;
   fn_cfg.align=   false;
@@ -179,6 +210,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
   fn_cfg.extreme_illumination_condtions=false;
 
   face_normalizer_.init(classifier_directory,fn_cfg);
+  
 
 	// load model
 	loadRecognitionModel(identification_labels_to_recognize);
@@ -386,22 +418,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vec
 	//face_depthmaps.erase(face_depthmaps.begin()+index);
 	return ipa_Utils::RET_OK;
 }
-
-unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(cob_people_detection::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
+unsigned long ipa_PeopleDetector::FaceRecognizer::initFaceRecognition(cob_people_detection::FaceRecognizerBaseClass* eff)
 {
-  //TODO set ss_dim dynamically
-  int ss_dim =1;
-
-  std::vector<cv::Mat> in_vec;
-  for(unsigned int i=0;i<data.size();i++)
-  {
-
-    cv::Mat temp=data[i];
-    temp.convertTo(temp,CV_64FC1);
-    in_vec.push_back(temp);
-  }
-
-
   switch (m_subs_meth)
   {
     case cob_people_detection::METH_EIGEN:
@@ -430,8 +448,25 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initModel(cob_people_detection
         break;
       }
   }
+  std::cout<<"in func1"<<std::endl;
+  std::cout<<eff->trained_<<std::endl;
+  std::cout<<"in func2"<<std::endl;
+}
 
-std::cout<<"DBG- initialized"<<std::endl;
+unsigned long ipa_PeopleDetector::FaceRecognizer::trainFaceRecognition(cob_people_detection::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
+{
+  //TODO set ss_dim dynamically
+  int ss_dim =1;
+
+  std::vector<cv::Mat> in_vec;
+  for(unsigned int i=0;i<data.size();i++)
+  {
+
+    cv::Mat temp=data[i];
+    temp.convertTo(temp,CV_64FC1);
+    in_vec.push_back(temp);
+  }
+
 
   if(!eff->trainModel(in_vec,labels,ss_dim))
   {
@@ -439,7 +474,6 @@ std::cout<<"DBG- initialized"<<std::endl;
       return ipa_Utils::RET_FAILED;
   }
 
-std::cout<<"DBG- trained"<<std::endl;
 	return ipa_Utils::RET_OK;
 }
 
@@ -556,7 +590,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
 	if (face_images.size() > 0)
   {
-		initModel(eff_color, face_images, m_label_num);
+		trainFaceRecognition(eff_color, face_images, m_label_num);
   }
 	//eff_color.saveModel(path_color);
 
@@ -864,7 +898,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
 	//int number_eigenvectors = m_eigenvectors.size();
-	if (eff_depth->trained_==false &&eff_color->trained_==false )
+	if (eff_color->trained_==false )
 	{
 		std::cout << "Error: FaceRecognizer::recognizeFace: Load or train some identification model, first.\n" << std::endl;
 		return ipa_Utils::RET_FAILED;

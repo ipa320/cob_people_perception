@@ -400,6 +400,7 @@ int main(int argc, const char *argv[])
         break;
       }
   }
+  std::cout<<EFF->trained_<<std::endl;
   boost::timer t;
   EFF->trainModel(img_vec,label_vec,ss_dim);
   //EFF->activate_unknown_treshold();
