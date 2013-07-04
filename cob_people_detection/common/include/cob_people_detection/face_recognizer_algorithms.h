@@ -8,7 +8,7 @@
 
 #include<cob_people_detection/subspace_analysis.h>
 
-namespace cob_people_detection{
+namespace ipa_PeopleDetector{
 
   enum Classifier
   {

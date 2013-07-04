@@ -1,9 +1,9 @@
-#include<cob_people_detection/face_recognition.h>
+#include<cob_people_detection/face_recognizer_algorithms.h>
 
 
 
 
-bool cob_people_detection::FaceRecognizerBaseClass::input_param_check(std::vector<cv::Mat>& imgs,std::vector<int>& labels,int& target_dim)
+bool ipa_PeopleDetector::FaceRecognizerBaseClass::input_param_check(std::vector<cv::Mat>& imgs,std::vector<int>& labels,int& target_dim)
 {
   if(imgs.size()!=labels.size()) return false;
   if(imgs.size()==0) return false;
@@ -12,7 +12,7 @@ bool cob_people_detection::FaceRecognizerBaseClass::input_param_check(std::vecto
   if(target_dim>imgs.size()) return false;
 
 }
-void cob_people_detection::FaceRecognizer1D::calc_threshold(cv::Mat& data,double& thresh)
+void ipa_PeopleDetector::FaceRecognizer1D::calc_threshold(cv::Mat& data,double& thresh)
 {
   thresh=std::numeric_limits<double>::max();
   std::vector<double> P(num_classes_,std::numeric_limits<double>::max());
@@ -53,7 +53,7 @@ void cob_people_detection::FaceRecognizer1D::calc_threshold(cv::Mat& data,double
 }
 
 
-void cob_people_detection::FaceRecognizer1D::model_data_mat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat)
+void ipa_PeopleDetector::FaceRecognizer1D::model_data_mat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat)
 {
 
   // convert input to data matrix,with images as rows
@@ -70,7 +70,7 @@ void cob_people_detection::FaceRecognizer1D::model_data_mat(std::vector<cv::Mat>
   return;
 }
 
-void cob_people_detection::FaceRecognizer1D::extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat)
+void ipa_PeopleDetector::FaceRecognizer1D::extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat)
 {
 
   //projection
@@ -79,12 +79,12 @@ void cob_people_detection::FaceRecognizer1D::extractFeatures(cv::Mat& src_mat,cv
 
 }
 
-void cob_people_detection::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& max_prob_index)
+void ipa_PeopleDetector::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& max_prob_index)
 {
   cv::Mat classification_probabilities;
   classifyImage(probe_mat,max_prob_index,classification_probabilities);
 }
-void cob_people_detection::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
+void ipa_PeopleDetector::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
 {
   //project query mat to feature space
   cv::Mat feature_arr=cv::Mat(1,target_dim_,CV_64FC1);
@@ -110,7 +110,7 @@ void cob_people_detection::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,in
 }
 
 
-void cob_people_detection::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities)
+void ipa_PeopleDetector::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities)
 {
 
     double norm;
@@ -142,12 +142,12 @@ void cob_people_detection::FaceRecognizer1D::calcDIFS(cv::Mat& probe_mat,int& mi
     return;
 }
 
-void cob_people_detection::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int& max_prob_index)
+void ipa_PeopleDetector::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int& max_prob_index)
 {
   cv::Mat classification_probabilities;
   classifyImage(probe_mat,max_prob_index,classification_probabilities);
 }
-void cob_people_detection::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
+void ipa_PeopleDetector::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
 {
 
   //project query mat to feature space
@@ -169,7 +169,7 @@ void cob_people_detection::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,in
   }
   return;
 }
-void cob_people_detection::FaceRecognizer2D::extractFeatures(std::vector<cv::Mat>& src_vec,cv::Mat& proj_mat,std::vector<cv::Mat>& coeff_mat_vec)
+void ipa_PeopleDetector::FaceRecognizer2D::extractFeatures(std::vector<cv::Mat>& src_vec,cv::Mat& proj_mat,std::vector<cv::Mat>& coeff_mat_vec)
 {
   //calculate coefficients
   for(int i=0;i<src_vec.size();i++)
@@ -181,14 +181,14 @@ void cob_people_detection::FaceRecognizer2D::extractFeatures(std::vector<cv::Mat
   coeff_mat_vec[i]=coeff_mat;
   }
 }
-void cob_people_detection::FaceRecognizer2D::extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat)
+void ipa_PeopleDetector::FaceRecognizer2D::extractFeatures(cv::Mat& src_mat,cv::Mat& proj_mat,cv::Mat& coeff_mat)
 {
 
   coeff_mat=cv::Mat(target_dim_,target_dim_,CV_64FC1);
   cv::gemm(src_mat,proj_mat,1.0,cv::Mat(),0.0,coeff_mat,cv::GEMM_2_T);
 }
 
-void cob_people_detection::FaceRecognizer2D::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities)
+void ipa_PeopleDetector::FaceRecognizer2D::calcDIFS(cv::Mat& probe_mat,int& minDIFSindex,double& minDIFS,cv::Mat& probabilities)
 {
     minDIFS=std::numeric_limits<double>::max();
     probabilities=cv::Mat(1,num_classes_,CV_32FC1);
@@ -222,7 +222,7 @@ void cob_people_detection::FaceRecognizer2D::calcDIFS(cv::Mat& probe_mat,int& mi
     return;
 }
 
-void cob_people_detection::FaceRecognizer2D::calc_threshold(std::vector<cv::Mat>& data,double& thresh)
+void ipa_PeopleDetector::FaceRecognizer2D::calc_threshold(std::vector<cv::Mat>& data,double& thresh)
 {
   thresh=std::numeric_limits<double>::max();
   std::vector<double> P(num_classes_,std::numeric_limits<double>::max());
@@ -270,7 +270,7 @@ void cob_people_detection::FaceRecognizer2D::calc_threshold(std::vector<cv::Mat>
   std::cout<<"THRESH for db: "<<thresh<<std::endl;
 }
 
-bool cob_people_detection::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
+bool ipa_PeopleDetector::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
 
         input_param_check(img_vec,label_vec,target_dim);
@@ -314,7 +314,7 @@ bool cob_people_detection::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv:
         return true;
 }
 
-bool cob_people_detection::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
+bool ipa_PeopleDetector::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
         input_param_check(img_vec,label_vec,target_dim);
 
@@ -379,7 +379,7 @@ bool cob_people_detection::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv
 }
 
 
-bool cob_people_detection::FaceRecognizer_PCA2D::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
+bool ipa_PeopleDetector::FaceRecognizer_PCA2D::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
 
         input_param_check(img_vec,label_vec,target_dim);
@@ -424,7 +424,7 @@ bool cob_people_detection::FaceRecognizer_PCA2D::trainModel(std::vector<cv::Mat>
 }
 
 
-bool cob_people_detection::FaceRecognizer_LDA2D::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
+bool ipa_PeopleDetector::FaceRecognizer_LDA2D::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
 
         input_param_check(img_vec,label_vec,target_dim);

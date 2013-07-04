@@ -14,7 +14,7 @@
 * \note
 * ROS stack name: cob_people_perception
 * \note
-* ROS package name: cob_people_detection
+* ROS package name: ipa_PeopleDetector
 *
 * \author
 * Author: Richard Bormann
@@ -63,7 +63,7 @@
 	#include "cob_people_detection/face_recognizer.h"
 	#include "cob_vision_utils/GlobalDefines.h"
 #else
-#include "cob_vision/cob_people_detection/common/include/cob_people_detection/PeopleDetector.h"
+#include "cob_vision/cob_people_detection/common/include/ipa_PeopleDetector/PeopleDetector.h"
 #include "cob_common/cob_vision_utils/common/include/cob_vision_utils/GlobalDefines.h"
 #endif
 
@@ -125,27 +125,27 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
   {
     case 0:
     {
-      m_subs_meth=cob_people_detection::METH_FISHER;
+      m_subs_meth=ipa_PeopleDetector::METH_FISHER;
       break;
     }
     case 1:
     {
-      m_subs_meth=cob_people_detection::METH_EIGEN;
+      m_subs_meth=ipa_PeopleDetector::METH_EIGEN;
       break;
     }
     case 2:
     {
-      m_subs_meth=cob_people_detection::METH_LDA2D;
+      m_subs_meth=ipa_PeopleDetector::METH_LDA2D;
       break;
     }
     case 3:
     {
-      m_subs_meth=cob_people_detection::METH_PCA2D;
+      m_subs_meth=ipa_PeopleDetector::METH_PCA2D;
       break;
     }
     default:
     {
-      m_subs_meth=cob_people_detection::METH_FISHER;
+      m_subs_meth=ipa_PeopleDetector::METH_FISHER;
       break;
     }
   };
@@ -154,22 +154,22 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
   {
     case 0:
     {
-      m_class_meth=cob_people_detection::CLASS_DIFS;
+      m_class_meth=ipa_PeopleDetector::CLASS_DIFS;
       break;
     }
     case 1:
     {
-      m_class_meth=cob_people_detection::CLASS_KNN;
+      m_class_meth=ipa_PeopleDetector::CLASS_KNN;
       break;
     }
     case 2:
     {
-      m_class_meth=cob_people_detection::CLASS_SVM;
+      m_class_meth=ipa_PeopleDetector::CLASS_SVM;
       break;
     }
     default:
     {
-      m_class_meth=cob_people_detection::CLASS_DIFS;
+      m_class_meth=ipa_PeopleDetector::CLASS_DIFS;
       break;
     }
   };
@@ -178,29 +178,29 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
   //initialize FaceRecognition
   switch (m_subs_meth)
   {
-    case cob_people_detection::METH_EIGEN:
+    case ipa_PeopleDetector::METH_EIGEN:
       {
-        eff_color=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        eff_color=new ipa_PeopleDetector::FaceRecognizer_Eigenfaces();
         break;
       }
-    case cob_people_detection::METH_FISHER:
+    case ipa_PeopleDetector::METH_FISHER:
       {
-        eff_color=new cob_people_detection::FaceRecognizer_Fisherfaces();
+        eff_color=new ipa_PeopleDetector::FaceRecognizer_Fisherfaces();
         break;
       }
-    case cob_people_detection::METH_PCA2D:
+    case ipa_PeopleDetector::METH_PCA2D:
       {
-        eff_color=new cob_people_detection::FaceRecognizer_PCA2D();
+        eff_color=new ipa_PeopleDetector::FaceRecognizer_PCA2D();
         break;
       }
-    case cob_people_detection::METH_LDA2D:
+    case ipa_PeopleDetector::METH_LDA2D:
       {
-        eff_color=new cob_people_detection::FaceRecognizer_LDA2D();
+        eff_color=new ipa_PeopleDetector::FaceRecognizer_LDA2D();
         break;
       }
     default:
       {
-        eff_color=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        eff_color=new ipa_PeopleDetector::FaceRecognizer_Eigenfaces();
         break;
       }
   }
@@ -432,33 +432,33 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vec
 	//face_depthmaps.erase(face_depthmaps.begin()+index);
 	return ipa_Utils::RET_OK;
 }
-unsigned long ipa_PeopleDetector::FaceRecognizer::initFaceRecognition(cob_people_detection::FaceRecognizerBaseClass* eff)
+unsigned long ipa_PeopleDetector::FaceRecognizer::initFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff)
 {
   switch (m_subs_meth)
   {
-    case cob_people_detection::METH_EIGEN:
+    case ipa_PeopleDetector::METH_EIGEN:
       {
-        eff=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        eff=new ipa_PeopleDetector::FaceRecognizer_Eigenfaces();
         break;
       }
-    case cob_people_detection::METH_FISHER:
+    case ipa_PeopleDetector::METH_FISHER:
       {
-        eff=new cob_people_detection::FaceRecognizer_Fisherfaces();
+        eff=new ipa_PeopleDetector::FaceRecognizer_Fisherfaces();
         break;
       }
-    case cob_people_detection::METH_PCA2D:
+    case ipa_PeopleDetector::METH_PCA2D:
       {
-        eff=new cob_people_detection::FaceRecognizer_PCA2D();
+        eff=new ipa_PeopleDetector::FaceRecognizer_PCA2D();
         break;
       }
-    case cob_people_detection::METH_LDA2D:
+    case ipa_PeopleDetector::METH_LDA2D:
       {
-        eff=new cob_people_detection::FaceRecognizer_LDA2D();
+        eff=new ipa_PeopleDetector::FaceRecognizer_LDA2D();
         break;
       }
     default:
       {
-        eff=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        eff=new ipa_PeopleDetector::FaceRecognizer_Eigenfaces();
         break;
       }
   }
@@ -467,7 +467,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initFaceRecognition(cob_people
   std::cout<<"in func2"<<std::endl;
 }
 
-unsigned long ipa_PeopleDetector::FaceRecognizer::trainFaceRecognition(cob_people_detection::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
+unsigned long ipa_PeopleDetector::FaceRecognizer::trainFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
 {
   //TODO set ss_dim dynamically
   int ss_dim =1;

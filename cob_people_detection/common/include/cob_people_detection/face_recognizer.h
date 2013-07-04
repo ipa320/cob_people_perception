@@ -64,6 +64,7 @@
 #ifdef __LINUX__
 	#include <cob_people_detection/abstract_face_recognizer.h>
 	#include <cob_people_detection/face_normalizer.h>
+#include <cob_people_detection/face_recognizer_algorithms.h>
 #else
 	#include "cob_vision/cob_vision_ipa_utils/common/include/cob_vision_ipa_utils/MathUtils.h"
 	#include "cob_vision/cob_sensor_fusion/common/include/cob_sensor_fusion/ColoredPointCloud.h"	// todo: necessary?
@@ -78,7 +79,6 @@
 #include "boost/filesystem/path.hpp"
 #include "boost/lexical_cast.hpp"
 
-#include"cob_people_detection/face_recognition.h"
 #include<algorithm>
 namespace ipa_PeopleDetector {
 
@@ -202,17 +202,17 @@ protected:
 //
   FaceNormalizer face_normalizer_;                ///< Face normalizer object
 
-  cob_people_detection::FaceRecognizerBaseClass* eff_depth;     ///< FaceRecognizer for depth maps
-  cob_people_detection::FaceRecognizerBaseClass* eff_color;     ///< FaceRecognizer for color images
-  std::vector<int> m_label_num ;                  
+  ipa_PeopleDetector::FaceRecognizerBaseClass* eff_depth;     ///< FaceRecognizer for depth maps
+  ipa_PeopleDetector::FaceRecognizerBaseClass* eff_color;     ///< FaceRecognizer for color images
+  std::vector<int> m_label_num ;
   int             m_rec_method;                   ///< flag for recognition method
   std::vector<bool> dm_exist;                     ///< vector indicating if depth map exists for corresponding color image
   bool m_depth_mode;                              ///< flag indicates if depth maps are ignored or used
-  cob_people_detection::Classifier m_class_meth;      ///< classification method
-  cob_people_detection::Method m_subs_meth;           ///< recognition method
+  ipa_PeopleDetector::Classifier m_class_meth;      ///< classification method
+  ipa_PeopleDetector::Method m_subs_meth;           ///< recognition method
   bool m_use_unknown_thresh;                      ///< flag indicates if unknown threshold is used
-unsigned long trainFaceRecognition(cob_people_detection::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
-unsigned long initFaceRecognition(cob_people_detection::FaceRecognizerBaseClass* eff);
+unsigned long trainFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
+unsigned long initFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff);
 //----------------------------------------------------
 //----------------------------------------------------
 

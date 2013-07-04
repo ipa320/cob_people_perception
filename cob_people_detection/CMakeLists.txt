@@ -78,13 +78,13 @@ target_link_libraries(subspace_analysis  opencv_core  opencv_highgui decompositi
 rosbuild_link_boost(subspace_analysis system filesystem)
 
 
-rosbuild_add_library(face_recognition common/src/face_recognition.cpp)
-target_link_libraries(face_recognition subspace_analysis)
+rosbuild_add_library(face_recognizer_algorithms common/src/face_recognizer_algorithms.cpp)
+target_link_libraries(face_recognizer_algorithms subspace_analysis)
 
 rosbuild_add_executable(ssaNEW
       common/src/test/ssaNEW.cpp
       )
-    target_link_libraries(ssaNEW face_recognition face_normalizer )
+    target_link_libraries(ssaNEW face_recognizer_algorithms face_normalizer )
 
     #library for eigenvalue decomposition of asymmetric matrices
 rosbuild_add_library(decomposition
@@ -126,7 +126,7 @@ rosbuild_add_library(decomposition
     			common/src/abstract_face_recognizer.cpp
     			common/src/face_recognizer.cpp
     			ros/src/face_recognizer_node.cpp)
-    target_link_libraries(face_recognizer_node face_normalizer face_recognition)    
+    target_link_libraries(face_recognizer_node face_normalizer face_recognizer_algorithms)    
     rosbuild_link_boost(face_recognizer_node filesystem system)
     add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
     
@@ -144,7 +144,7 @@ rosbuild_add_library(decomposition
     			common/src/face_recognizer.cpp
     			ros/src/face_capture_node.cpp)
     rosbuild_link_boost(face_capture_node filesystem system signals)
-    target_link_libraries(face_capture_node face_normalizer face_recognition)
+    target_link_libraries(face_capture_node face_normalizer face_recognizer_algorithms)
     
     rosbuild_add_executable(sensor_message_gateway_node
     			ros/src/sensor_message_gateway_node.cpp

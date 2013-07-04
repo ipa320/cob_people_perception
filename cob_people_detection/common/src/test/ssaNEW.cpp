@@ -1,5 +1,5 @@
 
-#include<cob_people_detection/face_recognition.h>
+#include<cob_people_detection/face_recognizer_algorithm.h>
 #include<cob_people_detection/face_normalizer.h>
 #include<opencv/cv.h>
 #include<opencv/highgui.h>
@@ -115,28 +115,28 @@ int main(int argc, const char *argv[])
 
   //  Configure input params for subspace analysis
 
-  cob_people_detection::Method method;
-  cob_people_detection::Classifier classifier;
+  ipa_PeopleDetector::Method method;
+  ipa_PeopleDetector::Classifier classifier;
 
   if(!method_str.compare("FISHER"))
   {
     std::cout<<"FISHER"<<std::endl;
-    method = cob_people_detection::METH_FISHER;
+    method = ipa_PeopleDetector::METH_FISHER;
   }
   else if(!method_str.compare("EIGEN"))
   {
     std::cout<<"EIGEN"<<std::endl;
-    method = cob_people_detection::METH_EIGEN;
+    method = ipa_PeopleDetector::METH_EIGEN;
   }
   else if(!method_str.compare("LDA2D"))
   {
     std::cout<<"LDA2D"<<std::endl;
-    method = cob_people_detection::METH_LDA2D;
+    method = ipa_PeopleDetector::METH_LDA2D;
   }
   else if(!method_str.compare("PCA2D"))
   {
     std::cout<<"PCA2D"<<std::endl;
-    method = cob_people_detection::METH_PCA2D;
+    method = ipa_PeopleDetector::METH_PCA2D;
   }
   else
   {
@@ -146,22 +146,22 @@ int main(int argc, const char *argv[])
   if(!classifier_str.compare("KNN"))
   {
     std::cout<<"KNN"<<std::endl;
-    classifier = cob_people_detection::CLASS_KNN;
+    classifier = ipa_PeopleDetector::CLASS_KNN;
   }
   else if(!classifier_str.compare("DIFFS"))
   {
     std::cout<<"DIFFS"<<std::endl;
-    classifier = cob_people_detection::CLASS_DIFS;
+    classifier = ipa_PeopleDetector::CLASS_DIFS;
   }
   else if(!classifier_str.compare("SVM"))
   {
     std::cout<<"SVM"<<std::endl;
-    classifier = cob_people_detection::CLASS_SVM;
+    classifier = ipa_PeopleDetector::CLASS_SVM;
   }
   else if(!classifier_str.compare("RF"))
   {
     std::cout<<"RF"<<std::endl;
-    classifier = cob_people_detection::CLASS_RF;
+    classifier = ipa_PeopleDetector::CLASS_RF;
   }
   else
   {
@@ -175,10 +175,10 @@ int main(int argc, const char *argv[])
   std::cout<<"normalizing: "<<normalizer<<std::endl;
   std::cout<<"use xyz: "<<use_xyz<<std::endl;
   //HOME
-  //std::string training_set_path=     "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_list";
-  //std::string training_set_xyz_path= "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_xyz_list";
-  //std::string probe_file_path=       "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_list";
-  //std::string probe_file_xyz_path=   "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_xyz_list";
+  //std::string training_set_path=     "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/training_set_list";
+  //std::string training_set_xyz_path= "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/training_set_xyz_list";
+  //std::string probe_file_path=       "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/probe_file_list";
+  //std::string probe_file_xyz_path=   "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/probe_file_xyz_list";
   //IPA
   std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
   std::string training_set_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_xyz_list";
@@ -270,7 +270,7 @@ int main(int argc, const char *argv[])
  std::vector<cv::Mat> dm_vec;
 
   std::string invalid_path="/share/goa-tz/people_detection/eval/eval_tool_files/nrm_failed";
-  //std::string invalid_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/eval/eval_tool_files/nrm_failed";
+  //std::string invalid_path="/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/eval/eval_tool_files/nrm_failed";
   std::ofstream os_inv(invalid_path.c_str() );
   bool valid;
  for(int i =0;i<in_vec.size();i++)
@@ -319,7 +319,7 @@ int main(int argc, const char *argv[])
  {
   std::stringstream ostr,nstr;
   nstr<<"/share/goa-tz/people_detection/eval/picdump/";
-  //nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
+  //nstr<<"/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/picdump/";
   ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
 
   cv::Mat probe_xyz,probe_img;
@@ -366,7 +366,7 @@ int main(int argc, const char *argv[])
 
   int ss_dim=num_classes;
 
-  cob_people_detection::FaceRecognizerBaseClass* EFF;
+  ipa_PeopleDetector::FaceRecognizerBaseClass* EFF;
   // calculate Model
 
  // timeval t1,t2,t3,t4;
@@ -374,29 +374,29 @@ int main(int argc, const char *argv[])
 
   switch (method)
   {
-    case cob_people_detection::METH_EIGEN:
+    case ipa_PeopleDetector::METH_EIGEN:
       {
-        EFF=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        EFF=new ipa_PeopleDetector::FaceRecognizer_Eigenfaces();
         break;
       }
-    case cob_people_detection::METH_FISHER:
+    case ipa_PeopleDetector::METH_FISHER:
       {
-        EFF=new cob_people_detection::FaceRecognizer_Fisherfaces();
+        EFF=new ipa_PeopleDetector::FaceRecognizer_Fisherfaces();
         break;
       }
-    case cob_people_detection::METH_PCA2D:
+    case ipa_PeopleDetector::METH_PCA2D:
       {
-        EFF=new cob_people_detection::FaceRecognizer_PCA2D();
+        EFF=new ipa_PeopleDetector::FaceRecognizer_PCA2D();
         break;
       }
-    case cob_people_detection::METH_LDA2D:
+    case ipa_PeopleDetector::METH_LDA2D:
       {
-        EFF=new cob_people_detection::FaceRecognizer_LDA2D();
+        EFF=new ipa_PeopleDetector::FaceRecognizer_LDA2D();
         break;
       }
     default:
       {
-        EFF=new cob_people_detection::FaceRecognizer_Eigenfaces();
+        EFF=new ipa_PeopleDetector::FaceRecognizer_Eigenfaces();
         break;
       }
   }
@@ -410,7 +410,7 @@ int main(int argc, const char *argv[])
   std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classification_labels";
   std::string probabilities_path = "/share/goa-tz/people_detection/eval/eval_tool_files/classification_probabilities";
   std::string timing_path = "/share/goa-tz/people_detection/eval/eval_tool_files/timing";
-  //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
+  //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/classified_output";
   std::ofstream os(path.c_str() );
   std::ofstream probabilities_os(probabilities_path.c_str() );
   std::ofstream timing_os(timing_path.c_str(),std::ofstream::app );
