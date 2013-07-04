@@ -83,9 +83,8 @@ using namespace ipa_PeopleDetector;
 FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 : node_handle_(nh)
 {
-	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
-	classifier_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
-
+//	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
+//	classifier_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 	// Parameters
 	int eigenface_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
 	int eigenvectors_per_person;			// Number of eigenvectors per person to identify -> controls the total number of eigenvectors
@@ -99,10 +98,9 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	bool use_depth;         // use depth for recognition
 	std::vector<std::string> identification_labels_to_recognize;	// a list of labels of persons that shall be recognized
 	std::cout << "\n--------------------------\nFace Recognizer Parameters:\n--------------------------\n";
-	node_handle_.param("data_directory", data_directory_, data_directory_);
+	//if(!node_handle_.getParam("~data_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
+	if(!node_handle_.getParam("/cob_people_detection/data_storage_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
 	std::cout << "data_directory = " << data_directory_ << "\n";
-	node_handle_.param("classifier_directory", classifier_directory_, classifier_directory_);
-	std::cout << "classifier_directory = " << classifier_directory_ << "\n";
 	node_handle_.param("enable_face_recognition", enable_face_recognition_, true);
 	std::cout << "enable_face_recognition = " << enable_face_recognition_ << "\n";
 	node_handle_.param("eigenface_size", eigenface_size, 100);
@@ -144,7 +142,7 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	}
 
 	// initialize face recognizer
-	face_recognizer_.init(data_directory_,classifier_directory_, eigenface_size, metric, debug, identification_labels_to_recognize, subs_meth, class_meth, use_unknown_thresh, use_depth);
+	face_recognizer_.init(data_directory_, eigenface_size, metric, debug, identification_labels_to_recognize, subs_meth, class_meth, use_unknown_thresh, use_depth);
 	std::cout << "Recognition model trained or loaded for:\n";
 	for (unsigned int i = 0; i < identification_labels_to_recognize.size(); i++)
 		std::cout << "   - " << identification_labels_to_recognize[i] << std::endl;
@@ -162,10 +160,12 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	std::cout << "FaceRecognizerNode initialized.\n" << std::endl;
 }
 
+
 FaceRecognizerNode::~FaceRecognizerNode(void)
 {
 	if (load_model_server_ != 0) delete load_model_server_;
 }
+
 
 // Prevent deleting memory twice, when using smart pointer
 void voidDeleter(const sensor_msgs::Image* const) {}

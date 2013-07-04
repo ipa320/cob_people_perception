@@ -3,6 +3,8 @@
 <launch>
   <arg name="using_nodelets" value="false"/>
 
+  <param name="/cob_people_detection/data_storage_directory" type="string" value="$(env HOME)/.ros/people_detection/files/"/>
+  <!--param name="/cob_people_detection/data_directoryTEST" type="string" value="$(find cob_people_detection)/common/files/"/-->
   <include file="$(find cob_people_detection)/ros/launch/head_detector.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/face_detector.launch"/>
   <!--include file="$(find cob_people_detection)/ros/launch/face_normalizer.launch"/-->

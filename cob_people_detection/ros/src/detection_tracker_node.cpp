@@ -194,6 +194,7 @@ unsigned long DetectionTrackerNode::convertColorImageMessageToMat(const sensor_m
 /// @return Return code.
 unsigned long DetectionTrackerNode::copyDetection(const cob_people_detection_msgs::Detection& src, cob_people_detection_msgs::Detection& dest, bool update, unsigned int updateIndex)
 {
+
 	// 2D image coordinates
 	dest.mask.roi.x = src.mask.roi.x; dest.mask.roi.y = src.mask.roi.y;
 	dest.mask.roi.width = src.mask.roi.width; dest.mask.roi.height = src.mask.roi.height;
@@ -344,10 +345,13 @@ unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_people_detect
 	std::vector<cob_people_detection_msgs::Detection> faces_to_publish;
 	for (int i=0; i<(int)face_position_accumulator_.size(); i++)
 	{
+    std::cout<<"runnin"<<std::endl;
 		if (debug_)
 			std::cout << "'UnknownHead' score: " << face_identification_votes_[i]["UnknownHead"] << " label '" << face_position_accumulator_[i].label << "' score: " << face_identification_votes_[i][face_position_accumulator_[i].label] << " - ";
+      std::cout<<"id votes "<<face_identification_votes_[i][face_position_accumulator_[i].label]<<std::endl;
 		if (face_identification_votes_[i][face_position_accumulator_[i].label]>min_face_identification_score_to_publish_ || face_identification_votes_[i]["UnknownHead"]>min_face_identification_score_to_publish_)
 		{
+      std::cout<<"DBGfacc "<< face_position_accumulator_[i].label<<std::endl;
 			faces_to_publish.push_back(face_position_accumulator_[i]);
 			if (debug_) std::cout << "published\n";
 		}
@@ -355,6 +359,7 @@ unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_people_detect
 			if (debug_)
 				std::cout << "not published\n";
 	}
+  std::cout<<"DBG faces to publish "<<faces_to_publish.size()<<std::endl;
 	face_position_msg_out.detections = faces_to_publish;
 	// hack: for WimiCare replace 'Unknown' by '0000'
 	//        for (int i=0; i<(int)face_position_msg_out.detections.size(); i++)
@@ -593,7 +598,8 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 				face_identification_votes_.push_back(new_identification_data);
 			}
 		}
-	}
+  }
+	
 	if (debug_)
 		std::cout << "New detections.\n";
 

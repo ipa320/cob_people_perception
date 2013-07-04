@@ -75,6 +75,8 @@
 
 // boost
 #include <boost/thread/mutex.hpp>
+#include "boost/filesystem/path.hpp"
+#include "boost/lexical_cast.hpp"
 
 #include"cob_people_detection/face_recognition.h"
 #include<algorithm>
@@ -93,7 +95,7 @@ public:
 	/// @param data_directory The directory for data files
 	/// @param identification_labels_to_recognize A list of labels of persons that shall be recognized
 	/// @return Return code
-virtual unsigned long init(std::string data_directory,std::string classifier_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth);
+virtual unsigned long init(std::string data_directory, int eigenface_size, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int class_meth,bool use_unknown_thresh,bool use_depth);
 
 	/// Initialization function for training purposes (only for capturing images, not the training of recognition models).
 	/// Parameters: see class member explanations.
@@ -185,8 +187,11 @@ protected:
 	/// @return Return code
 	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<std::string>& identification_labels_to_train);
 	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps, std::vector<std::string>& identification_labels_to_train);
-//----------------------------------------------------
-//----------------------------------------------------
+
+  /// Function can be used to verify the existence of the data directory and created if it does not exist.
+  /// @bief Assertion of the data directory
+  /// @param[in] data_directory Path to top level directory with training data
+  void assertDirectories(boost::filesystem::path& data_directory);
 
 
 
@@ -221,7 +226,7 @@ unsigned long initFaceRecognition(cob_people_detection::FaceRecognizerBaseClass*
 	cv::Mat m_face_class_average_projections;		///< The average factors of the eigenvector decomposition from each face class; The average factors from each face class originating from the eigenvector decomposition.
 	std::vector<std::string> m_current_label_set;	///< A vector containing all different labels from the training session exactly once, order of appearance matters! (m_current_label_set[i] stores the corresponding name to the average face coordinates in the face subspace in m_face_class_average_projections.rows(i))
 	cv::SVM m_face_classifier;						///< classifier for the identity of a person
-	std::string m_data_directory;					///< folder that contains the training data
+	boost::filesystem::path m_data_directory;					///< folder that contains the training data
 
 	// mutex
 	boost::mutex m_data_mutex;					///< secures the internal data variables against usage during training

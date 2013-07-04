@@ -75,13 +75,13 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	face_depthmaps_.clear();
 
 	// parameters
-	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
+	//data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 	int eigenface_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
 	bool debug;								// enables some debug outputs
 	bool use_depth;
 
 	std::cout << "\n---------------------------\nFace Capture Node Parameters:\n---------------------------\n";
-	node_handle_.param("data_directory", data_directory_, data_directory_);
+	if(!node_handle_.getParam("/cob_people_detection/data_storage_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
 	std::cout << "data_directory = " << data_directory_ << "\n";
 	node_handle_.param("eigenface_size", eigenface_size, 100);
 	std::cout << "eigenface_size = " << eigenface_size << "\n";

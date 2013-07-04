@@ -162,7 +162,9 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 		}
 	}
 
+
 	// insert recognized faces
+  std::cout<<"DBG size "<<face_recognition_msg->detections.size()<<std::endl;
 	for(int i=0; i<(int)face_recognition_msg->detections.size(); i++)
 	{
 		const cob_people_detection_msgs::Rect& face_rect = face_recognition_msg->detections[i].mask.roi;

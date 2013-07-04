@@ -125,6 +125,7 @@ HeadDetectorNode::~HeadDetectorNode(void)
 
 void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
 {
+
 //	Timer tim;
 //	tim.start();
 

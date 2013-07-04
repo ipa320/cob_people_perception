@@ -81,6 +81,11 @@
 #include <actionlib/server/simple_action_server.h>
 #include <cob_people_detection/loadModelAction.h>
 
+//boost includes
+
+#include<boost/filesystem.hpp>
+
+
 namespace ipa_PeopleDetector {
 
 typedef actionlib::SimpleActionServer<cob_people_detection::loadModelAction> LoadModelServer;
