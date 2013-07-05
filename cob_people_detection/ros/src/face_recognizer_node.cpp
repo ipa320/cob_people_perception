@@ -86,14 +86,16 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 //	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 //	classifier_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 	// Parameters
-	int eigenface_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
+  bool norm_illumination;
+  bool norm_align;
+  bool norm_extreme_illumination;
+  int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
 	int eigenvectors_per_person;			// Number of eigenvectors per person to identify -> controls the total number of eigenvectors
 	double threshold_facespace;				// Threshold to facespace
 	double threshold_unknown;				// Threshold to detect unknown faces
 	int metric; 							// metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 	bool debug;								// enables some debug outputs
-	int class_meth;           // choose classification method
-	int subs_meth;           // choose subspace method
+	int recognition_method;           // choose subspace method
 	bool use_unknown_thresh; // use threshold for unknown faces
 	bool use_depth;         // use depth for recognition
 	std::vector<std::string> identification_labels_to_recognize;	// a list of labels of persons that shall be recognized
@@ -103,8 +105,6 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	std::cout << "data_directory = " << data_directory_ << "\n";
 	node_handle_.param("enable_face_recognition", enable_face_recognition_, true);
 	std::cout << "enable_face_recognition = " << enable_face_recognition_ << "\n";
-	node_handle_.param("eigenface_size", eigenface_size, 100);
-	std::cout << "eigenface_size = " << eigenface_size << "\n";
 	node_handle_.param("eigenvectors_per_person", eigenvectors_per_person, 1);
 	std::cout << "eigenvectors_per_person = " << eigenvectors_per_person << "\n";
 	node_handle_.param("threshold_facespace", threshold_facespace, 10000.0);
@@ -115,17 +115,26 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	std::cout << "metric = " << metric << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
-	node_handle_.param("subspace_method", subs_meth, 0);
-	std::cout << "subspace method: " << subs_meth << "\n";
-	node_handle_.param("classification_method", class_meth, 0);
-	std::cout << "classification method: " << class_meth << "\n";
+	node_handle_.param("recognition_method", recognition_method, 3);
+	std::cout << "recognition method: " << recognition_method << "\n";
 	node_handle_.param("use_unknown_thresh", use_unknown_thresh, true);
 	std::cout << " use use unknown thresh: " << use_unknown_thresh << "\n";
 	node_handle_.param("use_depth", use_depth, true);
 	std::cout << " use depth: " << use_depth << "\n";
 	node_handle_.param("display_timing", display_timing_, false);
 	std::cout << "display_timing = " << display_timing_ << "\n";
-
+	node_handle_.param("norm_size", norm_size, 100);
+	std::cout << "norm_size = " << norm_size << "\n";
+	node_handle_.param("norm_illumination", norm_illumination, true);
+	std::cout << "norm_illumination = " << norm_illumination << "\n";
+	node_handle_.param("norm_align", norm_align, false);
+	std::cout << "norm_align = " << norm_align << "\n";
+	node_handle_.param("norm_extreme_illumination", norm_extreme_illumination, false);
+	std::cout << "norm_extreme_illumination = " << norm_extreme_illumination << "\n";
+	node_handle_.param("debug", debug, false);
+	std::cout << "debug = " << debug << "\n";
+	node_handle_.param("use_depth",use_depth,false);
+	std::cout<< "use depth: "<<use_depth<<"\n";
 	// todo: make parameters for illumination and alignment normalization on/off
 
 	std::cout << "identification_labels_to_recognize: \n";
@@ -141,23 +150,33 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 		}
 	}
 
+
+
 	// initialize face recognizer
-	face_recognizer_.init(data_directory_, eigenface_size, metric, debug, identification_labels_to_recognize, subs_meth, class_meth, use_unknown_thresh, use_depth);
-	std::cout << "Recognition model trained or loaded for:\n";
-	for (unsigned int i = 0; i < identification_labels_to_recognize.size(); i++)
-		std::cout << "   - " << identification_labels_to_recognize[i] << std::endl;
+  int feature_dimension=20;
+	unsigned long return_value=face_recognizer_.init(data_directory_, norm_size,norm_illumination,norm_align,norm_extreme_illumination, metric, debug, identification_labels_to_recognize,recognition_method, feature_dimension, use_unknown_thresh, use_depth);
+  if(return_value==ipa_Utils::RET_FAILED)
+  {
+    ROS_ERROR( "Recognition model not trained");
+  }
+  else if(return_value==ipa_Utils::RET_OK)
+  {
+    std::cout << "Recognition model trained or loaded for:\n";
+    for (unsigned int i = 0; i < identification_labels_to_recognize.size(); i++)
+      std::cout << "   - " << identification_labels_to_recognize[i] << std::endl;
 
-	// advertise topics
-	face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_recognitions", 1);
+    // advertise topics
+    face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_recognitions", 1);
 
-	// subscribe to head detection topic
-	face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceRecognizerNode::facePositionsCallback, this);
+    // subscribe to head detection topic
+    face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceRecognizerNode::facePositionsCallback, this);
 
-	// launch LoadModel server
-	load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
-	load_model_server_->start();
+    // launch LoadModel server
+    load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
+    load_model_server_->start();
 
-	std::cout << "FaceRecognizerNode initialized.\n" << std::endl;
+    ROS_INFO( "FaceRecognizerNode initialized.");
+  }
 }
 
 

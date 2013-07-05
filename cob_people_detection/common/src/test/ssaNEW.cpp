@@ -1,5 +1,5 @@
 
-#include<cob_people_detection/face_recognizer_algorithm.h>
+#include<cob_people_detection/face_recognizer_algorithms.h>
 #include<cob_people_detection/face_normalizer.h>
 #include<opencv/cv.h>
 #include<opencv/highgui.h>

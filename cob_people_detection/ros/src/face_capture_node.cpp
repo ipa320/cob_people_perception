@@ -76,22 +76,35 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 
 	// parameters
 	//data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
-	int eigenface_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
 	bool debug;								// enables some debug outputs
 	bool use_depth;
+
+  bool norm_illumination;
+  bool norm_align;
+  bool norm_extreme_illumination;
+  int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
+
+
 
 	std::cout << "\n---------------------------\nFace Capture Node Parameters:\n---------------------------\n";
 	if(!node_handle_.getParam("/cob_people_detection/data_storage_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
 	std::cout << "data_directory = " << data_directory_ << "\n";
-	node_handle_.param("eigenface_size", eigenface_size, 100);
-	std::cout << "eigenface_size = " << eigenface_size << "\n";
+	node_handle_.param("norm_size", norm_size, 100);
+	std::cout << "norm_size = " << norm_size << "\n";
+	node_handle_.param("norm_illumination", norm_illumination, true);
+	std::cout << "norm_illumination = " << norm_illumination << "\n";
+	node_handle_.param("norm_align", norm_align, false);
+	std::cout << "norm_align = " << norm_align << "\n";
+	node_handle_.param("norm_extreme_illumination", norm_extreme_illumination, false);
+	std::cout << "norm_extreme_illumination = " << norm_extreme_illumination << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
 	node_handle_.param("use_depth",use_depth,false);
 	std::cout<< "use depth: "<<use_depth<<"\n";
 
+  
 	// face recognizer trainer
-	face_recognizer_trainer_.initTraining(data_directory_, eigenface_size, debug, face_images_, face_depthmaps_, use_depth);
+	face_recognizer_trainer_.initTraining(data_directory_, norm_size,norm_illumination,norm_align,norm_extreme_illumination, debug, face_images_, face_depthmaps_, use_depth);
 
 	// subscribers
 	it_ = new image_transport::ImageTransport(node_handle_);
@@ -239,9 +252,7 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		cv::Mat img_color = color_image;
 		cv::Mat img_depth = depth_image;
 		// normalize face
-		//if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_)==ipa_Utils::RET_FAILED)
 		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_,face_depthmaps_)==ipa_Utils::RET_FAILED)
-		//if (face_recognizer_trainer_.addFace(img_color, face_bounding_box, current_label_, face_images_)==ipa_Utils::RET_FAILED)
 		{
 			ROS_WARN("Normalizing failed");
 			return;

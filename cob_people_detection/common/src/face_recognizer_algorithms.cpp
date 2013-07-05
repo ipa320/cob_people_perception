@@ -9,7 +9,7 @@ bool ipa_PeopleDetector::FaceRecognizerBaseClass::input_param_check(std::vector<
   if(imgs.size()==0) return false;
   if(labels.size()==0) return false;
   if(target_dim==0) return false;
-  if(target_dim>imgs.size()) return false;
+  //if(target_dim>imgs.size()) return false;
 
 }
 void ipa_PeopleDetector::FaceRecognizer1D::calc_threshold(cv::Mat& data,double& thresh)
@@ -86,6 +86,12 @@ void ipa_PeopleDetector::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int&
 }
 void ipa_PeopleDetector::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
 {
+
+  if((int)probe_mat.rows!=(int)source_dim_.height || (int)probe_mat.cols !=(int)source_dim_.width)
+      {
+      std::cout<<"[FaceRecognizerAlgorithm] Invalid image dimensions for classification.Aborting."<<std::endl;
+      }
+
   //project query mat to feature space
   cv::Mat feature_arr=cv::Mat(1,target_dim_,CV_64FC1);
   // conversion from matrix format to array
@@ -283,7 +289,8 @@ bool ipa_PeopleDetector::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::M
 
         SubspaceAnalysis::PCA PCA;
 
-        target_dim_=target_dim;
+        if(target_dim>num_classes_)target_dim_=num_classes_;
+        else target_dim_=target_dim;
 
         //allocate all matrices
         model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
@@ -321,12 +328,20 @@ bool ipa_PeopleDetector::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::
         std::cout<<"Training Fisherfaces"<<std::endl;
         std::vector<int> unique_labels;
         SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels);
+        // check if suitable number of classes is contained in training data
+        if(num_classes_<2)
+        {
+          std::cout<<"[FaceRecognizerAlgorithm] Fisherfaces needs more than single class in training data.Aborting."<<std::endl;
+        return false;
+        }
         SubspaceAnalysis::condense_labels(label_vec);
 
         SubspaceAnalysis::PCA PCA;
         SubspaceAnalysis::LDA LDA;
 
+
         // set target dimensions for subspace methods
+
         target_dim_=num_classes_-1;
         int target_dim_PCA=label_vec.size()-num_classes_;
         if(target_dim_PCA<1)target_dim_PCA=num_classes_;
@@ -434,9 +449,15 @@ bool ipa_PeopleDetector::FaceRecognizer_LDA2D::trainModel(std::vector<cv::Mat>& 
         SubspaceAnalysis::unique_elements(label_vec,num_classes_,unique_labels);
         SubspaceAnalysis::condense_labels(label_vec);
 
+        if(num_classes_<2)
+        {
+          std::cout<<"[FaceRecognizerAlgorithm] LDA 2D needs more than single class in training data.Aborting."<<std::endl;
+        return false;
+        }
 
         //SubspaceAnalysis::PCA2D PCA;
 
+        source_dim_=cv::Size(img_vec[0].rows,img_vec[0].cols);
         target_dim_=target_dim;
 
         //allocate all matrices

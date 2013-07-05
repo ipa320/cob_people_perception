@@ -132,6 +132,7 @@ namespace ipa_PeopleDetector{
         };
 
       double unknown_thresh_; ///< Unknown threshold. When it is exceeded face is classified as unknown.
+      cv::Size source_dim_;   ///< Dimensions of the images the model is trained with.
       int target_dim_;        ///< Subspace dimension that is used for the facespace.
       int num_classes_;       ///< Number of classes
       cv::Mat projection_mat_;///< Linear projection matrix (Eigenvectors) for transition from image space to features space.
