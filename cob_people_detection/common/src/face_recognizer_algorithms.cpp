@@ -283,6 +283,7 @@ bool ipa_PeopleDetector::FaceRecognizer1D::loadModel(boost::filesystem::path& mo
 
   //TODO:assert file is regular file
   //
+  std::cout<<"FaceRecognizer1D::loadModel() from "<<model_file.file_string()<<std::endl;
   cv::FileStorage fs(model_file.file_string(),cv::FileStorage::READ);
 
 
@@ -300,7 +301,6 @@ bool ipa_PeopleDetector::FaceRecognizer1D::loadModel(boost::filesystem::path& mo
   for( ; it!=it_end;++it , idx++)
   {
     model_label_vec_[idx]=(int)(*it);
-    std::cout<<model_label_vec_[idx]<<std::endl;
   }
 
   target_dim_=model_features_.cols;

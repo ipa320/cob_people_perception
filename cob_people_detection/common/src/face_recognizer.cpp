@@ -197,7 +197,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_
   face_normalizer_.init(fn_cfg);
 	// load model
 	m_current_label_set.clear();	 // keep empty to load all available data
-	loadTrainingData(face_images,face_depthmaps, m_current_label_set);
+	loadTrainingData(face_images, m_current_label_set);
 
 	return ipa_Utils::RET_OK;
 }
@@ -408,77 +408,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 
 	// load necessary data
 
-	// If depth mode is enabled load available depthmaps
-	std::vector<cv::Mat> face_images, face_depthmaps;
-	if (m_depth_mode == true)
-	{
-		loadTrainingData(face_images, face_depthmaps, identification_labels_to_train);
-
-		//make label vec for depth
-		depth_str_labels.clear();
-		depth_str_labels_unique.clear();
-		depth_num_labels.clear();
-
-		//int lbl=0;
-		for (unsigned int i = 0; i < dm_exist.size(); i++)
-		{
-			if (dm_exist[i])
-			{
-				depth_str_labels.push_back(m_face_labels[i]);
-				bool unique = true;
-				for (unsigned int k = 0; k < depth_str_labels_unique.size(); k++)
-				{
-					if (depth_str_labels_unique[k].compare(m_face_labels[i]) == 0)
-						unique = false;
-				}
-				if (unique == true)
-					depth_str_labels_unique.push_back(m_face_labels[i]);
-			}
-		}
-
-		for (unsigned int li = 0; li < depth_str_labels.size(); li++)
-		{
-			for (unsigned int lj = 0; lj < depth_str_labels_unique.size(); lj++)
-			{
-				if (depth_str_labels_unique[lj].compare(depth_str_labels[li]) == 0)
-					depth_num_labels.push_back(lj);
-			}
-		}
-	}
-	else
-	{
-		loadTrainingData(face_images, identification_labels_to_train);
-	}
+	std::vector<cv::Mat> face_images;
+  loadTrainingData(face_images, identification_labels_to_train);
 
 	m_current_label_set = identification_labels_to_train;
 
-	// convert face_images to right format if necessary
-	//cv::Size new_size(m_norm_size, m_norm_size);
-	//for (int i=0; i<face_images.size(); i++)
-	//{
-	//	// convert to grayscale if necessary
-	//	if (face_images[i].type() == CV_8UC3)
-	//	{
-	//		cv::Mat temp = face_images[i];
-	//		cv::cvtColor(temp, face_images[i], CV_BGR2GRAY);
-	//	}
-	//	// rescale if necessary to m_norm_size
-	//	if (face_images[i].cols != m_norm_size || face_images[i].rows != m_norm_size)
-	//	{
-	//		cv::Mat temp = face_images[i];
-	//    //cv::imshow("k",temp);
-	//    //cv::waitKey(0);
-	//    std::cout<<"i="<<i<<std::endl;
-	//    std::cout<<"new_size"<<new_size.width<<" "<<new_size.height<<std::endl;
-	//    std::cout<<"face_i"<<temp.rows<<" "<<temp.cols<<std::endl;
-	//		cv::resize(temp, face_images[i], new_size);
-	//	}
-	//}
-
-
-	//--------------------------------------------
-	//--------------------------------------------
-	//--------------------------------------------
 
 	m_label_num.clear();
 	for (unsigned int li = 0; li < m_face_labels.size(); li++)
@@ -490,26 +424,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 		}
 	}
 
-	//alocate memory for eigenvectors
-	m_eigenvectors.clear();
-
-	// reset effs
-	//eff_depth.releaseModel();
-	//eff_color->releaseModel();
 
   boost::filesystem::path path=m_data_directory;
 	boost::filesystem::path path_color =path/ "rdata_color.xml";
-	boost::filesystem::path path_depth =path/ "rdata_depth.xml";
 
-	//--> INIT MODEL
-	if (m_depth_mode)
-	{
-		if (face_depthmaps.size() > 0)
-    {
-		//initModel(eff_depth, face_depthmaps, depth_num_labels);
-		//eff_depth.saveModel(path_depth);
-    }
-	}
 
   unsigned long trained;
 	if (face_images.size() > 0)
@@ -520,7 +438,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	saveRecognitionModel();
   return trained;
 
-	//TODO ALWAYS TRAINING NECESSARY - NO INTERFACE FOR SSA CLASS FOR MODEL ASSOCIATION
 }
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::saveRecognitionModel()
@@ -582,9 +499,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 
 	// check whether currently trained data set corresponds with intentification_labels_to_recognize
 	boost::filesystem::path path = m_data_directory ;
-	boost::filesystem::path complete = path/"rdata.xml" ;
+	boost::filesystem::path complete = path/"rdata_color.xml" ;
 
 	bool training_necessary = false;
+  std::vector<string>temp_face_labels;
 	if(fs::is_directory(path.file_string()))
 	{
 		cv::FileStorage fileStorage(complete.file_string(), cv::FileStorage::READ);
@@ -595,21 +513,31 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 		}
 		else
 		{
-			// A vector containing all different labels from the training session exactly once, order of appearance matters! (m_current_label_set[i] stores the corresponding name to the average face coordinates in the face subspace in m_face_class_average_projections.rows(i))
-			m_current_label_set.clear();
-			int number_current_labels = (int)fileStorage["number_current_labels"];
-			m_current_label_set.resize(number_current_labels);
-			for(int i=0; i<number_current_labels; i++)
-			{
-				std::ostringstream tag;
-				tag << "current_label_" << i;
-				m_current_label_set[i] = (std::string)fileStorage[tag.str().c_str()];
-			}
+        // load model labels
+        cv::FileNode fn = fileStorage["string_labels"];
+        cv::FileNodeIterator it = fn.begin(), it_end = fn.end();
+        int idx=0;
+        m_current_label_set.clear();
+        for( ; it!=it_end;++it , idx++)
+        {
+          temp_face_labels.push_back(*it);
+          bool new_label=true;
+          if(idx>0)
+          {
+            for(int i=0;i<m_current_label_set.size();i++)
+            {
+              if(m_current_label_set[i].compare(*it)==0)new_label=false;
+            }
+          }
+          if(new_label) m_current_label_set.push_back(*it);
+        }
 
-			// compare m_current_label_set with identification_labels_to_recognize, only load data if both vectors contain same elements in same order
+			// A vector containing all different labels from the training session exactly once, order of appearance matters! (m_current_label_set[i] stores the corresponding name to the average face coordinates in the face subspace in m_face_class_average_projections.rows(i))
 			bool same_data_set = true;
 			if (identification_labels_to_recognize.size()==0 || m_current_label_set.size()!=identification_labels_to_recognize.size())
+      {
 				same_data_set = false;
+      }
 			else
 			{
 				for (uint i=0; i<identification_labels_to_recognize.size(); i++)
@@ -624,51 +552,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 
 			if (same_data_set == true)
 			{
-				// stored set is equal to requested set -> just load the data
 
-				// Number eigenvalues/eigenvectors
-				int number_eigenfaces = (int)fileStorage["number_eigenfaces"];
-
-				// Eigenvectors
-				m_eigenvectors.clear();
-				m_eigenvectors.resize(number_eigenfaces, cv::Mat());
-				for (int i=0; i<number_eigenfaces; i++)
-				{
-					std::ostringstream tag;
-					tag << "ev_" << i;
-					fileStorage[tag.str().c_str()] >> m_eigenvectors[i];
-				}
-
-				// Eigenvalue matrix
-				m_eigenvalues = cv::Mat();
-				fileStorage["eigenvalues"] >> m_eigenvalues;
-
-				// Average image
-				m_average_image = cv::Mat();
-				fileStorage["average_image"] >> m_average_image;
-
-				// Projections of the training faces
-				m_projected_training_faces = cv::Mat();
-				fileStorage["projected_training_faces"] >> m_projected_training_faces;
-
-				// corresponding labels to each face image projection in m_projected_training_faces
-				int number_face_labels = (int)fileStorage["number_face_labels"];
-				m_face_labels.clear();
-				m_face_labels.resize(number_face_labels);
-				for (int i=0; i<number_face_labels; i++)
-				{
-					std::ostringstream tag;
-					tag << "face_label_" << i;
-					fileStorage[tag.str().c_str()] >> m_face_labels[i];
-				}
-
-				// The average factors of the eigenvector decomposition from each face class
-				m_face_class_average_projections = cv::Mat();
-				fileStorage["face_class_average_projections"] >> m_face_class_average_projections;
-
-				// load classifier
-				std::string classifier_file = path.file_string() + "svm.dat";
-				//m_face_classifier_.load(classifier_file.c_str());  // todo
+        eff_color->loadModel(complete);
+        m_face_labels=temp_face_labels;
 
 				std::cout << "INFO: FaceRecognizer::loadRecognitionModel: recognizer data loaded.\n" << std::endl;
 			}
@@ -691,7 +577,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 	if (training_necessary == true)
 	{
 		// stored set differs from requested set -> recompute the model from training data
-
 		// release lock, trainRecognitionModel requests its own lock
 		if (lock != 0)
 			delete lock;
@@ -753,6 +638,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
       int res_label;
       eff_color->classifyImage(resized_8U1,res_label);
+        std::cout<<"classified as "<<res_label<<std::endl;
       if(res_label==-1)
       {
         identification_labels.push_back("Unknown Face");
@@ -794,50 +680,21 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
      cv::Mat DM_crop=cv::Mat::zeros(m_norm_size,m_norm_size,CV_8UC1);
     cv::Size norm_size=cv::Size(m_norm_size,m_norm_size);
-    if(face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,norm_size,DM_crop))
-    {
-    cv::Mat show_mat=color_crop.clone();
-    //cv::imshow("color_norm",show_mat);
-    //cv::waitKey(5);
-    }
+    if(face_normalizer_.normalizeFace(color_crop,depth_crop_xyz,norm_size,DM_crop));
 
-    //enable this , when recording
-		//return ipa_Utils::RET_FAILED;
 
      double DFFS;
-     cv::Mat temp,temp2;
-     DM_crop.convertTo(DM_crop,CV_64FC1);
+     cv::Mat temp;
      color_crop.convertTo(color_crop,CV_64FC1);
-     //depth_crop.convertTo(temp2,CV_8UC1,255);
-     //cv::equalizeHist(temp2,temp2);
-     //cv::imshow("temp",temp2);
-     //cv::waitKey(10);
 
-      cv::Mat coeff_arr_color,coeff_arr_depth;
       int res_label_color, res_label_depth;
       std::string class_depth,class_color;
 
-      //if((eff_depth.trained)&& (m_depth_mode==true))
-      //{
-      //  //std::cout<<"classification with depth"<<std::endl;
-      //  eff_depth.projectToSubspace(DM_crop,coeff_arr_depth,DFFS);
-      //  eff_depth.classify(coeff_arr_depth,m_class_meth,res_label_depth);
-      //  if(res_label_depth==-1)
-      //  {
-      //    class_depth="Unknown";
-      //  }
-      //  else
-      //  {
-      //    class_depth=depth_str_labels[res_label_depth];
-      //  }
-      //}
 
       if(eff_color->trained_)
       {
-        //std::cout<<"classification with color"<<std::endl;
-        //eff_color.projectToSubspace(color_crop,coeff_arr_color,DFFS);
-        //eff_color.classify(coeff_arr_color,m_class_meth,res_label_color);
         eff_color->classifyImage(color_crop,res_label_color);
+        std::cout<<"classified as "<<res_label_color<<std::endl;
         if(res_label_color==-1)
         {
           class_color="Unknown";
@@ -848,47 +705,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
         }
       }
 
-      //compare and combine classification resutls
-      //
-      // case 1 - A  A        --> A
-      // case 2 - C  Unknown --> A
-      // case 3 - Unknown A   --> A
-      std::string classification_combined;
-      if(class_color.compare(class_depth)==0) classification_combined=class_color; //case 1
-      else
-      {
-        bool found=false;
-        for(unsigned int l=0;l<depth_str_labels.size();l++)
-        {
-          if (class_color.compare(depth_str_labels[l])==0 ) found = true;
-        }
-        if(!found && class_depth.compare("Unknown")== 0) classification_combined=class_color;
-        else if(!found && class_color.compare("Unknown")==0) classification_combined=class_depth;
-        else
-        {
-          // this is the case when the algorithm yields different labels
-          // insert weighting mechanism --> disadvantage of winner takes it all
-          classification_combined=class_color;
-        }
-      }
 
-	//	if (m_debug) std::cout << "distance to face space: " << DFFS << std::endl;
-  //  //TODO temporary
-  //  DFFS=0;
-	//	if(DFFS > m_threshold_facespace)
-	//	{
-	//		// no face
-	//		identification_labels.push_back("No face");
-	//	}
-	//	else
-	//	{
-
-      //std::cout<<"CLASS COLOR= "<<class_color<<std::endl;
-      //std::cout<<"CLASS DEPTH= "<<class_depth<<std::endl;
-
-      std::cout<<"classified as "<<class_color<<std::endl;
       identification_labels.push_back(class_color);
-		//}
 	}
 
   gettimeofday(&t2,NULL);
