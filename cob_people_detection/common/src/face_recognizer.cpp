@@ -166,7 +166,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
 
   std::string classifier_directory=data_directory+"haarcascades/";
   face_normalizer_.init(classifier_directory,fn_cfg);
-  
+
 
 	// load model
 	unsigned long return_value=loadRecognitionModel(identification_labels_to_recognize);
@@ -174,7 +174,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
   {
     return ipa_Utils::RET_FAILED;
   }
-
 	return ipa_Utils::RET_OK;
 }
 
@@ -379,7 +378,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFace(int index, std::vec
 	return ipa_Utils::RET_OK;
 }
 
-bool ipa_PeopleDetector::FaceRecognizer::trainFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
+unsigned long ipa_PeopleDetector::FaceRecognizer::trainFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels)
 {
 
   std::vector<cv::Mat> in_vec;
@@ -395,10 +394,10 @@ bool ipa_PeopleDetector::FaceRecognizer::trainFaceRecognition(ipa_PeopleDetector
   if(!eff->trainModel(in_vec,labels,m_feature_dim))
   {
       std::cout<<"[FACEREC] Reognition module could not be initialized !"<<std::endl;
-      return false;
+      return ipa_Utils::RET_FAILED;
   }
 
-	return true;
+	return ipa_Utils::RET_OK;
 }
 
 
@@ -512,25 +511,22 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
     }
 	}
 
-  bool trained;
+  unsigned long trained;
 	if (face_images.size() > 0)
   {
 		  trained=trainFaceRecognition(eff_color, face_images, m_label_num);
   }
 
-  if (!trained)return ipa_Utils::RET_FAILED;
-  else return ipa_Utils::RET_OK;
+	saveRecognitionModel();
+  return trained;
 
-	//eff_color.saveModel(path_color);
 	//TODO ALWAYS TRAINING NECESSARY - NO INTERFACE FOR SSA CLASS FOR MODEL ASSOCIATION
-	//saveRecognitionModel();
 }
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::saveRecognitionModel()
 {
   boost::filesystem::path path=m_data_directory;
-  boost::filesystem::path complete=path/"rdata.xml";
-  complete/= "rdata.xml";
+  boost::filesystem::path complete=path/"rdata_color.xml";
 
 
 	if(fs::is_directory(path.file_string()))
@@ -543,55 +539,24 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveRecognitionModel()
 				return ipa_Utils::RET_FAILED;
 			}
 		}
+    eff_color->saveModel(complete);
 
-		cv::FileStorage fileStorage(complete.file_string(), cv::FileStorage::WRITE);
+    std::cout<<"OPENING at "<<complete.file_string()<<std::endl;
+		cv::FileStorage fileStorage(complete.file_string(), cv::FileStorage::APPEND);
 		if(!fileStorage.isOpened())
 		{
 			std::cout << "Error: FaceRecognizer::saveRecognitionModel: Can't save training data.\n" << std::endl;
 			return ipa_Utils::RET_FAILED;
 		}
 
-		// Number eigenvalues/eigenvectors
-		int number_eigenfaces = m_eigenvectors.size();
-		fileStorage << "number_eigenfaces" << number_eigenfaces;
+    
+    fileStorage<<"string_labels"<<"[";
+    for(int i=0;i<m_face_labels.size();i++)
+    {
+    fileStorage<<m_face_labels[i];
+    }
+    fileStorage<<"]";
 
-		// Eigenvectors
-		for (int i=0; i<number_eigenfaces; i++)
-		{
-			std::ostringstream tag;
-			tag << "ev_" << i;
-			fileStorage << tag.str().c_str() << m_eigenvectors[i];
-		}
-
-		// Eigenvalue matrix
-		fileStorage << "eigenvalues" << m_eigenvalues;
-
-		// Average image
-		fileStorage << "average_image" << m_average_image;
-
-		// Projection coefficients of the training faces
-		fileStorage << "projected_training_faces" << m_projected_training_faces;
-
-		// corresponding labels to each face image projection in m_projected_training_faces
-		fileStorage << "number_face_labels" << (int)m_face_labels.size();
-		for (uint i=0; i<m_face_labels.size(); i++)
-		{
-			std::ostringstream tag;
-			tag << "face_label_" << i;
-			fileStorage << tag.str().c_str() << m_face_labels[i];
-		}
-
-		// The average factors of the eigenvector decomposition from each face class
-		fileStorage << "face_class_average_projections" << m_face_class_average_projections;
-
-		// A vector containing all different labels from the training session exactly once, order of appearance matters! (m_current_label_set[i] stores the corresponding name to the average face coordinates in the face subspace in m_face_class_average_projections.rows(i))
-		fileStorage << "number_current_labels" << (int)m_current_label_set.size();
-		for(int i=0; i<(int)m_current_label_set.size(); i++)
-		{
-			std::ostringstream tag;
-			tag << "current_label_" << i;
-			fileStorage << tag.str().c_str() << m_current_label_set[i].c_str();
-		}
 
 		fileStorage.release();
 

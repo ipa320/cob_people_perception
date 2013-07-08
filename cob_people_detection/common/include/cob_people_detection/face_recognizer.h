@@ -210,7 +210,7 @@ protected:
   bool m_depth_mode;                              ///< flag indicates if depth maps are ignored or used for classification
   ipa_PeopleDetector::Method m_subs_meth;           ///< recognition method
   bool m_use_unknown_thresh;                      ///< flag indicates if unknown threshold is used
-bool trainFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
+unsigned long trainFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
 //----------------------------------------------------
 //----------------------------------------------------
 

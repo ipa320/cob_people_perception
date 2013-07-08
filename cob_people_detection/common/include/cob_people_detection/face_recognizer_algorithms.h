@@ -8,6 +8,9 @@
 
 #include<cob_people_detection/subspace_analysis.h>
 
+#include<boost/filesystem.hpp>
+#include<boost/lexical_cast.hpp>
+
 namespace ipa_PeopleDetector{
 
   enum Classifier
@@ -66,10 +69,10 @@ namespace ipa_PeopleDetector{
 
 
       /// Abstract method to save recognition model.
-      virtual void saveModel()=0;
+      virtual bool saveModel(boost::filesystem::path& model_file)=0;
 
       /// Abstract method to load recognition model.
-      virtual void loadModel()=0;
+      virtual bool loadModel(boost::filesystem::path& model_file)=0;
 
       ///  Method to activate usage of "unknown" threshold
       inline virtual void activate_unknown_treshold()
@@ -120,10 +123,10 @@ namespace ipa_PeopleDetector{
       /// @return False when input parameter check detects invalid parameters
       virtual bool input_param_check(std::vector<cv::Mat>& imgs,std::vector<int>& labels,int& target_dim);
 
-      /// Method is used to check whether the unknown threshold is exceeded. 
+      /// Method is used to check whether the unknown threshold is exceeded.
       /// @brief Check whether the unknown threshold is exceeded
       ///  @param[in] distance Distance in faces space
-      ///  @param[in] threshold "unknown" threshold 
+      ///  @param[in] threshold "unknown" threshold
       /// @return Returns false, when threshold is exceeded.
       inline  bool is_known(double& distance ,double& threshold)
         {
@@ -158,8 +161,8 @@ namespace ipa_PeopleDetector{
       virtual void calc_threshold(std::vector<cv::Mat>& data,double& thresh){};
 
 
-      virtual void saveModel(){};
-      virtual void loadModel(){};
+      virtual bool saveModel(boost::filesystem::path& model_file);
+      virtual bool loadModel(boost::filesystem::path& model_file);
 
 
       virtual void model_data_mat(std::vector<cv::Mat>& input_data,cv::Mat& data_mat);
@@ -167,7 +170,6 @@ namespace ipa_PeopleDetector{
     protected:
       cv::Mat average_arr_;
       cv::Mat model_features_;
-      cv::Mat model_data_arr_;
 
   };
 
@@ -185,13 +187,12 @@ namespace ipa_PeopleDetector{
       virtual void calc_threshold(std::vector<cv::Mat>& data,double& thresh);
 
 
-      virtual void saveModel(){};
-      virtual void loadModel(){};
+      virtual bool saveModel(boost::filesystem::path& model_file){};
+      virtual bool loadModel(boost::filesystem::path& model_file){};
 
     protected:
       cv::Mat average_mat_;
       std::vector<cv::Mat> model_features_;
-      std::vector<cv::Mat> model_data_vec_;
   };
 
 

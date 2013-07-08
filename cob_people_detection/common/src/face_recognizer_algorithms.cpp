@@ -87,10 +87,6 @@ void ipa_PeopleDetector::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int&
 void ipa_PeopleDetector::FaceRecognizer1D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
 {
 
-  if((int)probe_mat.rows!=(int)source_dim_.height || (int)probe_mat.cols !=(int)source_dim_.width)
-      {
-      std::cout<<"[FaceRecognizerAlgorithm] Invalid image dimensions for classification.Aborting."<<std::endl;
-      }
 
   //project query mat to feature space
   cv::Mat feature_arr=cv::Mat(1,target_dim_,CV_64FC1);
@@ -155,6 +151,10 @@ void ipa_PeopleDetector::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int&
 }
 void ipa_PeopleDetector::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
 {
+  if((int)probe_mat.rows!=(int)source_dim_.height || (int)probe_mat.cols !=(int)source_dim_.width)
+      {
+      std::cout<<"[FaceRecognizerAlgorithm] Invalid image dimensions for classification.Aborting."<<std::endl;
+      }
 
   //project query mat to feature space
 
@@ -276,6 +276,61 @@ void ipa_PeopleDetector::FaceRecognizer2D::calc_threshold(std::vector<cv::Mat>& 
   std::cout<<"THRESH for db: "<<thresh<<std::endl;
 }
 
+
+
+bool ipa_PeopleDetector::FaceRecognizer1D::loadModel(boost::filesystem::path& model_file)
+{
+
+  //TODO:assert file is regular file
+  //
+  cv::FileStorage fs(model_file.file_string(),cv::FileStorage::READ);
+
+
+  fs["projection_matrix"]>>projection_mat_;
+  fs["eigenvalues"]>>eigenvalues_;
+  fs["unknown_threshold"]>>unknown_thresh_;
+  fs["average_image"]>>average_arr_;
+  fs["model_features"]>>model_features_;
+
+  // load model labels
+  cv::FileNode fn = fs["numeric_labels"];
+  cv::FileNodeIterator it = fn.begin(), it_end = fn.end();
+  int idx=0;
+  model_label_vec_.resize(model_features_.rows);
+  for( ; it!=it_end;++it , idx++)
+  {
+    model_label_vec_[idx]=(int)(*it);
+    std::cout<<model_label_vec_[idx]<<std::endl;
+  }
+
+  target_dim_=model_features_.cols;
+  trained_=true;
+
+}
+
+
+bool ipa_PeopleDetector::FaceRecognizer1D::saveModel(boost::filesystem::path& model_file)
+{
+
+
+  std::cout<<"FaceRecognizer1D::saveModel() to "<<model_file.file_string()<<std::endl;
+  cv::FileStorage fs(model_file.file_string(),cv::FileStorage::WRITE);
+
+  fs<<"projection_matrix"<<projection_mat_;
+  fs<<"eigenvalues"<<eigenvalues_;
+  fs<<"unknown_threshold"<<unknown_thresh_;
+  fs<<"average_image"<<average_arr_;
+  fs<<"model_features"<<model_features_;
+  fs<<"numeric_labels"<<"[";
+  for(int i=0;i<model_label_vec_.size();i++)
+  {
+    fs<<model_label_vec_[i];
+  }
+  fs<<"]";
+  fs.release();
+
+}
+
 bool ipa_PeopleDetector::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
 
@@ -293,18 +348,18 @@ bool ipa_PeopleDetector::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::M
         else target_dim_=target_dim;
 
         //allocate all matrices
-        model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
+        cv::Mat model_data_arr=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
         model_label_vec_.resize(img_vec.size());
         average_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
         projection_mat_=cv::Mat(target_dim_,img_vec[0].total(),CV_64FC1);
         eigenvalues_=cv::Mat(1,target_dim_-1,CV_64FC1);
-        model_features_=cv::Mat(model_data_arr_.rows,target_dim_,CV_64FC1);
+        model_features_=cv::Mat(model_data_arr.rows,target_dim_,CV_64FC1);
 
 
         model_label_vec_=label_vec;
-        model_data_mat(img_vec,model_data_arr_);
+        model_data_mat(img_vec,model_data_arr);
         //initiate PCA
-        PCA=SubspaceAnalysis::PCA(model_data_arr_,target_dim_);
+        PCA=SubspaceAnalysis::PCA(model_data_arr,target_dim_);
 
         //Assign model to member variables
         projection_mat_=PCA.eigenvecs;
@@ -312,7 +367,7 @@ bool ipa_PeopleDetector::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::M
         average_arr_=PCA.mean;
 
 
-        extractFeatures(model_data_arr_,projection_mat_,model_features_);
+        extractFeatures(model_data_arr,projection_mat_,model_features_);
 
         calc_threshold(model_features_,unknown_thresh_);
 
@@ -347,30 +402,30 @@ bool ipa_PeopleDetector::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::
         if(target_dim_PCA<1)target_dim_PCA=num_classes_;
 
         //allocate all matrices
-        model_data_arr_=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
+        cv::Mat model_data_arr=cv::Mat(img_vec.size(),img_vec[0].total(),CV_64FC1);
         model_label_vec_.resize(img_vec.size());
         average_arr_=cv::Mat(1,img_vec[0].total(),CV_64FC1);
         projection_mat_=cv::Mat(target_dim_,img_vec[0].total(),CV_64FC1);
         eigenvalues_=cv::Mat(1,target_dim_-1,CV_64FC1);
-        model_features_=cv::Mat(model_data_arr_.rows,target_dim_,CV_64FC1);
+        model_features_=cv::Mat(model_data_arr.rows,target_dim_,CV_64FC1);
 
 
         // local matrices for PCA
         cv::Mat P_PCA=cv::Mat(target_dim_PCA,img_vec[0].total(),CV_64FC1);
-        cv::Mat model_features_PCA=cv::Mat(model_data_arr_.rows,target_dim_PCA,CV_64FC1);
+        cv::Mat model_features_PCA=cv::Mat(model_data_arr.rows,target_dim_PCA,CV_64FC1);
 
         // local matrices for LDA
         cv::Mat P_LDA=cv::Mat(target_dim_,target_dim_PCA,CV_64FC1);
 
         model_label_vec_=label_vec;
-        model_data_mat(img_vec,model_data_arr_);
+        model_data_mat(img_vec,model_data_arr);
 
 
         //initiate PCA
-        PCA=SubspaceAnalysis::PCA(model_data_arr_,target_dim_PCA);
+        PCA=SubspaceAnalysis::PCA(model_data_arr,target_dim_PCA);
         P_PCA=PCA.eigenvecs;
 
-        extractFeatures(model_data_arr_,P_PCA,model_features_PCA);
+        extractFeatures(model_data_arr,P_PCA,model_features_PCA);
 
         //perform LDA
         LDA=SubspaceAnalysis::LDA(model_features_PCA,model_label_vec_,num_classes_,target_dim_);
@@ -384,7 +439,7 @@ bool ipa_PeopleDetector::FaceRecognizer_Fisherfaces::trainModel(std::vector<cv::
         eigenvalues_=LDA.eigenvals;
         average_arr_=PCA.mean;
 
-        extractFeatures(model_data_arr_,projection_mat_,model_features_);
+        extractFeatures(model_data_arr,projection_mat_,model_features_);
 
         calc_threshold(model_features_,unknown_thresh_);
 
@@ -410,7 +465,6 @@ bool ipa_PeopleDetector::FaceRecognizer_PCA2D::trainModel(std::vector<cv::Mat>& 
         target_dim_=target_dim;
 
         //allocate all matrices
-        model_data_vec_.resize(img_vec.size());
         model_label_vec_.resize(img_vec.size());
         average_mat_=cv::Mat(img_vec[0].rows,img_vec[0].cols,CV_64FC1);
         projection_mat_=cv::Mat(target_dim_,img_vec[0].cols,CV_64FC1);
@@ -419,7 +473,6 @@ bool ipa_PeopleDetector::FaceRecognizer_PCA2D::trainModel(std::vector<cv::Mat>& 
 
 
         model_label_vec_=label_vec;
-        model_data_vec_=img_vec;
         //initiate PCA
         SubspaceAnalysis::PCA2D PCA2D(img_vec,model_label_vec_,num_classes_,target_dim_);
 
@@ -429,7 +482,7 @@ bool ipa_PeopleDetector::FaceRecognizer_PCA2D::trainModel(std::vector<cv::Mat>& 
         average_mat_=PCA2D.mean;
 
 
-        extractFeatures(model_data_vec_,projection_mat_,model_features_);
+        extractFeatures(img_vec,projection_mat_,model_features_);
         calc_threshold(model_features_,unknown_thresh_);
 
         // set FaceRecognizer to trained
@@ -461,7 +514,6 @@ bool ipa_PeopleDetector::FaceRecognizer_LDA2D::trainModel(std::vector<cv::Mat>& 
         target_dim_=target_dim;
 
         //allocate all matrices
-        model_data_vec_.resize(img_vec.size());
         model_label_vec_.resize(img_vec.size());
         average_mat_=cv::Mat(img_vec[0].rows,img_vec[0].cols,CV_64FC1);
         projection_mat_=cv::Mat(target_dim_,img_vec[0].cols,CV_64FC1);
@@ -470,7 +522,6 @@ bool ipa_PeopleDetector::FaceRecognizer_LDA2D::trainModel(std::vector<cv::Mat>& 
 
 
         model_label_vec_=label_vec;
-        model_data_vec_=img_vec;
         //initiate PCA
         SubspaceAnalysis::LDA2D LDA2D(img_vec,model_label_vec_,num_classes_,target_dim_);
 
@@ -480,7 +531,7 @@ bool ipa_PeopleDetector::FaceRecognizer_LDA2D::trainModel(std::vector<cv::Mat>& 
         average_mat_=LDA2D.mean;
 
 
-        extractFeatures(model_data_vec_,projection_mat_,model_features_);
+        extractFeatures(img_vec,projection_mat_,model_features_);
         calc_threshold(model_features_,unknown_thresh_);
 
         // set FaceRecognizer to trained

@@ -7,6 +7,7 @@
 #include<fstream>
 #include <sys/time.h>
 #include <boost/timer.hpp>
+#include <boost/filesystem.hpp>
 
 
 bool preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::Size& norm_size,cv::Mat& dm) {
@@ -402,7 +403,12 @@ int main(int argc, const char *argv[])
   }
   std::cout<<EFF->trained_<<std::endl;
   boost::timer t;
-  EFF->trainModel(img_vec,label_vec,ss_dim);
+
+
+  boost::filesystem::path rpath="/home/goa-tz/.ros/test.xml";
+  EFF->loadModel(rpath);
+  std::cout<<"loaded"<<std::endl;
+  //EFF->trainModel(img_vec,label_vec,ss_dim);
   //EFF->activate_unknown_treshold();
   //gettimeofday(&t2,NULL);jj
 
