@@ -90,7 +90,7 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
   bool norm_align;
   bool norm_extreme_illumination;
   int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
-	int eigenvectors_per_person;			// Number of eigenvectors per person to identify -> controls the total number of eigenvectors
+	int feature_dimension;			// Number of eigenvectors per person to identify -> controls the total number of eigenvectors
 	double threshold_facespace;				// Threshold to facespace
 	double threshold_unknown;				// Threshold to detect unknown faces
 	int metric; 							// metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
@@ -105,8 +105,8 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 	std::cout << "data_directory = " << data_directory_ << "\n";
 	node_handle_.param("enable_face_recognition", enable_face_recognition_, true);
 	std::cout << "enable_face_recognition = " << enable_face_recognition_ << "\n";
-	node_handle_.param("eigenvectors_per_person", eigenvectors_per_person, 1);
-	std::cout << "eigenvectors_per_person = " << eigenvectors_per_person << "\n";
+	node_handle_.param("feature_dimension", feature_dimension, 10);
+	std::cout << "feature dimension = " << feature_dimension << "\n";
 	node_handle_.param("threshold_facespace", threshold_facespace, 10000.0);
 	std::cout << "threshold_facespace = " << threshold_facespace << "\n";
 	node_handle_.param("threshold_unknown", threshold_unknown, 1000.0);
@@ -153,7 +153,6 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 
 
 	// initialize face recognizer
-  int feature_dimension=20;
 	unsigned long return_value=face_recognizer_.init(data_directory_, norm_size,norm_illumination,norm_align,norm_extreme_illumination, metric, debug, identification_labels_to_recognize,recognition_method, feature_dimension, use_unknown_thresh, use_depth);
   if(return_value==ipa_Utils::RET_FAILED)
   {

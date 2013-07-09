@@ -365,7 +365,7 @@ int main(int argc, const char *argv[])
   std::cout<<"Size Training Set= "<<img_vec.size()<<std::endl;
   std::cout<<"Size Test Set= "<<probe_file_vec.size()<<std::endl;
 
-  int ss_dim=num_classes;
+  int ss_dim=5;
 
   ipa_PeopleDetector::FaceRecognizerBaseClass* EFF;
   // calculate Model
@@ -406,9 +406,9 @@ int main(int argc, const char *argv[])
 
 
   boost::filesystem::path rpath="/home/goa-tz/.ros/test.xml";
-  EFF->loadModel(rpath);
+  //EFF->loadModel(rpath);
   std::cout<<"loaded"<<std::endl;
-  //EFF->trainModel(img_vec,label_vec,ss_dim);
+  EFF->trainModel(img_vec,label_vec,ss_dim);
   //EFF->activate_unknown_treshold();
   //gettimeofday(&t2,NULL);jj
 
@@ -498,5 +498,6 @@ int main(int argc, const char *argv[])
     //int predictedLabel = model->predict(testSample);
 
 
+  EFF->saveModel(rpath);
 return 0;
 }

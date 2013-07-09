@@ -21,7 +21,7 @@ debug: false
 
 #specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces, 2 = LDA2D, 3 = PCA2D
 # int
-recognition_method: 1
+recognition_method: 3
 
 # specifies classification algorithm: 0 = DIFS, 1 = KNN, 2 = SVM
 # int
@@ -55,3 +55,8 @@ norm_align: false
 # toggle processing for extreme conditions
 # bool
 norm_extreme_illumination: false
+
+# set dimension of features ( default )
+# bool
+feature_dimension: 15
+

@@ -151,10 +151,10 @@ void ipa_PeopleDetector::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int&
 }
 void ipa_PeopleDetector::FaceRecognizer2D::classifyImage(cv::Mat& probe_mat,int& max_prob_index,cv::Mat& classification_probabilities)
 {
-  if((int)probe_mat.rows!=(int)source_dim_.height || (int)probe_mat.cols !=(int)source_dim_.width)
-      {
-      std::cout<<"[FaceRecognizerAlgorithm] Invalid image dimensions for classification.Aborting."<<std::endl;
-      }
+  //if((int)probe_mat.rows!=(int)source_dim_.height || (int)probe_mat.cols !=(int)source_dim_.width)
+  //    {
+  //    std::cout<<"[FaceRecognizerAlgorithm] Invalid image dimensions for classification.Aborting."<<std::endl;
+  //    }
 
   //project query mat to feature space
 
@@ -313,7 +313,7 @@ bool ipa_PeopleDetector::FaceRecognizer1D::saveModel(boost::filesystem::path& mo
 {
 
 
-  std::cout<<"FaceRecognizer1D::saveModel() to "<<model_file.file_string()<<std::endl;
+  std::cout<<"FaceRecognizer2D::saveModel() to "<<model_file.file_string()<<std::endl;
   cv::FileStorage fs(model_file.file_string(),cv::FileStorage::WRITE);
 
   fs<<"projection_matrix"<<projection_mat_;
@@ -331,6 +331,73 @@ bool ipa_PeopleDetector::FaceRecognizer1D::saveModel(boost::filesystem::path& mo
 
 }
 
+bool ipa_PeopleDetector::FaceRecognizer2D::loadModel(boost::filesystem::path& model_file)
+{
+
+  ////TODO:assert file is regular file
+  ////
+  std::cout<<"FaceRecognizer2D::loadModel() from "<<model_file.file_string()<<std::endl;
+  cv::FileStorage fs(model_file.file_string(),cv::FileStorage::READ);
+
+
+  fs["projection_matrix"]>>projection_mat_;
+  fs["eigenvalues"]>>eigenvalues_;
+  fs["unknown_threshold"]>>unknown_thresh_;
+  //fs["average_image"]>>average_mat_;
+
+  //load model features
+  cv::FileNode fnm = fs["model_features"];
+  cv::FileNodeIterator itm = fnm.begin(), itm_end = fnm.end();
+  int idm=0;
+  for( ; itm!=itm_end;++itm , idm++)
+  {
+    cv::Mat temp;
+    (*itm)>>temp;
+    model_features_.push_back(temp);
+  }
+
+  // load model labels
+  cv::FileNode fn = fs["numeric_labels"];
+  cv::FileNodeIterator it = fn.begin(), it_end = fn.end();
+  int idx=0;
+  model_label_vec_.resize(model_features_.size());
+  for( ; it!=it_end;++it , idx++)
+  {
+    model_label_vec_[idx]=(int)(*it);
+  }
+
+  target_dim_=model_features_[0].cols;
+  trained_=true;
+
+}
+
+
+bool ipa_PeopleDetector::FaceRecognizer2D::saveModel(boost::filesystem::path& model_file)
+{
+
+
+  std::cout<<"FaceRecognizer1D::saveModel() to "<<model_file.file_string()<<std::endl;
+  cv::FileStorage fs(model_file.file_string(),cv::FileStorage::WRITE);
+
+  fs<<"projection_matrix"<<projection_mat_;
+  fs<<"eigenvalues"<<eigenvalues_;
+  fs<<"unknown_threshold"<<unknown_thresh_;
+  fs<<"average_image"<<average_mat_;
+
+  fs<<"model_features"<<"[";
+  for (int i =0;i<model_features_.size();i++)
+    fs<<model_features_[i];
+  fs<<"]";
+
+  fs<<"numeric_labels"<<"[";
+  for(int i=0;i<model_label_vec_.size();i++)
+  {
+    fs<<model_label_vec_[i];
+  }
+  fs<<"]";
+  fs.release();
+
+}
 bool ipa_PeopleDetector::FaceRecognizer_Eigenfaces::trainModel(std::vector<cv::Mat>& img_vec,std::vector<int>& label_vec,int& target_dim)
 {
 
