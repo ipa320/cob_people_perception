@@ -23,9 +23,6 @@ debug: false
 # int
 recognition_method: 3
 
-# specifies classification algorithm: 0 = DIFS, 1 = KNN, 2 = SVM
-# int
-classification_method: 0
 
 # is unknown threshold supposed to be utilized: true = use unknown threshold, false = do not use threshold
 # bool

@@ -3,6 +3,7 @@
 <launch>
   <arg name="using_nodelets" value="true"/>
 
+  <param name="/cob_people_detection/data_storage_directory" type="string" value="$(env HOME)/.ros/people_detection/files/"/>
   <include file="$(find cob_people_detection)/ros/launch/image_flip_nodelet.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/head_detector.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/face_detector.launch"/>

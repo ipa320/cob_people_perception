@@ -3,7 +3,7 @@
 <launch>
   <!-- sensor message gateway node (forwards sensor messages in a desired rate) -->
   <rosparam command="load" ns="/cob_people_detection/sensor_message_gateway" file="$(find cob_people_detection)/ros/launch/sensor_message_gateway_params.yaml"/>
-  <node pkg="nodelet" type="nodelet" name="SensorMessageGatewayNodelet" ns="/cob_people_detection/sensor_message_gateway" args="load cob_people_detection/SensorMessageGatewayNodelet /cam3d_nodelet_manager" output="screen">
+  <node pkg="nodelet" type="nodelet" name="SensorMessageGatewayNodelet" ns="/cob_people_detection/sensor_message_gateway" args="load cob_people_detection/SensorMessageGatewayNodelet /camera_nodelet_manager" output="screen">
     <remap from="pointcloud_rgb_in" to="/camera/depth_registered/points"/>
     <remap from="pointcloud_rgb_out" to="/cob_people_detection/sensor_message_gateway/pointcloud_rgb_out"/>
     <remap from="colorimage_in" to="/camera/rgb/image_color"/>

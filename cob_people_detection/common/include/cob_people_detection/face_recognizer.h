@@ -111,8 +111,6 @@ virtual unsigned long init(std::string data_directory, int norm_size,bool norm_i
 	/// @param label Label of the new face
 	/// @param face_images Vector containing all trained images
 	/// @return Return code
-	virtual unsigned long addFace(cv::Mat& color_image, cv::Rect& face_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
-	//virtual unsigned long addFace(cv::Mat& color_image,cv::Mat& depth_image,cv::Rect& face_bounding_box, cv::Rect& head_bounding_box, std::string label, std::vector<cv::Mat>& face_images);
   virtual unsigned long addFace(cv::Mat& color_image, cv::Mat& depth_image,cv::Rect& face_bounding_box,cv::Rect& head_bounding_box,std::string label, std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps);
 
 	/// Updates the labels of a stored person.
