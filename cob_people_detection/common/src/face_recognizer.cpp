@@ -357,9 +357,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveRecognitionModel()
 
 		fileStorage.release();
 
-		// save classifier
-		//std::string classifier_file = path.file_string() + "svm.dat";
-		//m_face_classifier.save(classifier_file.c_str());	// todo
 
 		std::cout << "INFO: FaceRecognizer::saveRecognitionModel: recognizer data saved.\n" << std::endl;
 	}
@@ -518,7 +515,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
       int res_label;
       eff_color->classifyImage(resized_8U1,res_label);
-        std::cout<<"classified as "<<res_label<<std::endl;
       if(res_label==-1)
       {
         identification_labels.push_back("Unknown Face");
@@ -568,13 +564,12 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
      color_crop.convertTo(color_crop,CV_64FC1);
 
       int res_label_color, res_label_depth;
-      std::string class_depth,class_color;
+      std::string class_color;
 
 
       if(eff_color->trained_)
       {
         eff_color->classifyImage(color_crop,res_label_color);
-        std::cout<<"classified as "<<res_label_color<<std::endl;
         if(res_label_color==-1)
         {
           class_color="Unknown";
