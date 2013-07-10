@@ -220,6 +220,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   dm_exist.push_back(true);
 
 	return ipa_Utils::RET_OK;
+
 }
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::updateFaceLabels(std::string old_label, std::string new_label)
