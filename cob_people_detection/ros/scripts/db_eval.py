@@ -95,7 +95,7 @@ class dlg(wx.Frame):
     self.spin_rep=wx.SpinCtrl(parent,-1,size=wx.Size(50,30),min=1,max=60)
 
     #classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
-    self.classifier_choice=wx.Choice(parent,-1,choices=["MIN DIFFS","KNN","SVM","RandomForest"])
+    #self.classifier_choice=wx.Choice(parent,-1,choices=["MIN DIFFS","KNN","SVM","RandomForest"])
 
     method_choice_txt=wx.StaticText(parent,-1,"Select Method")
     self.method_choice=wx.Choice(parent,-1,choices=["2D LDA","Fisherfaces","Eigenfaces","2D PCA"])
@@ -168,7 +168,7 @@ class dlg(wx.Frame):
 
     bs=wx.BoxSizer(wx.HORIZONTAL)
     bs.Add(self.method_choice,1)
-    bs.Add(self.classifier_choice,1)
+    #bs.Add(self.classifier_choice,1)
     bs.Add(self.nrm_checkbox,1)
     sizer.Add(bs,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
 
@@ -221,7 +221,7 @@ class dlg(wx.Frame):
   def OnProcessMulti(self,e):
     # get method and classifer
     method=str()
-    classifier=str()
+    #classifier=str()
     xyz_tag=str()
     if self.method_choice.GetCurrentSelection()==0:
       method="LDA2D"
@@ -232,14 +232,14 @@ class dlg(wx.Frame):
     elif self.method_choice.GetCurrentSelection()==3:
       method="PCA2D"
 
-    if self.classifier_choice.GetCurrentSelection()==0:
-      classifier="DIFFS"
-    elif self.classifier_choice.GetCurrentSelection()==1:
-      classifier="KNN"
-    elif self.classifier_choice.GetCurrentSelection()==2:
-      classifier="SVM"
-    elif self.classifier_choice.GetCurrentSelection()==3:
-      classifier="RF"
+   # if self.classifier_choice.GetCurrentSelection()==0:
+   #   classifier="DIFFS"
+   # elif self.classifier_choice.GetCurrentSelection()==1:
+   #   classifier="KNN"
+   # elif self.classifier_choice.GetCurrentSelection()==2:
+   #   classifier="SVM"
+   # elif self.classifier_choice.GetCurrentSelection()==3:
+   #   classifier="RF"
 
     if self.use_xyz_data.Value==True:
       xyz_tag="1"
@@ -253,25 +253,31 @@ class dlg(wx.Frame):
       output_file=os.path.join(self.output_path,"eval_file")
       if len(self.ts_dir_list)>0:
         if(self.protocol_choice.GetCurrentSelection()==0):
-          self.process_protocol(self.process_leave_1_out,method,classifier)
+          self.process_protocol(self.process_leave_1_out,method)
+          #self.process_protocol(self.process_leave_1_out,method,classifier)
 
         elif(self.protocol_choice.GetCurrentSelection()==1):
-          self.process_protocol(self.process_leave_half_out,method,classifier)
+          self.process_protocol(self.process_leave_half_out,method)
+          #self.process_protocol(self.process_leave_half_out,method,classifier)
 
         elif(self.protocol_choice.GetCurrentSelection()==2):
           print "manual selection not suitable for cross validation"
           return
         elif(self.protocol_choice.GetCurrentSelection()==3):
-          self.process_protocol(self.process_unknown,method,classifier)
+          self.process_protocol(self.process_unknown,method)
+          #self.process_protocol(self.process_unknown,method,classifier)
         elif(prot_choice==4):
           self.yale_flag=2
-          self.process_protocol(self.process_yale(2),method,classifier)
+          #self.process_protocol(self.process_yale(2),method,classifier)
+          self.process_protocol(self.process_yale(2),method)
         elif(prot_choice==5):
           self.yale_flag=3
-          self.process_protocol(self.process_yale(3),method,classifier)
+          self.process_protocol(self.process_yale(3),method)
+          #self.process_protocol(self.process_yale(3),method,classifier)
         elif(prot_choice==6):
           self.yale_flag=4
-          self.process_protocol(self.process_yale(4),method,classifier)
+          #self.process_protocol(self.process_yale(4),method,classifier)
+          self.process_protocol(self.process_yale(4),method)
         elif(prot_choice==7):
           self.yale_flag=5
           self.process_protocol(self.process_yale(5),method,classifier)
@@ -283,7 +289,7 @@ class dlg(wx.Frame):
           normalizer="1"
         else:
           normalizer="0"
-        t=Thread(target=self.run_bin,args=(method,classifier,normalizer,xyz_tag))
+        t=Thread(target=self.run_bin,args=(method,normalizer,xyz_tag))
         t.start()
         t.join()
 
@@ -308,48 +314,59 @@ class dlg(wx.Frame):
     elif self.method_choice.GetCurrentSelection()==3:
       method="PCA2D"
 
-    if self.classifier_choice.GetCurrentSelection()==0:
-      classifier="DIFFS"
-    elif self.classifier_choice.GetCurrentSelection()==1:
-      classifier="KNN"
-    elif self.classifier_choice.GetCurrentSelection()==2:
-      classifier="SVM"
-    elif self.classifier_choice.GetCurrentSelection()==3:
-      classifier="RF"
+    #if self.classifier_choice.GetCurrentSelection()==0:
+    #  classifier="DIFFS"
+    #elif self.classifier_choice.GetCurrentSelection()==1:
+    #  classifier="KNN"
+    #elif self.classifier_choice.GetCurrentSelection()==2:
+    #  classifier="SVM"
+    #elif self.classifier_choice.GetCurrentSelection()==3:
+    #  classifier="RF"
 
     prot_choice=self.protocol_choice.GetCurrentSelection()
     # if lists are supposed to be updated
     if self.upd_checkbox.GetValue()==True:
       if len(self.ts_dir_list)>0:
         if(self.protocol_choice.GetCurrentSelection()==0):
-          self.process_protocol(self.process_leave_1_out,method,classifier)
+          self.process_protocol(self.process_leave_1_out,method)
+          #self.process_protocol(self.process_leave_1_out,method,classifier)
           output_file=os.path.join(self.output_path,"eval_file")
-          self.process_protocol(self.process_leave_1_out,method,classifier)
+          self.process_protocol(self.process_leave_1_out,method)
+          #self.process_protocol(self.process_leave_1_out,method,classifier)
 
         elif(self.protocol_choice.GetCurrentSelection()==1):
-          self.process_protocol(self.process_leave_half_out,method,classifier)
+          self.process_protocol(self.process_leave_half_out,method)
+          #self.process_protocol(self.process_leave_half_out,method,classifier)
           output_file=os.path.join(self.output_path,"eval_file")
-          self.process_protocol(self.process_leave_half_out,method,classifier)
+          self.process_protocol(self.process_leave_half_out,method)
+          #self.process_protocol(self.process_leave_half_out,method,classifier)
 
         elif(self.protocol_choice.GetCurrentSelection()==2):
-          self.process_protocol(self.process_manual,method,classifier)
+          self.process_protocol(self.process_manual,method)
+          #self.process_protocol(self.process_manual,method,classifier)
         elif(self.protocol_choice.GetCurrentSelection()==3):
           output_file=os.path.join(self.output_path,"eval_file")
-          self.process_protocol(self.process_unknown,method,classifier)
+          #self.process_protocol(self.process_unknown,method,classifier)
+          self.process_protocol(self.process_unknown,method)
         elif(prot_choice==4):
           self.yale_flag=2
-          self.process_protocol(self.process_yale,method,classifier)
+          #self.process_protocol(self.process_yale,method,classifier)
+          self.process_protocol(self.process_yale,method)
         elif(prot_choice==5):
           self.yale_flag=3
-          self.process_protocol(self.process_yale,method,classifier)
+          #self.process_protocol(self.process_yale,method,classifier)
+          self.process_protocol(self.process_yale,method)
         elif(prot_choice==6):
           self.yale_flag=4
-          self.process_protocol(self.process_yale,method,classifier)
+          #self.process_protocol(self.process_yale,method,classifier)
+          self.process_protocol(self.process_yale,method)
         elif(prot_choice==7):
           self.yale_flag=5
-          self.process_protocol(self.process_yale,method,classifier)
+          self.process_protocol(self.process_yale,method)
+          #self.process_protocol(self.process_yale,method,classifier)
         elif(prot_choice==8):
-          self.process_protocol(self.process_kinect,method,classifier)
+          #self.process_protocol(self.process_kinect,method,classifier)
+          self.process_protocol(self.process_kinect,method)
 
     if self.use_xyz_data.Value==True:
       xyz_tag="1"
@@ -364,7 +381,7 @@ class dlg(wx.Frame):
     else:
       #bin_str="./ssa_test "+method+" "+classifier+" 0 "+xyz_tag
       normalizer="0"
-    t=Thread(target=self.run_bin,args=(method,classifier,normalizer,xyz_tag))
+    t=Thread(target=self.run_bin,args=(method,normalizer,xyz_tag))
     t.start()
     t.join()
 
@@ -400,7 +417,7 @@ class dlg(wx.Frame):
 #****************Internal Functions********************
 #*****************************************************
 
-  def process_protocol(self,protocol_fn,method,classifier):
+  def process_protocol(self,protocol_fn,method):
     self.reset_lists()
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
@@ -410,8 +427,8 @@ class dlg(wx.Frame):
     self.print_lists()
 
 
-  def run_bin(self,method,classifier,normalize,xyz):
-    subprocess.call(["./ssaNEW",method,classifier,normalize,xyz])
+  def run_bin(self,method,normalize,xyz):
+    subprocess.call(["./face_rec_alg_test",method,normalize,xyz])
 
   def process_kinect2(self):
     self.ts_list=list()

@@ -72,42 +72,33 @@ message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
 #target_link_libraries(subspace_analysis  opencv_core  opencv_highgui decomposition)
 #rosbuild_link_boost(subspace_analysis system filesystem)
 
-rosbuild_add_library(subspace_analysis
-  common/src/subspace_analysis.cpp)
-target_link_libraries(subspace_analysis  opencv_core  opencv_highgui decomposition)
-rosbuild_link_boost(subspace_analysis system filesystem)
-
-
-rosbuild_add_library(face_recognizer_algorithms common/src/face_recognizer_algorithms.cpp)
-target_link_libraries(face_recognizer_algorithms subspace_analysis)
-
-rosbuild_add_executable(ssaNEW
-      common/src/test/ssaNEW.cpp
-      )
-    target_link_libraries(ssaNEW face_recognizer_algorithms face_normalizer )
+  rosbuild_add_library(subspace_analysis
+    common/src/subspace_analysis.cpp)
+  target_link_libraries(subspace_analysis  opencv_core  opencv_highgui decomposition)
+  rosbuild_link_boost(subspace_analysis system filesystem)
 
     #library for eigenvalue decomposition of asymmetric matrices
-rosbuild_add_library(decomposition
+  rosbuild_add_library(decomposition
       common/src/decomposition.cpp)
-    #-----------------------------------------------------------------------
-    #-------------------Tests
-    #-----------------------------------------------------------------------
+
+  rosbuild_add_library(face_normalizer
+        common/src/face_normalizer.cpp)
+
+  rosbuild_add_library(face_recognizer_algorithms common/src/face_recognizer_algorithms.cpp)
+  target_link_libraries(face_recognizer_algorithms subspace_analysis)
+
+
+  rosbuild_add_executable(face_rec_alg_test
+      common/src/face_recognizer_algorithms_test.cpp
+      )
+    target_link_libraries(face_rec_alg_test face_recognizer_algorithms face_normalizer )
+
     
-    rosbuild_add_executable(face_normalizer_test
-          common/src/test/fn_test.cpp
+    rosbuild_add_executable(face_norm_test
+          common/src/face_normalizer_test.cpp
           )
-        target_link_libraries(face_normalizer_test face_normalizer virtual_camera )
-    rosbuild_add_executable(ill_corr_test
-          common/src/test/ill_corr_test.cpp
-          )
-        target_link_libraries(ill_corr_test face_normalizer )
+        target_link_libraries(face_norm_test face_normalizer )
     
-    #-----------------------------------------------------------------------
-    #-----------------------------------------------------------------------
-    
-    
-    #-----------------------------------------------------------------------
-    #-----------------------------------------------------------------------
     
     rosbuild_add_executable(people_detection_client
     			ros/src/people_detection_action_client.cpp)
@@ -159,8 +150,6 @@ rosbuild_add_library(decomposition
     			ros/src/coordinator_node.cpp)
     rosbuild_link_boost(coordinator_node signals)
 
-    rosbuild_add_library(face_normalizer
-        common/src/face_normalizer.cpp)
 
 
 

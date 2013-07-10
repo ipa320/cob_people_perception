@@ -65,51 +65,51 @@ int main(int argc, const char *argv[])
   fn->init(config);
 
   // parse input arguments from command line
-  std::string method_str,classifier_str;
+  std::string method_str;//,classifier_str;
   bool use_xyz=true;
   bool normalizer=false;
   if (argc==1)
   {
-    method_str="FISHER";
-    classifier_str="SVM";
+    method_str="EIGEN";
+    //classifier_str="";
     normalizer=false;
   }
 
   else if (argc==2)
   {
     method_str=argv[1];
-    classifier_str="KNN";
+    //classifier_str="KNN";
     normalizer=false;
   }
 
   else if (argc==3)
   {
     method_str=argv[1];
-    classifier_str=argv[2];
+    //classifier_str=argv[2];
     normalizer=false;
+  }
+
+  else if (argc==3)
+  {
+    method_str=argv[1];
+    //classifier_str=argv[2];
+
+    if (std::strcmp(argv[2],"0")==0) normalizer=false;
+    if (std::strcmp(argv[2],"1")==0) normalizer=true;
+
+    if (std::strcmp(argv[3],"0")==0) use_xyz=false;
+    if (std::strcmp(argv[3],"1")==0) use_xyz=true;
   }
 
   else if (argc==4)
   {
     method_str=argv[1];
-    classifier_str=argv[2];
+    //classifier_str=argv[2];
+    if (std::strcmp(argv[2],"0")==0) normalizer=false;
+    if (std::strcmp(argv[2],"1")==0) normalizer=true;
 
-    if (std::strcmp(argv[3],"0")==0) normalizer=false;
-    if (std::strcmp(argv[3],"1")==0) normalizer=true;
-
-    if (std::strcmp(argv[4],"0")==0) use_xyz=false;
-    if (std::strcmp(argv[4],"1")==0) use_xyz=true;
-  }
-
-  else if (argc==5)
-  {
-    method_str=argv[1];
-    classifier_str=argv[2];
-    if (std::strcmp(argv[3],"0")==0) normalizer=false;
-    if (std::strcmp(argv[3],"1")==0) normalizer=true;
-
-    if (std::strcmp(argv[4],"0")==0) use_xyz=false;
-    if (std::strcmp(argv[4],"1")==0) use_xyz=true;
+    if (std::strcmp(argv[3],"0")==0) use_xyz=false;
+    if (std::strcmp(argv[3],"1")==0) use_xyz=true;
   }
 
 
@@ -144,34 +144,34 @@ int main(int argc, const char *argv[])
     std::cout<<"ERROR: invalid method - use FISHER or EIGEN"<<std::endl;
   }
 
-  if(!classifier_str.compare("KNN"))
-  {
-    std::cout<<"KNN"<<std::endl;
-    classifier = ipa_PeopleDetector::CLASS_KNN;
-  }
-  else if(!classifier_str.compare("DIFFS"))
-  {
-    std::cout<<"DIFFS"<<std::endl;
-    classifier = ipa_PeopleDetector::CLASS_DIFS;
-  }
-  else if(!classifier_str.compare("SVM"))
-  {
-    std::cout<<"SVM"<<std::endl;
-    classifier = ipa_PeopleDetector::CLASS_SVM;
-  }
-  else if(!classifier_str.compare("RF"))
-  {
-    std::cout<<"RF"<<std::endl;
-    classifier = ipa_PeopleDetector::CLASS_RF;
-  }
-  else
-  {
-    std::cout<<"ERROR: invalid classifier - use KNN or DIFFS or SVM"<<std::endl;
-  }
+ // if(!classifier_str.compare("KNN"))
+ // {
+ //   std::cout<<"KNN"<<std::endl;
+ //   classifier = ipa_PeopleDetector::CLASS_KNN;
+ // }
+ // else if(!classifier_str.compare("DIFFS"))
+ // {
+ //   std::cout<<"DIFFS"<<std::endl;
+ //   classifier = ipa_PeopleDetector::CLASS_DIFS;
+ // }
+ // else if(!classifier_str.compare("SVM"))
+ // {
+ //   std::cout<<"SVM"<<std::endl;
+ //   classifier = ipa_PeopleDetector::CLASS_SVM;
+ // }
+ // else if(!classifier_str.compare("RF"))
+ // {
+ //   std::cout<<"RF"<<std::endl;
+ //   classifier = ipa_PeopleDetector::CLASS_RF;
+ // }
+ // else
+ // {
+ //   std::cout<<"ERROR: invalid classifier - use KNN or DIFFS or SVM"<<std::endl;
+ // }
 
 
   std::cout<<"SSA test configuration:"<<std::endl;
-  std::cout<<"classifier: "<<classifier_str<<std::endl;
+  //std::cout<<"classifier: "<<classifier_str<<std::endl;
   std::cout<<"method: "<<method_str<<std::endl;
   std::cout<<"normalizing: "<<normalizer<<std::endl;
   std::cout<<"use xyz: "<<use_xyz<<std::endl;
