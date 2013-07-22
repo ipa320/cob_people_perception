@@ -174,6 +174,16 @@ class FaceNormalizer{
 	/// @return Return true/false whether normalization was successful.
     bool normalizeFace( cv::Mat & RGB,cv::Mat& XYZ,cv::Size& norm_size);
 
+
+    /// Function to synthetisize artificial poses from one image
+    bool synthFace(cv::Mat &RGB,cv::Mat& XYZ, cv::Size& norm_size,std::vector<cv::Mat>& synth_images);
+    bool synth_head_poses(cv::Mat& img,cv::Mat& depth,std::vector<cv::Mat>& synth_images);
+    bool synth_head_poses_relative(cv::Mat& img,cv::Mat& depth,std::vector<cv::Mat>& synth_images);
+    bool eliminate_background(cv::Mat& RGB,cv::Mat& XYZ,float background_thresh);
+    bool isolateFace(cv::Mat& RGB,cv::Mat& XYZ);
+
+
+
 	/// The function saves scene, consisting of color image and corresponding point cloud to given path.
 	/// @brief Function to save scene.
   /// @param[in] RGB Color image that is normalized.
@@ -199,6 +209,16 @@ class FaceNormalizer{
     /// @return Return true/false whether geometric normalization was successful.
     bool normalize_geometry_depth(cv::Mat& img,cv::Mat& depth);
 
+
+
+    /// The function manufactures artificial head poses
+    /// @brief Function for artificial head poses.
+    /// @param[in,out] img Color image that is normalized.
+    /// @param[in,out] depth Pointcloud that is normalized.
+    /// @return Return true/false whether rotation was successful.
+    bool rotate_head(cv::Mat& img,cv::Mat& depth);
+
+
     /// The function detects facial features (nose, eyes) in color image.
     /// @brief Function detects facial features in color image.
     /// @param[in] img Color image containing facial features.
@@ -219,6 +239,7 @@ class FaceNormalizer{
     /// @param[in] type Feature type that is supposed t be detected.
     /// @return Return true/false whether feature could be detected.
     bool detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::FEATURE_TYPE type);
+
 
 
     /// The function projects RGB and XYZ information of given image and point cloud to image plane.

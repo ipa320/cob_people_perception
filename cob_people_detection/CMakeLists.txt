@@ -99,6 +99,10 @@ message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
           )
         target_link_libraries(face_norm_test face_normalizer )
     
+    rosbuild_add_executable(face_align_test
+          common/src/face_align_test.cpp
+          )
+        target_link_libraries(face_align_test face_normalizer )
     
     rosbuild_add_executable(people_detection_client
     			ros/src/people_detection_action_client.cpp)

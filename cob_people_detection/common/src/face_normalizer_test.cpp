@@ -19,7 +19,7 @@ int main(int argc, const char *argv[])
 
   cv::Mat depth,img,xyz;
   std::string i_path;
-  i_path="/share/goa-tz/people_detection/eval/";
+  i_path="/share/goa-tz/people_detection/eval/kinect3d_features/";
 
   i_path.append(argv[1]);
   std::string pgm_path=i_path;
@@ -31,10 +31,14 @@ int main(int argc, const char *argv[])
   cv::Size norm_size=cv::Size(img.cols,img.rows);
   //cv::cvtColor(wmat1,wmat1,CV_RGB2BGR);
 
+  cv::imshow("ORIGINAL",wmat1);
   cv::Mat depth_res;
   fn.normalizeFace(wmat1,norm_size);
 
   //fn.normalizeFace(wmat1,norm_size);
+  //
+  cv::imshow("NORMALIZED",wmat1);
+  cv::waitKey(0);
 
   std::cout<<"..done\n";
   return 0;
