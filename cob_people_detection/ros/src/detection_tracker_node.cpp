@@ -199,9 +199,10 @@ unsigned long DetectionTrackerNode::copyDetection(const cob_people_detection_msg
 	dest.mask.roi.width = src.mask.roi.width; dest.mask.roi.height = src.mask.roi.height;
 
 	// 3D world coordinates
-	const geometry_msgs::Point* pointIn = &(src.pose.pose.position);
-	geometry_msgs::Point* pointOut = &(dest.pose.pose.position);
-	pointOut->x = pointIn->x; pointOut->y = pointIn->y; pointOut->z = pointIn->z;
+	//const geometry_msgs::Point* pointIn = &(src.pose.pose.position);
+	//geometry_msgs::Point* pointOut = &(dest.pose.pose.position);
+	//pointOut->x = pointIn->x; pointOut->y = pointIn->y; pointOut->z = pointIn->z;
+	dest.pose.pose = src.pose.pose;
 
 	// person ID
 	if (update==true)

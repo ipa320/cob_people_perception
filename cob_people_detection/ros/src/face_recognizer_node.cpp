@@ -452,6 +452,10 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 			bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], 0.5*(float)head_bb.width, 0.5*(float)head_bb.height, det.pose.pose.position, 6);
 			if (valid_3d_position==false)
 				continue;
+			det.pose.pose.orientation.x = 0.;
+			det.pose.pose.orientation.y = 0.;
+			det.pose.pose.orientation.z = 0.;
+			det.pose.pose.orientation.w = 1.;
 			// write bounding box
 			det.mask.roi.x = head_bb.x;           det.mask.roi.y = head_bb.y;
 			det.mask.roi.width = head_bb.width;   det.mask.roi.height = head_bb.height;
@@ -476,6 +480,10 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 				bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], face_bb.x+0.5*(float)face_bb.width, face_bb.y+0.5*(float)face_bb.height, det.pose.pose.position, 6);
 				if (valid_3d_position==false)
 					continue;
+				det.pose.pose.orientation.x = 0.;
+				det.pose.pose.orientation.y = 0.;
+				det.pose.pose.orientation.z = 0.;
+				det.pose.pose.orientation.w = 1.;
 				// write bounding box
 				det.mask.roi.x = head_bb.x+face_bb.x; det.mask.roi.y = head_bb.y+face_bb.y;
 				det.mask.roi.width = face_bb.width;   det.mask.roi.height = face_bb.height;
