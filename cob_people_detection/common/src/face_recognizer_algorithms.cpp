@@ -283,8 +283,8 @@ bool ipa_PeopleDetector::FaceRecognizer1D::loadModel(boost::filesystem::path& mo
 
   //TODO:assert file is regular file
   //
-  std::cout<<"FaceRecognizer1D::loadModel() from "<<model_file.file_string()<<std::endl;
-  cv::FileStorage fs(model_file.file_string(),cv::FileStorage::READ);
+  std::cout<<"FaceRecognizer1D::loadModel() from "<<model_file.string()<<std::endl;
+  cv::FileStorage fs(model_file.string(),cv::FileStorage::READ);
 
 
   fs["projection_matrix"]>>projection_mat_;
@@ -313,8 +313,8 @@ bool ipa_PeopleDetector::FaceRecognizer1D::saveModel(boost::filesystem::path& mo
 {
 
 
-  std::cout<<"FaceRecognizer2D::saveModel() to "<<model_file.file_string()<<std::endl;
-  cv::FileStorage fs(model_file.file_string(),cv::FileStorage::WRITE);
+  std::cout<<"FaceRecognizer2D::saveModel() to "<<model_file.string()<<std::endl;
+  cv::FileStorage fs(model_file.string(),cv::FileStorage::WRITE);
 
   fs<<"projection_matrix"<<projection_mat_;
   fs<<"eigenvalues"<<eigenvalues_;
@@ -336,8 +336,8 @@ bool ipa_PeopleDetector::FaceRecognizer2D::loadModel(boost::filesystem::path& mo
 
   ////TODO:assert file is regular file
   ////
-  std::cout<<"FaceRecognizer2D::loadModel() from "<<model_file.file_string()<<std::endl;
-  cv::FileStorage fs(model_file.file_string(),cv::FileStorage::READ);
+  std::cout<<"FaceRecognizer2D::loadModel() from "<<model_file.string()<<std::endl;
+  cv::FileStorage fs(model_file.string(),cv::FileStorage::READ);
 
 
   fs["projection_matrix"]>>projection_mat_;
@@ -376,8 +376,8 @@ bool ipa_PeopleDetector::FaceRecognizer2D::saveModel(boost::filesystem::path& mo
 {
 
 
-  std::cout<<"FaceRecognizer1D::saveModel() to "<<model_file.file_string()<<std::endl;
-  cv::FileStorage fs(model_file.file_string(),cv::FileStorage::WRITE);
+  std::cout<<"FaceRecognizer1D::saveModel() to "<<model_file.string()<<std::endl;
+  cv::FileStorage fs(model_file.string(),cv::FileStorage::WRITE);
 
   fs<<"projection_matrix"<<projection_mat_;
   fs<<"eigenvalues"<<eigenvalues_;
@@ -589,6 +589,10 @@ bool ipa_PeopleDetector::FaceRecognizer_LDA2D::trainModel(std::vector<cv::Mat>& 
 
 
         model_label_vec_=label_vec;
+        for( int i=0;i<model_label_vec_.size();i++)
+        {
+          std::cout<<model_label_vec_[i];
+        }
         //initiate PCA
         SubspaceAnalysis::LDA2D LDA2D(img_vec,model_label_vec_,num_classes_,target_dim_);
 

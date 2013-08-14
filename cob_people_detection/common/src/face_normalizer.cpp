@@ -17,7 +17,7 @@ using namespace cv;
 
 void FaceNormalizer::init(FNConfig& i_config)
 {
-  std::string def_classifier_directory=     "/usr/share/OpenCV-2.3.1/";
+  std::string def_classifier_directory=     "/opt/ros/groovy/share/OpenCV/";
   this->init(def_classifier_directory,"",i_config,0,false,false);
 }
 
@@ -42,7 +42,7 @@ void FaceNormalizer::init()
   def_config.cvt2gray=true;
   def_config.extreme_illumination_condtions=false;
 
-  std::string def_classifier_directory=     "/usr/share/OpenCV-2.3.1/";
+  std::string def_classifier_directory=   "/opt/ros/groovy/share/OpenCV/"  ;
 
   this->init(def_classifier_directory,"",def_config,0,false,false);
 }
@@ -89,7 +89,8 @@ void FaceNormalizer::init(std::string i_classifier_directory,std::string i_stora
 }
 
 
-FaceNormalizer::~FaceNormalizer(){
+FaceNormalizer::~FaceNormalizer()
+{
   if(config_.align)
   {
 	cvReleaseHaarClassifierCascade(&nose_cascade_);
@@ -99,14 +100,6 @@ FaceNormalizer::~FaceNormalizer(){
 	cvReleaseHaarClassifierCascade(&eye_r_cascade_);
 	cvReleaseMemStorage(&eye_r_storage_);
   }
-
-
-
-
-
-
-
-
 };
 
 bool FaceNormalizer::isolateFace(cv::Mat& RGB,cv::Mat& XYZ)
@@ -116,12 +109,24 @@ bool FaceNormalizer::isolateFace(cv::Mat& RGB,cv::Mat& XYZ)
   float background_threshold=middle_pt[2]+0.25;
 
   eliminate_background(RGB,XYZ,background_threshold);
-
+  interpolate_head(RGB, XYZ);
   return true;
+}
+
+bool FaceNormalizer::recordFace(cv::Mat&RGB,cv::Mat& XYZ)
+{
+  
+  
+  std::string filepath=storage_directory_;
+  filepath.append("scene");
+  save_scene(RGB,XYZ,filepath);
 
 }
+
 bool FaceNormalizer::synthFace(cv::Mat &RGB,cv::Mat& XYZ, cv::Size& norm_size,std::vector<cv::Mat>& synth_images)
 {
+  //TODO
+  //maybe deveop a measure for the angles that are now being represented
   norm_size_=norm_size;
   input_size_=cv::Size(RGB.cols,RGB.rows);
 
@@ -132,8 +137,16 @@ bool FaceNormalizer::synthFace(cv::Mat &RGB,cv::Mat& XYZ, cv::Size& norm_size,st
   //geometric normalization
   if(config_.align)
   {
-    //rotate_head(RGB,depth,synth_images);
-    synth_head_poses(RGB,XYZ,synth_images);
+    cv::Mat GRAY;
+    cv::cvtColor(RGB,GRAY,CV_RGB2GRAY);
+    //rotate_head(RGB,XYZ);
+    if(!synth_head_poses(GRAY,XYZ,synth_images))
+    {
+      valid=false;
+      // if head synthesis fails push back color image
+      synth_images.push_back(RGB);
+    }
+
   }
 
   // process remaining normalization steps with all synthetic images
@@ -156,6 +169,7 @@ bool FaceNormalizer::synthFace(cv::Mat &RGB,cv::Mat& XYZ, cv::Size& norm_size,st
   if(config_.resize)
   {
   //resizing
+  normalize_img_type(synth_images[n],synth_images[n]);
   cv::resize(synth_images[n],synth_images[n],norm_size_,0,0);
   }
 
@@ -218,6 +232,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(debug_)dump_img(img,"size");
 
   epoch_ctr_++;
+  normalize_img_type(img,img);
   return valid;
 }
 
@@ -261,6 +276,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
   }
 
   epoch_ctr_++;
+  normalize_img_type(img,img);
   return valid;
 }
 
@@ -617,11 +633,12 @@ bool FaceNormalizer::synth_head_poses(cv::Mat& img,cv::Mat& depth,std::vector<cv
 
 
    // viewing offset of normalized perspective
-    double view_offset=0.6;
+    double view_offset=0.8;
     Eigen::Translation<float,3> translation=Eigen::Translation<float,3>(0, 0, view_offset);
 
     // modify T_norm by angle for nose incline compensation
-    Eigen::AngleAxis<float> roll(-0.78, x_new);
+    //Eigen::AngleAxis<float> roll(-0.78, x_new);
+    Eigen::AngleAxis<float> roll(0.00, x_new);
     //Eigen::AngleAxis<float> roll(-0.78, Eigen::Vector3f(1,0,0));
     T_norm=roll*T_norm;
 
@@ -635,7 +652,7 @@ bool FaceNormalizer::synth_head_poses(cv::Mat& img,cv::Mat& depth,std::vector<cv
 
 
   float  background_thresh=view_offset+0.3;
-  eliminate_background(img,depth,background_thresh);
+  //eliminate_background(img,depth,background_thresh);
 
   cv::Mat workmat=cv::Mat(depth.rows,depth.cols,CV_32FC3);
 //  // eliminate background
@@ -651,7 +668,7 @@ bool FaceNormalizer::synth_head_poses(cv::Mat& img,cv::Mat& depth,std::vector<cv
 //  }
 
   //number of poses
-  int N=7;
+  int N=5;
   std::cout<<"Synthetic POSES"<<std::endl;
 
   for(int i=0;i<N;i++)
@@ -760,6 +777,7 @@ bool FaceNormalizer::synth_head_poses(cv::Mat& img,cv::Mat& depth,std::vector<cv
   projectPointCloud(img,workmat,imgres,dmres);
 
 
+
   if(debug_)dump_img(imgres,"uncropped");
 
   if(roi.height<=1 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows)
@@ -819,8 +837,8 @@ bool FaceNormalizer::rotate_head(cv::Mat& img,cv::Mat& depth)
     Eigen::Translation<float,3> translation=Eigen::Translation<float,3>(0, 0, view_offset);
 
     // modify T_norm by angle for nose incline compensation
-    Eigen::AngleAxis<float> roll(-0.78, x_new);
-    //Eigen::AngleAxis<float> roll(-0.78, Eigen::Vector3f(1,0,0));
+    Eigen::AngleAxis<float> roll(0.0, x_new);
+    //Eigen::AngleAxis<float> roll(-0.78, x_new);
     T_norm=roll*T_norm;
 
 
@@ -991,7 +1009,7 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 
     // modify T_norm by angle for nose incline compensation
     Eigen::AngleAxis<float> roll(-0.78, x_new);
-    //Eigen::AngleAxis<float> roll(-0.78, Eigen::Vector3f(1,0,0));
+    //Eigen::AngleAxis<float> roll(0.0, x_new);
     T_norm=translation*roll*T_norm;
 
    cv::Vec3f* ptr=depth.ptr<cv::Vec3f>(0,0);
@@ -1412,6 +1430,29 @@ bool FaceNormalizer::projectPointCloud(cv::Mat& img, cv::Mat& depth, cv::Mat& im
    img_cum.convertTo(img_cum,CV_8UC1);
    cv::add(img_res,img_cum,img_res);
    }
+
+
+
+//   // refinement
+//
+//   //unsigned char* img_res_ptr=img_res.ptr<unsigned char>(0,0);
+//   cv::Mat img_res2=cv::Mat::zeros(img_res.rows,img_res.cols,img_res.type());
+//   for(int i=1;i<img_res.total();i++)
+//   {
+//     if(img_res.at<unsigned char>(i)==0 && img_res.at<unsigned char>(i-1)!=0)
+//     {
+//       //calc position
+//       cv::Vec2f pos= pc_proj.at<cv::Vec2f>(i-1);
+//       std::cout<<"POSITION"<<pos<<std::endl;
+//
+//       unsigned char val=pc_rgb.at<unsigned char>(round(pos[0]),round(pos[1]+1));
+//       img_res2.at<unsigned char>(i)=val;
+//     }
+//   }
+//
+//   cv::imshow("IMG_RES",img_res2);
+//   cv::waitKey(0);
+//
    return true;
 }
 
@@ -1452,4 +1493,21 @@ bool FaceNormalizer::eliminate_background(cv::Mat& RGB,cv::Mat& XYZ,float backgr
     rgb_ptr++;
   }
   }
+}
+
+bool FaceNormalizer::interpolate_head(cv::Mat& RGB, cv::Mat& XYZ)
+{
+  std::vector<cv::Mat> xyz_vec;
+  cv::split(XYZ,xyz_vec);
+
+  cv::imshow("Z",xyz_vec[2]);
+  cv::imshow("RGB",RGB);
+
+  cv::waitKey(0);
+
+}
+bool FaceNormalizer::normalize_img_type(cv::Mat& in,cv::Mat& out)
+{
+  in.convertTo(out,CV_64FC1);
+  return true;
 }

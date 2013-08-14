@@ -150,6 +150,7 @@ class FaceNormalizer{
     void init(std::string i_classifier_directory,std::string i_storage_directory,FNConfig& i_config,int i_epoch_ctr,bool i_debug,bool i_record_scene);
 
 
+
 	/// The function normalizes given color image with respect to illumination and size.
 	/// @brief Function to normalize a color image
   /// @param[in,out] RGB Color image that is normalized.
@@ -175,12 +176,15 @@ class FaceNormalizer{
     bool normalizeFace( cv::Mat & RGB,cv::Mat& XYZ,cv::Size& norm_size);
 
 
+    //TODO documentation
     /// Function to synthetisize artificial poses from one image
     bool synthFace(cv::Mat &RGB,cv::Mat& XYZ, cv::Size& norm_size,std::vector<cv::Mat>& synth_images);
     bool synth_head_poses(cv::Mat& img,cv::Mat& depth,std::vector<cv::Mat>& synth_images);
     bool synth_head_poses_relative(cv::Mat& img,cv::Mat& depth,std::vector<cv::Mat>& synth_images);
     bool eliminate_background(cv::Mat& RGB,cv::Mat& XYZ,float background_thresh);
     bool isolateFace(cv::Mat& RGB,cv::Mat& XYZ);
+    bool interpolate_head(cv::Mat& RGB,cv::Mat& XYZ);
+    bool recordFace(cv::Mat&RGB,cv::Mat& XYZ);
 
 
 
@@ -275,6 +279,7 @@ class FaceNormalizer{
     /// @brief Function to extract value channel.
     /// @param[in] img Color image where value channel is extracted.
     /// @param[out] V Value channel of HSV representation of input image.
+    /// @return true when process was successful
     void extractVChannel(cv::Mat& img,cv::Mat& V);
 
     /// The function substitutes the value channel in the HSV colorspace of a RGB image with a given image.
@@ -287,6 +292,7 @@ class FaceNormalizer{
     ///  This method is recommended for most cases.
     /// @brief Function for illumination normalization with Gamma DCT.
     /// @param[in,out] img Color image which is normalized.
+    /// @return true when process was successful
     void GammaDCT(cv::Mat& img);
 
     /// The function performs illumination normalization with the Gamma DoG method.
@@ -295,7 +301,16 @@ class FaceNormalizer{
     /// @see FNConfig
     /// @brief Function for illumination normalization with Gamma DCT.
     /// @param[in,out] img Color image which is normalized.
+    /// @return true when process was successful
     void GammaDoG(cv::Mat& img);
+
+
+    /// This function is called to ensure  image return type consistency
+    /// @param[in] in input image
+    /// @param[out] out output image
+    /// @return true when process was successful
+    bool normalize_img_type(cv::Mat& in, cv::Mat& out);
+
 
     /// The function saves color image with marked detected facial features for debug puroposes.
     /// @brief Function to save image with detected features.

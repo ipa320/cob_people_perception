@@ -20,6 +20,12 @@ class dlg(wx.Frame):
     self.base_path="/share/goa-tz/people_detection/eval/"
     self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
     self.invalid_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/invalidlist"
+    self.bin_name="synth_face_test"
+    #self.bin_name="face_rec_alg_test"
+
+
+    print "Database Evaluation GUI 2013 - ipa-goa-tz"
+    print "running with binary: %s"%os.path.join(self.bin_path,self.bin_name)
 
     #self.Evaluator=Evaluator()
     self.Evaluator=Evaluator(invalid_list=self.invalid_file_path)
@@ -36,6 +42,9 @@ class dlg(wx.Frame):
     self.cl_list = list()
     self.unknown_list=list()
     self.invalid_list=list()
+
+    # can be switched to true if list synching has to be reversed
+    self.synch_lists_switch=False
 
 
     if os.path.isfile(self.invalid_file_path):
@@ -88,7 +97,7 @@ class dlg(wx.Frame):
 
 
     protocol_choice_txt=wx.StaticText(parent,-1,"Testfile selection")
-    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection","unknown","yale2","yale3","yale4","yale5","kinect"])
+    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection","unknown","yale2","yale3","yale4","yale5","kinect","synth"])
 
 
     #spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
@@ -280,8 +289,10 @@ class dlg(wx.Frame):
           self.process_protocol(self.process_yale(4),method)
         elif(prot_choice==7):
           self.yale_flag=5
-          self.process_protocol(self.process_yale(5),method,classifier)
+          self.process_protocol(self.process_yale(5),method)
           #self.process_protocol(self.process_kinect,method,classifier)
+        elif(prot_choice==9):
+          self.process_protocol(self.process_synth,method)
 
         # run binaryin
         os.chdir(self.bin_path)
@@ -367,6 +378,8 @@ class dlg(wx.Frame):
         elif(prot_choice==8):
           #self.process_protocol(self.process_kinect,method,classifier)
           self.process_protocol(self.process_kinect,method)
+        elif(prot_choice==9):
+          self.process_protocol(self.process_synth,method)
 
     if self.use_xyz_data.Value==True:
       xyz_tag="1"
@@ -424,11 +437,26 @@ class dlg(wx.Frame):
     #print self.cl_list
     protocol_fn()
     self.sync_lists()
+    print self.ts_list
+    print "--------------------------------------------------------"
+    print self.pf_list
     self.print_lists()
 
 
   def run_bin(self,method,normalize,xyz):
-    subprocess.call(["./face_rec_alg_test",method,normalize,xyz])
+    binary=os.path.join(self.bin_path,self.bin_name)
+
+    subprocess.call([binary,method,normalize,xyz])
+
+  def process_synth(self):
+    self.process_leave_1_out()
+    tmp=self.pf_list
+    self.pf_list=self.ts_list
+    self.pf_list.append([])
+    self.ts_list=tmp
+    del self.ts_list[-1]
+    self.synch_lists_switch=True
+
 
   def process_kinect2(self):
     self.ts_list=list()
@@ -436,6 +464,7 @@ class dlg(wx.Frame):
     self.file_ops(self.kinect2)
     ##append empty list for unknown calssifications
     self.pf_list.append([])
+    self.synch_lists_switch=False
 
   def process_kinect(self):
     self.reset_lists()
@@ -468,6 +497,7 @@ class dlg(wx.Frame):
 
 
     self.pf_list.append([])
+    self.synch_lists_switch=False
     self.sync_lists()
     self.print_lists()
 
@@ -480,6 +510,7 @@ class dlg(wx.Frame):
     self.pf_list.append([])
    # k=-1
    # self.file_ops(self.yale,k)
+    self.synch_lists_switch=False
 
   def process_unknown(self):
     C=len(self.cl_list)
@@ -502,20 +533,24 @@ class dlg(wx.Frame):
     self.pf_list.append(self.unknown_list)
     del k[:]
     del rnd_list[:]
+    self.synch_lists_switch=False
 
   def process_leave_half_out(self):
     self.file_ops(self.leave_k_out,"half")
     ##append empty list for unknown calssifications
     self.pf_list.append([])
+    self.synch_lists_switch=False
 
   def process_leave_1_out(self):
     self.file_ops(self.leave_k_out,1)
     ##append empty list for unknown calssifications
     self.pf_list.append([])
+    self.synch_lists_switch=False
 
   def process_manual(self):
     self.pf_list=[[] for i in range(len(self.cl_list)+1)]
     self.pf_list_format(self.pf_glist.GetItems())
+    self.synch_lists_switch=False
 
   def file_ops(self,fn=-1,add_param=False):
 
@@ -719,12 +754,21 @@ class dlg(wx.Frame):
 
 
   def sync_lists(self):
-    for c in xrange(len(self.pf_list)):
-      for s in self.pf_list[c]:
-        if len(s) >0:
-          for ts in self.ts_list:
-            if s in ts:
-              ts.remove(s)
+    if  self.synch_lists_switch ==True:
+      for c in xrange(len(self.ts_list)):
+        for s in self.ts_list[c]:
+          if len(s) >0:
+            for ts in self.pf_list:
+              if s in ts:
+                ts.remove(s)
+    else:
+      for c in xrange(len(self.pf_list)):
+        for s in self.pf_list[c]:
+          if len(s) >0:
+            for ts in self.ts_list:
+              if s in ts:
+                ts.remove(s)
+
 
     #print "length list%i"%len(self.pf_list[0])
     #print "length list%i"%len(self.ts_list[0])
@@ -768,7 +812,7 @@ class dlg(wx.Frame):
   def print_lists(self):
     #print self.pf_list
 
-    print "[EVAL TOOL] creating lists"
+    #print "[EVAL TOOL] creating lists"
     training_set_list_path=os.path.join(self.output_path,"training_set_list")
     training_set_list_xyz_path=os.path.join(self.output_path,"training_set_xyz_list")
     probe_file_list_path=os.path.join(self.output_path,"probe_file_list")
@@ -905,7 +949,7 @@ class Evaluator():
       else:
         self.invalid_files=list()
 
-    print "EVALUATOR instantiated"
+    #print "EVALUATOR instantiated"
     self.epochs=list()
     self.epoch_ctr=0
 

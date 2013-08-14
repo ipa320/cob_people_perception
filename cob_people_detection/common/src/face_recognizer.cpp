@@ -160,7 +160,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
   fn_cfg.extreme_illumination_condtions=norm_extreme_illumination;
 
   std::string classifier_directory=data_directory+"haarcascades/";
-  face_normalizer_.init(classifier_directory,fn_cfg);
+  //std::string storage_directory="/share/goa-tz/people_detection/eval/KinectIPA/";
+  std::string storage_directory="/share/goa-tz/people_detection/eval/KinectIPA/";
+  face_normalizer_.init(classifier_directory,storage_directory,fn_cfg,0,false,false);
 
 
 	// load model
@@ -189,7 +191,10 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_
   fn_cfg.cvt2gray=true;
   fn_cfg.extreme_illumination_condtions=norm_extreme_illumination;
 
-  face_normalizer_.init(fn_cfg);
+  std::string classifier_directory=data_directory+"haarcascades/";
+  //std::string storage_directory="/share/goa-tz/people_detection/eval/KinectIPA/";
+  std::string storage_directory="/share/goa-tz/people_detection/eval/KinectIPA/";
+  face_normalizer_.init(classifier_directory,storage_directory,fn_cfg,0,false,false);
 	// load model
 	m_current_label_set.clear();	 // keep empty to load all available data
 	loadTrainingData(face_images, m_current_label_set);
@@ -211,6 +216,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
   cv::Size norm_size=cv::Size(m_norm_size,m_norm_size);
   cv::Mat roi_depth;
   //if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) ;
+  face_normalizer_.recordFace(roi_color,roi_depth_xyz);
   if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) return ipa_Utils::RET_FAILED;
 
 	// Save image
@@ -328,11 +334,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveRecognitionModel()
   boost::filesystem::path complete=path/"rdata_color.xml";
 
 
-	if(fs::is_directory(path.file_string()))
+	if(fs::is_directory(path.string()))
 	{
-		if (fs::is_regular_file(complete.file_string()))
+		if (fs::is_regular_file(complete.string()))
 		{
-			if (fs::remove(complete.file_string()) == false)
+			if (fs::remove(complete.string()) == false)
 			{
 				std::cout << "Error: FaceRecognizer::saveRecognitionModel: Cannot remove old recognizer data.\n" << std::endl;
 				return ipa_Utils::RET_FAILED;
@@ -340,8 +346,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveRecognitionModel()
 		}
     eff_color->saveModel(complete);
 
-    std::cout<<"OPENING at "<<complete.file_string()<<std::endl;
-		cv::FileStorage fileStorage(complete.file_string(), cv::FileStorage::APPEND);
+    std::cout<<"OPENING at "<<complete.string()<<std::endl;
+		cv::FileStorage fileStorage(complete.string(), cv::FileStorage::APPEND);
 		if(!fileStorage.isOpened())
 		{
 			std::cout << "Error: FaceRecognizer::saveRecognitionModel: Can't save training data.\n" << std::endl;
@@ -381,12 +387,12 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 
 	bool training_necessary = false;
   std::vector<string>temp_face_labels;
-	if(fs::is_directory(path.file_string()))
+	if(fs::is_directory(path.string()))
 	{
-		cv::FileStorage fileStorage(complete.file_string(), cv::FileStorage::READ);
+		cv::FileStorage fileStorage(complete.string(), cv::FileStorage::READ);
 		if(!fileStorage.isOpened())
 		{
-			std::cout << "Info: FaceRecognizer::loadRecognitionModel: Can't open " << complete.file_string() << ".\n" << std::endl;
+			std::cout << "Info: FaceRecognizer::loadRecognitionModel: Can't open " << complete.string() << ".\n" << std::endl;
 			training_necessary = true;
 		}
 		else
@@ -448,7 +454,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 	}
 	else
 	{
-		std::cerr << "Error: FaceRecognizer::loadRecognizerData: Path '" << path.file_string() << "' is not a directory." << std::endl;
+		std::cerr << "Error: FaceRecognizer::loadRecognizerData: Path '" << path.string() << "' is not a directory." << std::endl;
 		return ipa_Utils::RET_FAILED;
 	}
 
@@ -614,7 +620,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 
 	if(fs::is_directory(complete))
 	{
-		cv::FileStorage fileStorage(complete.file_string(), cv::FileStorage::WRITE);
+		cv::FileStorage fileStorage(complete.string(), cv::FileStorage::WRITE);
 		if(!fileStorage.isOpened())
 		{
 			std::cout << "Error: FaceRecognizer::saveTrainingData: Can't save training data.\n" << std::endl;
@@ -637,7 +643,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 			std::ostringstream tag2;
 			tag2 << "image_" << i;
 			fileStorage << tag2.str().c_str() << shortname.str().c_str();
-			cv::imwrite(img_path.file_string(), face_images[i]);
+			cv::imwrite(img_path.string(), face_images[i]);
 		}
 
 		fileStorage.release();
@@ -662,9 +668,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 	std::string dm_ext = ".xml";
 
 
-	if (fs::is_directory(path.file_string()))
+	if (fs::is_directory(path.string()))
 	{
-		cv::FileStorage fileStorage(complete.file_string(), cv::FileStorage::WRITE);
+		cv::FileStorage fileStorage(complete.string(), cv::FileStorage::WRITE);
 		if (!fileStorage.isOpened())
 		{
 			std::cout << "Error: FaceRecognizer::saveTrainingData: Can't save training data.\n" << std::endl;
@@ -694,7 +700,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 				tag3 << "depthmap_" << i;
 				fileStorage << tag3.str().c_str() << shortname_depth.str().c_str();
 			}
-			cv::imwrite(img_path.file_string(), face_images[i]);
+			cv::imwrite(img_path.string(), face_images[i]);
 		}
 
 		fileStorage.release();
@@ -706,7 +712,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 			{
 				// depth maps
       boost::filesystem::path dm_path=path/"depth"/(boost::lexical_cast<string>(i)+".xml");
-				cv::FileStorage fs(dm_path.file_string(), FileStorage::WRITE);
+				cv::FileStorage fs(dm_path.string(), FileStorage::WRITE);
 				fs << "depthmap" << face_depthmaps[j];
 				fs.release();
 				j++;
@@ -733,12 +739,12 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
     boost::filesystem::path complete = path/"tdata.xml" ;
 
 
-	if(fs::is_directory(path.file_string()))
+	if(fs::is_directory(path.string()))
 	{
-		cv::FileStorage fileStorage(complete.file_string(), cv::FileStorage::READ);
+		cv::FileStorage fileStorage(complete.string(), cv::FileStorage::READ);
 		if(!fileStorage.isOpened())
 		{
-			std::cout << "Error: FaceRecognizer::loadTrainingData: Can't open " << complete.file_string() << ".\n" << std::endl;
+			std::cout << "Error: FaceRecognizer::loadTrainingData: Can't open " << complete.string() << ".\n" << std::endl;
 			return ipa_Utils::RET_OK;
 		}
 
@@ -780,7 +786,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			std::ostringstream tag_image;
 			tag_image << "image_" << i;
       boost::filesystem::path path= m_data_directory/(std::string)fileStorage[tag_image.str().c_str()];
-			cv::Mat temp = cv::imread(path.file_string(),-1);
+			cv::Mat temp = cv::imread(path.string(),-1);
       cv::resize(temp,temp,cv::Size(m_norm_size,m_norm_size));
 			//face_normalizer_.normalizeFace(temp,norm_size);
 			face_images.push_back(temp);
@@ -832,12 +838,12 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 
 
 
-	if (fs::is_directory(path.file_string()))
+	if (fs::is_directory(path.string()))
 	{
-		cv::FileStorage fileStorage(complete.file_string(), cv::FileStorage::READ);
+		cv::FileStorage fileStorage(complete.string(), cv::FileStorage::READ);
 		if (!fileStorage.isOpened())
 		{
-			std::cout << "Error: FaceRecognizer::loadTrainingData: Can't open " << complete.file_string() << ".\n" << std::endl;
+			std::cout << "Error: FaceRecognizer::loadTrainingData: Can't open " << complete.string() << ".\n" << std::endl;
 			return ipa_Utils::RET_OK;
 		}
 
@@ -881,12 +887,12 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 			tag_dm << "depthmap_" << i;
       boost::filesystem::path img_path=m_data_directory/ (std::string)fileStorage[tag_image.str().c_str()];
       boost::filesystem::path dm_path=m_data_directory/ (std::string)fileStorage[tag_dm.str().c_str()];
-			cv::Mat temp = cv::imread(img_path.file_string(), -1);
+			cv::Mat temp = cv::imread(img_path.string(), -1);
 
-			if (dm_path.file_string().compare(m_data_directory.file_string()))
+			if (dm_path.string().compare(m_data_directory.string()))
 			{
 				cv::Mat xyz_temp, dm_temp;
-				cv::FileStorage fs(dm_path.file_string(), FileStorage::READ);
+				cv::FileStorage fs(dm_path.string(), FileStorage::READ);
 				fs["depthmap"] >> xyz_temp;
 				face_normalizer_.normalizeFace(temp, xyz_temp, norm_size, dm_temp);
 				face_depthmaps.push_back(dm_temp);

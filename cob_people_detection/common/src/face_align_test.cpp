@@ -15,12 +15,14 @@ int main(int argc, const char *argv[])
   cfg.cvt2gray=true;
   cfg.extreme_illumination_condtions=false;
 
+  std::string  class_path="/opt/ros/groovy/share/OpenCV/";
+
   FaceNormalizer fn;
-  fn.init(cfg);
+  fn.init(class_path,cfg);
   cv::Mat depth,img,xyz;
   std::string i_path;
   //else      i_path="/share/goa-tz/people_detection/eval/Kinect3DSelect/";
-  i_path="/share/goa-tz/people_detection/eval/KinectIPA/steffen/";
+  i_path="/share/goa-tz/people_detection/eval/KinectIPA/";
 
   i_path.append(argv[1]);
   std::string xml_path=i_path;
@@ -37,11 +39,14 @@ int main(int argc, const char *argv[])
 
   cv::Mat depth_res;
   std::vector<cv::Mat> synth_images;
+  // call member functions of FaceNormalizer
   fn.synthFace(wmat1,xyz,norm_size,synth_images);
   //fn.isolateFace(wmat1,xyz);
-  //synth_images.push_back(wmat1);
-
   //fn.normalizeFace(wmat1,xyz,norm_size,depth);
+  //fn.recordFace(wmat1,xyz);
+ 
+  
+  synth_images.push_back(wmat1);
  // depth.convertTo(depth,CV_8UC1,255);
  // cv::equalizeHist(depth,depth);
 
