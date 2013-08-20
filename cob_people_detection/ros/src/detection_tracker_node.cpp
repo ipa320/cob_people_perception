@@ -122,6 +122,10 @@ DetectionTrackerNode::DetectionTrackerNode(ros::NodeHandle nh)
 	std::cout << "use_people_segmentation = " << use_people_segmentation_ << "\n";
 	node_handle_.param("face_redetection_time", face_redetection_time_, 2.0);
 	std::cout << "face_redetection_time = " << face_redetection_time_ << "\n";
+	double publish_currently_not_visible_detections_timespan = face_redetection_time_;
+	node_handle_.param("publish_currently_not_visible_detections_timespan", publish_currently_not_visible_detections_timespan, face_redetection_time_);
+	std::cout << "publish_currently_not_visible_detections_timespan = " << publish_currently_not_visible_detections_timespan << "\n";
+	publish_currently_not_visible_detections_timespan_ = ros::Duration(publish_currently_not_visible_detections_timespan);
 	node_handle_.param("min_segmented_people_ratio_face", min_segmented_people_ratio_face_, 0.7);
 	std::cout << "min_segmented_people_ratio_face = " << min_segmented_people_ratio_face_ << "\n";
 	node_handle_.param("min_segmented_people_ratio_head", min_segmented_people_ratio_head_, 0.2);
@@ -338,7 +342,7 @@ unsigned long DetectionTrackerNode::removeMultipleInstancesOfLabel()
 }
 
 
-unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_people_detection_msgs::DetectionArray& face_position_msg_out)
+unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_people_detection_msgs::DetectionArray& face_position_msg_out, ros::Time image_recording_time)
 {
 	// publish face positions
 	std::vector<cob_people_detection_msgs::Detection> faces_to_publish;
@@ -346,7 +350,7 @@ unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_people_detect
 	{
 		if (debug_)
 			std::cout << "'UnknownHead' score: " << face_identification_votes_[i]["UnknownHead"] << " label '" << face_position_accumulator_[i].label << "' score: " << face_identification_votes_[i][face_position_accumulator_[i].label] << " - ";
-		if (face_identification_votes_[i][face_position_accumulator_[i].label]>min_face_identification_score_to_publish_ || face_identification_votes_[i]["UnknownHead"]>min_face_identification_score_to_publish_)
+		if ((face_identification_votes_[i][face_position_accumulator_[i].label]>min_face_identification_score_to_publish_ || face_identification_votes_[i]["UnknownHead"]>min_face_identification_score_to_publish_) && ((image_recording_time-face_position_accumulator_[i].header.stamp) < publish_currently_not_visible_detections_timespan_))
 		{
 			faces_to_publish.push_back(face_position_accumulator_[i]);
 			if (debug_) std::cout << "published\n";
@@ -388,7 +392,7 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 
 	// delete old face positions in list, i.e. those that were not updated for a long time
 	ros::Duration timeSpan(face_redetection_time_);
-	for (int i=0; i<(int)face_position_accumulator_.size(); i++)
+	for (int i=(int)face_position_accumulator_.size()-1; i>=0; i--)
 	{
 		if ((ros::Time::now()-face_position_accumulator_[i].header.stamp) > timeSpan)
 		{
@@ -601,8 +605,9 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 	removeMultipleInstancesOfLabel();
 
 	// publish face positions
+	ros::Time image_recording_time = (face_position_msg_in->detections.size() > 0 ? face_position_msg_in->detections[0].header.stamp : ros::Time::now());
 	cob_people_detection_msgs::DetectionArray face_position_msg_out;
-	prepareFacePositionMessage(face_position_msg_out);
+	prepareFacePositionMessage(face_position_msg_out, image_recording_time);
 	face_position_msg_out.header.stamp = face_position_msg_in->header.stamp;
 	face_position_publisher_.publish(face_position_msg_out);
   

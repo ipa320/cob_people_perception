@@ -4,7 +4,11 @@ use_people_segmentation: false
 
 # timespan during which a face is preserved in the list of tracked faces although it is currently not visible #4.0
 # double
-face_redetection_time: 4.0
+face_redetection_time: 3.0
+
+# timespan during which a currently not visible face, which is though preserved in the list of tracked faces, is published as detection (in [0, face_redetection_time])
+# double
+publish_currently_not_visible_detections_timespan: 0.2
 
 # the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker)
 # double
