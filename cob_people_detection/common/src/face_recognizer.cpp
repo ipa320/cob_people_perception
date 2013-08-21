@@ -197,10 +197,11 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
 //	convertAndResize(color_image, resized_8U1, face_bounding_box, new_size);
 
 
-  cv::Rect combined_face_bounding_box=cv::Rect(face_bounding_box.x+head_bounding_box.x,face_bounding_box.y+head_bounding_box.y,face_bounding_box.width,face_bounding_box.height);
+//  cv::Rect combined_face_bounding_box=cv::Rect(face_bounding_box.x+head_bounding_box.x,face_bounding_box.y+head_bounding_box.y,face_bounding_box.width,face_bounding_box.height);
 
-	cv::Mat roi_color = color_image(combined_face_bounding_box);
-	cv::Mat roi_depth_xyz = depth_image(face_bounding_box).clone();
+//	cv::Mat roi_color = color_image(combined_face_bounding_box);
+	cv::Mat roi_color = color_image(face_bounding_box);
+	cv::Mat roi_depth_xyz = depth_image(face_bounding_box).clone();		//todo: why face_bounding_box --> because depth image is only the roi
   cv::Size norm_size=cv::Size(m_eigenface_size,m_eigenface_size);
   cv::Mat roi_depth;
   //TODO MAKE TEMPORARY SWITCH OFF

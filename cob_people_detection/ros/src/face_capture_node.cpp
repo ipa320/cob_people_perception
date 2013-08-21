@@ -97,8 +97,9 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	it_ = new image_transport::ImageTransport(node_handle_);
 //	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
 //	face_recognition_subscriber_.subscribe(node_handle_, "face_position_array", 1);
-	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
-	color_image_sub_.subscribe(*it_, "color_image", 1);
+
+//	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
+//	color_image_sub_.subscribe(*it_, "color_image", 1);
 
 	// actions
 	add_data_server_ = new AddDataServer(node_handle_, "add_data_server", boost::bind(&FaceCaptureNode::addDataServerCallback, this, _1), false);
@@ -109,8 +110,8 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	delete_data_server_->start();
 
 	// input synchronization
-	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
-	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
+//	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
+//	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
 
 	std::cout << "FaceCaptureNode initialized. " << face_images_.size() << " color images and " << face_depthmaps_.size() << " depth images for training loaded.\n" << std::endl;
 }
@@ -136,7 +137,10 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 	current_label_ = goal->label;
 
 	// subscribe to face image topics
-	message_filters::Connection input_callback_connection = sync_input_2_->registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1, _2));
+	//message_filters::Connection input_callback_connection = sync_input_2_->registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1, _2));
+	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
+	face_detection_subscriber_.registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1));
+
 
 	if (goal->capture_mode == MANUAL)
 	{
@@ -193,11 +197,12 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 	}
 
 	// unsubscribe face image topics
-	input_callback_connection.disconnect();
+	//input_callback_connection.disconnect();
+	face_detection_subscriber_.unsubscribe();
 }
 
 /// captures the images
-void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg)//, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
 	//ROS_INFO("inputCallback");
 
@@ -222,9 +227,11 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		// convert color image to cv::Mat
 		cv_bridge::CvImageConstPtr color_image_ptr;
 		cv::Mat color_image,depth_image;
-		convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
+		//convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
+		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_detection_msg->head_detections[headIndex].color_image), voidDeleter);
+		convertColorImageMessageToMat(msgPtr, color_image_ptr, color_image);
 
-		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_detection_msg->head_detections[headIndex].depth_image), voidDeleter);
+		msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_detection_msg->head_detections[headIndex].depth_image), voidDeleter);
 		convertDepthImageMessageToMat(msgPtr, color_image_ptr, depth_image);
 
 		// store image and label

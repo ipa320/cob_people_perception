@@ -2,8 +2,17 @@
 
 <launch>
   <arg name="using_nodelets" value="true"/>
+  <arg name="start_manager" default="false"/>
+  <arg name="nodelet_manager" default="cam3d_nodelet_manager"/>
 
-  <include file="$(find cob_people_detection)/ros/launch/image_flip_nodelet.launch"/>
+  <node if="$(arg start_manager)" pkg="nodelet" type="nodelet" name="$(arg nodelet_manager)"  args="manager" output="screen"/>
+  	
+  <include file="$(find cob_people_detection)/ros/launch/sensor_message_gateway_nodelet.launch">
+    <arg name="nodelet_manager" value="$(arg nodelet_manager)"/>
+  </include>
+  <include file="$(find cob_people_detection)/ros/launch/image_flip_nodelet.launch">
+  	<arg name="nodelet_manager" value="$(arg nodelet_manager)"/>
+  </include>
   <include file="$(find cob_people_detection)/ros/launch/head_detector.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/face_detector.launch"/>
   <include file="$(find cob_people_detection)/ros/launch/face_recognizer.launch"/>
@@ -13,7 +22,6 @@
   <include file="$(find cob_people_detection)/ros/launch/coordinator.launch">
     <arg name="using_nodelets" value="$(arg using_nodelets)"/>
   </include>
-  <include file="$(find cob_people_detection)/ros/launch/sensor_message_gateway_nodelet.launch"/>
 
 
 

@@ -68,6 +68,7 @@
 
 #include <opencv/cv.h>
 #include <opencv/cvaux.h>
+#include <opencv/highgui.h>
 
 using namespace ipa_PeopleDetector;
 
@@ -110,7 +111,7 @@ FaceDetector::~FaceDetector(void)
 	cvReleaseMemStorage(&m_storage);
 }
 
-unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_images, std::vector<cv::Mat>& heads_depth_images, std::vector<std::vector<cv::Rect> >& face_coordinates)
+unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_images, const std::vector<cv::Mat>& heads_depth_images, std::vector<std::vector<cv::Rect> >& face_coordinates)
 {
 	if (m_initialized == false)
 	{
@@ -144,8 +145,13 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 		// check whether the color faces have a reasonable 3D size
 		for (uint head_index=0; head_index<face_coordinates.size(); head_index++)
 		{
+			double avg_depth_value = 0.0;
+			int last_accepted_face_index = -1;
+			double last_accepted_face_area = 0.0;
 			for (uint face_index = 0; face_index < face_coordinates[head_index].size(); face_index++)
 			{
+				std::cout << face_index << ": face_coordinates[head_index].size()=" << face_coordinates[head_index].size() << std::endl;
+
 				cv::Rect& face = face_coordinates[head_index][face_index];
 
 				// Get the median disparity in the middle half of the bounding box.
@@ -176,13 +182,14 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 
 				// median
 				cv::Mat tmat_sorted;
-				cv::sort(tmat, tmat_sorted, CV_SORT_EVERY_COLUMN+CV_SORT_DESCENDING);
+				cv::sort(tmat, tmat_sorted, CV_SORT_EVERY_ROW+CV_SORT_DESCENDING);
 				double avg_depth = tmat_sorted.at<float>(floor(cv::countNonZero(tmat_sorted>=0.0)*0.5)); // Get the middle valid disparity (-1 disparities are invalid)
 
 				// If the median disparity was valid and the face is a reasonable size, the face status is "good".
 				// If the median disparity was valid but the face isn't a reasonable size, the face status is "bad".
 				// Otherwise, the face status is "unknown".
 				// Only bad faces are removed
+				bool remove_face = false;
 				if (avg_depth > 0)
 				{
 					double radiusX, radiusY, radius3d=1e20;
@@ -222,13 +229,62 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 					}
 					if (radius3d > 0.0 && (avg_depth > m_max_face_z_m || 2.0*radius3d < m_face_size_min_m || 2.0*radius3d > m_face_size_max_m))
 					{
-						// face does not match normal human appearance -> remove from list
-						face_coordinates[head_index].erase(face_coordinates[head_index].begin()+face_index);
-						face_index--;
+						remove_face = true;
+					}
+				}
+
+				if (remove_face==true)
+				{
+					// face does not match normal human appearance -> remove from list
+					face_coordinates[head_index].erase(face_coordinates[head_index].begin()+face_index);
+					face_index--;
+				}
+				else
+				{
+					// only one face can be detected per head -> check which has the bigger face area in the image
+					double current_area = face_coordinates[head_index][face_index].height * face_coordinates[head_index][face_index].width;
+					if (last_accepted_face_index == -1)
+					{
+						last_accepted_face_index = (int)face_index;
+						last_accepted_face_area = current_area;
+						avg_depth_value = avg_depth;
+					}
+					else
+					{
+						if (current_area > last_accepted_face_area)
+						{
+							// delete old selection
+							face_coordinates[head_index].erase(face_coordinates[head_index].begin()+last_accepted_face_index);
+							face_index--;
+
+							last_accepted_face_index = face_index;
+							last_accepted_face_area = current_area;
+							avg_depth_value = avg_depth;
+						}
+						else
+						{
+							// delete current face
+							face_coordinates[head_index].erase(face_coordinates[head_index].begin()+face_index);
+							face_index--;
+						}
 					}
 				}
 			}
-//			imshow("xyz image", xyz_image_8U3);
+			assert(face_coordinates[head_index].size()==0 || face_coordinates[head_index].size()==1);
+
+			// clear image background
+			if (avg_depth_value > 0)
+				for (int v=0; v<heads_depth_images[head_index].rows; v++)
+					for (int u=0; u<heads_depth_images[head_index].cols; u++)
+					{
+						float val = heads_depth_images[head_index].at<cv::Vec3f>(v,u)[2];
+						if (val==0.f || heads_depth_images[head_index].at<cv::Vec3f>(v,u)[2] > avg_depth_value+0.4 || isnan(val)==true)
+							heads_color_images[head_index].at<cv::Vec3b>(v,u) = cv::Vec3b(255, 255, 255);
+					}
+//			std::cout << "avg_depth_value=" << avg_depth_value << std::endl;
+//			cv::imshow("rgb image", heads_color_images[head_index]);
+//			cv::waitKey(10);
+//			cv::imshow("xyz image", xyz_image_8U3);
 //			cv::waitKey(10);
 		}
 	}

@@ -169,7 +169,7 @@ protected:
 	void addDataServerCallback(const cob_people_detection::addDataGoalConstPtr& goal);
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-	void inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg);
+	void inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg);//, const sensor_msgs::Image::ConstPtr& color_image_msg);
 
 	/// Converts a color image message to cv::Mat format.
 	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image);
