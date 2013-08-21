@@ -128,6 +128,7 @@ protected:
 	bool debug_; ///< enables some debug outputs
 	bool use_people_segmentation_; ///< enables the combination of face detections with the openni people segmentation
 	double face_redetection_time_; ///< timespan during which a face is preserved in the list of tracked faces although it is currently not visible
+	ros::Duration publish_currently_not_visible_detections_timespan_;	///< timespan during which a currently not visible face, which is though preserved in the list of tracked faces, is published as detection (in [0, face_redetection_time])
 	double min_segmented_people_ratio_face_; ///< the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker)
 	double min_segmented_people_ratio_head_; ///< the minimum area inside the head rectangle found in the depth image that has to be covered with positive people segmentation results (from openni_tracker)
 	double tracking_range_m_; ///< maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked
@@ -166,7 +167,7 @@ public:
 	/// @return Return code.
 	unsigned long removeMultipleInstancesOfLabel();
 
-	unsigned long prepareFacePositionMessage(cob_people_detection_msgs::DetectionArray& face_position_msg_out);
+	unsigned long prepareFacePositionMessage(cob_people_detection_msgs::DetectionArray& face_position_msg_out, ros::Time image_recording_time);
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 	void inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg);
