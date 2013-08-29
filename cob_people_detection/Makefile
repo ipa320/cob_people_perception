@@ -810,6 +810,19 @@ tests/fast:
 .PHONY : tests/fast
 
 #=============================================================================
+# Target rules for targets named tracking_evaluator
+
+# Build rule for target.
+tracking_evaluator: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 tracking_evaluator
+.PHONY : tracking_evaluator
+
+# fast build rule for target.
+tracking_evaluator/fast:
+	$(MAKE) -f CMakeFiles/tracking_evaluator.dir/build.make CMakeFiles/tracking_evaluator.dir/build
+.PHONY : tracking_evaluator/fast
+
+#=============================================================================
 # Target rules for targets named gtest
 
 # Build rule for target.
@@ -1420,6 +1433,30 @@ ros/src/sensor_message_gateway_nodelet.cpp.s:
 	$(MAKE) -f CMakeFiles/sensor_message_gateway_nodelet.dir/build.make CMakeFiles/sensor_message_gateway_nodelet.dir/ros/src/sensor_message_gateway_nodelet.cpp.s
 .PHONY : ros/src/sensor_message_gateway_nodelet.cpp.s
 
+ros/src/tracking_eval_node.o: ros/src/tracking_eval_node.cpp.o
+.PHONY : ros/src/tracking_eval_node.o
+
+# target to build an object file
+ros/src/tracking_eval_node.cpp.o:
+	$(MAKE) -f CMakeFiles/tracking_evaluator.dir/build.make CMakeFiles/tracking_evaluator.dir/ros/src/tracking_eval_node.cpp.o
+.PHONY : ros/src/tracking_eval_node.cpp.o
+
+ros/src/tracking_eval_node.i: ros/src/tracking_eval_node.cpp.i
+.PHONY : ros/src/tracking_eval_node.i
+
+# target to preprocess a source file
+ros/src/tracking_eval_node.cpp.i:
+	$(MAKE) -f CMakeFiles/tracking_evaluator.dir/build.make CMakeFiles/tracking_evaluator.dir/ros/src/tracking_eval_node.cpp.i
+.PHONY : ros/src/tracking_eval_node.cpp.i
+
+ros/src/tracking_eval_node.s: ros/src/tracking_eval_node.cpp.s
+.PHONY : ros/src/tracking_eval_node.s
+
+# target to generate assembly for a file
+ros/src/tracking_eval_node.cpp.s:
+	$(MAKE) -f CMakeFiles/tracking_evaluator.dir/build.make CMakeFiles/tracking_evaluator.dir/ros/src/tracking_eval_node.cpp.s
+.PHONY : ros/src/tracking_eval_node.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1484,6 +1521,7 @@ help:
 	@echo "... test-results"
 	@echo "... test-results-run"
 	@echo "... tests"
+	@echo "... tracking_evaluator"
 	@echo "... gtest"
 	@echo "... gtest_main"
 	@echo "... common/src/abstract_face_recognizer.o"
@@ -1558,6 +1596,9 @@ help:
 	@echo "... ros/src/sensor_message_gateway_nodelet.o"
 	@echo "... ros/src/sensor_message_gateway_nodelet.i"
 	@echo "... ros/src/sensor_message_gateway_nodelet.s"
+	@echo "... ros/src/tracking_eval_node.o"
+	@echo "... ros/src/tracking_eval_node.i"
+	@echo "... ros/src/tracking_eval_node.s"
 .PHONY : help
 
 
