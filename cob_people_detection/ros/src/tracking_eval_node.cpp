@@ -93,6 +93,7 @@
 // boost
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/lexical_cast.hpp>
 
 // external includes
 #include "cob_vision_utils/GlobalDefines.h"
@@ -138,6 +139,7 @@ class EvalObj
       if (cmp.timestamp!=this->timestamp)
       {
         std::cout<<"time discrepancy - skipping comparison"<<std::endl;
+        return false;
       }
       else
       {
@@ -145,6 +147,11 @@ class EvalObj
         float dist = 100000;
         std::vector<int> index_arr;
         index_arr.resize(this->labels.size());
+        if(this->labels.size()==0) 
+        {
+          std::cout<<"empty label array...."<<std::endl;
+          return false;
+        }
         for( int i=0;i<this->labels.size();i++)
         {
           for( int j=0;j<cmp.labels.size();j++)
@@ -168,18 +175,22 @@ class EvalObj
         cmp_corr=true;
       for(int i;i<index_arr.size();i++)
       {
-        std::cout<<this->labels[i]<<": "<<gt.compare(this->labels[i])<<" - "<<cmp.labels[index_arr[i]]<<": "<<gt.compare(cmp.labels[index_arr[i]])<<std::endl;
+        std::string a = boost::lexical_cast<std::string>(this->labels[i]);
+        std::string b = boost::lexical_cast<std::string>(cmp.labels[index_arr[i]]);
+        std::cout<<a<<": "<<gt.compare(a)<<" - "<<b<<": "<<gt.compare(b)<<std::endl;
+        if(a.compare("UnknownHead")==0 ||b.compare("UnknownHead")==0)
+        {
+          std::cout<<"discarding"<<std::endl;
+          return false;
+        }
         //
-        if(this->labels[i].compare(gt)!=0) this_corr=false;
-        if(cmp.labels[index_arr[i]].compare(gt)!=0) cmp_corr=false;
+        if(a.compare(gt)!=0) this_corr=false;
+        if(b.compare(gt)!=0) cmp_corr=false;
         
       }
 
     }
-
-
-
-
+    return true;
     }
 };
 
@@ -300,32 +311,40 @@ void eval()
     {
       //std::cout<<"EVAL-->"<<std::endl;
       bool rec_res,track_res;
-      eval_rec_.compare(eval_track_,gt_name_,rec_res,track_res);
-
-
-      if(rec_res)correct_recognitions_++;
-      if(track_res)correct_trackings_++;
-      if(track_res && !rec_res)tracking_improvement_++;
-      if(!track_res && rec_res)tracking_decline_++;
-      total_comparisons_++;
-      if(!track_res && !rec_res)error_out_++;
-
+      bool cmp_successful=eval_rec_.compare(eval_track_,gt_name_,rec_res,track_res);
+      if(cmp_successful) 
+      {
+        if(rec_res)correct_recognitions_++;
+        if(track_res)correct_trackings_++;
+        if(track_res && !rec_res)tracking_improvement_++;
+        if(!track_res && rec_res)tracking_decline_++;
+        if(!track_res && !rec_res)error_out_++;
+        total_comparisons_++;
+        this->print_result();
+      }
       rec_rec=false;
       rec_rec=false;
     }
   }
-this->print_result();
 }
 void print_result()
 {
   std::cout<<"-----------------------------------"<<std::endl;
   std::cout<<"total comparisons    : "<<total_comparisons_<<std::endl;
-  std::cout<<"correctly recognized : "<<correct_recognitions_<<std::endl;
-  std::cout<<"correctly tracked    : "<<correct_trackings_<<std::endl;
-  std::cout<<"tracking improvement : "<<tracking_improvement_<<std::endl;
-  std::cout<<"tracking worsening   : "<<tracking_decline_<<std::endl;
-  std::cout<<"errors after tracking: "<<error_out_<<std::endl;
+  std::cout<<"correctly recognized : "<<((float)correct_recognitions_/(float)total_comparisons_) *100<<" \%"<<std::endl;
+  std::cout<<"correctly tracked    : "<<((float)correct_trackings_/(float)total_comparisons_)*100<<" \%"<<std::endl;
+  std::cout<<"tracking improvement : "<<((float)tracking_improvement_/(float)total_comparisons_)*100<<" \%"<<std::endl;
+  std::cout<<"tracking worsening   : "<<((float)tracking_decline_/(float)total_comparisons_)*100<<" \%"<<std::endl;
+  std::cout<<"errors after tracking: "<<(error_out_/total_comparisons_)*100<<" \%"<<std::endl;
   std::cout<<"-----------------------------------"<<std::endl;
+  //std::cout<<"-----------------------------------"<<std::endl;
+  //std::cout<<"total comparisons    : "<<total_comparisons_<<std::endl;
+  //std::cout<<"correctly recognized : "<<correct_recognitions_<<std::endl;
+  //std::cout<<"correctly tracked    : "<<correct_trackings_<<std::endl;
+  //std::cout<<"tracking improvement : "<<tracking_improvement_<<std::endl;
+  //std::cout<<"tracking worsening   : "<<tracking_decline_<<std::endl;
+  //std::cout<<"errors after tracking: "<<error_out_<<std::endl;
+  //std::cout<<"-----------------------------------"<<std::endl;
 }
 };
 
