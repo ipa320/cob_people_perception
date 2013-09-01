@@ -20,6 +20,12 @@ class dlg(wx.Frame):
     self.base_path="/share/goa-tz/people_detection/eval/"
     self.bin_path="/home/goa-tz/git/care-o-bot/cob_people_perception/cob_people_detection/bin/"
     self.invalid_file_path="/share/goa-tz/people_detection/eval/eval_tool_files/invalidlist"
+    self.bin_name="synth_face_test"
+    #self.bin_name="face_rec_alg_test"
+
+
+    print "Database Evaluation GUI 2013 - ipa-goa-tz"
+    print "running with binary: %s"%os.path.join(self.bin_path,self.bin_name)
 
     #self.Evaluator=Evaluator()
     self.Evaluator=Evaluator(invalid_list=self.invalid_file_path)
@@ -37,11 +43,15 @@ class dlg(wx.Frame):
     self.unknown_list=list()
     self.invalid_list=list()
 
+    # can be switched to true if list synching has to be reversed
+    self.synch_lists_switch=False
 
-    with open(self.invalid_file_path,"r") as input_stream:
-      self.invalid_list=input_stream.read().splitlines()
 
-    print self.invalid_list
+    if os.path.isfile(self.invalid_file_path):
+      with open(self.invalid_file_path,"r") as input_stream:
+        self.invalid_list=input_stream.read().splitlines()
+      print "invalid list loaded"
+      print self.invalid_list
 
 
     self.makeLayout(self.f)
@@ -87,17 +97,17 @@ class dlg(wx.Frame):
 
 
     protocol_choice_txt=wx.StaticText(parent,-1,"Testfile selection")
-    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection","unknown","yale2","yale3","yale4","yale5","kinect"])
+    self.protocol_choice=wx.Choice(parent,-1,choices=["leave one out","leave half out","manual selection","unknown","yale2","yale3","yale4","yale5","kinect","synth"])
 
 
     #spin_rep_txt=wx.StaticText(parent,-1,"Repetitions")
     self.spin_rep=wx.SpinCtrl(parent,-1,size=wx.Size(50,30),min=1,max=60)
 
     #classifier_choice_txt=wx.StaticText(parent,-1,"Select Classifier")
-    self.classifier_choice=wx.Choice(parent,-1,choices=["KNN","SVM","MIN DIFFS","RandomForest"])
+    #self.classifier_choice=wx.Choice(parent,-1,choices=["MIN DIFFS","KNN","SVM","RandomForest"])
 
     method_choice_txt=wx.StaticText(parent,-1,"Select Method")
-    self.method_choice=wx.Choice(parent,-1,choices=["Fisherfaces","Eigenfaces","IFLDA"])
+    self.method_choice=wx.Choice(parent,-1,choices=["2D LDA","Fisherfaces","Eigenfaces","2D PCA"])
 
     self.nrm_checkbox=wx.CheckBox(parent,label="normalize")
 
@@ -167,7 +177,7 @@ class dlg(wx.Frame):
 
     bs=wx.BoxSizer(wx.HORIZONTAL)
     bs.Add(self.method_choice,1)
-    bs.Add(self.classifier_choice,1)
+    #bs.Add(self.classifier_choice,1)
     bs.Add(self.nrm_checkbox,1)
     sizer.Add(bs,1,wx.BOTTOM | wx.ALIGN_BOTTOM)
 
@@ -220,23 +230,25 @@ class dlg(wx.Frame):
   def OnProcessMulti(self,e):
     # get method and classifer
     method=str()
-    classifier=str()
+    #classifier=str()
     xyz_tag=str()
     if self.method_choice.GetCurrentSelection()==0:
-      method="FISHER"
+      method="LDA2D"
     elif self.method_choice.GetCurrentSelection()==1:
-      method="EIGEN"
+      method="FISHER"
     elif self.method_choice.GetCurrentSelection()==2:
-      method="IFLDA"
+      method="EIGEN"
+    elif self.method_choice.GetCurrentSelection()==3:
+      method="PCA2D"
 
-    if self.classifier_choice.GetCurrentSelection()==0:
-      classifier="KNN"
-    elif self.classifier_choice.GetCurrentSelection()==1:
-      classifier="SVM"
-    elif self.classifier_choice.GetCurrentSelection()==2:
-      classifier="DIFFS"
-    elif self.classifier_choice.GetCurrentSelection()==3:
-      classifier="RF"
+   # if self.classifier_choice.GetCurrentSelection()==0:
+   #   classifier="DIFFS"
+   # elif self.classifier_choice.GetCurrentSelection()==1:
+   #   classifier="KNN"
+   # elif self.classifier_choice.GetCurrentSelection()==2:
+   #   classifier="SVM"
+   # elif self.classifier_choice.GetCurrentSelection()==3:
+   #   classifier="RF"
 
     if self.use_xyz_data.Value==True:
       xyz_tag="1"
@@ -250,29 +262,37 @@ class dlg(wx.Frame):
       output_file=os.path.join(self.output_path,"eval_file")
       if len(self.ts_dir_list)>0:
         if(self.protocol_choice.GetCurrentSelection()==0):
-          self.process_protocol(self.process_leave_1_out,method,classifier)
+          self.process_protocol(self.process_leave_1_out,method)
+          #self.process_protocol(self.process_leave_1_out,method,classifier)
 
         elif(self.protocol_choice.GetCurrentSelection()==1):
-          self.process_protocol(self.process_leave_half_out,method,classifier)
+          self.process_protocol(self.process_leave_half_out,method)
+          #self.process_protocol(self.process_leave_half_out,method,classifier)
 
         elif(self.protocol_choice.GetCurrentSelection()==2):
           print "manual selection not suitable for cross validation"
           return
         elif(self.protocol_choice.GetCurrentSelection()==3):
-          self.process_protocol(self.process_unknown,method,classifier)
+          self.process_protocol(self.process_unknown,method)
+          #self.process_protocol(self.process_unknown,method,classifier)
         elif(prot_choice==4):
           self.yale_flag=2
-          self.process_protocol(self.process_yale(2),method,classifier)
+          #self.process_protocol(self.process_yale(2),method,classifier)
+          self.process_protocol(self.process_yale(2),method)
         elif(prot_choice==5):
           self.yale_flag=3
-          self.process_protocol(self.process_yale(3),method,classifier)
+          self.process_protocol(self.process_yale(3),method)
+          #self.process_protocol(self.process_yale(3),method,classifier)
         elif(prot_choice==6):
           self.yale_flag=4
-          self.process_protocol(self.process_yale(4),method,classifier)
+          #self.process_protocol(self.process_yale(4),method,classifier)
+          self.process_protocol(self.process_yale(4),method)
         elif(prot_choice==7):
           self.yale_flag=5
-          self.process_protocol(self.process_yale(5),method,classifier)
+          self.process_protocol(self.process_yale(5),method)
           #self.process_protocol(self.process_kinect,method,classifier)
+        elif(prot_choice==9):
+          self.process_protocol(self.process_synth,method)
 
         # run binaryin
         os.chdir(self.bin_path)
@@ -280,7 +300,7 @@ class dlg(wx.Frame):
           normalizer="1"
         else:
           normalizer="0"
-        t=Thread(target=self.run_bin,args=(method,classifier,normalizer,xyz_tag))
+        t=Thread(target=self.run_bin,args=(method,normalizer,xyz_tag))
         t.start()
         t.join()
 
@@ -297,53 +317,69 @@ class dlg(wx.Frame):
     classifier=str()
     xyz_tag=str()
     if self.method_choice.GetCurrentSelection()==0:
-      method="FISHER"
+      method="LDA2D"
     elif self.method_choice.GetCurrentSelection()==1:
-      method="EIGEN"
+      method="FISHER"
     elif self.method_choice.GetCurrentSelection()==2:
-      method="IFLDA"
+      method="EIGEN"
+    elif self.method_choice.GetCurrentSelection()==3:
+      method="PCA2D"
 
-    if self.classifier_choice.GetCurrentSelection()==0:
-      classifier="KNN"
-    elif self.classifier_choice.GetCurrentSelection()==1:
-      classifier="SVM"
-    elif self.classifier_choice.GetCurrentSelection()==2:
-      classifier="DIFFS"
-    elif self.classifier_choice.GetCurrentSelection()==3:
-      classifier="RF"
+    #if self.classifier_choice.GetCurrentSelection()==0:
+    #  classifier="DIFFS"
+    #elif self.classifier_choice.GetCurrentSelection()==1:
+    #  classifier="KNN"
+    #elif self.classifier_choice.GetCurrentSelection()==2:
+    #  classifier="SVM"
+    #elif self.classifier_choice.GetCurrentSelection()==3:
+    #  classifier="RF"
 
     prot_choice=self.protocol_choice.GetCurrentSelection()
     # if lists are supposed to be updated
     if self.upd_checkbox.GetValue()==True:
       if len(self.ts_dir_list)>0:
         if(self.protocol_choice.GetCurrentSelection()==0):
-          self.process_protocol(self.process_leave_1_out,method,classifier)
+          self.process_protocol(self.process_leave_1_out,method)
+          #self.process_protocol(self.process_leave_1_out,method,classifier)
           output_file=os.path.join(self.output_path,"eval_file")
-          self.process_protocol(self.process_leave_1_out,method,classifier)
+          self.process_protocol(self.process_leave_1_out,method)
+          #self.process_protocol(self.process_leave_1_out,method,classifier)
 
         elif(self.protocol_choice.GetCurrentSelection()==1):
-          self.process_protocol(self.process_leave_half_out,method,classifier)
+          self.process_protocol(self.process_leave_half_out,method)
+          #self.process_protocol(self.process_leave_half_out,method,classifier)
           output_file=os.path.join(self.output_path,"eval_file")
-          self.process_protocol(self.process_leave_half_out,method,classifier)
+          self.process_protocol(self.process_leave_half_out,method)
+          #self.process_protocol(self.process_leave_half_out,method,classifier)
 
         elif(self.protocol_choice.GetCurrentSelection()==2):
-          self.process_protocol(self.process_manual,method,classifier)
+          self.process_protocol(self.process_manual,method)
+          #self.process_protocol(self.process_manual,method,classifier)
         elif(self.protocol_choice.GetCurrentSelection()==3):
-          self.process_protocol(self.process_unknown,method,classifier)
+          output_file=os.path.join(self.output_path,"eval_file")
+          #self.process_protocol(self.process_unknown,method,classifier)
+          self.process_protocol(self.process_unknown,method)
         elif(prot_choice==4):
           self.yale_flag=2
-          self.process_protocol(self.process_yale,method,classifier)
+          #self.process_protocol(self.process_yale,method,classifier)
+          self.process_protocol(self.process_yale,method)
         elif(prot_choice==5):
           self.yale_flag=3
-          self.process_protocol(self.process_yale,method,classifier)
+          #self.process_protocol(self.process_yale,method,classifier)
+          self.process_protocol(self.process_yale,method)
         elif(prot_choice==6):
           self.yale_flag=4
-          self.process_protocol(self.process_yale,method,classifier)
+          #self.process_protocol(self.process_yale,method,classifier)
+          self.process_protocol(self.process_yale,method)
         elif(prot_choice==7):
           self.yale_flag=5
-          self.process_protocol(self.process_yale,method,classifier)
+          self.process_protocol(self.process_yale,method)
+          #self.process_protocol(self.process_yale,method,classifier)
         elif(prot_choice==8):
-          self.process_kinect()
+          #self.process_protocol(self.process_kinect,method,classifier)
+          self.process_protocol(self.process_kinect,method)
+        elif(prot_choice==9):
+          self.process_protocol(self.process_synth,method)
 
     if self.use_xyz_data.Value==True:
       xyz_tag="1"
@@ -358,14 +394,13 @@ class dlg(wx.Frame):
     else:
       #bin_str="./ssa_test "+method+" "+classifier+" 0 "+xyz_tag
       normalizer="0"
-    t=Thread(target=self.run_bin,args=(method,classifier,normalizer,xyz_tag))
+    t=Thread(target=self.run_bin,args=(method,normalizer,xyz_tag))
     t.start()
     t.join()
 
 
     os.chdir(self.cwd)
     self.evaluate()
-
 
     print self.Evaluator.calc_stats()
     self.Evaluator.reset()
@@ -380,7 +415,7 @@ class dlg(wx.Frame):
 
   def delete_files(self):
     os.chdir(self.output_path)
-    str_list=["rm","classified_output","eval_file","class_overview","probe_file_list","probe_file_xyz_list","training_set_list","training_set_xyz_list"]
+    str_list=["rm","classification_labels","eval_file","class_overview","probe_file_list","probe_file_xyz_list","training_set_list","training_set_xyz_list"]
     subprocess.call(str_list)
 
 
@@ -388,24 +423,48 @@ class dlg(wx.Frame):
     del self.ts_list[:]
     del self.pf_list[:]
     del self.cl_list[:]
-
+    del self.unknown_list[:]
 
 
 #*****************************************************
 #****************Internal Functions********************
 #*****************************************************
 
-  def process_protocol(self,protocol_fn,method,classifier):
+  def process_protocol(self,protocol_fn,method):
     self.reset_lists()
     self.file_ops(self.make_ts_list)
     self.file_ops(self.make_cl_list)
+    #print self.cl_list
     protocol_fn()
     self.sync_lists()
+    print self.ts_list
+    print "--------------------------------------------------------"
+    print self.pf_list
     self.print_lists()
 
 
-  def run_bin(self,method,classifier,normalize,xyz):
-    subprocess.call(["./ssa_test",method,classifier,normalize,xyz])
+  def run_bin(self,method,normalize,xyz):
+    binary=os.path.join(self.bin_path,self.bin_name)
+
+    subprocess.call([binary,method,normalize,xyz])
+
+  def process_synth(self):
+    self.process_leave_1_out()
+    tmp=self.pf_list
+    self.pf_list=self.ts_list
+    self.pf_list.append([])
+    self.ts_list=tmp
+    del self.ts_list[-1]
+    self.synch_lists_switch=True
+
+
+  def process_kinect2(self):
+    self.ts_list=list()
+    self.pf_list=list()
+    self.file_ops(self.kinect2)
+    ##append empty list for unknown calssifications
+    self.pf_list.append([])
+    self.synch_lists_switch=False
 
   def process_kinect(self):
     self.reset_lists()
@@ -437,8 +496,8 @@ class dlg(wx.Frame):
           curr_files.append(line)
 
 
-    print self.pf_list
     self.pf_list.append([])
+    self.synch_lists_switch=False
     self.sync_lists()
     self.print_lists()
 
@@ -451,6 +510,7 @@ class dlg(wx.Frame):
     self.pf_list.append([])
    # k=-1
    # self.file_ops(self.yale,k)
+    self.synch_lists_switch=False
 
   def process_unknown(self):
     C=len(self.cl_list)
@@ -471,20 +531,26 @@ class dlg(wx.Frame):
 
     self.file_ops(self.unknown,k)
     self.pf_list.append(self.unknown_list)
+    del k[:]
+    del rnd_list[:]
+    self.synch_lists_switch=False
 
   def process_leave_half_out(self):
     self.file_ops(self.leave_k_out,"half")
     ##append empty list for unknown calssifications
     self.pf_list.append([])
+    self.synch_lists_switch=False
 
   def process_leave_1_out(self):
     self.file_ops(self.leave_k_out,1)
     ##append empty list for unknown calssifications
     self.pf_list.append([])
+    self.synch_lists_switch=False
 
   def process_manual(self):
     self.pf_list=[[] for i in range(len(self.cl_list)+1)]
     self.pf_list_format(self.pf_glist.GetItems())
+    self.synch_lists_switch=False
 
   def file_ops(self,fn=-1,add_param=False):
 
@@ -533,12 +599,46 @@ class dlg(wx.Frame):
     for f in files:
       name=os.path.split(f)[1]
       if name[0]=="_":
-        print name
+        #print name
         pf.append(f)
       else:
         ts.append(f)
     self.pf_list.append(pf)
     self.ts_list.append(ts)
+
+  def kinect2(self,files):
+    ts_list=list()
+    pf_list=list()
+    for file in files:
+      persp=(int(file[-8]))
+      if (persp == 7 or 
+          persp == 11 or
+          persp == 13 or
+          persp == 11 or
+          persp == 1
+         # persp == 14 or
+         # persp==  15 or
+         # persp==  16 or
+         # persp == 17 
+          #persp == 3 or
+          #persp == 2 or
+          #persp == 4 or
+          #persp == 10 or
+          #persp == 12 
+          ):
+        ts_list.append(file)
+      #elif (persp == 7 or 
+      #    persp == 3 or
+      #    persp == 2 or
+      #    persp == 4 or
+      #    persp == 10 or
+      #    persp == 12 
+      #    ):
+      #  pf_list.append(file)
+      else:
+        pf_list.append(file)
+    self.pf_list.append(pf_list)
+    self.ts_list.append(ts_list)
 
   def yale(self, files,k):
    # remove files from ts list
@@ -619,6 +719,7 @@ class dlg(wx.Frame):
       else:
         num_samples=len(files)
         n=num_samples/2
+        #n=9
         success_ctr=0
         rnd_list=list()
         pf_list=list()
@@ -653,13 +754,24 @@ class dlg(wx.Frame):
 
 
   def sync_lists(self):
-    for c in xrange(len(self.pf_list)):
-      for s in self.pf_list[c]:
-        if len(s) >0:
-          for ts in self.ts_list:
-            if s in ts:
-              ts.remove(s)
+    if  self.synch_lists_switch ==True:
+      for c in xrange(len(self.ts_list)):
+        for s in self.ts_list[c]:
+          if len(s) >0:
+            for ts in self.pf_list:
+              if s in ts:
+                ts.remove(s)
+    else:
+      for c in xrange(len(self.pf_list)):
+        for s in self.pf_list[c]:
+          if len(s) >0:
+            for ts in self.ts_list:
+              if s in ts:
+                ts.remove(s)
 
+
+    #print "length list%i"%len(self.pf_list[0])
+    #print "length list%i"%len(self.ts_list[0])
 
   def evaluate(self):
 
@@ -667,7 +779,7 @@ class dlg(wx.Frame):
     groundtruth=list()
     files=list()
 
-    input_path=os.path.join(self.output_path,"classified_output")
+    input_path=os.path.join(self.output_path,"classification_labels")
     eval_file_path=os.path.join(self.output_path,"eval_file")
     with open(input_path,"r") as input_stream:
       classified_list=input_stream.read().splitlines()
@@ -700,7 +812,7 @@ class dlg(wx.Frame):
   def print_lists(self):
     #print self.pf_list
 
-    print "[EVAL TOOL] creating lists"
+    #print "[EVAL TOOL] creating lists"
     training_set_list_path=os.path.join(self.output_path,"training_set_list")
     training_set_list_xyz_path=os.path.join(self.output_path,"training_set_xyz_list")
     probe_file_list_path=os.path.join(self.output_path,"probe_file_list")
@@ -765,6 +877,12 @@ class epoch():
 
     self.calc_error_rate()
 
+  def print_error_list(self,error_list_path):
+    error_list_stream = open(error_list_path,"w")
+    for s in self.fi_list:
+      o_str=str(s)+" \n"
+      error_list_stream.write(o_str)
+
   def calc_error_rate(self):
     error_list=list()
     #true positive
@@ -775,6 +893,8 @@ class epoch():
     fp_list=list()
     #false negative
     fn_list=list()
+    #false id
+    self.fi_list=list()
     for i in xrange(len(self.gt)):
         if (int(self.gt[i]) == int(self.res[i])):
           error_list.append(0)
@@ -783,11 +903,13 @@ class epoch():
             fn_list.append(0)
             tn_list.append(0)
             tp_list.append(1)
+            self.fi_list.append(0)
           elif int(self.gt[i]) ==-1:
             fp_list.append(0)
             fn_list.append(0)
             tn_list.append(1)
             tp_list.append(0)
+            self.fi_list.append(0)
         else:
           error_list.append(1)
           if int(self.gt[i])==-1:
@@ -795,11 +917,15 @@ class epoch():
             fn_list.append(0)
             tn_list.append(0)
             tp_list.append(0)
-          elif int(self.gt[i]) >-1:
+            self.fi_list.append(0)
+          elif int(self.gt[i]) >-1 and int(self.res[i])==-1:
             fp_list.append(0)
             fn_list.append(1)
             tn_list.append(0)
             tp_list.append(0)
+            self.fi_list.append(0)
+          elif int(self.gt[i]) >-1 and int(self.res[i])>-1:
+            self.fi_list.append(1)
 
     n=len(error_list)
     self.error_rate=float(sum(error_list))/float(n)
@@ -807,15 +933,23 @@ class epoch():
     self.tn=sum(tn_list)
     self.fp=sum(fp_list)
     self.fn=sum(fn_list)
+    self.fi=sum(self.fi_list)
+
+    
 
 class Evaluator():
   def __init__(self,invalid_list=0):
+    self.error_list_path="/share/goa-tz/people_detection/eval/eval_tool_files/error_list"
     if invalid_list==0:
       self.invalid_files=list()
     else:
-      with open(invalid_list,"r") as input_stream:
-        self.invalid_files=input_stream.read().splitlines()
-    print "EVALUATOR instantiated"
+      if os.path.exists(invalid_list):
+        with open(invalid_list,"r") as input_stream:
+            self.invalid_files=input_stream.read().splitlines()
+      else:
+        self.invalid_files=list()
+
+    #print "EVALUATOR instantiated"
     self.epochs=list()
     self.epoch_ctr=0
 
@@ -826,6 +960,7 @@ class Evaluator():
 
   def add_epoch(self,gt,res,files):
     e=epoch(gt,res,files,self.epoch_ctr)
+    e.print_error_list(self.error_list_path)
     self.epoch_ctr+=1
     self.epochs.append(e)
 
@@ -850,10 +985,9 @@ class Evaluator():
       sigma=0.0
 
 
-    print self.epochs[-1].tp
-    print self.epochs[-1].tn
-    print self.epochs[-1].fp
-    print self.epochs[-1].fn
+   # #remove comment to display true positive and fals positive
+
+    self.print_ave_values(self.epochs)
     stats={"succes_rate":1-mean_error_rate,"m_err":mean_error_rate,"sigma":sigma,"reps":len(self.epochs)}
 
 
@@ -865,6 +999,30 @@ class Evaluator():
       err.append(e.error_rate)
 
     return err
+
+  def print_ave_values(self,l):
+    ave_tp=0.0
+    ave_tn=0.0
+    ave_fp=0.0
+    ave_fn=0.0
+    ave_fi=0.0
+    for el in l:
+      ave_tp+=el.tp
+      ave_tn+=el.tn
+      ave_fp+=el.fp
+      ave_fn+=el.fn
+      ave_fi+=el.fi
+    ave_tp/=len(l)
+    ave_tn/=len(l)
+    ave_fp/=len(l)
+    ave_fn/=len(l)
+    ave_fi/=len(l)
+
+    print "True positives:   %f"%   ave_tp
+    print "True negatives:   %f"%   ave_tn
+    print "False positives:  %f"%  ave_fp
+    print "False negatives:  %f"%  ave_fn
+    print "False identities: %f"% ave_fi
 
   def show_last(self):
     err=self.epochs[-1].error_rate

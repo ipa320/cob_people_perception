@@ -162,6 +162,7 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 		}
 	}
 
+
 	// insert recognized faces
 	for(int i=0; i<(int)face_recognition_msg->detections.size(); i++)
 	{

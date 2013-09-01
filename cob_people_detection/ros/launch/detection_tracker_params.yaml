@@ -41,3 +41,7 @@ debug: false
 # display timing information
 # bool
 display_timing: false
+
+# use rosbag as data input / ignore timestamp
+# bool
+rosbag_mode: true

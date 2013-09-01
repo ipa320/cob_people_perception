@@ -137,6 +137,8 @@ protected:
 	bool fall_back_to_unknown_identification_; ///< if this is true, the unknown label will be assigned for the identification of a person if it has the highest score, otherwise, the last detection of a name will display as label even if there has been a detection of Unknown recently for that face
 	bool display_timing_;
 
+  bool rosbag_mode_;    /// < true if data from a rosbag is used, to ignore deprecated timestamps
+
 public:
 
 	DetectionTrackerNode(ros::NodeHandle nh);

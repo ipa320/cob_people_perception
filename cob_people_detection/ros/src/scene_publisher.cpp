@@ -221,7 +221,9 @@ protected:
 
 int main (int argc, char** argv)
 {
+
 	ros::init (argc, argv, "scene publisher");
+  int persp_filter=17;
 
 
   scene_publisher sp;
@@ -240,7 +242,7 @@ int main (int argc, char** argv)
       }
     if(sp.persp==18) break;
 
-    if(sp.persp==14)
+    if(sp.persp==persp_filter)
     {
     sp.process();
     sp.publish();

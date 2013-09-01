@@ -118,6 +118,8 @@ DetectionTrackerNode::DetectionTrackerNode(ros::NodeHandle nh)
 	std::cout << "\n---------------------------\nPeople Detection Parameters:\n---------------------------\n";
 	node_handle_.param("debug", debug_, false);
 	std::cout << "debug = " << debug_ << "\n";
+	node_handle_.param("rosbag_mode", rosbag_mode_, false);
+	std::cout << "use rosbag mode:  " << rosbag_mode_ << "\n";
 	node_handle_.param("use_people_segmentation", use_people_segmentation_, true);
 	std::cout << "use_people_segmentation = " << use_people_segmentation_ << "\n";
 	node_handle_.param("face_redetection_time", face_redetection_time_, 2.0);
@@ -393,6 +395,9 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 
 	// delete old face positions in list, i.e. those that were not updated for a long time
 	ros::Duration timeSpan(face_redetection_time_);
+  // do not delete  when bag file is played back
+  if(!rosbag_mode_)
+  {
 	for (int i=(int)face_position_accumulator_.size()-1; i>=0; i--)
 	{
 		if ((ros::Time::now()-face_position_accumulator_[i].header.stamp) > timeSpan)
@@ -403,6 +408,7 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 	}
 	if (debug_)
 		std::cout << "Old face positions deleted.\n";
+  }
 
 	// verify face detections with people segmentation if enabled -> only accept detected faces if a person is segmented at that position
 	std::vector<int> face_detection_indices; // index set for face_position_msg_in: contains those indices of detected faces which are supported by a person segmentation at the same location

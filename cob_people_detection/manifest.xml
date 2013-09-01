@@ -24,13 +24,12 @@
 <depend package="pcl"/>
 <depend package="pcl_ros"/>
 <depend package="nodelet"/>
-<!--depend package="openni"/-->
-<!--depend package="nite"/-->
+<depend package="openni_camera"/>
 <depend package="kdl"/>
 <depend package="cob_people_detection_msgs"/>
 <depend package="cob_vision_utils"/>
 <depend package="cob_image_flip"/>
-<!--depend package="openni_launch"/-->
+<depend package="openni_launch"/>
 <depend package="dynamic_reconfigure"/>
 <depend package="image_view"/>
 

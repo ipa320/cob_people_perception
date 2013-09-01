@@ -5,6 +5,7 @@
   <arg name="start_manager" default="false"/>
   <arg name="nodelet_manager" default="cam3d_nodelet_manager"/>
 
+  <param name="/cob_people_detection/data_storage_directory" type="string" value="$(env HOME)/.ros/cob_people_detection/files/"/>
   <node if="$(arg start_manager)" pkg="nodelet" type="nodelet" name="$(arg nodelet_manager)"  args="manager" output="screen"/>
   	
   <include file="$(find cob_people_detection)/ros/launch/sensor_message_gateway_nodelet.launch">
