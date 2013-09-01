@@ -152,6 +152,11 @@ class EvalObj
           std::cout<<"empty label array...."<<std::endl;
           return false;
         }
+        if(cmp.labels.size()==0)
+        {
+          std::cout<<"empty label array...."<<std::endl;
+          return false;
+        }
         for( int i=0;i<this->labels.size();i++)
         {
           for( int j=0;j<cmp.labels.size();j++)
@@ -272,11 +277,15 @@ void trackingCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr&
     EvalObj eval_obj;
     eval_obj.timestamp=face_position_msg_in->header.stamp;
     // put timestamp, position and label in vector
-    //std::cout<<"det_size="<<face_position_msg_in->detections.size()<<std::endl;
-		for (unsigned int i=0; i<face_position_msg_in->detections.size(); i++)
+    //std::cout<<"----> tracking: det_size="<<face_position_msg_in->detections.size()<<std::endl;
+	for (unsigned int i=0; i<face_position_msg_in->detections.size(); i++)
     {
-      eval_obj.positions.push_back(face_position_msg_in->detections[i].pose.pose.position);
-      eval_obj.labels.push_back(face_position_msg_in->detections[i].label);
+		if (face_position_msg_in->detections[i].label.compare("")!=0)
+		{
+			//std::cout<<"      t label="<<face_position_msg_in->detections[i].label<<std::endl;
+			eval_obj.positions.push_back(face_position_msg_in->detections[i].pose.pose.position);
+			eval_obj.labels.push_back(face_position_msg_in->detections[i].label);
+		}
     }
     eval_track_=eval_obj;
     rec_track=true;
@@ -290,11 +299,15 @@ void recognitionCallback(const cob_people_detection_msgs::DetectionArray::ConstP
     EvalObj eval_obj;
     eval_obj.timestamp=face_position_msg_in->header.stamp;
     // put timestamp, position and label in vector
-    //std::cout<<"det_size="<<face_position_msg_in->detections.size()<<std::endl;
-		for (unsigned int i=0; i<face_position_msg_in->detections.size(); i++)
+    //std::cout<<"----> recognition: det_size="<<face_position_msg_in->detections.size()<<std::endl;
+	for (unsigned int i=0; i<face_position_msg_in->detections.size(); i++)
     {
-      eval_obj.positions.push_back(face_position_msg_in->detections[i].pose.pose.position);
-      eval_obj.labels.push_back(face_position_msg_in->detections[i].label);
+		if (face_position_msg_in->detections[i].label.compare("")!=0)
+		{
+			//std::cout<<"      r label="<<face_position_msg_in->detections[i].label<<std::endl;
+			eval_obj.positions.push_back(face_position_msg_in->detections[i].pose.pose.position);
+			eval_obj.labels.push_back(face_position_msg_in->detections[i].label);
+		}
     }
     eval_rec_=eval_obj;
     rec_rec=true;
