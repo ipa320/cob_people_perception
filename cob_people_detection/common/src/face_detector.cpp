@@ -153,7 +153,7 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 			double last_accepted_face_area = 0.0;
 			for (uint face_index = 0; face_index < face_coordinates[head_index].size(); face_index++)
 			{
-				std::cout << face_index << ": face_coordinates[head_index].size()=" << face_coordinates[head_index].size() << std::endl;
+				//std::cout << face_index << ": face_coordinates[head_index].size()=" << face_coordinates[head_index].size() << std::endl;
 
 				cv::Rect& face = face_coordinates[head_index][face_index];
 
