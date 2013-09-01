@@ -137,9 +137,12 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 //			heads_color_images[head].locateROI(parentSize, roiOffset);
 //			face->x += roiOffset.x;		// todo: check what happens if the original matrix is used without roi
 //			face->y += roiOffset.y;
-			face_coordinates[head].push_back(*face);
+			// exclude faces that are too small for the head bounding box
+			if (face->width > 0.4*heads_color_images[head].cols && face->height > 0.4*heads_color_images[head].rows)
+				face_coordinates[head].push_back(*face);
 		}
 	}
+
 	if (m_reason_about_3dface_size==true)
 	{
 		// check whether the color faces have a reasonable 3D size

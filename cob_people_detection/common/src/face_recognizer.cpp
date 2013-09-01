@@ -208,22 +208,23 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
+	//cv::Rect combined_face_bounding_box=cv::Rect(face_bounding_box.x+head_bounding_box.x,face_bounding_box.y+head_bounding_box.y,face_bounding_box.width,face_bounding_box.height);
 
-  cv::Rect combined_face_bounding_box=cv::Rect(face_bounding_box.x+head_bounding_box.x,face_bounding_box.y+head_bounding_box.y,face_bounding_box.width,face_bounding_box.height);
-
-	cv::Mat roi_color = color_image(combined_face_bounding_box);
+	//cv::Mat roi_color = color_image(combined_face_bounding_box);
+	cv::Mat roi_color = color_image(face_bounding_box);
 	cv::Mat roi_depth_xyz = depth_image(face_bounding_box).clone();
-  cv::Size norm_size=cv::Size(m_norm_size,m_norm_size);
-  cv::Mat roi_depth;
-  //if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) ;
-  face_normalizer_.recordFace(roi_color,roi_depth_xyz);
-  if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) return ipa_Utils::RET_FAILED;
+	cv::Size norm_size=cv::Size(m_norm_size,m_norm_size);
+	cv::Mat roi_depth;
+	//if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) ;
+	face_normalizer_.recordFace(roi_color,roi_depth_xyz);
+	if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size))
+		return ipa_Utils::RET_FAILED;
 
 	// Save image
 	face_images.push_back(roi_color);
-  face_depthmaps.push_back(roi_depth_xyz);
+	face_depthmaps.push_back(roi_depth_xyz);
 	m_face_labels.push_back(label);
-  dm_exist.push_back(true);
+	dm_exist.push_back(true);
 
 	return ipa_Utils::RET_OK;
 
