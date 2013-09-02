@@ -8,7 +8,7 @@ faces_increase_search_scale: 1.2
 
 # Minimum number (minus 1) of neighbor rectangles that makes up an object. #3
 # int
-faces_drop_groups: 2     #3
+faces_drop_groups: 2  #3
 
 # width of smallest search rectangle (default: 20)
 # int

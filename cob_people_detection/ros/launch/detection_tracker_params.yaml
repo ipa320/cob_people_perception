@@ -4,7 +4,7 @@ use_people_segmentation: false
 
 # timespan during which a face is preserved in the list of tracked faces although it is currently not visible #4.0
 # double
-face_redetection_time: 3.0
+face_redetection_time: 2.5
 
 # timespan during which a currently not visible face, which is though preserved in the list of tracked faces, is published as detection (in [0, face_redetection_time])
 # double
@@ -28,7 +28,7 @@ face_identification_score_decay_rate: 0.9
 
 # minimum face identification score to publish (0 <= x < max_score), i.e. this score must be exceeded by a label at a detection location before the person detection is published (higher values increase robustness against short misdetections, but consider the maximum possible score max_score w.r.t. the face_identification_score_decay_rate: new_score = (old_score+1)*face_identification_score_decay_rate --> max_score = face_identification_score_decay_rate/(1-face_identification_score_decay_rate))
 # double #3.0
-min_face_identification_score_to_publish: 5.0
+min_face_identification_score_to_publish: 4.0
 
 # if this is true, the unknown label will be assigned for the identification of a person if it has the highest score, otherwise, the last detection of a name will display as label even if there has been a detection of Unknown recently for that face (i.e. if true: face names will display only while they are certain, if false: face names will always display after they have been certain once)
 # bool
@@ -44,4 +44,4 @@ display_timing: false
 
 # use rosbag as data input / ignore timestamp
 # bool
-rosbag_mode: true
+rosbag_mode: false
