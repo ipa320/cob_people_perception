@@ -2,20 +2,12 @@
 
 <launch>
   <arg name="using_nodelets" value="true"/>
+  <arg name="start_manager" default="false"/>
 
-  <include file="$(find cob_people_detection)/ros/launch/image_flip_nodelet.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/head_detector.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/face_detector.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/face_recognizer.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/detection_tracker.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/people_detection_display.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/face_capture.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/coordinator.launch">
+  <include file="$(find cob_people_detection)/ros/launch/people_detection.launch">
     <arg name="using_nodelets" value="$(arg using_nodelets)"/>
+    <arg name="start_manager" value="$(arg start_manager)"/>
   </include>
-  <include file="$(find cob_people_detection)/ros/launch/sensor_message_gateway_nodelet.launch"/>
-
-
 
   <!-- Openni people segmentation and tracker - adapted to publish the segmented image (does not work upside down, i.e. when robot is watching backwards) (comment out if you do not use the openni-tracker) -->
   <!-- <node pkg="cob_people_detection" ns="cob_people_detection/openni_tracker" type="openni_tracker" name="openniTrackerNode" output="screen"/> -->

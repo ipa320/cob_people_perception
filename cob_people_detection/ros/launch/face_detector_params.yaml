@@ -12,13 +12,14 @@ faces_drop_groups: 2  #3
 
 # width of smallest search rectangle (default: 20)
 # int
-faces_min_search_scale_x: 30  #30
+faces_min_search_scale_x: 30
 
 # height of smallest search rectangle (default: 20)
 # int
-faces_min_search_scale_y: 30  #30
+faces_min_search_scale_y: 30
 
 # when this flag is activated, the 3d size of a face is determined and only reasonable sizes may continue in the processing pipeline
+# moreover, if activated, the background behind the head is cleared in the color image resulting in more robust recognition performance
 # bool
 reason_about_3dface_size: true
 

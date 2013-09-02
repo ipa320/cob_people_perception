@@ -1,11 +1,7 @@
-#include "decomposition.hpp"
-#include "helper.hpp"
+#include "thirdparty/decomposition.hpp"
+#include "thirdparty/helper.hpp"
 
 void EigenvalueDecomposition::compute(InputArray src) {
-    if(cv::isSymmetric(src)) {
-        // Fall back to OpenCV for a symmetric matrix!
-        cv::eigen(src, _eigenvalues, _eigenvectors);
-    } else {
         Mat tmp;
         // Convert the given input matrix to double. Is there any way to
         // prevent allocating the temporary memory? Only used for copying
@@ -26,4 +22,4 @@ void EigenvalueDecomposition::compute(InputArray src) {
         // Performs the eigenvalue decomposition of H.
         compute();
     }
-}
+

@@ -1,5 +1,5 @@
 
-#include<cob_people_detection/subspace_analysis.h>
+#include<cob_people_detection/face_recognizer_algorithms.h>
 #include<cob_people_detection/face_normalizer.h>
 #include<opencv/cv.h>
 #include<opencv/highgui.h>
@@ -7,6 +7,7 @@
 #include<fstream>
 #include <sys/time.h>
 #include <boost/timer.hpp>
+#include <boost/filesystem.hpp>
 
 
 bool preprocess(cv::Mat& img,cv::Mat& xyz,FaceNormalizer* fn,bool normalize,cv::Size& norm_size,cv::Mat& dm) {
@@ -64,121 +65,121 @@ int main(int argc, const char *argv[])
   fn->init(config);
 
   // parse input arguments from command line
-  std::string method_str,classifier_str;
+  std::string method_str;//,classifier_str;
   bool use_xyz=true;
   bool normalizer=false;
   if (argc==1)
   {
-    method_str="FISHER";
-    classifier_str="SVM";
+    method_str="EIGEN";
+    //classifier_str="";
     normalizer=false;
   }
 
   else if (argc==2)
   {
     method_str=argv[1];
-    classifier_str="KNN";
+    //classifier_str="KNN";
     normalizer=false;
   }
 
   else if (argc==3)
   {
     method_str=argv[1];
-    classifier_str=argv[2];
+    //classifier_str=argv[2];
     normalizer=false;
+  }
+
+  else if (argc==3)
+  {
+    method_str=argv[1];
+    //classifier_str=argv[2];
+
+    if (std::strcmp(argv[2],"0")==0) normalizer=false;
+    if (std::strcmp(argv[2],"1")==0) normalizer=true;
+
+    if (std::strcmp(argv[3],"0")==0) use_xyz=false;
+    if (std::strcmp(argv[3],"1")==0) use_xyz=true;
   }
 
   else if (argc==4)
   {
     method_str=argv[1];
-    classifier_str=argv[2];
+    //classifier_str=argv[2];
+    if (std::strcmp(argv[2],"0")==0) normalizer=false;
+    if (std::strcmp(argv[2],"1")==0) normalizer=true;
 
-    if (std::strcmp(argv[3],"0")==0) normalizer=false;
-    if (std::strcmp(argv[3],"1")==0) normalizer=true;
-
-    if (std::strcmp(argv[4],"0")==0) use_xyz=false;
-    if (std::strcmp(argv[4],"1")==0) use_xyz=true;
-  }
-
-  else if (argc==5)
-  {
-    method_str=argv[1];
-    classifier_str=argv[2];
-    if (std::strcmp(argv[3],"0")==0) normalizer=false;
-    if (std::strcmp(argv[3],"1")==0) normalizer=true;
-
-    if (std::strcmp(argv[4],"0")==0) use_xyz=false;
-    if (std::strcmp(argv[4],"1")==0) use_xyz=true;
+    if (std::strcmp(argv[3],"0")==0) use_xyz=false;
+    if (std::strcmp(argv[3],"1")==0) use_xyz=true;
   }
 
 
 
   //  Configure input params for subspace analysis
 
-  SubspaceAnalysis::Method method;
-  SubspaceAnalysis::Classifier classifier;
+  ipa_PeopleDetector::Method method;
+  ipa_PeopleDetector::Classifier classifier;
 
   if(!method_str.compare("FISHER"))
   {
     std::cout<<"FISHER"<<std::endl;
-    method = SubspaceAnalysis::METH_FISHER;
+    method = ipa_PeopleDetector::METH_FISHER;
   }
   else if(!method_str.compare("EIGEN"))
   {
     std::cout<<"EIGEN"<<std::endl;
-    method = SubspaceAnalysis::METH_EIGEN;
+    method = ipa_PeopleDetector::METH_EIGEN;
   }
   else if(!method_str.compare("LDA2D"))
   {
     std::cout<<"LDA2D"<<std::endl;
-    method = SubspaceAnalysis::METH_LDA2D;
+    method = ipa_PeopleDetector::METH_LDA2D;
   }
   else if(!method_str.compare("PCA2D"))
   {
     std::cout<<"PCA2D"<<std::endl;
-    method = SubspaceAnalysis::METH_PCA2D;
+    method = ipa_PeopleDetector::METH_PCA2D;
   }
   else
   {
     std::cout<<"ERROR: invalid method - use FISHER or EIGEN"<<std::endl;
   }
 
-  if(!classifier_str.compare("KNN"))
-  {
-    std::cout<<"KNN"<<std::endl;
-    classifier = SubspaceAnalysis::CLASS_KNN;
-  }
-  else if(!classifier_str.compare("DIFFS"))
-  {
-    std::cout<<"DIFFS"<<std::endl;
-    classifier = SubspaceAnalysis::CLASS_DIFS;
-  }
-  else if(!classifier_str.compare("SVM"))
-  {
-    std::cout<<"SVM"<<std::endl;
-    classifier = SubspaceAnalysis::CLASS_SVM;
-  }
-  else if(!classifier_str.compare("RF"))
-  {
-    std::cout<<"RF"<<std::endl;
-    classifier = SubspaceAnalysis::CLASS_RF;
-  }
-  else
-  {
-    std::cout<<"ERROR: invalid classifier - use KNN or DIFFS or SVM"<<std::endl;
-  }
+ // if(!classifier_str.compare("KNN"))
+ // {
+ //   std::cout<<"KNN"<<std::endl;
+ //   classifier = ipa_PeopleDetector::CLASS_KNN;
+ // }
+ // else if(!classifier_str.compare("DIFFS"))
+ // {
+ //   std::cout<<"DIFFS"<<std::endl;
+ //   classifier = ipa_PeopleDetector::CLASS_DIFS;
+ // }
+ // else if(!classifier_str.compare("SVM"))
+ // {
+ //   std::cout<<"SVM"<<std::endl;
+ //   classifier = ipa_PeopleDetector::CLASS_SVM;
+ // }
+ // else if(!classifier_str.compare("RF"))
+ // {
+ //   std::cout<<"RF"<<std::endl;
+ //   classifier = ipa_PeopleDetector::CLASS_RF;
+ // }
+ // else
+ // {
+ //   std::cout<<"ERROR: invalid classifier - use KNN or DIFFS or SVM"<<std::endl;
+ // }
 
 
   std::cout<<"SSA test configuration:"<<std::endl;
-  std::cout<<"classifier: "<<classifier_str<<std::endl;
+  //std::cout<<"classifier: "<<classifier_str<<std::endl;
   std::cout<<"method: "<<method_str<<std::endl;
   std::cout<<"normalizing: "<<normalizer<<std::endl;
   std::cout<<"use xyz: "<<use_xyz<<std::endl;
   //HOME
-  //std::string training_set_path=     "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_list";
-  //std::string training_set_xyz_path= "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/training_set_xyz_list";
-  //std::string probe_file_path=       "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_list";
-  //std::string probe_file_xyz_path=   "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/probe_file_xyz_list";
+  //std::string training_set_path=     "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/training_set_list";
+  //std::string training_set_xyz_path= "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/training_set_xyz_list";
+  //std::string probe_file_path=       "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/probe_file_list";
+  //std::string probe_file_xyz_path=   "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/probe_file_xyz_list";
   //IPA
   std::string training_set_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_list";
   std::string training_set_xyz_path="/share/goa-tz/people_detection/eval/eval_tool_files/training_set_xyz_list";
@@ -270,7 +271,7 @@ int main(int argc, const char *argv[])
  std::vector<cv::Mat> dm_vec;
 
   std::string invalid_path="/share/goa-tz/people_detection/eval/eval_tool_files/nrm_failed";
-  //std::string invalid_path="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/eval/eval_tool_files/nrm_failed";
+  //std::string invalid_path="/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/eval/eval_tool_files/nrm_failed";
   std::ofstream os_inv(invalid_path.c_str() );
   bool valid;
  for(int i =0;i<in_vec.size();i++)
@@ -319,7 +320,7 @@ int main(int argc, const char *argv[])
  {
   std::stringstream ostr,nstr;
   nstr<<"/share/goa-tz/people_detection/eval/picdump/";
-  //nstr<<"/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/picdump/";
+  //nstr<<"/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/picdump/";
   ostr<<nstr.str().c_str()<<i<<"_orig"<<".jpg";
 
   cv::Mat probe_xyz,probe_img;
@@ -364,22 +365,58 @@ int main(int argc, const char *argv[])
   std::cout<<"Size Training Set= "<<img_vec.size()<<std::endl;
   std::cout<<"Size Test Set= "<<probe_file_vec.size()<<std::endl;
 
-  int ss_dim=num_classes;
+  int ss_dim=5;
 
-  SubspaceAnalysis::FaceRecognizer* EFF=new SubspaceAnalysis::FaceRecognizer();
+  ipa_PeopleDetector::FaceRecognizerBaseClass* EFF;
   // calculate Model
 
  // timeval t1,t2,t3,t4;
  // gettimeofday(&t1,NULL);
+
+  switch (method)
+  {
+    case ipa_PeopleDetector::METH_EIGEN:
+      {
+        EFF=new ipa_PeopleDetector::FaceRecognizer_Eigenfaces();
+        break;
+      }
+    case ipa_PeopleDetector::METH_FISHER:
+      {
+        EFF=new ipa_PeopleDetector::FaceRecognizer_Fisherfaces();
+        break;
+      }
+    case ipa_PeopleDetector::METH_PCA2D:
+      {
+        EFF=new ipa_PeopleDetector::FaceRecognizer_PCA2D();
+        break;
+      }
+    case ipa_PeopleDetector::METH_LDA2D:
+      {
+        EFF=new ipa_PeopleDetector::FaceRecognizer_LDA2D();
+        break;
+      }
+    default:
+      {
+        EFF=new ipa_PeopleDetector::FaceRecognizer_Eigenfaces();
+        break;
+      }
+  }
+  std::cout<<EFF->trained_<<std::endl;
   boost::timer t;
-  EFF->trainModel(img_vec,label_vec,ss_dim,method,true,false);
+
+
+  boost::filesystem::path rpath="/home/goa-tz/.ros/test.xml";
+  //EFF->loadModel(rpath);
+  std::cout<<"loaded"<<std::endl;
+  EFF->trainModel(img_vec,label_vec,ss_dim);
+  //EFF->activate_unknown_treshold();
   //gettimeofday(&t2,NULL);jj
 
   //open output file
   std::string path = "/share/goa-tz/people_detection/eval/eval_tool_files/classification_labels";
   std::string probabilities_path = "/share/goa-tz/people_detection/eval/eval_tool_files/classification_probabilities";
   std::string timing_path = "/share/goa-tz/people_detection/eval/eval_tool_files/timing";
-  //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/eval/eval_tool_files/classified_output";
+  //std::string path = "/home/tom/git/care-o-bot/cob_people_perception/ipa_PeopleDetector/debug/eval/eval_tool_files/classified_output";
   std::ofstream os(path.c_str() );
   std::ofstream probabilities_os(probabilities_path.c_str() );
   std::ofstream timing_os(timing_path.c_str(),std::ofstream::app );
@@ -391,7 +428,6 @@ int main(int argc, const char *argv[])
   //EFF->loadModelFromFile("/share/goa-tz/people_detection/debug/rdata.xml",true);
 
 
-  SubspaceAnalysis::FaceRecognizer* EFF_depth=new SubspaceAnalysis::FaceRecognizer();
   //if(use_xyz)
   //{
   //EFF_depth->trainModel(dm_vec,label_vec,ss_dim,method,true,false);
@@ -409,28 +445,18 @@ int main(int argc, const char *argv[])
   cv::Mat coeff_EFF;
   double DFFS_EFF;
   cv::Mat probabilities;
-  if(method==SubspaceAnalysis::METH_LDA2D || method==SubspaceAnalysis::METH_PCA2D)
-  {
-  std::vector<cv::Mat> coeff_EFF_vec;
-  EFF->projectToSubspace2D(probe,coeff_EFF_vec,DFFS_EFF);
-  EFF->classify(coeff_EFF_vec[0],classifier,c_EFF,probabilities);
-  }
-  else
-  {
-  EFF->projectToSubspace(probe,coeff_EFF,DFFS_EFF);
-  EFF->classify(coeff_EFF,classifier,c_EFF,probabilities);
-  }
+  EFF->classifyImage(probe,c_EFF,probabilities);
 
   //c_EFF=model->predict(probe);
   //std::cout<<"RGB CLASS"<<c_EFF<<std::endl;
 
-  //For use with depth data
-  int c_EFF_dm;
-  cv::Mat coeff_EFF_dm;
-  double DFFS_EFF_dm;
-  //if(use_xyz)
-  //{
-  cv::Mat probe_dm = probe_dm_vec[i];
+//  //For use with depth data
+//  int c_EFF_dm;
+//  cv::Mat coeff_EFF_dm;
+//  double DFFS_EFF_dm;
+//  //if(use_xyz)
+//  //{
+//  cv::Mat probe_dm = probe_dm_vec[i];
   //EFF_depth->projectToSubspace(probe_dm,coeff_EFF_dm,DFFS_EFF_dm);
   //EFF_depth->classify(coeff_EFF_dm,classifier,c_EFF_dm);
   ////std::cout<<"DM CLASS"<<c_EFF_dm<<std::endl;
@@ -453,7 +479,6 @@ int main(int argc, const char *argv[])
   //EFF->saveModel("/share/goa-tz/people_detection/debug/test.xml");
 
 
-  //SubspaceAnalysis::FaceRecognizer* m2=new SubspaceAnalysis::FaceRecognizer();
 
 
   //m2->loadModel(m1_evec,m1_eval,m1_avg,m1_pmd,label_vec,false);
@@ -473,5 +498,6 @@ int main(int argc, const char *argv[])
     //int predictedLabel = model->predict(testSample);
 
 
+  EFF->saveModel(rpath);
 return 0;
 }
