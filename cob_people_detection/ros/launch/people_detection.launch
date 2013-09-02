@@ -4,7 +4,7 @@
   <!-- parameters -->
   <arg name="camera_namespace" default="cam3d"/>    <!-- top level namespace of the openni camera driver, default for openni driver is camera, for Care-O-bot default is cam3d -->
   <arg name="colorimage_in_topic" default="/$(arg camera_namespace)/rgb/image_color"/>    <!-- very different between openni driver versions, might also be /$(arg camera_namespace)/rgb/image -->
-  <arg name="pointcloud_rgb_in_topic" default="/$(arg camera_namespace)/rgb/points"/>    <!-- very different between openni driver versions, might also be /$(arg camera_namespace)/rgb/image or /$(arg camera_namespace)/depth/points_xyzrgb or /$(arg camera_namespace)/depth_registered/points -->
+  <arg name="pointcloud_rgb_in_topic" default="/$(arg camera_namespace)/depth_registered/points"/>    <!-- very different between openni driver versions, might also be /$(arg camera_namespace)/rgb/image or /$(arg camera_namespace)/depth/points_xyzrgb or /$(arg camera_namespace)/depth_registered/points -->
 
   <arg name="using_nodelets" default="false"/>    <!-- for using people detection with the faster nodelet mode, provide argument true -->
   <arg name="nodelet_manager" default="$(arg camera_namespace)_nodelet_manager"/>    <!-- name of the nodelet manager started by the openni driver, default for the openni driver is camera_nodelet_manager, 
