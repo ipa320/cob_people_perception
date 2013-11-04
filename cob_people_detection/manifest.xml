@@ -1,9 +1,8 @@
 <package>
   <description brief="cob_people_detection">
-    Detects persons through head and face detection and face identification if desired. The results are tracked over time to increase confidence. The system is optimized to be used with a Microsoft Kinect or Asus Xtion Pro Live sensor but could also handle different sensors as long as depth and color images are provided.
-  </description>
+    Detects persons through head and face detection and identifies the detected faces. The results are tracked over time to increase confidence. The system is optimized to be used with a Microsoft Kinect or Asus Xtion Pro Live sensor but could also handle different sensors as long as depth and color images are provided.  </description>
   <author>Richard Bormann</author>
-  <license>LGPL, Fraunhofer IPA</license>
+  <license>LGPL</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/cob_people_detection</url>
 
