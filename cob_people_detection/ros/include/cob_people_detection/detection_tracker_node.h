@@ -128,6 +128,7 @@ protected:
 	bool debug_; ///< enables some debug outputs
 	bool use_people_segmentation_; ///< enables the combination of face detections with the openni people segmentation
 	double face_redetection_time_; ///< timespan during which a face is preserved in the list of tracked faces although it is currently not visible
+	ros::Duration publish_currently_not_visible_detections_timespan_;	///< timespan during which a currently not visible face, which is though preserved in the list of tracked faces, is published as detection (in [0, face_redetection_time])
 	double min_segmented_people_ratio_face_; ///< the minimum area inside the face rectangle found in the color image that has to be covered with positive people segmentation results (from openni_tracker)
 	double min_segmented_people_ratio_head_; ///< the minimum area inside the head rectangle found in the depth image that has to be covered with positive people segmentation results (from openni_tracker)
 	double tracking_range_m_; ///< maximum tracking manhattan distance for a face (in meters), i.e. a face can move this distance between two images and can still be tracked
@@ -135,6 +136,8 @@ protected:
 	double min_face_identification_score_to_publish_; ///< minimum face identification score to publish (0 <= x < max_score), i.e. this score must be exceeded by a label at a detection location before the person detection is published (higher values increase robustness against short misdetections, but consider the maximum possible score max_score w.r.t. the face_identification_score_decay_rate: new_score = (old_score+1)*face_identification_score_decay_rate --> max_score = face_identification_score_decay_rate/(1-face_identification_score_decay_rate))
 	bool fall_back_to_unknown_identification_; ///< if this is true, the unknown label will be assigned for the identification of a person if it has the highest score, otherwise, the last detection of a name will display as label even if there has been a detection of Unknown recently for that face
 	bool display_timing_;
+
+  bool rosbag_mode_;    /// < true if data from a rosbag is used, to ignore deprecated timestamps
 
 public:
 
@@ -166,7 +169,7 @@ public:
 	/// @return Return code.
 	unsigned long removeMultipleInstancesOfLabel();
 
-	unsigned long prepareFacePositionMessage(cob_people_detection_msgs::DetectionArray& face_position_msg_out);
+	unsigned long prepareFacePositionMessage(cob_people_detection_msgs::DetectionArray& face_position_msg_out, ros::Time image_recording_time);
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
 	void inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg);

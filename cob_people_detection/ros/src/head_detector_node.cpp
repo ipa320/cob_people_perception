@@ -125,6 +125,7 @@ HeadDetectorNode::~HeadDetectorNode(void)
 
 void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
 {
+
 //	Timer tim;
 //	tim.start();
 
@@ -132,6 +133,19 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 	cv::Mat depth_image;
 	cv::Mat color_image;
 	convertPclMessageToMat(pointcloud, depth_image, color_image);
+
+//	cv::Mat gray_depth(depth_image.rows, depth_image.cols, CV_32FC1);
+//	for (int v=0; v<depth_image.rows; ++v)
+//		for (int u=0; u<depth_image.cols; ++u)
+//			gray_depth.at<float>(v,u) = depth_image.at<cv::Vec3f>(v,u).val[2];
+//	cv::normalize(gray_depth, gray_depth, 0.f, 1.f, cv::NORM_MINMAX);
+//	cv::imshow("depth image", gray_depth);
+//	char key = cv::waitKey(1000);
+//	if (key == 's')
+//	{
+//		cv::normalize(gray_depth, gray_depth, 0.f, 255.f, cv::NORM_MINMAX);
+//		cv::imwrite("depth_image.png", gray_depth);
+//	}
 
 	// detect heads in the depth image
 	std::vector<cv::Rect> head_bounding_boxes;

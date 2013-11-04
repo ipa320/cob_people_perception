@@ -11,163 +11,174 @@
 
 #include<fstream>
 
+#include<limits>
+
 using namespace cv;
-//constructor for debug mode
-FaceNormalizer::FaceNormalizer(int i_epoch_ctr,bool i_debug,bool i_record_scene,std::string i_dbg_path): epoch_ctr(i_epoch_ctr),
-                                  debug_(i_debug),
-                                  record_scene(i_debug),
-                                  //HOME
-                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
-                                  //IPA
-                                  debug_path_(i_dbg_path),
-                                  kinect(VirtualCamera::KINECT),
-                                  vis_debug_(false)
+
+void FaceNormalizer::init(FNConfig& i_config)
 {
-  this->init();
-}
-FaceNormalizer::FaceNormalizer(FNConfig& config): epoch_ctr(0),
-                                  debug_(false),
-                                  record_scene(false),
-                                  //HOME
-                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
-                                  //IPA
-                                  debug_path_("/share/goa-tz/people_detection/normalization/results/"),
-                                  kinect(VirtualCamera::KINECT),
-                                  vis_debug_(false),
-                                  config_(config)
-{
-  this->init();
-}
-FaceNormalizer::FaceNormalizer(): epoch_ctr(0),
-                                  debug_(false),
-                                  record_scene(false),
-                                  //HOME
-                                  //debug_path_("/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/"),
-                                  //IPA
-                                  debug_path_("/share/goa-tz/people_detection/normalization/results/"),
-                                  kinect(VirtualCamera::KINECT),
-                                  vis_debug_(false)
-{
-  config_.eq_ill=  true;
-  config_.align=   false;
-  config_.resize=  true;
-  config_.cvt2gray=true;
-  this->init();
+  std::string def_classifier_directory=     "/opt/ros/groovy/share/OpenCV/";
+  this->init(def_classifier_directory,"",i_config,0,false,false);
 }
 
+void FaceNormalizer::init(std::string i_classifier_directory,FNConfig& i_config)
+{
+  this->init(i_classifier_directory,"",i_config,0,false,false);
+}
 
+//call initialize function with set default values
+// -> no debug
+// -> no storage of results
+// -> epoch ctr set to zero
+// -> classifier directory set to standard opencv installation dir
 void FaceNormalizer::init()
 {
-  bool home=false;
-  fail_ctr=0;
 
-  std::string eye_r_path,eye_path,eye_l_path,nose_path,mouth_path;
-  if(home)
-  {
-    eye_r_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_righteye.xml";
-    eye_path="/usr/local/share/OpenCV/haarcascades/haarcascade_eye.xml";
-    eye_l_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
-    nose_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
-    mouth_path="/usr/local/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
+  // set default values for face normalization
+  FNConfig def_config;
+  def_config.eq_ill=  true;
+  def_config.align=   false;
+  def_config.resize=  true;
+  def_config.cvt2gray=true;
+  def_config.extreme_illumination_condtions=false;
 
-  }
-  else
-  {
-    // eye_r_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_righteye.xml";
-    // eye_path=    "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
-    // eye_l_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_lefteye.xml";
-    // nose_path=   "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_nose.xml";
-    // mouth_path=  "/opt/ros/fuerte/share/OpenCV/haarcascades/haarcascade_mcs_mouth.xml";
-     eye_r_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_righteye.xml";
-     eye_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-     eye_l_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_lefteye.xml";
-     nose_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_nose.xml";
-     mouth_path="/usr/share/OpenCV-2.3.1/haarcascades/haarcascade_mcs_mouth.xml";
+  std::string def_classifier_directory=   "/opt/ros/groovy/share/OpenCV/"  ;
 
-  }
-  eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
-  eye_r_storage_=cvCreateMemStorage(0);
-
-  eye_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_path.c_str(),0,0,0);
-  eye_storage_=cvCreateMemStorage(0);
-
-  eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
-  eye_l_storage_=cvCreateMemStorage(0);
-
-  nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
-  nose_storage_=cvCreateMemStorage(0);
-
-  mouth_cascade_=(CvHaarClassifierCascade*) cvLoad(mouth_path.c_str(),0,0,0);
-  mouth_storage_=cvCreateMemStorage(0);
+  this->init(def_classifier_directory,"",def_config,0,false,false);
 }
 
 
-FaceNormalizer::~FaceNormalizer(){
-	cvReleaseHaarClassifierCascade(&mouth_cascade_);
-	cvReleaseMemStorage(&mouth_storage_);
+
+void FaceNormalizer::init(std::string i_classifier_directory,std::string i_storage_directory,FNConfig& i_config,int i_epoch_ctr,bool i_debug,bool i_record_scene)
+{
+  classifier_directory_=i_classifier_directory;
+  storage_directory_=   i_storage_directory;
+  config_=              i_config;
+  epoch_ctr_=            i_epoch_ctr;
+  debug_=               i_debug;
+  record_scene_=        i_record_scene;
+
+  if (config_.align)
+  {
+    std::string eye_r_path,eye_path,eye_l_path,nose_path,mouth_path;
+    eye_r_path=    classifier_directory_+ "haarcascades/haarcascade_mcs_righteye.xml";
+    eye_l_path=    classifier_directory_+ "haarcascades/haarcascade_mcs_lefteye.xml";
+    nose_path=     classifier_directory_+ "haarcascades/haarcascade_mcs_nose.xml";
+
+    eye_r_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_r_path.c_str(),0,0,0);
+    eye_r_storage_=cvCreateMemStorage(0);
+
+    eye_l_cascade_=(CvHaarClassifierCascade*) cvLoad(eye_l_path.c_str(),0,0,0);
+    eye_l_storage_=cvCreateMemStorage(0);
+
+    nose_cascade_=(CvHaarClassifierCascade*) cvLoad(nose_path.c_str(),0,0,0);
+    nose_storage_=cvCreateMemStorage(0);
+
+    //intrinsics
+    cv::Vec2f focal_length;
+    cv::Point2f pp;
+    focal_length[0]=524.90160178307269 ;
+    focal_length[1]=525.85226379335393;
+    pp.x=312.13543361773458;
+    pp.y=254.73474482242005;
+    cam_mat_=(cv::Mat_<double>(3,3) << focal_length[0] , 0.0 , pp.x  , 0.0 , focal_length[1] , pp.y  , 0.0 , 0.0 , 1);
+    dist_coeffs_=(cv::Mat_<double>(1,5) << 0.25852454045259377, -0.88621162461930914, 0.0012346117737001144, 0.00036377459304633028, 1.0422813597203011);
+  }
+
+  initialized_=true;
+}
+
+
+FaceNormalizer::~FaceNormalizer()
+{
+  if(config_.align)
+  {
 	cvReleaseHaarClassifierCascade(&nose_cascade_);
 	cvReleaseMemStorage(&nose_storage_);
 	cvReleaseHaarClassifierCascade(&eye_l_cascade_);
 	cvReleaseMemStorage(&eye_l_storage_);
 	cvReleaseHaarClassifierCascade(&eye_r_cascade_);
 	cvReleaseMemStorage(&eye_r_storage_);
+  }
 };
 
-void FaceNormalizer::set_norm_face(cv::Size& input_size)
+bool FaceNormalizer::isolateFace(cv::Mat& RGB,cv::Mat& XYZ)
 {
-  f_norm_img_.lefteye.x=0.25     *input_size.width     ;
-  f_norm_img_.lefteye.y=0.25      *input_size.height     ;
+  cv::Vec3f middle_pt=XYZ.at<cv::Vec3f>(round(XYZ.rows/2),round(XYZ.cols/2));
 
-  f_norm_img_.righteye.x=0.75    *input_size.width     ;
-  f_norm_img_.righteye.y=0.25     *input_size.height     ;
+  float background_threshold=middle_pt[2]+0.25;
 
-  f_norm_img_.mouth.x=0.5        *input_size.width     ;
-  f_norm_img_.mouth.y=0.85       *input_size.height     ;
-
-  f_norm_img_.nose.x=0.5         *input_size.width     ;
-  f_norm_img_.nose.y=0.4         *input_size.height     ;
-
-
-  // reset detections
-  f_det_img_.lefteye.x=-1;
-  f_det_img_.lefteye.y=-1;
-
-  f_det_img_.righteye.x=-1;
-  f_det_img_.righteye.y=-1;
-
-  f_det_img_.mouth.x=-1;
-  f_det_img_.mouth.y=-1;
-
-
-  f_det_img_.nose .x=-1;
-  f_det_img_.nose .y=-1;
+  eliminate_background(RGB,XYZ,background_threshold);
+  interpolate_head(RGB, XYZ);
+  return true;
 }
 
-
-bool FaceNormalizer::captureScene( cv::Mat& img,cv::Mat& depth)
+bool FaceNormalizer::recordFace(cv::Mat&RGB,cv::Mat& XYZ)
 {
-  input_size_=cv::Size(img.cols,img.rows);
+  
+  
+  std::string filepath=storage_directory_;
+  filepath.append("scene");
+  save_scene(RGB,XYZ,filepath);
 
-  std::cout<<"SAVING SCENE"<<std::endl;
-  //std::string path_root="/home/tom/git/care-o-bot/cob_people_perception/cob_people_detection/debug/scene";
-  std::string path_root="/share/goa-tz/people_detection/eval/kinect3d_crops/scene";
-  std::string path= path_root;
-  path.append(boost::lexical_cast<std::string>(epoch_ctr));
-  save_scene(depth,img,path);
+}
 
-//  std::vector<cv::Mat> channels_xyz,channels_rgb;
-//  cv::split(depth,channels_xyz);
-//  channels_xyz[2].convertTo(channels_xyz[2],CV_8U,255);
-//  cv::imshow("saving depth...",channels_xyz[2]);
-//
-//  cv::split(img,channels_rgb);
-//  channels_rgb[2].convertTo(channels_rgb[2],CV_8U,255);
-//  cv::imshow("saving rgb...",channels_rgb[2]);
+bool FaceNormalizer::synthFace(cv::Mat &RGB,cv::Mat& XYZ, cv::Size& norm_size,std::vector<cv::Mat>& synth_images)
+{
+  //TODO
+  //maybe deveop a measure for the angles that are now being represented
+  norm_size_=norm_size;
+  input_size_=cv::Size(RGB.cols,RGB.rows);
 
+  bool valid = true; // Flag only returned true if all steps have been completed successfully
 
-  epoch_ctr++;
+  epoch_ctr_++;
 
-  return true;
+  //geometric normalization
+  if(config_.align)
+  {
+    cv::Mat GRAY;
+    cv::cvtColor(RGB,GRAY,CV_RGB2GRAY);
+    //rotate_head(RGB,XYZ);
+    if(!synth_head_poses(GRAY,XYZ,synth_images))
+    {
+      valid=false;
+      // if head synthesis fails push back color image
+      synth_images.push_back(RGB);
+    }
+
+  }
+
+  // process remaining normalization steps with all synthetic images
+  for(int n=0;n<synth_images.size();n++)
+  {
+  if(config_.cvt2gray)
+  {
+    if(synth_images[n].channels()==3)cv::cvtColor(synth_images[n],synth_images[n],CV_RGB2GRAY);
+  }
+
+  if(config_.eq_ill)
+  {
+    // radiometric normalization
+    if(!normalize_radiometry(synth_images[n])) valid=false;
+    if(debug_)dump_img(synth_images[n],"radiometry");
+  }
+
+  if(debug_ && valid)dump_img(synth_images[n],"geometry");
+
+  if(config_.resize)
+  {
+  //resizing
+  normalize_img_type(synth_images[n],synth_images[n]);
+  cv::resize(synth_images[n],synth_images[n],norm_size_,0,0);
+  }
+
+  if(debug_)dump_img(synth_images[n],"size");
+  }
+
+  epoch_ctr_++;
+  return valid;
+
 }
 
 bool FaceNormalizer::normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_size, cv::Mat& DM)
@@ -176,8 +187,7 @@ bool FaceNormalizer::normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_s
   valid =normalizeFace(RGB,XYZ,norm_size);
   XYZ.copyTo(DM);
   //reducing z coordinate and performing whitening transformation
-  processDM(DM,DM);
-  //despeckle<float>(DM,DM);
+  create_DM(DM,DM);
   return valid;
 }
 
@@ -185,35 +195,18 @@ bool FaceNormalizer::normalizeFace( cv::Mat& RGB, cv::Mat& XYZ, cv::Size& norm_s
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_size)
 {
 
-  if(record_scene)
-  {
-    std::cout<<"RECORDING SCENE - NO NORMALIZATION"<<std::endl;
-    captureScene(img,depth);
-    return true;
-  }
-
-  //std::vector<cv::Mat> channels;
-  //cv::split(depth,channels);
-  //channels[2].convertTo(channels[2],CV_8UC1,255);
-  //cv::equalizeHist(channels[2],channels[2]);
-  //cv::imwrite("/home/goa-tz/Desktop/depth.jpg",channels[2]);
-  //cv::imwrite("/home/goa-tz/Desktop/color.jpg",img);
-
   norm_size_=norm_size;
   input_size_=cv::Size(img.cols,img.rows);
 
   bool valid = true; // Flag only returned true if all steps have been completed successfully
 
-  epoch_ctr++;
+  epoch_ctr_++;
 
-  //norm size from input image
-  set_norm_face(input_size_);
-
-  //if(debug_)
-  //{
-  //  cv::Mat temp_mat;
-  //  dump_img(temp_mat,"0_originalRGBD");
-  //}
+  //geometric normalization
+  if(config_.align)
+  {
+    if(!normalize_geometry_depth(img,depth)) valid=false;
+  }
 
   if(config_.cvt2gray)
   {
@@ -224,22 +217,10 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   {
     // radiometric normalization
     if(!normalize_radiometry(img)) valid=false;
-    if(debug_)dump_img(img,"1_radiometry");
+    if(debug_)dump_img(img,"radiometry");
   }
 
-  //geometric normalization
-  if(config_.align)
-  {
-    if(!normalize_geometry_depth(img,depth)) 
-    {
-      valid=false ;
-      fail_ctr++;
-      std::cout<<"FAIL "<< fail_ctr<<std::endl;
-    }
-    
-    if(debug_ && valid)dump_img(img,"1_geometry");
-  }
-
+  if(debug_ && valid)dump_img(img,"geometry");
 
   if(config_.resize)
   {
@@ -248,38 +229,36 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   cv::resize(depth,depth,norm_size_,0,0);
   }
 
-   if(vis_debug_)
-   {
-   cv::imshow("resized",img);
-   cv::waitKey(5);
-   }
+  if(debug_)dump_img(img,"size");
 
+  epoch_ctr_++;
+  normalize_img_type(img,img);
   return valid;
 }
 
 
 bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
 {
+
+  if(!initialized_)
+  {
+    std::cout<<"[FaceNormalizer] not initialized - use init() first"<<std::endl;
+  }
   // set members to current values
   norm_size_=norm_size;
   input_size_=cv::Size(img.cols,img.rows);
 
   bool valid = true; // Flag only returned true if all steps have been completed successfully
 
-  //norm size ffrom input image
-  set_norm_face(input_size_);
-
   if(config_.cvt2gray)
   {
   if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
   }
 
-
   if(config_.align)
-  //geometric normalization
   {
-  if(!normalize_geometry(img,FaceNormalizer::AFFINE)) valid= false;
-  if(debug_)dump_img(img,"1_geometryRGB");
+    std::cout<<"[FaceNormalizer] geometrical normalization only with 3D data"<<std::endl;
+  //geometric normalization for rgb image only disabled
   }
 
   if(config_.eq_ill)
@@ -296,16 +275,16 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Size& norm_size)
   if(debug_)dump_img(img,"2_resized");
   }
 
-  epoch_ctr++;
+  epoch_ctr_++;
+  normalize_img_type(img,img);
   return valid;
 }
 
 bool FaceNormalizer::normalize_radiometry(cv::Mat& img)
 {
-   dct(img);
-    //tan(img);
-  //logAbout(img);
-
+  
+  if(config_.extreme_illumination_condtions==true)GammaDoG(img);
+  else  GammaDCT(img);
   return true;
 }
 
@@ -327,6 +306,7 @@ void FaceNormalizer::extractVChannel( cv::Mat& img,cv::Mat& V)
 
 void FaceNormalizer::subVChannel(cv::Mat& img,cv::Mat& V)
 {
+
    if(debug_)cv::cvtColor(img,img,CV_RGB2HSV);
   else cv::cvtColor(img,img,CV_BGR2HSV);
 
@@ -342,14 +322,8 @@ void FaceNormalizer::subVChannel(cv::Mat& img,cv::Mat& V)
 }
 
 
-void FaceNormalizer::eqHist(cv::Mat& img)
-{
 
-  cv::equalizeHist(img,img);
-
-}
-
-void FaceNormalizer::tan(cv::Mat& input_img)
+void FaceNormalizer::GammaDoG(cv::Mat& input_img)
 {
   cv::Mat img=cv::Mat(input_img.rows,input_img.cols,CV_8UC1);
   if(input_img.channels()==3)
@@ -379,13 +353,12 @@ void FaceNormalizer::tan(cv::Mat& input_img)
   input_img=img;
 }
 
-void FaceNormalizer::dct(cv::Mat& input_img)
+void FaceNormalizer::GammaDCT(cv::Mat& input_img)
 {
   cv::Mat img=cv::Mat(input_img.rows,input_img.cols,CV_8UC1);
   if(input_img.channels()==3)
   {
     extractVChannel(input_img,img);
-    std::cout<<"extracting"<<std::endl;
   }
   else
   {
@@ -393,39 +366,42 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   }
 
   // Dct conversion on logarithmic image
-  cv::resize(img,img,cv::Size(input_img.cols*2,input_img.rows*2));
-  //float mask_arr[]={-1, -1, -1 , -1 , 9 , -1, -1 , -1 ,-1};
-  //cv::Mat mask=cv::Mat(3,3,CV_32FC1,mask_arr);
-  //cv::filter2D(img,img,-1,mask);
+  if( img.rows&2!=0 )
+  {
+    img=img(cv::Rect(0,0,img.cols,img.rows-1));
+    input_img=img(cv::Rect(0,0,img.cols,img.rows-1));
+  }
+  if( img.cols&2!=0 )
+  {
+    img=img(cv::Rect(0,0,img.cols-1,img.rows));
+    input_img=img(cv::Rect(0,0,img.cols-1,img.rows));
+  }
+
   cv::equalizeHist(img,img);
   img.convertTo(img,CV_32FC1);
-  //cv::Scalar mu=cv::mean(img);
   cv::Scalar mu,sigma;
   cv::meanStdDev(img,mu,sigma);
 
   double C_00=log(mu.val[0])*sqrt(img.cols*img.rows);
 
-  //img=img+1;
-  //cv::log(img,img);
 //----------------------------
   cv::pow(img,0.2,img);
+  cv::Mat imgdummy;
+  img.convertTo(imgdummy,CV_8UC1);
   cv::dct(img,img);
 
   //---------------------------------------
   img.at<float>(0,0)=C_00;
-  img.at<float>(0,1)/=50;
-  img.at<float>(0,2)/=50;
+  img.at<float>(0,1)/=10;
+  img.at<float>(0,2)/=10;
 
-  img.at<float>(1,0)/=50;
-  img.at<float>(1,1)/=50;
+  img.at<float>(1,0)/=10;
+  img.at<float>(1,1)/=10;
 
-  //img.at<float>(1,0)=0;
   //--------------------------------------
 
   cv::idct(img,img);
   cv::normalize(img,img,0,255,cv::NORM_MINMAX);
-
-  cv::resize(img,img,cv::Size(img.cols/2,img.rows/2));
 
   img.convertTo(img,CV_8UC1);
   //cv::blur(img,img,cv::Size(3,3));
@@ -440,169 +416,660 @@ void FaceNormalizer::dct(cv::Mat& input_img)
   }
 }
 
-void FaceNormalizer::logAbout(cv::Mat& img)
-{
-  img.convertTo(img,CV_32FC1);
-  float mask_arr[]={-1, -1, -1 , -1 , 9 , -1, -1 , -1 ,-1};
-  cv::Mat mask=cv::Mat(3,3,CV_32FC1,mask_arr);
-  cv::Mat filtered;
-  cv::filter2D(img,filtered,-1,mask);
-  img=img+1;
-  cv::log(img,img);
-  cv::normalize(img,img,0,255,cv::NORM_MINMAX);
-  //img.convertTo(img,CV_8UC1);
-}
 
-
-bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
+bool FaceNormalizer::synth_head_poses_relative(cv::Mat& img,cv::Mat& depth,std::vector<cv::Mat>& synth_images)
 {
-//	if (record_scene)
-//	{
-//		std::cout << "RECORDING SCENE - NO NORMALIZATION" << std::endl;
-//		captureScene(img, depth);
-//		return true;
-//	}
 
   // detect features
   if(!features_from_color(img))return false;
-  //if(debug_)dump_features(img);
-  //dump_features(img);
+  if(debug_)dump_features(img);
 
-   //ident_face();
-   dyn_norm_face();
 
    if(!features_from_depth(depth)) return false;
 
-   Eigen::Vector3f x_new,y_new,z_new,lefteye,nose,righteye,eye_middle;
+   Eigen::Vector3f temp,x_new,y_new,z_new,lefteye,nose,righteye,eye_middle;
 
    nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
    lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
    righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
+   eye_middle=lefteye+((righteye-lefteye)*0.5);
+
    x_new<<f_det_xyz_.righteye.x-f_det_xyz_.lefteye.x,f_det_xyz_.righteye.y-f_det_xyz_.lefteye.y,f_det_xyz_.righteye.z-f_det_xyz_.lefteye.z;
-
-   Eigen::Vector3f nose_flat=nose;
-   nose_flat[2]+=0.03;
-   eye_middle=lefteye+((x_new.dot(nose_flat-lefteye))/(x_new.dot(x_new)))*x_new;
-//   std::cout<<"left"<<lefteye<<std::endl;
-//   std::cout<<"middle"<<eye_middle<<std::endl;
-//   std::cout<<"right"<<righteye<<std::endl;
-  //eye_middle<<(f_det_xyz_.righteye.x+ f_det_xyz_.lefteye.x)*0.5,(f_det_xyz_.righteye.y+ f_det_xyz_.lefteye.y)*0.5,(f_det_xyz_.righteye.z+ f_det_xyz_.lefteye.z)*0.5;
-
-   //y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2]);
-   //y_new<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],0;
-   y_new<<0,1,0;
+   temp<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2]);
+   z_new=x_new.cross(temp);
    x_new.normalize();
-   y_new.normalize();
+   z_new.normalize();
+   y_new=x_new.cross(z_new);
 
-   y_new<<0,1,0;
-   z_new=x_new.cross(y_new);
+   if(y_new[1]<0) y_new*=-1;
 
-   //std::cout<<"new x\n"<<x_new<<std::endl;
-   //std::cout<<"new y\n"<<y_new<<std::endl;
-   //std::cout<<"new z\n"<<z_new<<std::endl;
 
-   //lefteye<<0,0,0;
-   //if(debug_)
-   // {
-   //   std::string path="/share/goa-tz/people_detection/normalization/axes";
-   //   std::ofstream os(path.c_str() );
-   //   os<<x_new[0]<<" "<<x_new[1]<<" "<<x_new[2]<<"\n";
-   //   os<<y_new[0]<<" "<<y_new[1]<<" "<<y_new[2]<<"\n";
-   //   os<<z_new[0]<<" "<<z_new[1]<<" "<<z_new[2]<<"\n";
-
-   //   os.close();
-
-   // }
-   Eigen::Affine3f trafo;
    Eigen::Vector3f origin;
-   origin<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
    origin=nose;
-   //origin[2]=0;
-   //origin<< 0,0,0;
-   //origin[2]=0;
+   //origin=nose+(0.1*z_new);
 
-   pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,origin,trafo);
-   //trafo.setIdentity();
+   Eigen::Affine3f T_norm;
 
-  float roll,pitch,yaw;
-  //pcl::getEulerAngles(trafo,roll,pitch,yaw);
-  //std::cout<<"roll= "<<roll<<"pitch= "<<pitch<<"yaw= "<<yaw<<std::endl;
+   pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,origin,T_norm);
 
 
-   cv::Vec3f* ptr=depth.ptr<cv::Vec3f>(0,0);
+   // viewing offset of normalized perspective
+    double view_offset=0.6;
+    Eigen::Translation<float,3> translation=Eigen::Translation<float,3>(0, 0, view_offset);
+
+    // modify T_norm by angle for nose incline compensation
+    Eigen::AngleAxis<float> roll(-0.78, x_new);
+    //Eigen::AngleAxis<float> roll(-0.78, Eigen::Vector3f(1,0,0));
+    T_norm=roll*T_norm;
+
+
+  Eigen::Affine3f T_rot;
+  cv::Mat workmat=cv::Mat(depth.rows,depth.cols,CV_32FC3);
+  Eigen::AngleAxis<float> alpha;
+
+  cv::Mat dmres;  cv::Mat imgres;
+  cv::Rect roi;
+
+
+
+  //number of poses
+  int N=7;
+  std::cout<<"Synthetic POSES"<<std::endl;
+
+  for(int i=0;i<N;i++)
+  {
+    switch(i)
+    {
+      case 0:
+        {
+          alpha=Eigen::AngleAxis<float>((float)0, x_new);
+          break;
+        }
+      case 1:
+        {
+          alpha=Eigen::AngleAxis<float>((float) 0.1*M_PI, x_new);
+          break;
+        }
+      case 2:
+        {
+          alpha=Eigen::AngleAxis<float>((float)-0.1*M_PI, x_new);
+          break;
+        }
+      case 3:
+        {
+          alpha=Eigen::AngleAxis<float>((float) 0.1*M_PI, y_new);
+          break;
+        }
+      case 4:
+        {
+          alpha=Eigen::AngleAxis<float>((float)-0.1*M_PI, y_new);
+          break;
+        }
+      case 5:
+        {
+          alpha=Eigen::AngleAxis<float>((float) 0.1*M_PI, z_new);
+          break;
+        }
+      case 6:
+        {
+          alpha=Eigen::AngleAxis<float>((float)-0.1*M_PI, z_new);
+          break;
+        }
+    }
+  // ----- artificial head pose rotation
+
+  T_rot.setIdentity();
+  T_rot=alpha*T_rot;
+  // ----- artificial head pose rotation
+
+  dmres=cv::Mat::zeros(480,640,CV_32FC3);
+  if(img.channels()==3)imgres=cv::Mat::zeros(480,640,CV_8UC3);
+  if(img.channels()==1)imgres=cv::Mat::zeros(480,640,CV_8UC1);
+
+
+  depth.copyTo(workmat);
+   cv::Vec3f* ptr=workmat.ptr<cv::Vec3f>(0,0);
    Eigen::Vector3f pt;
-   //double view_offset=2.2;
-   double view_offset=0.5;
-
    for(int i=0;i<img.total();i++)
    {
      pt<<(*ptr)[0],(*ptr)[1],(*ptr)[2];
-     pt=trafo*pt;
-     pt[2]+=view_offset;
+     pt=T_rot*pt;
+     pt=translation*pt;
+
     (*ptr)[0]=pt[0];
     (*ptr)[1]=pt[1];
     (*ptr)[2]=pt[2];
      ptr++;
    }
 
-   lefteye=trafo*lefteye;
-   righteye=trafo*righteye;
-   nose=trafo*nose;
+   nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
+   lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
+   righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
+
+   lefteye=translation*T_rot*T_norm*lefteye;
+   righteye=translation*T_rot*T_norm*righteye;
+   nose=translation*T_rot*T_norm*nose;
 
    //transform norm coordiantes separately to  determine roi
    cv::Point2f lefteye_uv,righteye_uv,nose_uv;
    cv::Point3f lefteye_xyz,righteye_xyz,nose_xyz;
 
-   //std::cout<<"CONTROL OF FEAT POINTS"<<std::endl;
-   //std::cout<<"lefteye\n"<<lefteye<<std::endl;
-   //std::cout<<"righteye\n"<<righteye<<std::endl;
 
-   lefteye_xyz = cv::Point3f(lefteye[0],lefteye[1],lefteye[2]+view_offset);
-   righteye_xyz = cv::Point3f(righteye[0],righteye[1],righteye[2]+view_offset);
-   nose_xyz = cv::Point3f(nose[0],nose[1],nose[2]+view_offset);
+   lefteye_xyz = cv::Point3f(lefteye[0],lefteye[1],lefteye[2]);
+   righteye_xyz = cv::Point3f(righteye[0],righteye[1],righteye[2]);
+   nose_xyz = cv::Point3f(nose[0],nose[1],nose[2]);
 
-   kinect.sample_point(lefteye_xyz,lefteye_uv);
-   kinect.sample_point(righteye_xyz,righteye_uv);
-   kinect.sample_point(nose_xyz,nose_uv);
+   projectPoint(lefteye_xyz,lefteye_uv);
+   projectPoint(righteye_xyz,righteye_uv);
+   projectPoint(nose_xyz,nose_uv);
 
    //determine bounding box
 
-   float s=2.2;
+   float s=2;
    int dim_x=(righteye_uv.x-lefteye_uv.x)*s;
    int off_x=((righteye_uv.x-lefteye_uv.x)*s -(righteye_uv.x-lefteye_uv.x))/2;
-   int off_y=off_x+10;
-   //int dim_y=(nose_uv.y-lefteye_uv.y)*4;
+   int off_y=off_x;
    int dim_y=dim_x;
 
-   //cv::Rect roi=cv::Rect(round(lefteye_uv.x-off_x),round(lefteye_uv.y-off_y),dim_x,dim_y);
-   cv::Rect roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5-20),dim_x,dim_y);
+   roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5),dim_x,dim_y);
+   //roi=cv::Rect(round(lefteye_uv.x-dim_x*0.25),round(lefteye_uv.y-dim_y*0.25),dim_x,dim_y);
+
+   if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
+
+
+
+  projectPointCloud(img,workmat,imgres,dmres);
+
+
+  if(debug_)dump_img(imgres,"uncropped");
+
+  if(roi.height<=1 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows)
+  {
+    std::cout<<"[FaceNormalizer]image ROI out of limits"<<std::endl;
+    return false;
+  }
+  imgres=imgres(roi);
+  imgres=imgres(cv::Rect(2,2,imgres.cols-4,imgres.rows-4));
+
+  synth_images.push_back(imgres);
+  }
+
+  return true;
+}
+bool FaceNormalizer::synth_head_poses(cv::Mat& img,cv::Mat& depth,std::vector<cv::Mat>& synth_images)
+{
+
+  // detect features
+  if(!features_from_color(img))return false;
+  if(debug_)dump_features(img);
+
+
+   if(!features_from_depth(depth)) return false;
+
+   Eigen::Vector3f temp,x_new,y_new,z_new,lefteye,nose,righteye,eye_middle;
+
+   nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
+   lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
+   righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
+   eye_middle=lefteye+((righteye-lefteye)*0.5);
+
+   x_new<<f_det_xyz_.righteye.x-f_det_xyz_.lefteye.x,f_det_xyz_.righteye.y-f_det_xyz_.lefteye.y,f_det_xyz_.righteye.z-f_det_xyz_.lefteye.z;
+   temp<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2]);
+   z_new=x_new.cross(temp);
+   x_new.normalize();
+   z_new.normalize();
+   y_new=x_new.cross(z_new);
+
+   if(y_new[1]<0) y_new*=-1;
+
+
+   Eigen::Vector3f origin;
+   origin=nose;
+   //origin=nose+(0.1*z_new);
+
+   Eigen::Affine3f T_norm;
+
+   pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,origin,T_norm);
+
+
+   // viewing offset of normalized perspective
+    double view_offset=0.8;
+    Eigen::Translation<float,3> translation=Eigen::Translation<float,3>(0, 0, view_offset);
+
+    // modify T_norm by angle for nose incline compensation
+    //Eigen::AngleAxis<float> roll(-0.78, x_new);
+    Eigen::AngleAxis<float> roll(0.00, x_new);
+    //Eigen::AngleAxis<float> roll(-0.78, Eigen::Vector3f(1,0,0));
+    T_norm=roll*T_norm;
+
+
+  Eigen::Affine3f T_rot;
+  Eigen::AngleAxis<float> alpha;
+
+  cv::Mat dmres;
+  cv::Mat imgres;
+  cv::Rect roi;
+
+
+  float  background_thresh=view_offset+0.3;
+  //eliminate_background(img,depth,background_thresh);
+
+  cv::Mat workmat=cv::Mat(depth.rows,depth.cols,CV_32FC3);
+//  // eliminate background
+//  cv::Vec3f* xyz_ptr=depth.ptr<cv::Vec3f>(0,0);
+//  for(int r=0;r<depth.total();r++)
+//  {
+//    if((*xyz_ptr)[2]>background_thresh ||(*xyz_ptr)[2]<0)
+//    {
+//      // set this to invalid value
+//      *xyz_ptr=cv::Vec3f(-1000,-1000,-1000);
+//    }
+//    xyz_ptr++;
+//  }
+
+  //number of poses
+  int N=5;
+  std::cout<<"Synthetic POSES"<<std::endl;
+
+  for(int i=0;i<N;i++)
+  {
+    switch(i)
+    {
+      case 0:
+        {
+          alpha=Eigen::AngleAxis<float>((float)0, Eigen::Vector3f(1,0,0));
+          break;
+        }
+      case 1:
+        {
+          alpha=Eigen::AngleAxis<float>((float) 0.1*M_PI, Eigen::Vector3f(1,0,0));
+          break;
+        }
+      case 2:
+        {
+          alpha=Eigen::AngleAxis<float>((float)-0.1*M_PI, Eigen::Vector3f(1,0,0));
+          break;
+        }
+      case 3:
+        {
+          alpha=Eigen::AngleAxis<float>((float) 0.1*M_PI, Eigen::Vector3f(0,1,0));
+          break;
+        }
+      case 4:
+        {
+          alpha=Eigen::AngleAxis<float>((float)-0.1*M_PI, Eigen::Vector3f(0,1,0));
+          break;
+        }
+      case 5:
+        {
+          alpha=Eigen::AngleAxis<float>((float) 0.1*M_PI, Eigen::Vector3f(0,0,1));
+          break;
+        }
+      case 6:
+        {
+          alpha=Eigen::AngleAxis<float>((float)-0.1*M_PI, Eigen::Vector3f(0,0,1));
+          break;
+        }
+    }
+  // ----- artificial head pose rotation
+
+  T_rot.setIdentity();
+  T_rot=alpha*T_rot;
+  // ----- artificial head pose rotation
+
+  dmres=cv::Mat::zeros(480,640,CV_32FC3);
+  if(img.channels()==3)imgres=cv::Mat::zeros(480,640,CV_8UC3);
+  if(img.channels()==1)imgres=cv::Mat::zeros(480,640,CV_8UC1);
+
+
+  depth.copyTo(workmat);
+   cv::Vec3f* ptr=workmat.ptr<cv::Vec3f>(0,0);
+   Eigen::Vector3f pt;
+   for(int i=0;i<img.total();i++)
+   {
+     pt<<(*ptr)[0],(*ptr)[1],(*ptr)[2];
+     pt=T_norm*pt;
+     pt=T_rot*pt;
+     pt=translation*pt;
+
+    (*ptr)[0]=pt[0];
+    (*ptr)[1]=pt[1];
+    (*ptr)[2]=pt[2];
+     ptr++;
+   }
+
+   nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
+   lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
+   righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
+
+   lefteye=translation*T_rot*T_norm*lefteye;
+   righteye=translation*T_rot*T_norm*righteye;
+   nose=translation*T_rot*T_norm*nose;
+
+   //transform norm coordiantes separately to  determine roi
+   cv::Point2f lefteye_uv,righteye_uv,nose_uv;
+   cv::Point3f lefteye_xyz,righteye_xyz,nose_xyz;
+
+
+   lefteye_xyz = cv::Point3f(lefteye[0],lefteye[1],lefteye[2]);
+   righteye_xyz = cv::Point3f(righteye[0],righteye[1],righteye[2]);
+   nose_xyz = cv::Point3f(nose[0],nose[1],nose[2]);
+
+   projectPoint(lefteye_xyz,lefteye_uv);
+   projectPoint(righteye_xyz,righteye_uv);
+   projectPoint(nose_xyz,nose_uv);
+
+   //determine bounding box
+
+   float s=2;
+   int dim_x=(righteye_uv.x-lefteye_uv.x)*s;
+   int off_x=((righteye_uv.x-lefteye_uv.x)*s -(righteye_uv.x-lefteye_uv.x))/2;
+   int off_y=off_x;
+   int dim_y=dim_x;
+
+   roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5),dim_x,dim_y);
+   //roi=cv::Rect(round(lefteye_uv.x-dim_x*0.25),round(lefteye_uv.y-dim_y*0.25),dim_x,dim_y);
+
+   if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
+
+
+
+  projectPointCloud(img,workmat,imgres,dmres);
+
+
+
+  if(debug_)dump_img(imgres,"uncropped");
+
+  if(roi.height<=1 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows)
+  {
+    std::cout<<"[FaceNormalizer]image ROI out of limits"<<std::endl;
+    return false;
+  }
+  imgres=imgres(roi);
+  imgres=imgres(cv::Rect(2,2,imgres.cols-4,imgres.rows-4));
+
+  synth_images.push_back(imgres);
+  }
+
+  return true;
+}
+bool FaceNormalizer::rotate_head(cv::Mat& img,cv::Mat& depth)
+{
+
+  // detect features
+  if(!features_from_color(img))return false;
+  if(debug_)dump_features(img);
+
+
+   if(!features_from_depth(depth)) return false;
+
+   Eigen::Vector3f temp,x_new,y_new,z_new,lefteye,nose,righteye,eye_middle;
+
+   nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
+   lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
+   righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
+   eye_middle=lefteye+((righteye-lefteye)*0.5);
+
+   x_new<<f_det_xyz_.righteye.x-f_det_xyz_.lefteye.x,f_det_xyz_.righteye.y-f_det_xyz_.lefteye.y,f_det_xyz_.righteye.z-f_det_xyz_.lefteye.z;
+   temp<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2]);
+   z_new=x_new.cross(temp);
+   x_new.normalize();
+   z_new.normalize();
+   y_new=x_new.cross(z_new);
+
+   if(y_new[1]<0) y_new*=-1;
+
+
+   Eigen::Vector3f origin;
+   origin=nose;
+   //origin=nose+(0.1*z_new);
+
+   Eigen::Affine3f T_norm;
+   std::cout<<"X-Axis:\n "<<x_new<<std::endl;
+   std::cout<<"Y-Axis:\n "<<y_new<<std::endl;
+   std::cout<<"Z-Axis:\n "<<z_new<<std::endl;
+
+   pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,origin,T_norm);
+
+
+   // viewing offset of normalized perspective
+    double view_offset=0.6;
+    Eigen::Translation<float,3> translation=Eigen::Translation<float,3>(0, 0, view_offset);
+
+    // modify T_norm by angle for nose incline compensation
+    Eigen::AngleAxis<float> roll(0.0, x_new);
+    //Eigen::AngleAxis<float> roll(-0.78, x_new);
+    T_norm=roll*T_norm;
+
+
+  Eigen::Affine3f T_rot;
+  cv::Mat workmat=cv::Mat(depth.rows,depth.cols,CV_32FC3);
+  Eigen::AngleAxis<float> alpha;
+
+  cv::Mat dmres;  cv::Mat imgres;
+  cv::Rect roi;
+  for(int i=0;i<60;i++)
+  {
+  // ----- artificial head pose rotation
+  if(i<20)alpha=Eigen::AngleAxis<float>((float)i*0.1*M_PI, Eigen::Vector3f(1,0,0));
+  else if(i>=20&&i<40)alpha=Eigen::AngleAxis<float>(((float)i-20)*0.1*M_PI, Eigen::Vector3f(0,1,0));
+  else if(i>=40&&i<=60)alpha=Eigen::AngleAxis<float> (((float)i-40)*0.1*M_PI, Eigen::Vector3f(0,0,1));
+
+    T_rot.setIdentity();
+  T_rot=alpha*T_rot;
+  // ----- artificial head pose rotation
+
+  dmres=cv::Mat::zeros(480,640,CV_32FC3);
+  if(img.channels()==3)imgres=cv::Mat::zeros(480,640,CV_8UC3);
+  if(img.channels()==1)imgres=cv::Mat::zeros(480,640,CV_8UC1);
+
+
+  depth.copyTo(workmat);
+   cv::Vec3f* ptr=workmat.ptr<cv::Vec3f>(0,0);
+   Eigen::Vector3f pt;
+   for(int i=0;i<img.total();i++)
+   {
+
+     pt<<(*ptr)[0],(*ptr)[1],(*ptr)[2];
+     pt=T_norm*pt;
+     pt=T_rot*pt;
+     pt=translation*pt;
+
+    (*ptr)[0]=pt[0];
+    (*ptr)[1]=pt[1];
+    (*ptr)[2]=pt[2];
+     ptr++;
+   }
+
+   nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
+   lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
+   righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
+
+   lefteye=translation*T_rot*T_norm*lefteye;
+   righteye=translation*T_rot*T_norm*righteye;
+   nose=translation*T_rot*T_norm*nose;
+
+   //transform norm coordiantes separately to  determine roi
+   cv::Point2f lefteye_uv,righteye_uv,nose_uv;
+   cv::Point3f lefteye_xyz,righteye_xyz,nose_xyz;
+
+
+   lefteye_xyz = cv::Point3f(lefteye[0],lefteye[1],lefteye[2]);
+   righteye_xyz = cv::Point3f(righteye[0],righteye[1],righteye[2]);
+   nose_xyz = cv::Point3f(nose[0],nose[1],nose[2]);
+
+   projectPoint(lefteye_xyz,lefteye_uv);
+   projectPoint(righteye_xyz,righteye_uv);
+   projectPoint(nose_xyz,nose_uv);
+
+   //determine bounding box
+
+   float s=2;
+   int dim_x=(righteye_uv.x-lefteye_uv.x)*s;
+   int off_x=((righteye_uv.x-lefteye_uv.x)*s -(righteye_uv.x-lefteye_uv.x))/2;
+   int off_y=off_x;
+   int dim_y=dim_x;
+
+   //roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5),dim_x,dim_y);
+   roi=cv::Rect(round(lefteye_uv.x-dim_x*0.25),round(lefteye_uv.y-dim_y*0.25),dim_x,dim_y);
+
+   if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
+
+
+   //filter out background
+
+  
+
+  projectPointCloud(img,workmat,imgres,dmres);
+  //TODO temporary
+  // add debug oiints
+  cv::circle(imgres,nose_uv,5,cv::Scalar(255,255,255),-1,8);
+  cv::circle(imgres,lefteye_uv,5,cv::Scalar(255,255,255),-1,8);
+  cv::circle(imgres,righteye_uv,5,cv::Scalar(255,255,255),-1,8);
+  cv::imshow("FULL",imgres);
+
+  int key;
+  key=cv::waitKey(200);
+  if(key ==1048608)
+  {
+    std::cout<<"PAUSED--confirm usage with ENTER - continue with other key"<<std::endl;
+    int enter;
+    enter=cv::waitKey(0);
+    if(enter==1048586)
+    {
+      std::cout<<"ENTER-- using current view for normalization"<<std::endl;
+      break;
+    }
+    else
+    {
+      std::cout<<"CONTINUE"<<std::endl;
+    }
+  }
+  }
+
+
+
+  if(debug_)dump_img(imgres,"uncropped");
+
+  if(roi.height<=1 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows)
+  {
+    std::cout<<"[FaceNormalizer]image ROI out of limits"<<std::endl;
+    return false;
+  }
+  imgres(roi).copyTo(img);
+  //TODO TEMPorary swithc ogg
+  dmres(roi).copyTo(depth);
+  //despeckle<unsigned char>(img,img);
+  //only take central region
+  img=img(cv::Rect(2,2,img.cols-4,img.rows-4));
+
+  return true;
+}
+bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
+{
+
+  // detect features
+  if(!features_from_color(img))return false;
+  if(debug_)dump_features(img);
+
+
+   if(!features_from_depth(depth)) return false;
+
+   Eigen::Vector3f temp,x_new,y_new,z_new,lefteye,nose,righteye,eye_middle;
+
+   nose<<f_det_xyz_.nose.x,f_det_xyz_.nose.y,f_det_xyz_.nose.z;
+   lefteye<<f_det_xyz_.lefteye.x,f_det_xyz_.lefteye.y,f_det_xyz_.lefteye.z;
+   righteye<<f_det_xyz_.righteye.x,f_det_xyz_.righteye.y,f_det_xyz_.righteye.z;
+   eye_middle=lefteye+((righteye-lefteye)*0.5);
+
+   x_new<<f_det_xyz_.righteye.x-f_det_xyz_.lefteye.x,f_det_xyz_.righteye.y-f_det_xyz_.lefteye.y,f_det_xyz_.righteye.z-f_det_xyz_.lefteye.z;
+   temp<<f_det_xyz_.nose.x-eye_middle[0],f_det_xyz_.nose.y-eye_middle[1],(f_det_xyz_.nose.z-eye_middle[2]);
+   z_new=x_new.cross(temp);
+   x_new.normalize();
+   z_new.normalize();
+   y_new=x_new.cross(z_new);
+
+   if(y_new[1]<0) y_new*=-1;
+
+   Eigen::Vector3f nose_flat=nose;
+   nose_flat[2]+=0.03;
+
+
+   Eigen::Vector3f origin;
+   origin=nose;
+
+   Eigen::Affine3f T_norm;
+
+   pcl::getTransformationFromTwoUnitVectorsAndOrigin(y_new,z_new,origin,T_norm);
+
+
+   // viewing offset of normalized perspective
+    double view_offset=0.8;
+    Eigen::Translation<float,3> translation=Eigen::Translation<float,3>(0, 0, view_offset);
+
+    // modify T_norm by angle for nose incline compensation
+    Eigen::AngleAxis<float> roll(-0.78, x_new);
+    //Eigen::AngleAxis<float> roll(0.0, x_new);
+    T_norm=translation*roll*T_norm;
+
+   cv::Vec3f* ptr=depth.ptr<cv::Vec3f>(0,0);
+   Eigen::Vector3f pt;
+   for(int i=0;i<img.total();i++)
+   {
+
+     pt<<(*ptr)[0],(*ptr)[1],(*ptr)[2];
+     pt=T_norm*pt;
+
+    (*ptr)[0]=pt[0];
+    (*ptr)[1]=pt[1];
+    (*ptr)[2]=pt[2];
+     ptr++;
+   }
+
+   lefteye=T_norm*lefteye;
+   righteye=T_norm*righteye;
+   nose=T_norm*nose;
+
+   //transform norm coordiantes separately to  determine roi
+   cv::Point2f lefteye_uv,righteye_uv,nose_uv;
+   cv::Point3f lefteye_xyz,righteye_xyz,nose_xyz;
+
+
+   lefteye_xyz = cv::Point3f(lefteye[0],lefteye[1],lefteye[2]);
+   righteye_xyz = cv::Point3f(righteye[0],righteye[1],righteye[2]);
+   nose_xyz = cv::Point3f(nose[0],nose[1],nose[2]);
+
+   projectPoint(lefteye_xyz,lefteye_uv);
+   projectPoint(righteye_xyz,righteye_uv);
+   projectPoint(nose_xyz,nose_uv);
+
+   //determine bounding box
+   float s=3.3;
+   int dim_x=(righteye_uv.x-lefteye_uv.x)*s;
+   int off_x=((righteye_uv.x-lefteye_uv.x)*s -(righteye_uv.x-lefteye_uv.x))/2;
+   int off_y=off_x;
+   int dim_y=dim_x;
+
+   cv::Rect roi=cv::Rect(round(nose_uv.x-dim_x*0.5),round(nose_uv.y-dim_y*0.5),dim_x,dim_y);
+
+   if(img.channels()==3)cv::cvtColor(img,img,CV_RGB2GRAY);
 
   cv::Mat imgres;
   if(img.channels()==3)imgres=cv::Mat::zeros(480,640,CV_8UC3);
   if(img.channels()==1)imgres=cv::Mat::zeros(480,640,CV_8UC1);
   cv::Mat dmres=cv::Mat::zeros(480,640,CV_32FC3);
 
-  kinect.sample_pc(depth,img,imgres,dmres);
-  //cv::imshow("img",imgres);
-  //cv::waitKey(0);
+  projectPointCloud(img,depth,imgres,dmres);
+  if(debug_)dump_img(imgres,"uncropped");
 
-  //TODO
-  if(roi.height<=0 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows) return false;
-
- // std::cout<<"imgres "<<imgres.rows<<" "<<imgres.cols<<std::endl;
- // std::cout<<"depthres "<<dmres.rows<<" "<<dmres.cols<<std::endl;
-
- // std::cout<<"img "<<img.rows<<" "<<img.cols<<std::endl;
- // std::cout<<"depth "<<depth.rows<<" "<<depth.cols<<std::endl;
- // std::cout<<"roi:  "<<roi.x<<" "<<roi.y<<" "<<roi.height<<" "<<roi.width<<" "<<depth.cols<<std::endl;
-
+  if(roi.height<=1 ||roi.width<=0 || roi.x<0 || roi.y<0 ||roi.x+roi.width >imgres.cols || roi.y+roi.height>imgres.rows)
+  {
+    std::cout<<"[FaceNormalizer]image ROI out of limits"<<std::endl;
+    return false;
+  }
   imgres(roi).copyTo(img);
   dmres(roi).copyTo(depth);
-//imgres.copyTo(img);
-//dmres.copyTo(depth);
-
   despeckle<unsigned char>(img,img);
-  cv::blur(img,img,cv::Size(3,3));
   //only take central region
   img=img(cv::Rect(2,2,img.cols-4,img.rows-4));
 
@@ -610,76 +1077,30 @@ bool FaceNormalizer::normalize_geometry_depth(cv::Mat& img,cv::Mat& depth)
 }
 
 
-bool FaceNormalizer::normalize_geometry(cv::Mat& img,FaceNormalizer::TRAFO model)
-{
-  return true;
-
-//  // detect features
-//  if(!features_from_color(img))return false;
-//  //if(debug_)dump_features(img);
-//  dump_features(img);
-//  dyn_norm_face();
-//
-//
-//  //calculate transformation
-//   cv::Mat trafo(2,3,CV_32FC1);
-//   cv::Mat warped = cv::Mat(img.rows,img.cols,img.type());
-//  switch (model)
-//  {
-//    case FaceNormalizer::AFFINE:
-//      {
-//   get_transform_affine(trafo);
-//   cv::warpAffine(img,warped,trafo,cv::Size(img.cols,img.rows),cv::INTER_LINEAR,cv::BORDER_CONSTANT,cv::Scalar(100,100,100));
-//   cv::resize(warped,warped,norm_size_);
-//   break;
-//      }
-//    case FaceNormalizer::PERSPECTIVE:
-//      {
-//   get_transform_perspective(trafo);
-//   cv::warpPerspective(img,warped,trafo,norm_size_ );
-//   break;
-//      }
-// }
-//
-//
-//  warped.copyTo(img);
-//
-//  return true;
-}
 
 bool FaceNormalizer::features_from_color(cv::Mat& img_color)
 {
   if(!detect_feature(img_color,f_det_img_.nose,FACE::NOSE))
   {
-    //if(debug_)std::cout<<"no nose"<<std::endl;
-    std::cout<<"no nose"<<std::endl;
+    std::cout<<"[FaceNormalizer] detected no nose"<<std::endl;
     f_det_img_.nose.x=round(img_color.cols*0.5);
     f_det_img_.nose.y=round(img_color.rows*0.5);
     return false;
   }
   if(!detect_feature(img_color,f_det_img_.lefteye,FACE::LEFTEYE))
   {
-    //if(debug_)std::cout<<"no eye_l"<<std::endl;
-    std::cout<<"no eye_l"<<std::endl;
+    std::cout<<"[FaceNormalizer] detected no eye_l"<<std::endl;
      return false;
   }
   if(!detect_feature(img_color,f_det_img_.righteye,FACE::RIGHTEYE))
   {
-    std::cout<<"no eye_r"<<std::endl;
-    //if(debug_)std::cout<<"no eye_r"<<std::endl;
+    std::cout<<"[FaceNormalizer] detected no eye_r"<<std::endl;
      return false;
   }
-  //if(!detect_feature(img_color,f_det_img_.mouth,FACE::MOUTH))
-  //{
-  //  //if(debug_)std::cout<<"no mouth"<<std::endl;
-  //  std::cout<<"no mouth"<<std::endl;
-  //   return false;
-  //}
-
 
   if(debug_)
   {
-    std::cout<<"detected image features:\n";
+    std::cout<<"[FaceNormalizer] detected detected image features:\n";
     std::cout<<"detected lefteye "<<f_det_img_.lefteye.x<<" - " << f_det_img_.lefteye.y<<std::endl;
     std::cout<<"detected righteye "<<f_det_img_.righteye.x<<" - " << f_det_img_.righteye.y<<std::endl;
     std::cout<<"detected nose "<<f_det_img_.nose.x<<" - " << f_det_img_.nose.y<<std::endl;
@@ -698,7 +1119,7 @@ bool FaceNormalizer::features_from_depth(cv::Mat& depth)
 
   if(debug_)
   {
-    std::cout<<"Coordinates of features in pointcloud:"<<std::endl;
+    std::cout<<"[FaceNormalizer] detected Coordinates of features in pointcloud:"<<std::endl;
     std::cout<<"LEFTEYE: "<<f_det_xyz_.lefteye.x<<" "<<f_det_xyz_.lefteye.y<<" "<<f_det_xyz_.lefteye.z<<std::endl;
     std::cout<<"RIGTHEYE: "<<f_det_xyz_.righteye.x<<" "<<f_det_xyz_.righteye.y<<" "<<f_det_xyz_.righteye.z<<std::endl;
     std::cout<<"NOSE: "<<f_det_xyz_.nose.x<<" "<<f_det_xyz_.nose.y<<" "<<f_det_xyz_.nose.z<<std::endl;
@@ -709,7 +1130,7 @@ bool FaceNormalizer::features_from_depth(cv::Mat& depth)
   return true;
 }
 
-bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE type)
+bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::FEATURE_TYPE type)
 {
 
   //  determine scale of search pattern
@@ -773,88 +1194,21 @@ bool FaceNormalizer::detect_feature(cv::Mat& img,cv::Point2f& coords,FACE::TYPE 
 }
 
 
-void FaceNormalizer::dyn_norm_face()
-{
-  //measured values x
-
-  //eye base
-  cv::Vec2f base=(cv::Vec2f)f_det_img_.righteye-(cv::Vec2f)f_det_img_.lefteye;
-  cv::normalize(base,base);
-  double a=cv::norm((cv::Vec2f)f_det_img_.lefteye,(cv::Vec2f)f_det_img_.righteye,cv::NORM_L2);
-  cv::Vec2f dummy=(cv::Vec2f)f_det_img_.lefteye+(a*0.5*base);
-
-  double b =cv::norm(dummy,(cv::Vec2f)f_det_img_.nose,cv::NORM_L2);
-  double c=cv::norm((cv::Vec2f)f_det_img_.nose,(cv::Vec2f)f_det_img_.mouth,cv::NORM_L2);
-
-  double s1=a/b;
-  double s2=b/c;
-
-  //norm values
-  f_norm_img_.nose.y=f_norm_img_.lefteye.y+(f_norm_img_.righteye.x-f_norm_img_.lefteye.x)/s1;
-  //f_norm_img_.mouth.y=f_norm_img_.nose.y+(f_norm_img_.nose.y-f_norm_img_.lefteye.y)/s2;
-
-
-  return;
-}
-
-void FaceNormalizer::ident_face()
-{
-  f_norm_img_.lefteye=f_det_img_.lefteye;
-  f_norm_img_.righteye=f_det_img_.righteye;
-  //f_norm_img_.mouth=f_det_img_.mouth;
-  f_norm_img_.nose=f_det_img_.nose;
-}
-
-
-void FaceNormalizer::get_transform_perspective(cv::Mat& trafo)
-{
-  cv::Point2f src[4],dst[4];
-
-  src[0]=Point2f(f_det_img_.lefteye.x,f_det_img_.lefteye.y);
-  src[1]=Point2f(f_det_img_.righteye.x,f_det_img_.righteye.y);
-  src[2]=Point2f(f_det_img_.mouth.x,f_det_img_.mouth.y);
-  src[3]=Point2f(f_det_img_.nose.x,f_det_img_.nose.y);
-
-  dst[0]=Point2f(f_norm_img_.lefteye.x,f_norm_img_.lefteye.y);
-  dst[1]=Point2f(f_norm_img_.righteye.x,f_norm_img_.righteye.y);
-  dst[2]=Point2f(f_norm_img_.mouth.x,f_norm_img_.mouth.y);
-  dst[3]=Point2f(f_norm_img_.nose.x,f_norm_img_.nose.y);
-
-  trafo=cv::getPerspectiveTransform(src,dst);
-}
-
-void FaceNormalizer::get_transform_affine(cv::Mat& trafo)
-{
-  cv::Point2f src[3],dst[3];
-
-  src[0]=Point2f(f_det_img_.lefteye.x,f_det_img_.lefteye.y);
-  src[1]=Point2f(f_det_img_.righteye.x,f_det_img_.righteye.y);
-  src[2]=Point2f(f_det_img_.mouth.x,f_det_img_.mouth.y);
-
-  dst[0]=Point2f(f_norm_img_.lefteye.x,f_norm_img_.lefteye.y);
-  dst[1]=Point2f(f_norm_img_.righteye.x,f_norm_img_.righteye.y);
-  dst[2]=Point2f(f_norm_img_.mouth.x,f_norm_img_.mouth.y);
-
-  trafo = cv::getAffineTransform(src,dst);
-}
-
-
-void FaceNormalizer:: showImg(cv::Mat& img,std::string window_name)
-{
-  cv::namedWindow(window_name,CV_WINDOW_AUTOSIZE);
-  cv::imshow(window_name,img);
-  cv::waitKey(0);
-}
-
 void FaceNormalizer::dump_img(cv::Mat& data,std::string name)
 {
-  std::string filename =debug_path_;
-  filename.append(boost::lexical_cast<std::string>(epoch_ctr));
+  if(!debug_)
+  {
+
+    std::cout<<"[FaceNomalizer] dump_img() only with set debug flag and path."<<std::endl;
+  }
+  std::string filename =storage_directory_;
+  filename.append(boost::lexical_cast<std::string>(epoch_ctr_));
   filename.append("_");
   filename.append(name);
   filename.append(".jpg");
 
   cv::imwrite(filename,data);
+  return;
 }
 
 void FaceNormalizer::dump_features(cv::Mat& img)
@@ -867,33 +1221,30 @@ void FaceNormalizer::dump_features(cv::Mat& img)
    //cv::circle(img2,cv::Point(f_det_img_.mouth.x,f_det_img_.mouth.y),5,CV_RGB(0,255,0));
    cv::circle(img2,cv::Point(f_det_img_.lefteye.x,f_det_img_.lefteye.y),5,CV_RGB(255,255,0));
    cv::circle(img2,cv::Point(f_det_img_.righteye.x,f_det_img_.righteye.y),5,CV_RGB(255,0,255));
-   dump_img(img2,"2a_features");
-   if(vis_debug_)
-   {
-   cv::imshow("features",img2);
-   cv::waitKey(10);
-   }
+   if(debug_)dump_img(img2,"features");
 }
 
-bool FaceNormalizer::save_scene(cv::Mat& depth,cv::Mat& color,std::string path)
+bool FaceNormalizer::save_scene(cv::Mat& RGB,cv::Mat& XYZ,std::string path)
 {
+  path.append(boost::lexical_cast<std::string>(epoch_ctr_));
+  std::cout<<"[FaceNormalizer]Saving to "<<path<<std::endl;
   std::string depth_path,color_path;
   color_path=path;
   color_path.append(".jpg");
-  std::cout<<"color path=" <<color_path<<std::endl;
   depth_path=path;
   depth_path.append(".xml");
   cv::FileStorage fs(depth_path,FileStorage::WRITE);
-  fs << "depth"<<depth;
-  fs << "color"<<color;
+  fs << "depth"<<XYZ;
+  fs << "color"<<RGB;
   fs.release();
-  imwrite(color_path,color);
+  imwrite(color_path,RGB);
 
   return true;
 }
 
 bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,std::string path)
 {
+  std::cout<<"[FaceNormalizer]Reading from "<<path<<std::endl;
   cv::FileStorage fs(path,FileStorage::READ);
   fs["depth"]>> depth;
   fs["color"]>> color;
@@ -902,85 +1253,261 @@ bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,std::string path)
 }
 
 
-void FaceNormalizer::processDM(cv::Mat& dm_xyz,cv::Mat& dm)
+void FaceNormalizer::create_DM(cv::Mat& XYZ,cv::Mat& DM)
 {
   //reducing to depth ( z - coordinate only)
-  if(dm_xyz.channels()==3)
+  if(XYZ.channels()==3)
   {
   std::vector<cv::Mat> cls;
-  cv::split(dm_xyz,cls);
-  dm=cls[2];
+  cv::split(XYZ,cls);
+  DM=cls[2];
   }
-  else if (dm_xyz.channels()==1)
+  else if (XYZ.channels()==1)
   {
-    dm=dm_xyz;
+    DM=XYZ;
   }
 
   //reduce z values
-  float minval=1000.0;
-  float mean=0.0;
-  int mean_ctr=0;
-  for(int r=0;r<dm.rows;r++)
+  float minval=std::numeric_limits<float>::max();
+  for(int r=0;r<DM.rows;r++)
   {
-    for(int c=0;c<dm.cols;c++)
+    for(int c=0;c<DM.cols;c++)
     {
-      if(dm.at<float>(r,c)!=0)
-      {
-        mean+=dm.at<float>(r,c);
-        mean_ctr ++;
+      if(DM.at<float>(r,c) < minval &&DM.at<float>(r,c)!=0) minval =DM.at<float>(r,c);
+    }
+  }
+
+  for(int r=0;r<DM.rows;r++)
+  {
+    for(int c=0;c<DM.cols;c++)
+    {
+      if(DM.at<float>(r,c)!=0)DM.at<float>(r,c)-=minval;
+      //if(DM.at<float>(r,c)==0)DM.at<float>(r,c)=255;
+    }
+  }
+  //despeckle<float>(DM,DM);
+  cv::medianBlur(DM,DM,5);
+  //cv::blur(DM,DM,cv::Size(3,3));
+}
+
+bool FaceNormalizer::projectPoint(cv::Point3f& xyz,cv::Point2f& uv)
+{
+    std::vector<cv::Point3f> m_xyz;
+    std::vector<cv::Point2f> m_uv;
+    m_xyz.push_back(xyz);
+
+    cv::Vec3f  rot=cv::Vec3f(0.0,0.0,0.0);
+    cv::Vec3f  trans=cv::Vec3f(0.0,0.0,0.0);
+    cv::projectPoints(m_xyz,rot,trans,cam_mat_,dist_coeffs_,m_uv);
+    uv=m_uv[0];
+}
+bool FaceNormalizer::projectPointCloud(cv::Mat& img, cv::Mat& depth, cv::Mat& img_res, cv::Mat& depth_res)
+{
+  int channels=img.channels();
+
+  cv::Mat pc_xyz,pc_rgb;
+  depth.copyTo(pc_xyz);
+  img.copyTo(pc_rgb);
+
+  //make point_list
+  if(pc_xyz.rows>1 && pc_xyz.cols >1)
+  {
+    pc_xyz=pc_xyz.reshape(3,1);
+  }
+
+
+
+
+
+   //project 3d points to virtual camera
+   //TODO temporary triy
+   //cv::Mat pc_proj(pc_xyz.rows*pc_xyz.cols,1,CV_32FC2);
+   cv::Mat pc_proj(pc_xyz.cols,1,CV_32FC2);
+
+   cv::Vec3f rot=cv::Vec3f(0.0,0.0,0.0);
+   cv::Vec3f trans=cv::Vec3f(0.0,0.0,0.0);
+   cv::Size sensor_size=cv::Size(640,480);
+   cv::projectPoints(pc_xyz,rot,trans,cam_mat_,dist_coeffs_,pc_proj);
+
+   cv::Vec3f* pc_ptr=pc_xyz.ptr<cv::Vec3f>(0,0);
+   cv::Vec2f* pc_proj_ptr=pc_proj.ptr<cv::Vec2f>(0,0);
+   int ty,tx;
+
+   if(channels==3)
+   {
+    cv::add(img_res,0,img_res);
+    cv::add(depth_res,0,depth_res);
+   // assign color values to calculated image coordinates
+   cv::Vec3b* pc_rgb_ptr=pc_rgb.ptr<cv::Vec3b>(0,0);
+
+
+   cv::Mat occ_grid=cv::Mat::ones(sensor_size,CV_32FC3);
+   cv::Mat img_cum=cv::Mat::zeros(sensor_size,CV_32FC3);
+   cv::Vec3f occ_inc=cv::Vec3f(1,1,1);
+   for(int i=0;i<pc_proj.rows;++i)
+     {
+       cv::Vec2f txty=*pc_proj_ptr;
+       tx=(int)round(txty[0]);
+       ty=(int)round(txty[1]);
+
+
+       if (ty>1 && tx>1 && ty<sensor_size.height-1 && tx<sensor_size.width-1 && !isnan(ty) && !isnan(tx) )
+       {
+            img_cum.at<cv::Vec3b>(ty,tx)+=(*pc_rgb_ptr);
+            img_cum.at<cv::Vec3f>(ty+1,tx)+=(*pc_rgb_ptr);
+            img_cum.at<cv::Vec3f>(ty-1,tx)+=(*pc_rgb_ptr);
+            img_cum.at<cv::Vec3f>(ty,tx-1)+=(*pc_rgb_ptr);
+            img_cum.at<cv::Vec3f>(ty,tx+1)+=(*pc_rgb_ptr);
+
+            occ_grid.at<cv::Vec3f>(ty,tx)+=  occ_inc;
+            occ_grid.at<cv::Vec3f>(ty+1,tx)+=occ_inc;
+            occ_grid.at<cv::Vec3f>(ty-1,tx)+=occ_inc;
+            occ_grid.at<cv::Vec3f>(ty,tx+1)+=occ_inc;
+            occ_grid.at<cv::Vec3f>(ty,tx-1)+=occ_inc;
+
+            depth_res.at<cv::Vec3f>(ty,tx)=((*pc_ptr));
+       }
+       pc_rgb_ptr++;
+       pc_proj_ptr++;
+       pc_ptr++;
       }
-      if(dm.at<float>(r,c) < minval &&dm.at<float>(r,c)!=0)
-        minval =dm.at<float>(r,c);
-    }
-  }
+   img_cum=img_cum / occ_grid;
+   img_cum.convertTo(img_res,CV_8UC3);
+   }
 
-  mean=(mean/mean_ctr )- minval;
-  for(int r=0;r<dm.rows;r++)
+
+   if(channels==1)
+   {
+   // assign color values to calculated image coordinates
+    cv::add(img_res,0,img_res);
+    cv::add(depth_res,0,depth_res);
+   unsigned char* pc_rgb_ptr=pc_rgb.ptr<unsigned char>(0,0);
+
+   cv::Mat occ_grid=cv::Mat::ones(sensor_size,CV_32FC1);
+   cv::Mat img_cum=cv::Mat::zeros(sensor_size,CV_32FC1);
+   cv::Mat occ_grid2=cv::Mat::ones(sensor_size,CV_32FC1);
+   for(int i=0;i<pc_proj.rows;++i)
+     {
+       cv::Vec2f txty=*pc_proj_ptr;
+       tx=(int)round(txty[0]);
+       ty=(int)round(txty[1]);
+
+
+       if (ty>1 && tx>1 && ty<sensor_size.height-1 && tx<sensor_size.width-1 && !isnan(ty) && !isnan(tx) )
+       {
+            //if((depth_map.at<cv::Vec3f>(ty,tx)[2]==0) || (depth_map.at<cv::Vec3f>(ty,tx)[2]>(*pc_ptr)[2]))
+            //{
+            img_res.at<unsigned char>(ty,tx)=(*pc_rgb_ptr);
+            occ_grid2.at<float>(ty,tx)=0.0;
+            img_cum.at<float>(ty+1,tx)+=(*pc_rgb_ptr);
+            img_cum.at<float>(ty-1,tx)+=(*pc_rgb_ptr);
+            img_cum.at<float>(ty,tx-1)+=(*pc_rgb_ptr);
+            img_cum.at<float>(ty,tx+1)+=(*pc_rgb_ptr);
+            img_cum.at<float>(ty+1,tx+1)+=(*pc_rgb_ptr);
+            img_cum.at<float>(ty-1,tx-1)+=(*pc_rgb_ptr);
+            img_cum.at<float>(ty-1,tx+1)+=(*pc_rgb_ptr);
+            img_cum.at<float>(ty+1,tx-1)+=(*pc_rgb_ptr);
+
+            occ_grid.at<float>(ty,tx)+=  1;
+            occ_grid.at<float>(ty+1,tx)+=1;
+            occ_grid.at<float>(ty-1,tx)+=1;
+            occ_grid.at<float>(ty,tx+1)+=1;
+            occ_grid.at<float>(ty,tx-1)+=1;
+            occ_grid.at<float>(ty+1,tx+1)+=1;
+            occ_grid.at<float>(ty-1,tx-1)+=1;
+            occ_grid.at<float>(ty-1,tx+1)+=1;
+            occ_grid.at<float>(ty+1,tx-1)+=1;
+
+            depth_res.at<cv::Vec3f>(ty,tx)=((*pc_ptr));
+       }
+       pc_rgb_ptr++;
+       pc_proj_ptr++;
+       pc_ptr++;
+      }
+
+   occ_grid=occ_grid;
+   img_cum=img_cum / (occ_grid.mul(occ_grid2)-1);
+   img_cum.convertTo(img_cum,CV_8UC1);
+   cv::add(img_res,img_cum,img_res);
+   }
+
+
+
+//   // refinement
+//
+//   //unsigned char* img_res_ptr=img_res.ptr<unsigned char>(0,0);
+//   cv::Mat img_res2=cv::Mat::zeros(img_res.rows,img_res.cols,img_res.type());
+//   for(int i=1;i<img_res.total();i++)
+//   {
+//     if(img_res.at<unsigned char>(i)==0 && img_res.at<unsigned char>(i-1)!=0)
+//     {
+//       //calc position
+//       cv::Vec2f pos= pc_proj.at<cv::Vec2f>(i-1);
+//       std::cout<<"POSITION"<<pos<<std::endl;
+//
+//       unsigned char val=pc_rgb.at<unsigned char>(round(pos[0]),round(pos[1]+1));
+//       img_res2.at<unsigned char>(i)=val;
+//     }
+//   }
+//
+//   cv::imshow("IMG_RES",img_res2);
+//   cv::waitKey(0);
+//
+   return true;
+}
+
+bool FaceNormalizer::eliminate_background(cv::Mat& RGB,cv::Mat& XYZ,float background_thresh)
+{
+  // eliminate background
+  cv::Vec3f* xyz_ptr=XYZ.ptr<cv::Vec3f>(0,0);
+
+  if(RGB.channels()==3)
   {
-    for(int c=0;c<dm.cols;c++)
+  cv::Vec3b* rgb_ptr=RGB.ptr<cv::Vec3b>(0,0);
+
+  for(int r=0;r<XYZ.total();r++)
+  {
+    if((*xyz_ptr)[2]>background_thresh ||(*xyz_ptr)[2]<0)
     {
-      if(dm.at<float>(r,c)!=0)
-        dm.at<float>(r,c) -=minval;
+      // set this to invalid value
+      *xyz_ptr=cv::Vec3f(-1000,-1000,-1000);
+      *rgb_ptr=cv::Vec3b(0,0,0);
     }
+    xyz_ptr++;
+    rgb_ptr++;
   }
-  despeckle<float>(dm,dm);
-  cv::blur(dm,dm,cv::Size(3,3));
+  }
+
+  else if(RGB.channels()==1)
+  {
+  unsigned char* rgb_ptr=RGB.ptr<unsigned char>(0,0);
+  for(int r=0;r<XYZ.total();r++)
+  {
+    if((*xyz_ptr)[2]>background_thresh ||(*xyz_ptr)[2]<0)
+    {
+      // set this to invalid value
+      *xyz_ptr=cv::Vec3f(-1000,-1000,-1000);
+      *rgb_ptr=0;
+    }
+    xyz_ptr++;
+    rgb_ptr++;
+  }
+  }
 }
 
-
-bool FaceNormalizer::get_feature_correspondences( cv::Mat& img, cv::Mat& depth,std::vector<cv::Point2f>& img_pts,std::vector<cv::Point3f>& obj_pts)
+bool FaceNormalizer::interpolate_head(cv::Mat& RGB, cv::Mat& XYZ)
 {
+  std::vector<cv::Mat> xyz_vec;
+  cv::split(XYZ,xyz_vec);
 
-  features_from_color(img);
-  features_from_depth(depth);
-  img_pts=f_det_img_.as_vector();
-  obj_pts=f_det_xyz_.as_vector();
+  cv::imshow("Z",xyz_vec[2]);
+  cv::imshow("RGB",RGB);
+
+  cv::waitKey(0);
 
 }
-
-bool FaceNormalizer::face_coordinate_system(FACE::FaceFeatures<cv::Point3f>& feat_world,FACE::FaceFeatures<cv::Point3f>& feat_local)
+bool FaceNormalizer::normalize_img_type(cv::Mat& in,cv::Mat& out)
 {
-  cv::Vec3f x_new = cv::Vec3f(feat_world.righteye.x-feat_world.lefteye.x,feat_world.righteye.y-feat_world.lefteye.y,feat_world.righteye.z-feat_world.lefteye.z);
-  cv::Vec3f y_new = cv::Vec3f(feat_world.mouth.x-   feat_world.nose.x,   feat_world.mouth.y-   feat_world.nose.y,0);
-  cv::Vec3f z_new=x_new.cross(y_new);
-
-  cv::normalize(x_new,x_new);
-  cv::normalize(y_new,y_new);
-  cv::normalize(z_new,z_new);
-
-  feat_local.nose.x=0.0;
-  feat_local.nose.y=0.0;
-  feat_local.nose.z=0.0;
-
-  feat_local.lefteye.x= x_new.dot(feat_world.lefteye-feat_world.nose)              ;
-  feat_local.lefteye.y= y_new.dot(feat_world.lefteye-feat_world.nose)             ;
-  feat_local.lefteye.z= z_new.dot(feat_world.lefteye-feat_world.nose)             ;
-
-  feat_local.righteye.x= x_new.dot(feat_world.righteye-feat_world.nose)            ;
-  feat_local.righteye.y= y_new.dot(feat_world.righteye-feat_world.nose)           ;
-  feat_local.righteye.z= z_new.dot(feat_world.righteye-feat_world.nose)           ;
-
-  feat_local.mouth.x= x_new.dot(feat_world.mouth-feat_world.nose)                 ;
-  feat_local.mouth.y= y_new.dot(feat_world.mouth-feat_world.nose)                 ;
-  feat_local.mouth.z= z_new.dot(feat_world.mouth-feat_world.nose)                 ;
+  in.convertTo(out,CV_64FC1);
+  return true;
 }

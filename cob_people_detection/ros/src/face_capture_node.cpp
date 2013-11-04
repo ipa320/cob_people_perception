@@ -75,30 +75,44 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	face_depthmaps_.clear();
 
 	// parameters
-	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
-	int eigenface_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
+	//data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 	bool debug;								// enables some debug outputs
 	bool use_depth;
 
+  bool norm_illumination;
+  bool norm_align;
+  bool norm_extreme_illumination;
+  int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
+
+
+
 	std::cout << "\n---------------------------\nFace Capture Node Parameters:\n---------------------------\n";
-	node_handle_.param("data_directory", data_directory_, data_directory_);
+	if(!node_handle_.getParam("/cob_people_detection/data_storage_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
 	std::cout << "data_directory = " << data_directory_ << "\n";
-	node_handle_.param("eigenface_size", eigenface_size, 100);
-	std::cout << "eigenface_size = " << eigenface_size << "\n";
+	node_handle_.param("norm_size", norm_size, 100);
+	std::cout << "norm_size = " << norm_size << "\n";
+	node_handle_.param("norm_illumination", norm_illumination, true);
+	std::cout << "norm_illumination = " << norm_illumination << "\n";
+	node_handle_.param("norm_align", norm_align, false);
+	std::cout << "norm_align = " << norm_align << "\n";
+	node_handle_.param("norm_extreme_illumination", norm_extreme_illumination, false);
+	std::cout << "norm_extreme_illumination = " << norm_extreme_illumination << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
 	node_handle_.param("use_depth",use_depth,false);
 	std::cout<< "use depth: "<<use_depth<<"\n";
 
+  
 	// face recognizer trainer
-	face_recognizer_trainer_.initTraining(data_directory_, eigenface_size, debug, face_images_, face_depthmaps_, use_depth);
+	face_recognizer_trainer_.initTraining(data_directory_, norm_size,norm_illumination,norm_align,norm_extreme_illumination, debug, face_images_, face_depthmaps_, use_depth);
 
 	// subscribers
 	it_ = new image_transport::ImageTransport(node_handle_);
 //	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
 //	face_recognition_subscriber_.subscribe(node_handle_, "face_position_array", 1);
-	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
-	color_image_sub_.subscribe(*it_, "color_image", 1);
+
+//	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
+//	color_image_sub_.subscribe(*it_, "color_image", 1);
 
 	// actions
 	add_data_server_ = new AddDataServer(node_handle_, "add_data_server", boost::bind(&FaceCaptureNode::addDataServerCallback, this, _1), false);
@@ -109,8 +123,8 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	delete_data_server_->start();
 
 	// input synchronization
-	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
-	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
+//	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
+//	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
 
 	std::cout << "FaceCaptureNode initialized. " << face_images_.size() << " color images and " << face_depthmaps_.size() << " depth images for training loaded.\n" << std::endl;
 }
@@ -136,7 +150,10 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 	current_label_ = goal->label;
 
 	// subscribe to face image topics
-	message_filters::Connection input_callback_connection = sync_input_2_->registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1, _2));
+	//message_filters::Connection input_callback_connection = sync_input_2_->registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1, _2));
+	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
+	face_detection_subscriber_.registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1));
+
 
 	if (goal->capture_mode == MANUAL)
 	{
@@ -193,11 +210,12 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 	}
 
 	// unsubscribe face image topics
-	input_callback_connection.disconnect();
+	//input_callback_connection.disconnect();
+	face_detection_subscriber_.unsubscribe();
 }
 
 /// captures the images
-void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg)//, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
 	//ROS_INFO("inputCallback");
 
@@ -222,9 +240,11 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		// convert color image to cv::Mat
 		cv_bridge::CvImageConstPtr color_image_ptr;
 		cv::Mat color_image,depth_image;
-		convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
+		//convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
+		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_detection_msg->head_detections[headIndex].color_image), voidDeleter);
+		convertColorImageMessageToMat(msgPtr, color_image_ptr, color_image);
 
-		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_detection_msg->head_detections[headIndex].depth_image), voidDeleter);
+		msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_detection_msg->head_detections[headIndex].depth_image), voidDeleter);
 		convertDepthImageMessageToMat(msgPtr, color_image_ptr, depth_image);
 
 		// store image and label
@@ -239,9 +259,7 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		cv::Mat img_color = color_image;
 		cv::Mat img_depth = depth_image;
 		// normalize face
-		//if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_)==ipa_Utils::RET_FAILED)
 		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_,face_depthmaps_)==ipa_Utils::RET_FAILED)
-		//if (face_recognizer_trainer_.addFace(img_color, face_bounding_box, current_label_, face_images_)==ipa_Utils::RET_FAILED)
 		{
 			ROS_WARN("Normalizing failed");
 			return;

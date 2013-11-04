@@ -10,9 +10,6 @@ enable_face_recognition: true
 # string[] e.g. ['albert', 'bernhard', 'caesar']
 #identification_labels_to_recognize: ['albert', 'bernhard', 'caesar']
 
-# desired width and height of the Eigenfaces (=eigenvectors)
-# int
-eigenface_size: 160
 
 # metric for nearest neighbor search in face space: 0 = Euclidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 # int
@@ -20,15 +17,12 @@ metric: 0
 
 # enables some debug outputs
 # bool
-debug: false 
+debug: false
 
-#specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces
+#specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces, 2 = LDA2D, 3 = PCA2D
 # int
-subspace_method: 0
+recognition_method: 2
 
-# specifies classification algorithm: 0 = DIFS, 1 = KNN, 2 = SVM
-# int
-classification_method: 0
 
 # is unknown threshold supposed to be utilized: true = use unknown threshold, false = do not use threshold
 # bool
@@ -40,3 +34,26 @@ use_depth: false
 # display timing information
 # bool
 display_timing: false
+
+# parameters for face image normalization
+
+# dimension of normalized image
+# int
+norm_size: 100
+
+# toggle illumination compensation
+# bool
+norm_illumination: true
+
+# toggle 3D face alignement
+# bool
+norm_align: false
+
+# toggle processing for extreme conditions
+# bool
+norm_extreme_illumination: false
+
+# set dimension of features ( default )
+# bool
+feature_dimension: 15
+
