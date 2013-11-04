@@ -19,6 +19,7 @@
   <depend stack="ros" /> <!-- roslib -->
   <depend stack="ros_comm" /> <!-- std_srvs, std_msgs, roscpp -->
   <depend stack="vision_opencv" /> <!-- opencv2, image_geometry, cv_bridge -->
-  <depend package="openni_camera"/>
+  <depend stack="openni_camera"/>
+  <depend stack="openni_launch"/>
 
 </stack>
