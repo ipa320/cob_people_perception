@@ -81,6 +81,11 @@
 #include <actionlib/server/simple_action_server.h>
 #include <cob_people_detection/loadModelAction.h>
 
+//boost includes
+
+#include<boost/filesystem.hpp>
+
+
 namespace ipa_PeopleDetector {
 
 typedef actionlib::SimpleActionServer<cob_people_detection::loadModelAction> LoadModelServer;
@@ -126,6 +131,7 @@ protected:
 
 	// parameters
 	std::string data_directory_;	///< path to the classifier model
+	std::string classifier_directory_;	///< path to the face feature haarcascades
 	bool enable_face_recognition_;	///< this flag enables or disables the face recognition step
 	bool display_timing_;
 
