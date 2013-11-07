@@ -1,5 +1,7 @@
+Please also have a look at our more detailed documentation at http://wiki.ros.org/cob_people_detection .
+
 1. Start the openni camera driver:
-roslaunch cob_people_detection openni.launch
+roslaunch openni_launch openni.launch
 
 2. Start the face detector and people detector/tracker server:
 roslaunch cob_people_detection people_detection.launch
