@@ -1,5 +1,8 @@
 Please also have a look at our more detailed documentation at http://wiki.ros.org/cob_people_detection .
 
+Quick Start
+-----------
+
 1. Start the openni camera driver:
 roslaunch openni_launch openni.launch
 
