@@ -19,7 +19,7 @@ metric: 0
 # bool
 debug: false
 
-#specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces, 2 = LDA2D, 3 = PCA2D
+#specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces, 2 = LDA2D, 3 = PCA2D (attention: choices 0 and 1 work with a single person in the training data, options 2 and 3 will cause a crash of the program if you do not train at least 2 different people)
 # int
 recognition_method: 2
 
