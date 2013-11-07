@@ -6,7 +6,7 @@ Download the source for the dependency
 Dowload the source for this code
 `git clone https://github.com/ipa320/cob_people_perception.git`
 
-Add your path to your `~/.bashrc`. For example, if you cloned the file into your home directory and make sure it's after the source delaration you made when you installed ROS:
+Add your path to your `~/.bashrc`. For example, if you cloned the file into your home directory and make sure it's after the source declaration you made when you installed ROS:
 `export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$HOME/cob_perception_common`
 
 Then run CMake from within the directory you cloned
