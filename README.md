@@ -15,7 +15,9 @@ At this point your going to have to update your `~/.bashrc` either by closing yo
 Finally, go to the `cob_people_detection` directory by executing the command
 `roscd cob_people_detection`
 and build the package and all of its dependencies by typing
-`rosmake`. If you cannot execute `roscd` then you probably did the step of adding the files to your `~/.bashrc` incorrectly.
+`rosmake`. 
+
+If you cannot execute `roscd` then you probably did the step of adding the files to your `~/.bashrc` incorrectly. If you get an error while trying to run `rosmake` about not having sufficient permissions to make the `build` directory, then switch to the root profile by executing `sudo -s` and the try running `rosmake` again.
 
 To Run
 ======
