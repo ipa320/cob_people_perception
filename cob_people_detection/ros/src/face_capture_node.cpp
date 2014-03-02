@@ -79,10 +79,10 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	bool debug;								// enables some debug outputs
 	bool use_depth;
 
-  bool norm_illumination;
-  bool norm_align;
-  bool norm_extreme_illumination;
-  int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
+	bool norm_illumination;
+	bool norm_align;
+	bool norm_extreme_illumination;
+	int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
 
 
 

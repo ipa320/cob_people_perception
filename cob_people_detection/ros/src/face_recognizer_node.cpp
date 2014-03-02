@@ -86,10 +86,10 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 //	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 //	classifier_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 	// Parameters
-  bool norm_illumination;
-  bool norm_align;
-  bool norm_extreme_illumination;
-  int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
+	bool norm_illumination;
+	bool norm_align;
+	bool norm_extreme_illumination;
+	int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
 	int feature_dimension;			// Number of eigenvectors per person to identify -> controls the total number of eigenvectors
 	double threshold_facespace;				// Threshold to facespace
 	double threshold_unknown;				// Threshold to detect unknown faces
@@ -154,28 +154,28 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh)
 
 	// initialize face recognizer
 	unsigned long return_value=face_recognizer_.init(data_directory_, norm_size,norm_illumination,norm_align,norm_extreme_illumination, metric, debug, identification_labels_to_recognize,recognition_method, feature_dimension, use_unknown_thresh, use_depth);
-  if(return_value==ipa_Utils::RET_FAILED)
-  {
-    ROS_ERROR( "Recognition model not trained");
-  }
-  else if(return_value==ipa_Utils::RET_OK)
-  {
-    std::cout << "Recognition model trained or loaded for:\n";
-    for (unsigned int i = 0; i < identification_labels_to_recognize.size(); i++)
-      std::cout << "   - " << identification_labels_to_recognize[i] << std::endl;
+  if (return_value == ipa_Utils::RET_FAILED)
+	{
+		ROS_ERROR("Recognition model not trained");
+	}
+	else if (return_value == ipa_Utils::RET_OK)
+	{
+		std::cout << "Recognition model trained or loaded for:\n";
+		for (unsigned int i = 0; i < identification_labels_to_recognize.size(); i++)
+			std::cout << "   - " << identification_labels_to_recognize[i] << std::endl;
 
-    // advertise topics
-    face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_recognitions", 1);
+		// advertise topics
+		face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_recognitions", 1);
 
-    // subscribe to head detection topic
-    face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceRecognizerNode::facePositionsCallback, this);
+		// subscribe to head detection topic
+		face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceRecognizerNode::facePositionsCallback, this);
 
-    // launch LoadModel server
-    load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
-    load_model_server_->start();
+		// launch LoadModel server
+		load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
+		load_model_server_->start();
 
-    ROS_INFO( "FaceRecognizerNode initialized.");
-  }
+		ROS_INFO("FaceRecognizerNode initialized.");
+	}
 }
 
 
@@ -435,15 +435,14 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	bool identification_failed = false;
 	if (enable_face_recognition_ == true)
 	{
-
 		// recognize faces
 		//unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images, face_bounding_boxes, identification_labels);
 
-    //timeval t1,t2;
-    //gettimeofday(&t1,NULL);
+		//timeval t1,t2;
+		//gettimeofday(&t1,NULL);
 		unsigned long result_state = face_recognizer_.recognizeFaces(heads_color_images,heads_depth_images, face_bounding_boxes, identification_labels);
-    //gettimeofday(&t2,NULL);
-    //std::cout<<(t2.tv_sec - t1.tv_sec) * 1000.0<<std::endl;
+		//gettimeofday(&t2,NULL);
+		//std::cout<<(t2.tv_sec - t1.tv_sec) * 1000.0<<std::endl;
 		if (result_state == ipa_Utils::RET_FAILED)
 		{
 			ROS_ERROR("FaceRecognizerNode::face_positions_callback: Please load a face recognition model at first.");

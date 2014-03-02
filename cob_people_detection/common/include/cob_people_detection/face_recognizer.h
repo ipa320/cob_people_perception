@@ -79,7 +79,7 @@
 #include "boost/filesystem/path.hpp"
 #include "boost/lexical_cast.hpp"
 
-#include<algorithm>
+#include <algorithm>
 namespace ipa_PeopleDetector {
 
 class FaceRecognizer : public AbstractFaceRecognizer
@@ -95,7 +95,7 @@ public:
 	/// @param data_directory The directory for data files
 	/// @param identification_labels_to_recognize A list of labels of persons that shall be recognized
 	/// @return Return code
-virtual unsigned long init(std::string data_directory, int norm_size,bool norm_illumination,bool norm_align,bool norm_extreme_illumination, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int feature_dim,bool use_unknown_thresh,bool use_depth);
+	virtual unsigned long init(std::string data_directory, int norm_size,bool norm_illumination,bool norm_align,bool norm_extreme_illumination, int metric, bool debug, std::vector<std::string>& identification_labels_to_recognize,int subs_meth,int feature_dim,bool use_unknown_thresh,bool use_depth);
 
 	/// Initialization function for training purposes (only for capturing images, not the training of recognition models).
 	/// Parameters: see class member explanations.
@@ -111,7 +111,7 @@ virtual unsigned long init(std::string data_directory, int norm_size,bool norm_i
 	/// @param label Label of the new face
 	/// @param face_images Vector containing all trained images
 	/// @return Return code
-  virtual unsigned long addFace(cv::Mat& color_image, cv::Mat& depth_image,cv::Rect& face_bounding_box,cv::Rect& head_bounding_box,std::string label, std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps);
+	virtual unsigned long addFace(cv::Mat& color_image, cv::Mat& depth_image,cv::Rect& face_bounding_box,cv::Rect& head_bounding_box,std::string label, std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps);
 
 	/// Updates the labels of a stored person.
 	/// @param old_label The label in the database which shall be replaced by the new label
@@ -184,33 +184,31 @@ protected:
 	/// @param identification_indices_to_train List of labels whose corresponding faces shall be trained. If empty, all available data is used and this list is filled with the labels.
 	/// @return Return code
 	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<std::string>& identification_labels_to_train);
-	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images,std::vector<cv::Mat>& face_depthmaps, std::vector<std::string>& identification_labels_to_train);
+	virtual unsigned long loadTrainingData(std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps, std::vector<std::string>& identification_labels_to_train);
 
-  /// Function can be used to verify the existence of the data directory and created if it does not exist.
-  /// @bief Assertion of the data directory
-  /// @param[in] data_directory Path to top level directory with training data
-  void assertDirectories(boost::filesystem::path& data_directory);
+	/// Function can be used to verify the existence of the data directory and created if it does not exist.
+	/// @bief Assertion of the data directory
+	/// @param[in] data_directory Path to top level directory with training data
+	void assertDirectories(boost::filesystem::path& data_directory);
 
+	// DEPTH
+	std::vector<std::string> depth_str_labels; ///< Vector for class label strings for depth training data
+	std::vector<std::string> depth_str_labels_unique; ///< Vector for class unique label strings for depth training data
+	std::vector<int> depth_num_labels; ///< Number of classes for depth training data
+	//
+	FaceNormalizer face_normalizer_; ///< Face normalizer object
 
-
-// DEPTH
-  std::vector<std::string> depth_str_labels;      ///< Vector for class label strings for depth training data
-  std::vector<std::string> depth_str_labels_unique; ///< Vector for class unique label strings for depth training data
-  std::vector<int> depth_num_labels;                ///< Number of classes for depth training data
-//
-  FaceNormalizer face_normalizer_;                ///< Face normalizer object
-
-  ipa_PeopleDetector::FaceRecognizerBaseClass* eff_depth;     ///< FaceRecognizer for depth maps
-  ipa_PeopleDetector::FaceRecognizerBaseClass* eff_color;     ///< FaceRecognizer for color images
-  std::vector<int> m_label_num ;
-  int             m_rec_method;                   ///< flag for recognition method
-  std::vector<bool> dm_exist;                     ///< vector indicating if depth map exists for corresponding color image
-  bool m_depth_mode;                              ///< flag indicates if depth maps are ignored or used for classification
-  ipa_PeopleDetector::Method m_subs_meth;           ///< recognition method
-  bool m_use_unknown_thresh;                      ///< flag indicates if unknown threshold is used
-unsigned long trainFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff,std::vector<cv::Mat>& data,std::vector<int>& labels);
-//----------------------------------------------------
-//----------------------------------------------------
+	ipa_PeopleDetector::FaceRecognizerBaseClass* eff_depth; ///< FaceRecognizer for depth maps
+	ipa_PeopleDetector::FaceRecognizerBaseClass* eff_color; ///< FaceRecognizer for color images
+	std::vector<int> m_label_num;
+	int m_rec_method; ///< flag for recognition method
+	std::vector<bool> dm_exist; ///< vector indicating if depth map exists for corresponding color image
+	bool m_depth_mode; ///< flag indicates if depth maps are ignored or used for classification
+	ipa_PeopleDetector::Method m_subs_meth; ///< recognition method
+	bool m_use_unknown_thresh; ///< flag indicates if unknown threshold is used
+	unsigned long trainFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* eff, std::vector<cv::Mat>& data, std::vector<int>& labels);
+	//----------------------------------------------------
+	//----------------------------------------------------
 
 	// data
 	std::vector<cv::Mat> m_eigenvectors;			///< Eigenvectors (spanning the face space)
@@ -235,7 +233,7 @@ unsigned long trainFaceRecognition(ipa_PeopleDetector::FaceRecognizerBaseClass* 
 	int m_metric; 								///< metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 	bool m_debug;								///< enables some debug outputs
 
- int m_feature_dim;         ///< Dimension of features that is computed when using Eigenfaces,2D-PCA, 2D-LDA
+	int m_feature_dim;         ///< Dimension of features that is computed when using Eigenfaces,2D-PCA, 2D-LDA
 };
 
 } // end namespace
