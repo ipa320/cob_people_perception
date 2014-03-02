@@ -16,7 +16,6 @@
  *   See <http://www.opensource.org/licenses/bsd-license>
  */
 
-
 #ifndef __HELPER_HPP__
 #define __HELPER_HPP__
 
@@ -29,20 +28,22 @@ using namespace std;
 
 // Removes duplicate elements in a given vector.
 template<typename _Tp>
-inline vector<_Tp> remove_dups(const vector<_Tp>& src) {
-    typedef typename set<_Tp>::const_iterator constSetIterator;
-    typedef typename vector<_Tp>::const_iterator constVecIterator;
-    set<_Tp> set_elems;
-    for (constVecIterator it = src.begin(); it != src.end(); ++it)
-        set_elems.insert(*it);
-    vector<_Tp> elems;
-    for (constSetIterator it = set_elems.begin(); it != set_elems.end(); ++it)
-        elems.push_back(*it);
-    return elems;
+inline vector<_Tp>remove_dups(const vector<_Tp>& src)
+{
+	typedef typename set<_Tp>::const_iterator constSetIterator;
+	typedef typename vector<_Tp>::const_iterator constVecIterator;
+	set<_Tp>set_elems;
+	for (constVecIterator it = src.begin(); it != src.end(); ++it)
+		set_elems.insert(*it);
+	vector<_Tp>elems;
+	for (constSetIterator it = set_elems.begin(); it != set_elems.end(); ++it)
+		elems.push_back(*it);
+	return elems;
 }
 
 // The namespace cv provides opencv related helper functions.
-namespace cv {
+namespace cv
+{
 
 // Checks if a given matrix is symmetric, with an epsilon for floating point
 // matrices (1E-16 by default).
@@ -67,34 +68,37 @@ Mat argsort(InputArray src, bool ascending = true);
 
 // Calculates a histogram for a given integral matrix. The minimum inclusive
 // value (minVal) and maximum inclusive value can be specified (optionally normed).
-Mat histc(InputArray src, int minVal=0, int maxVal=255, bool normed=false);
+Mat histc(InputArray src, int minVal = 0, int maxVal = 255, bool normed = false);
 
 // Reads a sequence from a FileNode::SEQ with type _Tp into a result vector.
 template<typename _Tp>
-inline void readFileNodeList(const FileNode& fn, vector<_Tp>& result) {
-    if (fn.type() == FileNode::SEQ) {
-        for (FileNodeIterator it = fn.begin(); it != fn.end();) {
-            _Tp item;
-            it >> item;
-            result.push_back(item);
-        }
-    }
+inline void readFileNodeList(const FileNode& fn, vector<_Tp>& result)
+{
+	if (fn.type() == FileNode::SEQ)
+	{
+		for (FileNodeIterator it = fn.begin(); it != fn.end();)
+		{
+			_Tp item;
+			it >> item;
+			result.push_back(item);
+		}
+	}
 }
 
 // Writes the a list of given items to a cv::FileStorage.
 template<typename _Tp>
-inline void writeFileNodeList(FileStorage& fs, const string& name,
-        const vector<_Tp>& items) {
-    // typedefs
-    typedef typename vector<_Tp>::const_iterator constVecIterator;
-    // write the elements in item to fs
-    fs << name << "[";
-    for (constVecIterator it = items.begin(); it != items.end(); ++it) {
-        fs << *it;
-    }
-    fs << "]";
+inline void writeFileNodeList(FileStorage& fs, const string& name, const vector<_Tp>& items)
+{
+	// typedefs
+	typedef typename vector<_Tp>::const_iterator constVecIterator;
+	// write the elements in item to fs
+	fs << name << "[";
+	for (constVecIterator it = items.begin(); it != items.end(); ++it)
+	{
+		fs << *it;
+	}
+	fs << "]";
 }
-
 
 // Sorts a given matrix src by column for given indices.
 //
@@ -113,10 +117,10 @@ void sortMatrixRowsByIndices(InputArray src, InputArray indices, OutputArray dst
 Mat sortMatrixRowsByIndices(InputArray src, InputArray indices);
 
 // Turns a vector of matrices into a row matrix.
-Mat asRowMatrix(InputArrayOfArrays src, int rtype, double alpha=1, double beta=0);
+Mat asRowMatrix(InputArrayOfArrays src, int rtype, double alpha = 1, double beta = 0);
 
 // Turns a vector of matrices into a column matrix.
-Mat asColumnMatrix(InputArrayOfArrays src, int rtype, double alpha=1, double beta=0);
+Mat asColumnMatrix(InputArrayOfArrays src, int rtype, double alpha = 1, double beta = 0);
 
 } // //namespace cv
 

@@ -1,202 +1,373 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(cob_people_detection)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  #roslib
+  message_generation
+  std_msgs
+  std_srvs
+  actionlib
+  sensor_msgs
+  actionlib_msgs
+  geometry_msgs
+  stereo_msgs
+  image_transport
+  image_geometry
+  image_view
+  tf
+  nodelet
+  dynamic_reconfigure
+  pcl
+  pcl_ros
+  cv_bridge
+  cob_image_flip
+  cob_vision_utils
+  cob_people_detection_msgs
+  kdl_parser
+  orocos_kdl
+)
 
-rosbuild_find_ros_package(actionlib_msgs)
-include(${actionlib_msgs_PACKAGE_PATH}/cmake/actionbuild.cmake)
-genaction()
+find_package(Boost REQUIRED COMPONENTS signals system filesystem)
 
-rosbuild_init()
+find_package(OpenCV REQUIRED)
 
-#add dynamic reconfigure api
-rosbuild_find_ros_package(dynamic_reconfigure)
-include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
-gencfg()
+#find_package(PCL REQUIRED)
+#message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-#uncomment if you have defined messages
-rosbuild_genmsg()
-#uncomment if you have defined services
-rosbuild_gensrv()
+#######################################
+## Declare ROS messages and services ##
+#######################################
+
+
+## Generate actions in the 'action' folder
+add_action_files(
+  DIRECTORY
+    action
+  FILES
+    addData.action
+    deleteData.action
+    getDetections.action
+    loadModel.action
+    updateData.action
+)
+
+## Generate messages in the 'msg' folder
+#add_message_files(
+#  DIRECTORY
+#    msg
+#  FILES
+#    PositionMeasurement.msg
+#)
+
+## Generate services in the 'srv' folder
+add_service_files(
+  DIRECTORY
+    srv
+  FILES
+    captureImage.srv
+    finishRecording.srv
+    recognitionTrigger.srv
+)
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+    std_msgs
+    std_srvs
+    sensor_msgs
+    actionlib_msgs
+    geometry_msgs
+    stereo_msgs
+    cob_people_detection_msgs
+)
+
+## Generate configurations for dynamic_reconfigure
+generate_dynamic_reconfigure_options(cfg/sensor_message_gateway.cfg)
+
+
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if you package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+  INCLUDE_DIRS
+    ros/include
+    common/include
+  LIBRARIES
+    subspace_analysis
+    decomposition
+    face_normalizer
+    face_recognizer_algorithms
+    sensor_message_gateway_nodelet
+  CATKIN_DEPENDS
+    roscpp
+    #roslib
+    message_runtime
+    std_msgs
+    std_srvs
+    actionlib
+    sensor_msgs
+    actionlib_msgs
+    geometry_msgs
+    stereo_msgs
+    image_transport
+    image_geometry
+    image_view
+    tf
+    nodelet
+    dynamic_reconfigure
+    pcl
+    pcl_ros
+    cv_bridge
+    cob_image_flip
+    cob_vision_utils
+    cob_people_detection_msgs
+    kdl_parser
+    orocos_kdl
+  DEPENDS
+    #PCL
+    OpenCV
+    Boost
+)
+
+###########
+## Build ##
+###########
+
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+# include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(
+  ros/include
+  common/include
+  ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+)
+
+#library for eigenvalue decomposition of asymmetric matrices
+add_library(decomposition
+  common/src/decomposition.cpp
+)
+
+add_library(subspace_analysis
+  common/src/subspace_analysis.cpp
+)
+target_link_libraries(subspace_analysis
+  decomposition
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${OpenCV_LIBS}
+#  ${PCL_LIBRARIES}
+)
+
+add_library(face_normalizer
+  common/src/face_normalizer.cpp
+)
+target_link_libraries(face_normalizer
+  ${catkin_LIBRARIES}
+#  ${Boost_LIBRARIES}
+  ${OpenCV_LIBS}
+#  ${PCL_LIBRARIES}
+)
+
+add_library(face_recognizer_algorithms
+  common/src/face_recognizer_algorithms.cpp
+)
+target_link_libraries(face_recognizer_algorithms
+  subspace_analysis
+)
+
+add_executable(face_rec_alg_test
+  common/src/face_recognizer_algorithms_test.cpp
+)
+target_link_libraries(face_rec_alg_test
+  face_recognizer_algorithms
+  face_normalizer
+)
+
+add_executable(face_norm_test
+  common/src/face_normalizer_test.cpp
+)
+target_link_libraries(face_norm_test
+  face_normalizer
+)
+
+add_executable(face_align_test
+  common/src/face_align_test.cpp
+)
+target_link_libraries(face_align_test
+  face_normalizer
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+)
+
+#add_executable(synth_face_test
+#  common/src/synth_face_test.cpp
+#)
+#target_link_libraries(synth_face_test
+#  face_normalizer
+#  face_recognizer_algorithms
+#)
+
+add_executable(tracking_evaluator
+  ros/src/tracking_eval_node.cpp
+)
+target_link_libraries(tracking_evaluator
+  ${catkin_LIBRARIES}
+#  ${Boost_LIBRARIES}
+  ${OpenCV_LIBS}
+)
+
+add_executable(people_detection_client
+  ros/src/people_detection_action_client.cpp
+)
+target_link_libraries(people_detection_client
+  ${catkin_LIBRARIES}
+)
+   
+add_executable(head_detector_node
+  common/src/head_detector.cpp
+  ros/src/head_detector_node.cpp
+)
+target_link_libraries(head_detector_node
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+)
+    
+add_executable(face_detector_node
+  common/src/face_detector.cpp
+  ros/src/face_detector_node.cpp
+)
+target_link_libraries(face_detector_node
+  ${catkin_LIBRARIES}
+#  ${Boost_LIBRARIES}
+  ${OpenCV_LIBS}
+#  ${PCL_LIBRARIES}
+)
+
+add_executable(face_recognizer_node
+  common/src/abstract_face_recognizer.cpp
+  common/src/face_recognizer.cpp
+  ros/src/face_recognizer_node.cpp
+)
+target_link_libraries(face_recognizer_node
+  face_normalizer
+  face_recognizer_algorithms
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)    
+add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
+
+add_executable(detection_tracker_node
+  ros/src/detection_tracker_node.cpp
+  common/src/munkres/munkres.cpp
+)
+target_link_libraries(detection_tracker_node
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+
+add_executable(people_detection_display_node
+  ros/src/people_detection_display_node.cpp
+)
+target_link_libraries(people_detection_display_node
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+
+add_executable(face_capture_node
+  common/src/abstract_face_recognizer.cpp
+  common/src/face_recognizer.cpp
+  ros/src/face_capture_node.cpp
+)
+target_link_libraries(face_capture_node
+  face_normalizer
+  face_recognizer_algorithms
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+
+add_executable(sensor_message_gateway_node
+  ros/src/sensor_message_gateway_node.cpp
+  ros/src/sensor_message_gateway_main.cpp
+)
+target_link_libraries(sensor_message_gateway_node
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+
+add_library(sensor_message_gateway_nodelet
+  ros/src/sensor_message_gateway_node.cpp
+  ros/src/sensor_message_gateway_nodelet.cpp
+)
+target_link_libraries(sensor_message_gateway_nodelet
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+
+add_executable(coordinator_node
+  ros/src/coordinator_node.cpp
+)
+target_link_libraries(coordinator_node
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+
+# modified openni tracker
+#add_executable(openni_tracker
+#  ros/src/openni_tracker.cpp
+#  ros/src/SceneDrawer.cpp
+#)
+
+
+# set build flags for targets
+set_target_properties(people_detection_client PROPERTIES COMPILE_FLAGS -D__LINUX__)
+set_target_properties(head_detector_node PROPERTIES COMPILE_FLAGS -D__LINUX__)
+set_target_properties(face_detector_node PROPERTIES COMPILE_FLAGS -D__LINUX__)
+set_target_properties(face_recognizer_node PROPERTIES COMPILE_FLAGS -D__LINUX__)
+set_target_properties(detection_tracker_node PROPERTIES COMPILE_FLAGS -D__LINUX__)
+set_target_properties(people_detection_display_node PROPERTIES COMPILE_FLAGS -D__LINUX__)
+set_target_properties(face_capture_node PROPERTIES COMPILE_FLAGS -D__LINUX__)
+set_target_properties(sensor_message_gateway_node PROPERTIES COMPILE_FLAGS -D__LINUX__)
+set_target_properties(sensor_message_gateway_nodelet PROPERTIES COMPILE_FLAGS -D__LINUX__)
+set_target_properties(coordinator_node PROPERTIES COMPILE_FLAGS -D__LINUX__)
+
+# make sure configure headers are built before any node using them
+add_dependencies(people_detection_client ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(head_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(face_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(face_recognizer_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(detection_tracker_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(people_detection_display_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(face_capture_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(sensor_message_gateway_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(sensor_message_gateway_nodelet ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(coordinator_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+add_dependencies(people_detection_client ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(head_detector_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(face_detector_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(face_recognizer_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(detection_tracker_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(people_detection_display_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(face_capture_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(sensor_message_gateway_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(sensor_message_gateway_nodelet ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(coordinator_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(tracking_evaluator ${cob_people_detection_msgs_EXPORTED_TARGETS})
 
 # Check for sse support
-rosbuild_check_for_sse()
+#rosbuild_check_for_sse()
 #set(SSE_FLAGS "-msse2 -mfpmath=sse")
 
-find_package(Boost 1.42.0)
-rosbuild_add_boost_directories()
-
-find_package(PCL)
-message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
-
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
-#rosbuild_add_executable(face_detector
-
-#rosbuild_add_library(color_face_detector
-#                       ros/src/color_face_detection.cpp 
-#                       ros/src/faces.cpp)
-#rosbuild_link_boost(color_face_detector thread)
-
-#rosbuild_add_executable(face_detector
-			#common/src/people_detector.cpp
-			#ros/src/people_detection.cpp)
-
-
-#rosbuild_add_library(face_detector
-#			common/src/people_detector.cpp
-#			ros/src/face_detection.cpp)
-
-#rosbuild_add_library(people_detector
-#			ros/src/people_detection.cpp)
-#add_custom_command(TARGET people_detector POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
-
-#rosbuild_add_library(subspace_analysis
-#  common/src/subspace_analysis.cpp)
-#target_link_libraries(subspace_analysis  opencv_core  opencv_highgui decomposition)
-#rosbuild_link_boost(subspace_analysis system filesystem)
-
-  rosbuild_add_library(subspace_analysis
-    common/src/subspace_analysis.cpp)
-  target_link_libraries(subspace_analysis  opencv_core  opencv_highgui decomposition)
-  rosbuild_link_boost(subspace_analysis system filesystem)
-
-    #library for eigenvalue decomposition of asymmetric matrices
-  rosbuild_add_library(decomposition
-      common/src/decomposition.cpp)
-
-  rosbuild_add_library(face_normalizer
-        common/src/face_normalizer.cpp)
-
-  rosbuild_add_library(face_recognizer_algorithms common/src/face_recognizer_algorithms.cpp)
-  target_link_libraries(face_recognizer_algorithms subspace_analysis)
-
-
-  rosbuild_add_executable(face_rec_alg_test
-      common/src/face_recognizer_algorithms_test.cpp
-      )
-    target_link_libraries(face_rec_alg_test face_recognizer_algorithms face_normalizer )
-
-    
-    rosbuild_add_executable(face_norm_test
-          common/src/face_normalizer_test.cpp
-          )
-        target_link_libraries(face_norm_test face_normalizer )
-    
-    rosbuild_add_executable(face_align_test
-          common/src/face_align_test.cpp
-          )
-        target_link_libraries(face_align_test face_normalizer )
-
-#    rosbuild_add_executable(synth_face_test
-#          common/src/synth_face_test.cpp
-#          )
-#        target_link_libraries(synth_face_test face_normalizer face_recognizer_algorithms)
-
-    rosbuild_add_executable(tracking_evaluator
-          ros/src/tracking_eval_node.cpp
-          )
-    
-    rosbuild_add_executable(people_detection_client
-    			ros/src/people_detection_action_client.cpp)
-    
-    rosbuild_add_executable(head_detector_node
-    			common/src/head_detector.cpp
-    			ros/src/head_detector_node.cpp)
-    add_custom_command(TARGET head_detector_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
-    
-    rosbuild_add_executable(face_detector_node
-    			common/src/face_detector.cpp
-    			ros/src/face_detector_node.cpp)
-    add_custom_command(TARGET face_detector_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
-    
-    rosbuild_add_executable(face_recognizer_node
-    			common/src/abstract_face_recognizer.cpp
-    			common/src/face_recognizer.cpp
-    			ros/src/face_recognizer_node.cpp)
-    target_link_libraries(face_recognizer_node face_normalizer face_recognizer_algorithms)    
-    rosbuild_link_boost(face_recognizer_node filesystem system)
-    add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
-    
-    rosbuild_add_executable(detection_tracker_node
-    			ros/src/detection_tracker_node.cpp
-    			common/src/munkres/munkres.cpp)
-    rosbuild_link_boost(detection_tracker_node signals)
-    
-    rosbuild_add_executable(people_detection_display_node
-    			ros/src/people_detection_display_node.cpp)
-    rosbuild_link_boost(people_detection_display_node signals)
-    
-    rosbuild_add_executable(face_capture_node
-    			common/src/abstract_face_recognizer.cpp
-    			common/src/face_recognizer.cpp
-    			ros/src/face_capture_node.cpp)
-    rosbuild_link_boost(face_capture_node filesystem system signals)
-    target_link_libraries(face_capture_node face_normalizer face_recognizer_algorithms)
-    
-    rosbuild_add_executable(sensor_message_gateway_node
-    			ros/src/sensor_message_gateway_node.cpp
-    			ros/src/sensor_message_gateway_main.cpp)
-    rosbuild_link_boost(sensor_message_gateway_node signals)
-    rosbuild_add_library(sensor_message_gateway_nodelet
-    			ros/src/sensor_message_gateway_node.cpp
-    			ros/src/sensor_message_gateway_nodelet.cpp)
-   rosbuild_link_boost(sensor_message_gateway_nodelet signals)
-
-    rosbuild_add_executable(coordinator_node
-    			ros/src/coordinator_node.cpp)
-    rosbuild_link_boost(coordinator_node signals)
-
-
-
-
-    # modified openni tracker
-    #rosbuild_add_executable(openni_tracker ros/src/openni_tracker.cpp
-    #                                       ros/src/SceneDrawer.cpp)
-
-    #rosbuild_add_executable(ros_face_detector
-    			#common/src/CuiPeopleDetector.cpp
-    			#common/src/PeopleDetector.cpp
-    			#common/src/PeopleDetectorControlFlow.cpp
-    			#common/src/PeopleDetectorMain.cpp)
-
-    # add include search paths
-    INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ros/include
-    		    ${PROJECT_SOURCE_DIR}/common/include)
-
-    #rosbuild_add_compile_flags(face_detector -D__LINUX__)
-    #rosbuild_add_compile_flags(people_detector -D__LINUX__)
-    rosbuild_add_compile_flags(people_detection_client -D__LINUX__)
-    rosbuild_add_compile_flags(head_detector_node -D__LINUX__)
-    rosbuild_add_compile_flags(face_detector_node -D__LINUX__)
-    rosbuild_add_compile_flags(face_recognizer_node -D__LINUX__)
-    rosbuild_add_compile_flags(detection_tracker_node -D__LINUX__)
-    rosbuild_add_compile_flags(people_detection_display_node -D__LINUX__)
-    rosbuild_add_compile_flags(face_capture_node -D__LINUX__)
-    rosbuild_add_compile_flags(sensor_message_gateway_node -D__LINUX__)
-    rosbuild_add_compile_flags(sensor_message_gateway_nodelet -D__LINUX__)
-    rosbuild_add_compile_flags(coordinator_node -D__LINUX__)
-
-# rostest
-#rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_noface_test_diamondback.bag face_detector_noface_test.bag 37f043be780a4511c853379defdd9855)
-#rosbuild_download_test_data(http://pr.willowgarage.com/data/face_detector/face_detector_withface_test_diamondback.bag face_detector_withface_test.bag 59126117e049e69d577b7ee27251a6f8)
-#rosbuild_add_rostest(ros/test/face_detector_true_rtest.xml)
-#rosbuild_add_rostest(ros/test/face_detector_false_rtest.xml)
-
-rosbuild_add_roslaunch_check(ros/launch)
+#rosbuild_add_roslaunch_check(ros/launch)
