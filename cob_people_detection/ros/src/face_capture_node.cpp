@@ -1,71 +1,73 @@
 /*!
-*****************************************************************
-* \file
-*
-* \note
-* Copyright (c) 2012 \n
-* Fraunhofer Institute for Manufacturing Engineering
-* and Automation (IPA) \n\n
-*
-*****************************************************************
-*
-* \note
-* Project name: Care-O-bot
-* \note
-* ROS stack name: cob_people_perception
-* \note
-* ROS package name: cob_people_detection
-*
-* \author
-* Author: Richard Bormann
-* \author
-* Supervised by:
-*
-* \date Date of creation: 07.08.2012
-*
-* \brief
-* functions for capturing face images and storing them to a common database
-*
-*****************************************************************
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*
-* - Redistributions of source code must retain the above copyright
-* notice, this list of conditions and the following disclaimer. \n
-* - Redistributions in binary form must reproduce the above copyright
-* notice, this list of conditions and the following disclaimer in the
-* documentation and/or other materials provided with the distribution. \n
-* - Neither the name of the Fraunhofer Institute for Manufacturing
-* Engineering and Automation (IPA) nor the names of its
-* contributors may be used to endorse or promote products derived from
-* this software without specific prior written permission. \n
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU Lesser General Public License LGPL as
-* published by the Free Software Foundation, either version 3 of the
-* License, or (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU Lesser General Public License LGPL for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License LGPL along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
-*
-****************************************************************/
+ *****************************************************************
+ * \file
+ *
+ * \note
+ * Copyright (c) 2012 \n
+ * Fraunhofer Institute for Manufacturing Engineering
+ * and Automation (IPA) \n\n
+ *
+ *****************************************************************
+ *
+ * \note
+ * Project name: Care-O-bot
+ * \note
+ * ROS stack name: cob_people_perception
+ * \note
+ * ROS package name: cob_people_detection
+ *
+ * \author
+ * Author: Richard Bormann
+ * \author
+ * Supervised by:
+ *
+ * \date Date of creation: 07.08.2012
+ *
+ * \brief
+ * functions for capturing face images and storing them to a common database
+ *
+ *****************************************************************
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer. \n
+ * - Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution. \n
+ * - Neither the name of the Fraunhofer Institute for Manufacturing
+ * Engineering and Automation (IPA) nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission. \n
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License LGPL as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License LGPL for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License LGPL along with this program.
+ * If not, see <http://www.gnu.org/licenses/>.
+ *
+ ****************************************************************/
 
 #include <cob_people_detection/face_capture_node.h>
 
 using namespace ipa_PeopleDetector;
 
 // Prevent deleting memory twice, when using smart pointer
-void voidDeleter(const sensor_msgs::Image* const) {}
+void voidDeleter(const sensor_msgs::Image* const )
+{
+}
 
-FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
-: node_handle_(nh)
+FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh) :
+	node_handle_(nh)
 {
 	it_ = 0;
 	sync_input_2_ = 0;
@@ -76,18 +78,18 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 
 	// parameters
 	//data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
-	bool debug;								// enables some debug outputs
+	bool debug; // enables some debug outputs
 	bool use_depth;
 
 	bool norm_illumination;
 	bool norm_align;
 	bool norm_extreme_illumination;
-	int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
-
+	int norm_size; // Desired width and height of the Eigenfaces (=eigenvectors).
 
 
 	std::cout << "\n---------------------------\nFace Capture Node Parameters:\n---------------------------\n";
-	if(!node_handle_.getParam("/cob_people_detection/data_storage_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
+	if (!node_handle_.getParam("/cob_people_detection/data_storage_directory", data_directory_))
+		std::cout << "PARAM NOT AVAILABLE" << std::endl;
 	std::cout << "data_directory = " << data_directory_ << "\n";
 	node_handle_.param("norm_size", norm_size, 100);
 	std::cout << "norm_size = " << norm_size << "\n";
@@ -99,20 +101,19 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	std::cout << "norm_extreme_illumination = " << norm_extreme_illumination << "\n";
 	node_handle_.param("debug", debug, false);
 	std::cout << "debug = " << debug << "\n";
-	node_handle_.param("use_depth",use_depth,false);
-	std::cout<< "use depth: "<<use_depth<<"\n";
+	node_handle_.param("use_depth", use_depth, false);
+	std::cout << "use depth: " << use_depth << "\n";
 
-  
 	// face recognizer trainer
-	face_recognizer_trainer_.initTraining(data_directory_, norm_size,norm_illumination,norm_align,norm_extreme_illumination, debug, face_images_, face_depthmaps_, use_depth);
+	face_recognizer_trainer_.initTraining(data_directory_, norm_size, norm_illumination, norm_align, norm_extreme_illumination, debug, face_images_, face_depthmaps_, use_depth);
 
 	// subscribers
 	it_ = new image_transport::ImageTransport(node_handle_);
-//	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
-//	face_recognition_subscriber_.subscribe(node_handle_, "face_position_array", 1);
+	//	people_segmentation_image_sub_.subscribe(*it_, "people_segmentation_image", 1);
+	//	face_recognition_subscriber_.subscribe(node_handle_, "face_position_array", 1);
 
-//	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
-//	color_image_sub_.subscribe(*it_, "color_image", 1);
+	//	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
+	//	color_image_sub_.subscribe(*it_, "color_image", 1);
 
 	// actions
 	add_data_server_ = new AddDataServer(node_handle_, "add_data_server", boost::bind(&FaceCaptureNode::addDataServerCallback, this, _1), false);
@@ -123,19 +124,24 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	delete_data_server_->start();
 
 	// input synchronization
-//	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
-//	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
+	//	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
+	//	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
 
 	std::cout << "FaceCaptureNode initialized. " << face_images_.size() << " color images and " << face_depthmaps_.size() << " depth images for training loaded.\n" << std::endl;
 }
 
 FaceCaptureNode::~FaceCaptureNode()
 {
-	if (it_ != 0) delete it_;
-	if (sync_input_2_ != 0) delete sync_input_2_;
-	if (add_data_server_ != 0) delete add_data_server_;
-	if (update_data_server_ != 0) delete update_data_server_;
-	if (delete_data_server_ != 0) delete delete_data_server_;
+	if (it_ != 0)
+		delete it_;
+	if (sync_input_2_ != 0)
+		delete sync_input_2_;
+	if (add_data_server_ != 0)
+		delete add_data_server_;
+	if (update_data_server_ != 0)
+		delete update_data_server_;
+	if (delete_data_server_ != 0)
+		delete delete_data_server_;
 }
 
 void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataGoalConstPtr& goal)
@@ -154,13 +160,12 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 	face_detection_subscriber_.subscribe(node_handle_, "face_detections", 1);
 	face_detection_subscriber_.registerCallback(boost::bind(&FaceCaptureNode::inputCallback, this, _1));
 
-
 	if (goal->capture_mode == MANUAL)
 	{
 		// configure manual recording
 		number_captured_images_ = 0;
-		finish_image_capture_ = false;		// finishes the image recording
-		capture_image_ = false;				// trigger for image capture -> set true by service message
+		finish_image_capture_ = false; // finishes the image recording
+		capture_image_ = false; // trigger for image capture -> set true by service message
 
 		// activate service server for image capture trigger messages and finish
 		service_server_capture_image_ = node_handle_.advertiseService("capture_image", &FaceCaptureNode::captureImageCallback, this);
@@ -175,7 +180,7 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		service_server_finish_recording_.shutdown();
 
 		// save new database status
-		face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
+		face_recognizer_trainer_.saveTrainingData(face_images_, face_depthmaps_);
 
 		// close action
 		cob_people_detection::addDataResult result;
@@ -187,12 +192,12 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 		number_captured_images_ = 0;
 		while (number_captured_images_ < goal->continuous_mode_images_to_capture)
 		{
-			capture_image_ = true;		// trigger for image recording
-			ros::Duration(goal->continuous_mode_delay).sleep();		// wait for a given time until next image can be captured
+			capture_image_ = true; // trigger for image recording
+			ros::Duration(goal->continuous_mode_delay).sleep(); // wait for a given time until next image can be captured
 		}
 
 		// save new database status
-		face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
+		face_recognizer_trainer_.saveTrainingData(face_images_, face_depthmaps_);
 
 		// close action
 		cob_people_detection::addDataResult result;
@@ -225,7 +230,7 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		// check number of detected faces -> accept only exactly one
 		int numberFaces = 0;
 		int headIndex = 0;
-		for (unsigned int i=0; i<face_detection_msg->head_detections.size(); i++)
+		for (unsigned int i = 0; i < face_detection_msg->head_detections.size(); i++)
 		{
 			numberFaces += face_detection_msg->head_detections[i].face_detections.size();
 			if (face_detection_msg->head_detections[i].face_detections.size() == 1)
@@ -239,7 +244,7 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 
 		// convert color image to cv::Mat
 		cv_bridge::CvImageConstPtr color_image_ptr;
-		cv::Mat color_image,depth_image;
+		cv::Mat color_image, depth_image;
 		//convertColorImageMessageToMat(color_image_msg, color_image_ptr, color_image);
 		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(face_detection_msg->head_detections[headIndex].color_image), voidDeleter);
 		convertColorImageMessageToMat(msgPtr, color_image_ptr, color_image);
@@ -248,10 +253,10 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		convertDepthImageMessageToMat(msgPtr, color_image_ptr, depth_image);
 
 		// store image and label
-// merge todo: check whether new coordinate convention (face_bounding box uses coordinates of head and face) hold in this code as well
-//		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
-//		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
-//		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
+		// merge todo: check whether new coordinate convention (face_bounding box uses coordinates of head and face) hold in this code as well
+		//		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
+		//		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
+		//		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
 		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[headIndex].face_detections[0];
 		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[headIndex].head_detection;
 		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
@@ -259,15 +264,15 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		cv::Mat img_color = color_image;
 		cv::Mat img_depth = depth_image;
 		// normalize face
-		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_,face_depthmaps_)==ipa_Utils::RET_FAILED)
+		if (face_recognizer_trainer_.addFace(img_color, img_depth, face_bounding_box, head_bounding_box, current_label_, face_images_, face_depthmaps_) == ipa_Utils::RET_FAILED)
 		{
 			ROS_WARN("Normalizing failed");
 			return;
 		}
 
 		// only after successful recording
-		capture_image_ = false;			// reset trigger for recording
-		number_captured_images_++;		// increase number of captured images
+		capture_image_ = false; // reset trigger for recording
+		number_captured_images_++; // increase number of captured images
 
 		ROS_INFO("Face number %d captured.", number_captured_images_);
 	}
@@ -279,8 +284,7 @@ unsigned long FaceCaptureNode::convertColorImageMessageToMat(const sensor_msgs::
 	try
 	{
 		image_ptr = cv_bridge::toCvShare(image_msg, sensor_msgs::image_encodings::BGR8);
-	}
-	catch (cv_bridge::Exception& e)
+	} catch (cv_bridge::Exception& e)
 	{
 		ROS_ERROR("PeopleDetection: cv_bridge exception: %s", e.what());
 		return ipa_Utils::RET_FAILED;
@@ -296,8 +300,7 @@ unsigned long FaceCaptureNode::convertDepthImageMessageToMat(const sensor_msgs::
 	try
 	{
 		image_ptr = cv_bridge::toCvShare(image_msg, sensor_msgs::image_encodings::TYPE_32FC3);
-	}
-	catch (cv_bridge::Exception& e)
+	} catch (cv_bridge::Exception& e)
 	{
 		ROS_ERROR("PeopleDetection: cv_bridge exception: %s", e.what());
 		return ipa_Utils::RET_FAILED;
@@ -349,7 +352,7 @@ void FaceCaptureNode::updateDataServerCallback(const cob_people_detection::updat
 	}
 
 	// save new database status
-	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
+	face_recognizer_trainer_.saveTrainingData(face_images_, face_depthmaps_);
 
 	// close action
 	update_data_server_->setSucceeded(result, "Database update finished successfully.");
@@ -366,12 +369,12 @@ void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::delet
 	if (goal->delete_mode == BY_INDEX)
 	{
 		// delete only one entry identified by its index
-		face_recognizer_trainer_.deleteFace(goal->delete_index, face_images_,face_depthmaps_);
+		face_recognizer_trainer_.deleteFace(goal->delete_index, face_images_, face_depthmaps_);
 	}
 	else if (goal->delete_mode == BY_LABEL)
 	{
 		// delete all entries identified by their label
-		face_recognizer_trainer_.deleteFaces(goal->label, face_images_,face_depthmaps_);
+		face_recognizer_trainer_.deleteFaces(goal->label, face_images_, face_depthmaps_);
 	}
 	else
 	{
@@ -381,12 +384,11 @@ void FaceCaptureNode::deleteDataServerCallback(const cob_people_detection::delet
 	}
 
 	// save new database status
-	face_recognizer_trainer_.saveTrainingData(face_images_,face_depthmaps_);
+	face_recognizer_trainer_.saveTrainingData(face_images_, face_depthmaps_);
 
 	// close action
 	delete_data_server_->setSucceeded(result, "Deleting entries from the database finished successfully.");
 }
-
 
 //#######################
 //#### main programm ####

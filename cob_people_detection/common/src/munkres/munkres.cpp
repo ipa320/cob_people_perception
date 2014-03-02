@@ -37,8 +37,8 @@ munkres::~munkres(void)
 }
 
 //Load wieght_array from a vector of vectors of integers
-void munkres::load_weights(std::vector< std::vector<int> > x)
-{	
+void munkres::load_weights(std::vector<std::vector<int>> x)
+{
 	//get the row and column sizes of the vector passed in
 	int a = x.size(), b = x[0].size();
 
@@ -98,7 +98,7 @@ void munkres::load_weights(std::vector< std::vector<int> > x)
 	row_starred.resize(num_rows, false);
 	row_cov.resize(num_rows, false);
 	column_starred.resize(num_columns, false);
-	column_cov.resize(num_columns, false);	
+	column_cov.resize(num_columns, false);
 
 	if (diag_on)
 	{
@@ -139,7 +139,7 @@ int munkres::assign(ordered_pair *matching)
 		{
 			if (cell_array[i][j].starred)
 			{
-				matching[i].col	= j;
+				matching[i].col = j;
 				matching[i].row = i;
 				total_cost += weight_array[i][j];
 			}
@@ -147,7 +147,6 @@ int munkres::assign(ordered_pair *matching)
 	}
 	return total_cost;
 }
-
 
 //functions to check if there is a star or prime in the 
 //current row or column
@@ -241,12 +240,13 @@ void munkres::step1(void)
 	for (int i = 0; i < num_rows; i++)
 	{
 		//set smallest = first element in the current row
-		while (smallest == 0){
+		while (smallest == 0)
+		{
 			smallest = cell_array[i][0].weight;
 			//if the first element is 0 then increase the row
 			if (smallest == 0)
 			{
-				if (i < num_rows-1)
+				if (i < num_rows - 1)
 					i++;
 				else
 					break;
@@ -254,7 +254,7 @@ void munkres::step1(void)
 		}
 		//iterate through each value in current row and find the smallest value
 		for (int j = 1; j < num_columns; j++)
-		{	
+		{
 			//if the current value is a zero, then set smallest to zero
 			//and stop searching for a smaller value
 			if (cell_array[i][j].weight == 0)
@@ -279,7 +279,7 @@ void munkres::step1(void)
 			//iterate through the values of current row and subtract
 			//smallest from evrything
 			for (int j = 0; j < num_columns; j++)
-			{	
+			{
 				cell_array[i][j].weight -= smallest;
 			}
 		}
@@ -330,7 +330,7 @@ void munkres::step2(void)
 					//mark row as having a star
 					row_starred[i] = true;
 					//mark column as having a star
-					column_starred[j] =  true;
+					column_starred[j] = true;
 				}
 			}
 		}
@@ -388,7 +388,6 @@ bool munkres::step3(void)
 		return step4();
 }
 
-
 // Find a noncovered zero and prime it.  If there is no starred zero in the row containing this primed zero, Go to Step 5.
 // Otherwise, cover this row and uncover the column containing the starred zero. Continue in this manner until there are no
 // uncovered zeros left. Save the smallest uncovered value and Go to Step 6.
@@ -406,11 +405,11 @@ bool munkres::step4(void)
 		// find an uncovered zero
 		int row = -1;
 		int col = -1;
-		for (int i=0; i<num_rows; i++)
+		for (int i = 0; i < num_rows; i++)
 		{
-			for (int j=0; j<num_columns; j++)
+			for (int j = 0; j < num_columns; j++)
 			{
-				if (cell_array[i][j].weight==0 && row_cov[i]==false && column_cov[j]==false)
+				if (cell_array[i][j].weight == 0 && row_cov[i] == false && column_cov[j] == false)
 				{
 					row = i;
 					col = j;
@@ -437,11 +436,11 @@ bool munkres::step4(void)
 			cell_array[row][col].primed = true;
 
 			// If there is no starred zero in the row containing this primed zero, Go to Step 5
-			if (row_starred[row]==false)
+			if (row_starred[row] == false)
 			{
 				if (diag_on)
 				{
-					std::cerr << "Step 4: " << row << ",  " << col <<std::endl;
+					std::cerr << "Step 4: " << row << ",  " << col << std::endl;
 					diagnostic(6);
 				}
 				return step5(row, col);
@@ -451,7 +450,7 @@ bool munkres::step4(void)
 			{
 				row_cov[row] = true;
 				int starredZeroCol = 0;
-				for (starredZeroCol=0; starredZeroCol<num_rows; starredZeroCol++)
+				for (starredZeroCol = 0; starredZeroCol < num_rows; starredZeroCol++)
 					if (cell_array[row][starredZeroCol].starred == true)
 						break;
 				column_cov[starredZeroCol] = false;
@@ -461,7 +460,7 @@ bool munkres::step4(void)
 
 	return false;
 
-// old algorithm
+	// old algorithm
 	////To find the smallest uncovered value
 	//int smallest = 0;
 
@@ -504,7 +503,6 @@ bool munkres::step4(void)
 	//				diagnostic(6);
 	//				}
 	//				return step5(i, j);
-
 
 
 	//			}
@@ -577,62 +575,62 @@ bool munkres::step5(int r, int c)
 		switch (looking_for_star)
 		{
 
-				//if we're looking for a star
-			case true:
+		//if we're looking for a star
+		case true:
 
-				//special case protection
-				a = r;
+			//special case protection
+			a = r;
 
-				//if there isn't a starred zero in the current column
-				if (!column_starred[c])
-				{
-					//unprime current index
-					cell_array[r][c].primed = false;
-					//star current index
-					cell_array[r][c].starred = true;
-					//mark current row starred
-					row_starred[r] = true;
-					//set done to true
-					done = true;
-				}
-				else
-				{
-					//set the next row to search to the location of the 
-					//starred zero in current column
-					r = find_star_column(c);
-					//unprime current index
-					cell_array[a][c].primed = false;
-					//star current index
-					cell_array[a][c].starred = true;
-					//mark current row starred
-					row_starred[a] = true;
-					//set case to look for prime next
-					looking_for_star = false;
-				}
+			//if there isn't a starred zero in the current column
+			if (!column_starred[c])
+			{
+				//unprime current index
+				cell_array[r][c].primed = false;
+				//star current index
+				cell_array[r][c].starred = true;
+				//mark current row starred
+				row_starred[r] = true;
+				//set done to true
+				done = true;
+			}
+			else
+			{
+				//set the next row to search to the location of the
+				//starred zero in current column
+				r = find_star_column(c);
+				//unprime current index
+				cell_array[a][c].primed = false;
+				//star current index
+				cell_array[a][c].starred = true;
+				//mark current row starred
+				row_starred[a] = true;
+				//set case to look for prime next
+				looking_for_star = false;
+			}
 
-				//we can't do this earlier due to needing to check for stars in the column
-				//mark the column as starred
-				column_starred[c] = true;
-				break;
+			//we can't do this earlier due to needing to check for stars in the column
+			//mark the column as starred
+			column_starred[c] = true;
+			break;
 
 			//if we're looking for a prime
-			case false:
+		case false:
 
-				//prime current index
-				cell_array[r][c].primed = false;
-				//unstar current index
-				cell_array[r][c].starred = false;
+			//prime current index
+			cell_array[r][c].primed = false;
+			//unstar current index
+			cell_array[r][c].starred = false;
 
-				//unmark current row as starred
-				row_starred[r] = false;
+			//unmark current row as starred
+			row_starred[r] = false;
 
-				//set the next column to search to the location of the
-				//primed zero in current row
-				c = find_prime_row(r);
+			//set the next column to search to the location of the
+			//primed zero in current row
+			c = find_prime_row(r);
 
-				//set case to look for star next
-				looking_for_star = true;
-				break;
+			//set case to look for star next
+			looking_for_star = true;
+			break;
 		}
 	}
 
@@ -659,7 +657,6 @@ bool munkres::step5(int r, int c)
 	return step3();
 }
 
-
 // Add the value found in Step 4 to every element of each covered row, and subtract it from every element of each uncovered column.  Return to Step 4 without altering any stars, primes, or covered lines.
 
 // maybe wrong algorithm:
@@ -673,12 +670,11 @@ bool munkres::step6()
 {
 	// find minimum uncovered value
 	int minVal = INT_MAX;
-	for (int i=0; i<num_rows; i++)
-		for (int j=0; j<num_columns; j++)
-			if (row_cov[i]==false && column_cov[j]==false)
+	for (int i = 0; i < num_rows; i++)
+		for (int j = 0; j < num_columns; j++)
+			if (row_cov[i] == false && column_cov[j] == false)
 				if (minVal > cell_array[i][j].weight)
 					minVal = cell_array[i][j].weight;
-
 
 	//iterate through rows
 	for (int i = 0; i < num_rows; i++)
@@ -687,14 +683,14 @@ bool munkres::step6()
 		for (int j = 0; j < num_columns; j++)
 		{
 			// Substract the value found in Step 4 from every element of each uncovered column
-			if (column_cov[j]==false)
+			if (column_cov[j] == false)
 			{
 				//substract sub from its weight
 				cell_array[i][j].weight -= minVal;
 			}
 
 			// Add the value found in Step 4 to every element of each covered row
-			else if (row_cov[i]==true)
+			else if (row_cov[i] == true)
 				cell_array[i][j].weight += minVal;
 		}
 	}
@@ -714,197 +710,200 @@ void munkres::diagnostic(int a) const
 {
 	switch (a)
 	{
-		//Show base weights in weight_array
-		case 1:
-			std::cerr << std::endl << "Base Weights" << std::endl;
-			for (int i = 0; i < num_rows; i++)
+	//Show base weights in weight_array
+	case 1:
+		std::cerr << std::endl << "Base Weights" << std::endl;
+		for (int i = 0; i < num_rows; i++)
+		{
+			for (int j = 0; j < num_columns; j++)
 			{
-				for (int j = 0; j < num_columns; j++)
-				{
-					std::cerr << weight_array[i][j] << " | ";
-				}
-				std::cerr  << std::endl;
+				std::cerr << weight_array[i][j] << " | ";
 			}
 			std::cerr << std::endl;
-			break;
+		}
+		std::cerr << std::endl;
+		break;
 
-			//show current weight values of cell_array
-			case 2:
-			std::cerr << std::endl << "Current Weights" << std::endl;
-			for (int i = 0; i < num_rows; i++)
+		//show current weight values of cell_array
+	case 2:
+		std::cerr << std::endl << "Current Weights" << std::endl;
+		for (int i = 0; i < num_rows; i++)
+		{
+			for (int j = 0; j < num_columns; j++)
 			{
-				for (int j = 0; j < num_columns; j++)
-				{
-					std::cerr << cell_array[i][j].weight << " | ";
-				}
-				std::cerr << std::endl;
+				std::cerr << cell_array[i][j].weight << " | ";
 			}
 			std::cerr << std::endl;
-			break;
+		}
+		std::cerr << std::endl;
+		break;
 
-			//Show current star placement
-			case 3:
-			std::cerr << std::endl << "Starred values" << std::endl;
-			for (int i = 0; i < num_rows; i++)
+		//Show current star placement
+	case 3:
+		std::cerr << std::endl << "Starred values" << std::endl;
+		for (int i = 0; i < num_rows; i++)
+		{
+			for (int j = 0; j < num_columns; j++)
 			{
-				for (int j = 0; j < num_columns; j++)
+				if (cell_array[i][j].starred == true)
 				{
-					if (cell_array[i][j].starred == true)
-					{
-						std::cerr << cell_array[i][j].weight << "* |  ";
-					}
-					else
-					{
-						std::cerr << cell_array[i][j].weight << "  |  ";
-					}
+					std::cerr << cell_array[i][j].weight << "* |  ";
 				}
-				std::cerr  << std::endl;
-			}
-			std::cerr << std::endl;
-			break;
-
-			//Show current star placement, covered rows, and covered columns
-			case 4:
-			std::cerr << std::endl << "Starred values and Lines" << std::endl;
-			for (int i = 0; i < num_rows; i++)
-			{
-				for (int j = 0; j < num_columns; j++)
+				else
 				{
-					if (cell_array[i][j].starred == true)
-					{
-						std::cerr << cell_array[i][j].weight << "* |  ";
-					}
-					else
-					{
-						std::cerr << cell_array[i][j].weight << "  |  ";
-					}
-				}
-
-				if (row_cov[i])
-				{
-					std::cerr << "  X";
-				}
-				std::cerr << std::endl;
-			}
-
-			for (int i = 0; i < num_columns; i++)
-			{
-				if (column_cov[i]){
-
-					std::cerr << "X  |  ";
-				}
-				else 
-				{
-					std::cerr << "   |  ";
+					std::cerr << cell_array[i][j].weight << "  |  ";
 				}
 			}
 			std::cerr << std::endl;
-			break;
+		}
+		std::cerr << std::endl;
+		break;
 
-			//Show current prime placement, covered lines and covered columns
-			case 5:
-			std::cerr << std::endl << "Primed values and Lines" << std::endl;
-			for (int i = 0; i < num_rows; i++)
+		//Show current star placement, covered rows, and covered columns
+	case 4:
+		std::cerr << std::endl << "Starred values and Lines" << std::endl;
+		for (int i = 0; i < num_rows; i++)
+		{
+			for (int j = 0; j < num_columns; j++)
 			{
-				for (int j = 0; j < num_columns; j++)
+				if (cell_array[i][j].starred == true)
 				{
-					if (cell_array[i][j].primed == true)
-					{
-						std::cerr << cell_array[i][j].weight << "' |  ";
-					}
-					else
-					{
-						std::cerr << cell_array[i][j].weight << "  |  ";
-					}
+					std::cerr << cell_array[i][j].weight << "* |  ";
 				}
-
-				if (row_cov[i])
+				else
 				{
-					std::cerr << "  X";
+					std::cerr << cell_array[i][j].weight << "  |  ";
 				}
-				std::cerr << std::endl;
 			}
 
-			for (int i = 0; i < num_columns; i++)
+			if (row_cov[i])
 			{
-				if (column_cov[i]){
-
-					std::cerr << "X  |  ";
-				}
-				else 
-				{
-					std::cerr << "   |  ";
-				}
+				std::cerr << "  X";
 			}
 			std::cerr << std::endl;
-			break;
+		}
 
-			//Show current star and prime placement, covered rows, and covered columns
-			case 6:
-			std::cerr << std::endl << "Starred values and Lines" << std::endl;
-			for (int i = 0; i < num_rows; i++)
+		for (int i = 0; i < num_columns; i++)
+		{
+			if (column_cov[i])
 			{
-				for (int j = 0; j < num_columns; j++)
-				{
-					if (cell_array[i][j].starred == true)
-					{
-						std::cerr << cell_array[i][j].weight << "* |  ";
-					}
-					else if (cell_array[i][j].primed == true)
-					{
-						std::cerr << cell_array[i][j].weight << "' |  ";
-					}
-					else
-					{
-						std::cerr << cell_array[i][j].weight << "  |  ";
-					}
-				}
 
-				if (row_cov[i])
-				{
-					std::cerr << "  X";
-				}
+				std::cerr << "X  |  ";
+			}
+			else
+			{
+				std::cerr << "   |  ";
+			}
+		}
+		std::cerr << std::endl;
+		break;
 
-				else 
+		//Show current prime placement, covered lines and covered columns
+	case 5:
+		std::cerr << std::endl << "Primed values and Lines" << std::endl;
+		for (int i = 0; i < num_rows; i++)
+		{
+			for (int j = 0; j < num_columns; j++)
+			{
+				if (cell_array[i][j].primed == true)
 				{
-					std::cerr << "   ";
+					std::cerr << cell_array[i][j].weight << "' |  ";
 				}
-				if (row_starred[i])
+				else
 				{
-					std::cerr << "  *";
+					std::cerr << cell_array[i][j].weight << "  |  ";
 				}
-				std::cerr << std::endl;
 			}
 
-			for (int i = 0; i < num_columns; i++)
+			if (row_cov[i])
 			{
-				if (column_cov[i]){
-
-					std::cerr << "X  |  ";
-				}
-				else 
-				{
-					std::cerr << "   |  ";
-				}
+				std::cerr << "  X";
 			}
 			std::cerr << std::endl;
+		}
 
-			for (int i = 0; i < num_columns; i++)
+		for (int i = 0; i < num_columns; i++)
+		{
+			if (column_cov[i])
 			{
-				if (column_starred[i]){
 
-					std::cerr << "*  |  ";
-				}
-				else 
+				std::cerr << "X  |  ";
+			}
+			else
+			{
+				std::cerr << "   |  ";
+			}
+		}
+		std::cerr << std::endl;
+		break;
+
+		//Show current star and prime placement, covered rows, and covered columns
+	case 6:
+		std::cerr << std::endl << "Starred values and Lines" << std::endl;
+		for (int i = 0; i < num_rows; i++)
+		{
+			for (int j = 0; j < num_columns; j++)
+			{
+				if (cell_array[i][j].starred == true)
 				{
-					std::cerr << "   |  ";
+					std::cerr << cell_array[i][j].weight << "* |  ";
+				}
+				else if (cell_array[i][j].primed == true)
+				{
+					std::cerr << cell_array[i][j].weight << "' |  ";
+				}
+				else
+				{
+					std::cerr << cell_array[i][j].weight << "  |  ";
 				}
 			}
+
+			if (row_cov[i])
+			{
+				std::cerr << "  X";
+			}
+
+			else
+			{
+				std::cerr << "   ";
+			}
+			if (row_starred[i])
+			{
+				std::cerr << "  *";
+			}
 			std::cerr << std::endl;
-			break;
+		}
 
+		for (int i = 0; i < num_columns; i++)
+		{
+			if (column_cov[i])
+			{
 
-			default:
-			break;
+				std::cerr << "X  |  ";
+			}
+			else
+			{
+				std::cerr << "   |  ";
+			}
+		}
+		std::cerr << std::endl;
+
+		for (int i = 0; i < num_columns; i++)
+		{
+			if (column_starred[i])
+			{
+
+				std::cerr << "*  |  ";
+			}
+			else
+			{
+				std::cerr << "   |  ";
+			}
+		}
+		std::cerr << std::endl;
+		break;
+
+	default:
+		break;
 	}
 }
