@@ -6,7 +6,8 @@ project(cob_people_detection)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  roslib
+  #roslib
+  message_generation
   std_msgs
   std_srvs
   actionlib
@@ -22,8 +23,6 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   pcl
   pcl_ros
-  boost
-  opencv2
   cv_bridge
   cob_image_flip
   cob_vision_utils
@@ -54,7 +53,7 @@ add_action_files(
     deleteData.action
     getDetections.action
     loadModel.action
-    upadteData.action
+    updateData.action
 )
 
 ## Generate messages in the 'msg' folder
@@ -112,7 +111,8 @@ catkin_package(
     sensor_message_gateway_nodelet
   CATKIN_DEPENDS
     roscpp
-    roslib
+    #roslib
+    message_runtime
     std_msgs
     std_srvs
     actionlib
@@ -128,8 +128,6 @@ catkin_package(
     dynamic_reconfigure
     pcl
     pcl_ros
-    boost
-    opencv2
     cv_bridge
     cob_image_flip
     cob_vision_utils
@@ -175,8 +173,14 @@ target_link_libraries(subspace_analysis
 add_library(face_normalizer
   common/src/face_normalizer.cpp
 )
+target_link_libraries(face_normalizer
+  ${catkin_LIBRARIES}
+#  ${Boost_LIBRARIES}
+  ${OpenCV_LIBS}
+#  ${PCL_LIBRARIES}
+)
 
-rosbuild_add_library(face_recognizer_algorithms
+add_library(face_recognizer_algorithms
   common/src/face_recognizer_algorithms.cpp
 )
 target_link_libraries(face_recognizer_algorithms
@@ -203,6 +207,8 @@ add_executable(face_align_test
 )
 target_link_libraries(face_align_test
   face_normalizer
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
 )
 
 #add_executable(synth_face_test
@@ -216,19 +222,37 @@ target_link_libraries(face_align_test
 add_executable(tracking_evaluator
   ros/src/tracking_eval_node.cpp
 )
+target_link_libraries(tracking_evaluator
+  ${catkin_LIBRARIES}
+#  ${Boost_LIBRARIES}
+  ${OpenCV_LIBS}
+)
 
 add_executable(people_detection_client
   ros/src/people_detection_action_client.cpp
 )
-    
+target_link_libraries(people_detection_client
+  ${catkin_LIBRARIES}
+)
+   
 add_executable(head_detector_node
   common/src/head_detector.cpp
   ros/src/head_detector_node.cpp
+)
+target_link_libraries(head_detector_node
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
 )
     
 add_executable(face_detector_node
   common/src/face_detector.cpp
   ros/src/face_detector_node.cpp
+)
+target_link_libraries(face_detector_node
+  ${catkin_LIBRARIES}
+#  ${Boost_LIBRARIES}
+  ${OpenCV_LIBS}
+#  ${PCL_LIBRARIES}
 )
 
 add_executable(face_recognizer_node
@@ -239,6 +263,7 @@ add_executable(face_recognizer_node
 target_link_libraries(face_recognizer_node
   face_normalizer
   face_recognizer_algorithms
+  ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )    
 add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
@@ -248,6 +273,7 @@ add_executable(detection_tracker_node
   common/src/munkres/munkres.cpp
 )
 target_link_libraries(detection_tracker_node
+  ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
 
@@ -255,6 +281,7 @@ add_executable(people_detection_display_node
   ros/src/people_detection_display_node.cpp
 )
 target_link_libraries(people_detection_display_node
+  ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
 
@@ -266,6 +293,7 @@ add_executable(face_capture_node
 target_link_libraries(face_capture_node
   face_normalizer
   face_recognizer_algorithms
+  ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
 
@@ -274,6 +302,7 @@ add_executable(sensor_message_gateway_node
   ros/src/sensor_message_gateway_main.cpp
 )
 target_link_libraries(sensor_message_gateway_node
+  ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
 
@@ -282,6 +311,7 @@ add_library(sensor_message_gateway_nodelet
   ros/src/sensor_message_gateway_nodelet.cpp
 )
 target_link_libraries(sensor_message_gateway_nodelet
+  ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
 
@@ -289,6 +319,7 @@ add_executable(coordinator_node
   ros/src/coordinator_node.cpp
 )
 target_link_libraries(coordinator_node
+  ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
 
@@ -322,6 +353,18 @@ add_dependencies(face_capture_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(sensor_message_gateway_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(sensor_message_gateway_nodelet ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(coordinator_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+add_dependencies(people_detection_client ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(head_detector_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(face_detector_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(face_recognizer_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(detection_tracker_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(people_detection_display_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(face_capture_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(sensor_message_gateway_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(sensor_message_gateway_nodelet ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(coordinator_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(tracking_evaluator ${cob_people_detection_msgs_EXPORTED_TARGETS})
 
 # Check for sse support
 #rosbuild_check_for_sse()

@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   geometry_msgs
+  message_generation
 )
 
 
@@ -51,18 +52,5 @@ catkin_package(
     std_msgs
     sensor_msgs
     geometry_msgs
+    message_runtime
 )
-
-
-#############
-## Install ##
-#############
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-#install(PROGRAMS
-#  test/detection_component_testing.py
-#  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
