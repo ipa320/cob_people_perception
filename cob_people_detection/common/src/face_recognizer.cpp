@@ -554,7 +554,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
 	identification_labels.clear();
 
-	cv::Size resized_size(m_eigenvectors[0].size());
+	//cv::Size resized_size(m_eigenvectors[0].size());
 	for(int i=0; i<(int)face_coordinates.size(); i++)
 	{
 		cv::Rect face = face_coordinates[i];
