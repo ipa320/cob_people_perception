@@ -59,8 +59,8 @@
  ****************************************************************/
 
 #ifdef __LINUX__
-#include "cob_people_detection/face_recognizer.h"
-#include "cob_vision_utils/GlobalDefines.h"
+	#include "cob_people_detection/face_recognizer.h"
+	#include "cob_vision_utils/GlobalDefines.h"
 #else
 #include "cob_vision/cob_people_detection/common/include/cob_people_detection/PeopleDetector.h"
 #include "cob_common/cob_vision_utils/common/include/cob_vision_utils/GlobalDefines.h"
@@ -93,7 +93,7 @@ ipa_PeopleDetector::FaceRecognizer::~FaceRecognizer(void)
 {
 	if (m_eigenvectors_ipl != 0)
 	{
-		for (uint i = 0; i < m_eigenvectors.size(); i++)
+		for (uint i=0; i<m_eigenvectors.size(); i++)
 			cvReleaseImage(&(m_eigenvectors_ipl[i]));
 		cvFree(&m_eigenvectors_ipl);
 	}
@@ -115,7 +115,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
 
 	m_feature_dim = feature_dim;
 
-	switch (subs_meth)
+	switch(subs_meth)
 	{
 	case 0:
 	{
@@ -229,7 +229,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::updateFaceLabels(std::string old_label, std::string new_label)
 {
-	for (int i = 0; i < (int)m_face_labels.size(); i++)
+	for (int i=0; i<(int)m_face_labels.size(); i++)
 	{
 		if (m_face_labels[i].compare(old_label) == 0)
 			m_face_labels[i] = new_label;
@@ -245,7 +245,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::updateFaceLabel(int index, std
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFaces(std::string label, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps)
 {
-	for (int i = 0; i < (int)m_face_labels.size(); i++)
+	for (int i=0; i<(int)m_face_labels.size(); i++)
 	{
 		if (m_face_labels[i].compare(label) == 0)
 		{
@@ -270,7 +270,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainFaceRecognition(ipa_Peopl
 	std::vector<cv::Mat> in_vec;
 	for (unsigned int i = 0; i < data.size(); i++)
 	{
-
 		cv::Mat temp = data[i];
 		temp.convertTo(temp, CV_64FC1);
 		in_vec.push_back(temp);
@@ -428,10 +427,8 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 
 			if (same_data_set == true)
 			{
-
 				eff_color->loadModel(complete);
 				m_face_labels = temp_face_labels;
-
 				std::cout << "INFO: FaceRecognizer::loadRecognitionModel: recognizer data loaded.\n" << std::endl;
 			}
 			else
@@ -909,8 +906,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 
 		fileStorage.release();
 
-		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " images loaded (" << face_images.size() << " color images and " << face_depthmaps.size()
-				<< " depth images).\n" << std::endl;
+		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " images loaded (" << face_images.size() << " color images and " << face_depthmaps.size() << " depth images).\n" << std::endl;
 	}
 	else
 	{
