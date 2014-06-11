@@ -266,8 +266,8 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		}
 
 		// only after successful recording
-		capture_image_ = false;			// reset trigger for recording
 		number_captured_images_++;		// increase number of captured images
+		capture_image_ = false;			// reset trigger for recording
 
 		ROS_INFO("Face number %d captured.", number_captured_images_);
 	}
