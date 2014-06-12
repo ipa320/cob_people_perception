@@ -258,10 +258,12 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 		cv::Rect head_bounding_box(head_rect.x, head_rect.y, head_rect.width, head_rect.height);
 		cv::Mat img_color = color_image;
 		cv::Mat img_depth = depth_image;
+
 		// normalize face
-		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_,face_depthmaps_)==ipa_Utils::RET_FAILED)
+		if (face_recognizer_trainer_.addFace(img_color, img_depth, face_bounding_box, head_bounding_box, current_label_, face_images_, face_depthmaps_)==ipa_Utils::RET_FAILED)
 		{
-			ROS_WARN("Normalizing failed");
+			ROS_WARN("face_capture: Adding face failed.");
+			capture_image_ = false;			// reset trigger for recording
 			return;
 		}
 

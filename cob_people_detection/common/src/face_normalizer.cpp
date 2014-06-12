@@ -216,7 +216,28 @@ bool FaceNormalizer::normalizeFace( cv::Mat& img,cv::Mat& depth,cv::Size& norm_s
   if(config_.eq_ill)
   {
     // radiometric normalization
-    if(!normalize_radiometry(img)) valid=false;
+    cv::Mat img_before_ill = img.clone();
+    if(!normalize_radiometry(img))
+      valid=false;
+    else
+    {
+      if(img_before_ill.channels()==3)
+      {
+        cv::Vec3b white(255, 255, 255);
+        for (int v=0; v<img.rows; ++v)
+          for (int u=0; u<img.cols; ++u)
+            if (img_before_ill.at<cv::Vec3b>(v,u) == white)
+              img.at<cv::Vec3b>(v,u) = white;
+      }
+      else
+      {
+        int white = 255;
+        for (int v=0; v<img.rows; ++v)
+          for (int u=0; u<img.cols; ++u)
+            if ((int)img_before_ill.at<uchar>(v,u) == white)
+              img.at<uchar>(v,u) = (uchar)white;
+      }
+    }
     if(debug_)dump_img(img,"radiometry");
   }
 
@@ -385,7 +406,9 @@ void FaceNormalizer::GammaDCT(cv::Mat& input_img)
   double C_00=log(mu.val[0])*sqrt(img.cols*img.rows);
 
 //----------------------------
+  // gamma correction
   cv::pow(img,0.2,img);
+
   cv::Mat imgdummy;
   img.convertTo(imgdummy,CV_8UC1);
   cv::dct(img,img);
