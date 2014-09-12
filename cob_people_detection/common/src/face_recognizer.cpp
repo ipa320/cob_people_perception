@@ -59,8 +59,8 @@
  ****************************************************************/
 
 #ifdef __LINUX__
-#include "cob_people_detection/face_recognizer.h"
-#include "cob_vision_utils/GlobalDefines.h"
+	#include "cob_people_detection/face_recognizer.h"
+	#include "cob_vision_utils/GlobalDefines.h"
 #else
 #include "cob_vision/cob_people_detection/common/include/cob_people_detection/PeopleDetector.h"
 #include "cob_common/cob_vision_utils/common/include/cob_vision_utils/GlobalDefines.h"
@@ -93,7 +93,7 @@ ipa_PeopleDetector::FaceRecognizer::~FaceRecognizer(void)
 {
 	if (m_eigenvectors_ipl != 0)
 	{
-		for (uint i = 0; i < m_eigenvectors.size(); i++)
+		for (uint i=0; i<m_eigenvectors.size(); i++)
 			cvReleaseImage(&(m_eigenvectors_ipl[i]));
 		cvFree(&m_eigenvectors_ipl);
 	}
@@ -115,7 +115,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
 
 	m_feature_dim = feature_dim;
 
-	switch (subs_meth)
+	switch(subs_meth)
 	{
 	case 0:
 	{
@@ -206,14 +206,14 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
 	//cv::Rect combined_face_bounding_box=cv::Rect(face_bounding_box.x+head_bounding_box.x,face_bounding_box.y+head_bounding_box.y,face_bounding_box.width,face_bounding_box.height);
-
 	//cv::Mat roi_color = color_image(combined_face_bounding_box);
-	cv::Mat roi_color = color_image(face_bounding_box);
+	cv::Mat roi_color = color_image(face_bounding_box);	// color image has size of head area, not only face area
 	cv::Mat roi_depth_xyz = depth_image(face_bounding_box).clone();
 	cv::Size norm_size = cv::Size(m_norm_size, m_norm_size);
 	cv::Mat roi_depth;
 	//if(!face_normalizer_.normalizeFace(roi_color,roi_depth_xyz,norm_size)) ;
-	face_normalizer_.recordFace(roi_color, roi_depth_xyz);
+	// this is probably obsolete:  face_normalizer_.recordFace(roi_color, roi_depth_xyz);
+
 	if (!face_normalizer_.normalizeFace(roi_color, roi_depth_xyz, norm_size))
 		return ipa_Utils::RET_FAILED;
 
@@ -229,7 +229,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, 
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::updateFaceLabels(std::string old_label, std::string new_label)
 {
-	for (int i = 0; i < (int)m_face_labels.size(); i++)
+	for (int i=0; i<(int)m_face_labels.size(); i++)
 	{
 		if (m_face_labels[i].compare(old_label) == 0)
 			m_face_labels[i] = new_label;
@@ -245,7 +245,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::updateFaceLabel(int index, std
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::deleteFaces(std::string label, std::vector<cv::Mat>& face_images, std::vector<cv::Mat>& face_depthmaps)
 {
-	for (int i = 0; i < (int)m_face_labels.size(); i++)
+	for (int i=0; i<(int)m_face_labels.size(); i++)
 	{
 		if (m_face_labels[i].compare(label) == 0)
 		{
@@ -270,7 +270,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainFaceRecognition(ipa_Peopl
 	std::vector<cv::Mat> in_vec;
 	for (unsigned int i = 0; i < data.size(); i++)
 	{
-
 		cv::Mat temp = data[i];
 		temp.convertTo(temp, CV_64FC1);
 		in_vec.push_back(temp);
@@ -376,7 +375,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 	boost::filesystem::path complete = path / "rdata_color.xml";
 
 	bool training_necessary = false;
-	std::vector < string > temp_face_labels;
+	std::vector<string> temp_face_labels;
 	if (fs::is_directory(path.string()))
 	{
 		cv::FileStorage fileStorage(complete.string(), cv::FileStorage::READ);
@@ -430,7 +429,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 			{
 				eff_color->loadModel(complete);
 				m_face_labels = temp_face_labels;
-
 				std::cout << "INFO: FaceRecognizer::loadRecognitionModel: recognizer data loaded.\n" << std::endl;
 			}
 			else
@@ -531,8 +529,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		std::vector<std::string>& identification_labels)
 {
 	timeval t1, t2;
-	if (m_debug)
-		gettimeofday(&t1, NULL);
+	gettimeofday(&t1, NULL);
 	// secure this function with a mutex
 	boost::lock_guard<boost::mutex> lock(m_data_mutex);
 
@@ -555,7 +552,6 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 
 		cv::Mat DM_crop = cv::Mat::zeros(m_norm_size, m_norm_size, CV_8UC1);
 		cv::Size norm_size = cv::Size(m_norm_size, m_norm_size);
-
 		if (face_normalizer_.normalizeFace(color_crop, depth_crop_xyz, norm_size, DM_crop))
 			;
 
@@ -582,11 +578,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::recognizeFace(cv::Mat& color_i
 		identification_labels.push_back(class_color);
 	}
 
+	gettimeofday(&t2, NULL);
 	if (m_debug)
-	{
-		gettimeofday(&t2, NULL);
 		std::cout << "time =" << (t2.tv_usec - t1.tv_usec) / 1000.0 << std::endl;
-	}
 
 	return ipa_Utils::RET_OK;
 }
@@ -912,8 +906,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 
 		fileStorage.release();
 
-		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " images loaded (" << face_images.size() << " color images and " << face_depthmaps.size()
-				<< " depth images).\n" << std::endl;
+		std::cout << "INFO: FaceRecognizer::loadTrainingData: " << number_entries << " images loaded (" << face_images.size() << " color images and " << face_depthmaps.size() << " depth images).\n" << std::endl;
 	}
 	else
 	{
@@ -933,3 +926,4 @@ void ipa_PeopleDetector::FaceRecognizer::assertDirectories(boost::filesystem::pa
 	if (!boost::filesystem::exists(data_directory / "img"))
 		boost::filesystem::create_directories(data_directory / "img");
 }
+
