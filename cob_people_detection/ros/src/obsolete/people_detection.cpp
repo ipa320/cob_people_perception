@@ -118,8 +118,8 @@ protected:
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
 	image_transport::SubscriberFilter color_image_sub_; ///< Color camera image topic
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image>>* sync_input_2_;
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image, sensor_msgs::Image>>
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image> >* sync_input_2_;
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image, sensor_msgs::Image> >
 			* sync_input_3_;
 	message_filters::Subscriber<cob_people_detection_msgs::DetectionArray> face_position_subscriber_; ///< receives the face messages from the face detector
 	ros::Publisher face_position_publisher_; ///< publisher for the positions of the detected faces
@@ -131,7 +131,7 @@ protected:
 
 	std::vector<cob_people_detection_msgs::Detection> face_position_accumulator_; ///< accumulates face positions over time
 	boost::timed_mutex face_position_accumulator_mutex_; ///< secures write and read operations to face_position_accumulator_
-	std::vector<std::map<std::string, double>> face_identification_votes_; ///< collects votes for all names (map index) ever assigned to each detection (vector index) in face_position_accumulator_
+	std::vector<std::map<std::string, double> > face_identification_votes_; ///< collects votes for all names (map index) ever assigned to each detection (vector index) in face_position_accumulator_
 
 	// parameters
 	bool display_; ///< if on, several debug outputs are activated
@@ -203,14 +203,14 @@ public:
 			if (display_ == false)
 			{
 				sync_input_2_
-						= new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image>>(2);
+						= new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image> >(2);
 				sync_input_2_->connectInput(face_position_subscriber_, people_segmentation_image_sub_);
 				sync_input_2_->registerCallback(boost::bind(&CobPeopleDetectionNodelet::inputCallback, this, _1, _2, nullPtr));
 			}
 			else
 			{
 				sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image,
-						sensor_msgs::Image>>(3);
+						sensor_msgs::Image> >(3);
 				sync_input_3_->connectInput(face_position_subscriber_, people_segmentation_image_sub_, color_image_sub_);
 				sync_input_3_->registerCallback(boost::bind(&CobPeopleDetectionNodelet::inputCallback, this, _1, _2, _3));
 			}
@@ -220,7 +220,7 @@ public:
 			if (display_ == true)
 			{
 				sync_input_2_
-						= new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image>>(2);
+						= new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image> >(2);
 				sync_input_2_->connectInput(face_position_subscriber_, color_image_sub_);
 				sync_input_2_->registerCallback(boost::bind(&CobPeopleDetectionNodelet::inputCallback, this, _1, nullPtr, _2));
 			}
@@ -531,8 +531,8 @@ public:
 		}
 		// match current detections with previous detections
 		// build distance matrix
-		std::map<int, std::map<int, double>> distance_matrix; // 1. index = face_position_accumulator_ index of previous detections, 2. index = index of current detections, content = spatial distance between the indexed faces
-		std::map<int, std::map<int, double>>::iterator distance_matrix_it;
+		std::map<int, std::map<int, double> > distance_matrix; // 1. index = face_position_accumulator_ index of previous detections, 2. index = index of current detections, content = spatial distance between the indexed faces
+		std::map<int, std::map<int, double> >::iterator distance_matrix_it;
 		for (unsigned int previous_det = 0; previous_det < face_position_accumulator_.size(); previous_det++)
 		{
 			std::map<int, double> distance_row;

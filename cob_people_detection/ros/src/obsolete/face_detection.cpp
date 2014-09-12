@@ -121,7 +121,7 @@ CobFaceDetectionNodelet::~CobFaceDetectionNodelet()
 
 void CobFaceDetectionNodelet::onInit()
 {
-	sync_pointcloud_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image>>(2);
+	sync_pointcloud_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >(2);
 	node_handle_ = getNodeHandle();
 	it_ = new image_transport::ImageTransport(node_handle_);
 	face_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_position_array", 1);

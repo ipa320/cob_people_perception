@@ -21,7 +21,7 @@ add_message_files(
   DIRECTORY
     msg
   FILES
-    BoundingBoxTree.msg
+    #BoundingBoxTree.msg
     ColorDepthImage.msg
     ColorDepthImageArray.msg
     Detection.msg

@@ -147,7 +147,7 @@ protected:
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter color_camera_image_sub_; ///< Color camera image topic
 	image_transport::Publisher face_detection_image_pub_; ///< topic for publishing the image containing the faces
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image>>* sync_pointcloud_;
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image> >* sync_pointcloud_;
 	message_filters::Connection sync_pointcloud_callback_connection_;
 	ros::Publisher face_position_publisher_; ///< publisher for the positions of the detected faces
 

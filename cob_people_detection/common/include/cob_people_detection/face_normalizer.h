@@ -394,11 +394,11 @@ protected:
 
 		if (src.channels() == 3)
 		{
-			cv::Vec<T, 3>* lptr = src.ptr<cv::Vec<T, 3>>(1, 0);
-			cv::Vec<T, 3>* rptr = src.ptr<cv::Vec<T, 3>>(1, 2);
-			cv::Vec<T, 3>* mptr = src.ptr<cv::Vec<T, 3>>(1, 1);
-			cv::Vec<T, 3>* uptr = src.ptr<cv::Vec<T, 3>>(0, 1);
-			cv::Vec<T, 3>* dptr = src.ptr<cv::Vec<T, 3>>(2, 1);
+			cv::Vec<T, 3>* lptr = src.ptr<cv::Vec<T, 3> >(1, 0);
+			cv::Vec<T, 3>* rptr = src.ptr<cv::Vec<T, 3> >(1, 2);
+			cv::Vec<T, 3>* mptr = src.ptr<cv::Vec<T, 3> >(1, 1);
+			cv::Vec<T, 3>* uptr = src.ptr<cv::Vec<T, 3> >(0, 1);
+			cv::Vec<T, 3>* dptr = src.ptr<cv::Vec<T, 3> >(2, 1);
 
 			int normalizer = 4;
 			for (int px = 2 * src.cols + 2; px < (dst.rows * src.cols); ++px)

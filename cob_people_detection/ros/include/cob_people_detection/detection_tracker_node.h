@@ -111,7 +111,7 @@ protected:
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
 
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image>>* sync_input_2_;
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image> >* sync_input_2_;
 	message_filters::Subscriber<cob_people_detection_msgs::DetectionArray> face_position_subscriber_; ///< receives the face messages from the face detector
 	ros::Publisher face_position_publisher_; ///< publisher for the positions of the detected faces
 
@@ -119,7 +119,7 @@ protected:
 
 	std::vector<cob_people_detection_msgs::Detection> face_position_accumulator_; ///< accumulates face positions over time
 	boost::timed_mutex face_position_accumulator_mutex_; ///< secures write and read operations to face_position_accumulator_
-	std::vector<std::map<std::string, double>> face_identification_votes_; ///< collects votes for all names (map index) ever assigned to each detection (vector index) in face_position_accumulator_
+	std::vector<std::map<std::string, double> > face_identification_votes_; ///< collects votes for all names (map index) ever assigned to each detection (vector index) in face_position_accumulator_
 
 	// parameters
 	bool debug_; ///< enables some debug outputs
