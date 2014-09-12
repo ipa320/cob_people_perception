@@ -89,10 +89,10 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh) :
 	//	pointcloud_sub_.subscribe(node_handle_, "pointcloud_in", 1);
 
 	// input synchronization
-	//	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::PointCloud2> >(30);
+	//	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_perception_msgs::DetectionArray, cob_perception_msgs::ColorDepthImageArray, sensor_msgs::PointCloud2> >(30);
 	//	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, pointcloud_sub_);
-	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray,
-			cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(60);
+	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_perception_msgs::DetectionArray,
+			cob_perception_msgs::ColorDepthImageArray, sensor_msgs::Image> >(60);
 	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, colorimage_sub_);
 	sync_input_3_->registerCallback(boost::bind(&PeopleDetectionDisplayNode::inputCallback, this, _1, _2, _3));
 
@@ -127,9 +127,9 @@ unsigned long PeopleDetectionDisplayNode::convertColorImageMessageToMat(const se
 }
 
 /// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-//void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg)
-void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg,
-		const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
+//void PeopleDetectionDisplayNode::inputCallback(const cob_perception_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg)
+void PeopleDetectionDisplayNode::inputCallback(const cob_perception_msgs::DetectionArray::ConstPtr& face_recognition_msg,
+		const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
 	// convert color image to cv::Mat
 	cv_bridge::CvImageConstPtr color_image_ptr;
@@ -155,14 +155,14 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	for (int i = 0; i < (int)face_detection_msg->head_detections.size(); i++)
 	{
 		// paint head
-		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[i].head_detection;
+		const cob_perception_msgs::Rect& head_rect = face_detection_msg->head_detections[i].head_detection;
 		cv::Rect head(head_rect.x, head_rect.y, head_rect.width, head_rect.height);
 		cv::rectangle(color_image, cv::Point(head.x, head.y), cv::Point(head.x + head.width, head.y + head.height), CV_RGB(148, 219, 255), 2, 8, 0);
 
 		// paint faces
 		for (int j = 0; j < (int)face_detection_msg->head_detections[i].face_detections.size(); j++)
 		{
-			const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[i].face_detections[j];
+			const cob_perception_msgs::Rect& face_rect = face_detection_msg->head_detections[i].face_detections[j];
 			cv::Rect face(face_rect.x + head.x, face_rect.y + head.y, face_rect.width, face_rect.height);
 			cv::rectangle(color_image, cv::Point(face.x, face.y), cv::Point(face.x + face.width, face.y + face.height), CV_RGB(191, 255, 148), 2, 8, 0);
 		}
@@ -171,7 +171,7 @@ void PeopleDetectionDisplayNode::inputCallback(const cob_people_detection_msgs::
 	// insert recognized faces
 	for (int i = 0; i < (int)face_recognition_msg->detections.size(); i++)
 	{
-		const cob_people_detection_msgs::Rect& face_rect = face_recognition_msg->detections[i].mask.roi;
+		const cob_perception_msgs::Rect& face_rect = face_recognition_msg->detections[i].mask.roi;
 		cv::Rect face(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
 
 		if (face_recognition_msg->detections[i].detector == "head")

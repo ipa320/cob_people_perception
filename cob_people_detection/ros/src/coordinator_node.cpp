@@ -90,7 +90,7 @@ CoordinatorNode::~CoordinatorNode()
 		delete get_detections_server_;
 }
 
-void CoordinatorNode::detectionsCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& detection_array)
+void CoordinatorNode::detectionsCallback(const cob_perception_msgs::DetectionArray::ConstPtr& detection_array)
 {
 	// secure this function with a mutex
 	boost::lock_guard < boost::mutex > lock(last_detection_mutex_);

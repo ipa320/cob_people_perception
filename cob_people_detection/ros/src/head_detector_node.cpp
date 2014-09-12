@@ -109,7 +109,7 @@ HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh) :
 	head_detector_.init(data_directory_, depth_increase_search_scale, depth_drop_groups, depth_min_search_scale_x, depth_min_search_scale_y);
 
 	// advertise topics
-	head_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageArray>("head_positions", 1);
+	head_position_publisher_ = node_handle_.advertise<cob_perception_msgs::ColorDepthImageArray>("head_positions", 1);
 
 	// subscribe to sensor topic
 	pointcloud_sub_ = nh.subscribe("pointcloud_rgb", 1, &HeadDetectorNode::pointcloud_callback, this);
@@ -150,7 +150,7 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 	head_detector_.detectRangeFace(depth_image, head_bounding_boxes, fill_unassigned_depth_values_);
 
 	// publish image patches from head region
-	cob_people_detection_msgs::ColorDepthImageArray image_array;
+	cob_perception_msgs::ColorDepthImageArray image_array;
 	image_array.header = pointcloud->header;
 	image_array.head_detections.resize(head_bounding_boxes.size());
 	for (unsigned int i = 0; i < head_bounding_boxes.size(); i++)

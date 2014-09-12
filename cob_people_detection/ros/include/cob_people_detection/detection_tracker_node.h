@@ -73,7 +73,7 @@
 // ROS message includes
 #include <sensor_msgs/Image.h>
 //#include <sensor_msgs/PointCloud2.h>
-#include <cob_people_detection_msgs/DetectionArray.h>
+#include <cob_perception_msgs/DetectionArray.h>
 
 // services
 //#include <cob_people_detection/DetectPeople.h>
@@ -111,13 +111,13 @@ protected:
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
 
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image> >* sync_input_2_;
-	message_filters::Subscriber<cob_people_detection_msgs::DetectionArray> face_position_subscriber_; ///< receives the face messages from the face detector
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_perception_msgs::DetectionArray, sensor_msgs::Image> >* sync_input_2_;
+	message_filters::Subscriber<cob_perception_msgs::DetectionArray> face_position_subscriber_; ///< receives the face messages from the face detector
 	ros::Publisher face_position_publisher_; ///< publisher for the positions of the detected faces
 
 	ros::NodeHandle node_handle_; ///< ROS node handle
 
-	std::vector<cob_people_detection_msgs::Detection> face_position_accumulator_; ///< accumulates face positions over time
+	std::vector<cob_perception_msgs::Detection> face_position_accumulator_; ///< accumulates face positions over time
 	boost::timed_mutex face_position_accumulator_mutex_; ///< secures write and read operations to face_position_accumulator_
 	std::vector<std::map<std::string, double> > face_identification_votes_; ///< collects votes for all names (map index) ever assigned to each detection (vector index) in face_position_accumulator_
 
@@ -151,26 +151,26 @@ public:
 	/// @param update If update is true, dest must contain the data which shall be updated
 	/// @param updateIndex The index in face_identification_votes_ corresponding to the previous detection dest. Only necessary if update is true.
 	/// @return Return code.
-	unsigned long copyDetection(const cob_people_detection_msgs::Detection& src, cob_people_detection_msgs::Detection& dest, bool update = false,
+	unsigned long copyDetection(const cob_perception_msgs::Detection& src, cob_perception_msgs::Detection& dest, bool update = false,
 			unsigned int updateIndex = UINT_MAX);
 
 	/// Computes the Euclidean distance of a recent faces detection to a current face detection.
 	/// If the current face detection is outside the neighborhood of the previous detection, DBL_MAX is returned.
 	/// @return The squared Euclidian distance of both faces or DBL_MAX.
-	double computeFacePositionDistanceTrackingRange(const cob_people_detection_msgs::Detection& previous_detection, const cob_people_detection_msgs::Detection& current_detection);
+	double computeFacePositionDistanceTrackingRange(const cob_perception_msgs::Detection& previous_detection, const cob_perception_msgs::Detection& current_detection);
 
 	/// Computes the Euclidean distance of a recent faces detection to a current face detection.
 	/// @return Always returns the Euclidian distance of both faces.
-	double computeFacePositionDistance(const cob_people_detection_msgs::Detection& previous_detection, const cob_people_detection_msgs::Detection& current_detection);
+	double computeFacePositionDistance(const cob_perception_msgs::Detection& previous_detection, const cob_perception_msgs::Detection& current_detection);
 
 	/// Removes multiple instances of a label by renaming the detections with lower score to Unknown.
 	/// @return Return code.
 	unsigned long removeMultipleInstancesOfLabel();
 
-	unsigned long prepareFacePositionMessage(cob_people_detection_msgs::DetectionArray& face_position_msg_out, ros::Time image_recording_time);
+	unsigned long prepareFacePositionMessage(cob_perception_msgs::DetectionArray& face_position_msg_out, ros::Time image_recording_time);
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-	void inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg);
+	void inputCallback(const cob_perception_msgs::DetectionArray::ConstPtr& face_position_msg_in, const sensor_msgs::Image::ConstPtr& people_segmentation_image_msg);
 
 };
 

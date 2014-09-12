@@ -72,8 +72,8 @@
 // ROS message includes
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <cob_people_detection_msgs/DetectionArray.h>
-#include <cob_people_detection_msgs/ColorDepthImageArray.h>
+#include <cob_perception_msgs/DetectionArray.h>
+#include <cob_perception_msgs/ColorDepthImageArray.h>
 
 // topics
 #include <message_filters/subscriber.h>
@@ -109,12 +109,12 @@ protected:
 
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter colorimage_sub_; ///< Color camera image topic
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray,
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_perception_msgs::DetectionArray, cob_perception_msgs::ColorDepthImageArray,
 			sensor_msgs::Image> >* sync_input_3_;
-	//	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::PointCloud2> >* sync_input_3_;
+	//	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_perception_msgs::DetectionArray, cob_perception_msgs::ColorDepthImageArray, sensor_msgs::PointCloud2> >* sync_input_3_;
 	//	message_filters::Subscriber<sensor_msgs::PointCloud2> pointcloud_sub_;
-	message_filters::Subscriber<cob_people_detection_msgs::ColorDepthImageArray> face_detection_subscriber_; ///< receives the face messages from the face detector
-	message_filters::Subscriber<cob_people_detection_msgs::DetectionArray> face_recognition_subscriber_; ///< receives the face messages from the detection tracker
+	message_filters::Subscriber<cob_perception_msgs::ColorDepthImageArray> face_detection_subscriber_; ///< receives the face messages from the face detector
+	message_filters::Subscriber<cob_perception_msgs::DetectionArray> face_recognition_subscriber_; ///< receives the face messages from the detection tracker
 
 	image_transport::Publisher people_detection_image_pub_; ///< topic for publishing the image containing the people positions
 
@@ -133,9 +133,9 @@ public:
 	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image);
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-	void inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg,
-			const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& colorimage_msg);
-	//	void inputCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg);
+	void inputCallback(const cob_perception_msgs::DetectionArray::ConstPtr& face_recognition_msg,
+			const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::Image::ConstPtr& colorimage_msg);
+	//	void inputCallback(const cob_perception_msgs::DetectionArray::ConstPtr& face_recognition_msg, const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg, const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg);
 };
 
 }

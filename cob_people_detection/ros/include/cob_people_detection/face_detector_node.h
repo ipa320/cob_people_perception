@@ -71,7 +71,7 @@
 #include <ros/package.h>		// use as: directory_ = ros::package::getPath("cob_people_detection") + "/common/files/windows/";
 // ROS message includes
 #include <sensor_msgs/Image.h>
-#include <cob_people_detection_msgs/ColorDepthImageArray.h>
+#include <cob_perception_msgs/ColorDepthImageArray.h>
 
 namespace ipa_PeopleDetector
 {
@@ -89,7 +89,7 @@ public:
 protected:
 
 	/// Callback for incoming head detections
-	void head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions);
+	void head_positions_callback(const cob_perception_msgs::ColorDepthImageArray::ConstPtr& head_positions);
 
 	ros::NodeHandle node_handle_;
 

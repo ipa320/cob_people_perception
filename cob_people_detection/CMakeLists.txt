@@ -26,7 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   cob_image_flip
   cob_vision_utils
-  cob_people_detection_msgs
+  cob_perception_msgs
   kdl_parser
   orocos_kdl
 )
@@ -83,7 +83,7 @@ generate_messages(
     actionlib_msgs
     geometry_msgs
     stereo_msgs
-    cob_people_detection_msgs
+    cob_perception_msgs
 )
 
 ## Generate configurations for dynamic_reconfigure
@@ -131,7 +131,7 @@ catkin_package(
     cv_bridge
     cob_image_flip
     cob_vision_utils
-    cob_people_detection_msgs
+    cob_perception_msgs
     kdl_parser
     orocos_kdl
   DEPENDS
@@ -354,17 +354,17 @@ add_dependencies(sensor_message_gateway_node ${${PROJECT_NAME}_EXPORTED_TARGETS}
 add_dependencies(sensor_message_gateway_nodelet ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(coordinator_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-add_dependencies(people_detection_client ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(head_detector_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(face_detector_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(face_recognizer_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(detection_tracker_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(people_detection_display_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(face_capture_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(sensor_message_gateway_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(sensor_message_gateway_nodelet ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(coordinator_node ${cob_people_detection_msgs_EXPORTED_TARGETS})
-add_dependencies(tracking_evaluator ${cob_people_detection_msgs_EXPORTED_TARGETS})
+add_dependencies(people_detection_client ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(head_detector_node ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(face_detector_node ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(face_recognizer_node ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(detection_tracker_node ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(people_detection_display_node ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(face_capture_node ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(sensor_message_gateway_node ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(sensor_message_gateway_nodelet ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(coordinator_node ${cob_perception_msgs_EXPORTED_TARGETS})
+add_dependencies(tracking_evaluator ${cob_perception_msgs_EXPORTED_TARGETS})
 
 # Check for sse support
 #rosbuild_check_for_sse()

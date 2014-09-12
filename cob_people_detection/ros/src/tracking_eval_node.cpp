@@ -72,7 +72,7 @@
 // ROS message includes
 #include <sensor_msgs/Image.h>
 //#include <sensor_msgs/PointCloud2.h>
-#include <cob_people_detection_msgs/DetectionArray.h>
+#include <cob_perception_msgs/DetectionArray.h>
 
 // services
 //#include <cob_people_detection/DetectPeople.h>
@@ -239,7 +239,7 @@ public:
 	{
 	}
 
-	double computeFacePositionDistance(const cob_people_detection_msgs::Detection& previous_detection, const cob_people_detection_msgs::Detection& current_detection)
+	double computeFacePositionDistance(const cob_perception_msgs::Detection& previous_detection, const cob_perception_msgs::Detection& current_detection)
 	{
 		const geometry_msgs::Point* point_1 = &(previous_detection.pose.pose.position);
 		const geometry_msgs::Point* point_2 = &(current_detection.pose.pose.position);
@@ -252,7 +252,7 @@ public:
 	}
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-	void trackingCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_position_msg_in)
+	void trackingCallback(const cob_perception_msgs::DetectionArray::ConstPtr& face_position_msg_in)
 	{
 		//std::cout<<"Callback TRACKING running..."<<std::endl;
 
@@ -274,7 +274,7 @@ public:
 		this->eval();
 	}
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-	void recognitionCallback(const cob_people_detection_msgs::DetectionArray::ConstPtr& face_position_msg_in)
+	void recognitionCallback(const cob_perception_msgs::DetectionArray::ConstPtr& face_position_msg_in)
 	{
 		//std::cout<<"Callback running..."<<std::endl;
 

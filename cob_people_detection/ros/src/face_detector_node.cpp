@@ -121,7 +121,7 @@ FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh) :
 			face_size_max_m, face_size_min_m, max_face_z_m, debug);
 
 	// advertise topics
-	face_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageArray>("face_positions", 1);
+	face_position_publisher_ = node_handle_.advertise<cob_perception_msgs::ColorDepthImageArray>("face_positions", 1);
 
 	// subscribe to head detection topic
 	head_position_subscriber_ = nh.subscribe("head_positions", 1, &FaceDetectorNode::head_positions_callback, this);
@@ -138,7 +138,7 @@ void voidDeleter(const sensor_msgs::Image* const )
 {
 }
 
-void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions)
+void FaceDetectorNode::head_positions_callback(const cob_perception_msgs::ColorDepthImageArray::ConstPtr& head_positions)
 {
 	//	Timer tim;
 	//	tim.start();
@@ -182,14 +182,14 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 	// face_normalizer_.normalizeFaces(heads_color_images, heads_depth_images, face_coordinates);
 
 	// prepare the message for publication
-	cob_people_detection_msgs::ColorDepthImageArray image_array;
+	cob_perception_msgs::ColorDepthImageArray image_array;
 	image_array = *head_positions;
 	for (unsigned int i = 0; i < face_coordinates.size(); i++)
 	{
 		for (unsigned int j = 0; j < face_coordinates[i].size(); j++)
 		{
 			// face rectangle
-			cob_people_detection_msgs::Rect rect;
+			cob_perception_msgs::Rect rect;
 			rect.x = face_coordinates[i][j].x;
 			rect.y = face_coordinates[i][j].y;
 			rect.width = face_coordinates[i][j].width;

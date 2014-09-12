@@ -88,7 +88,7 @@ FaceNormalizerNode::FaceNormalizerNode(ros::NodeHandle nh) :
 
 
 	// advertise topics
-	norm_face_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageCropArray>("norm_faces", 1);
+	norm_face_publisher_ = node_handle_.advertise<cob_perception_msgs::ColorDepthImageCropArray>("norm_faces", 1);
 
 	// subscribe to head detection topic
 	face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceNormalizerNode::facePositionsCallback, this);
@@ -98,7 +98,7 @@ FaceNormalizerNode::~FaceNormalizerNode(void)
 {
 }
 
-void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions)
+void FaceNormalizerNode::facePositionsCallback(const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_positions)
 {
 	// receive head and face positions and recognize faces in the face region, finally publish detected and recognized faces
 
@@ -144,13 +144,13 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
 		face_bounding_boxes[i].resize(face_positions->head_detections[i].face_detections.size());
 		for (uint j = 0; j < face_bounding_boxes[i].size(); j++)
 		{
-			const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].face_detections[j];
+			const cob_perception_msgs::Rect& source_rect = face_positions->head_detections[i].face_detections[j];
 			cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 			face_bounding_boxes[i][j] = rect;
 		}
 
 		// head bounding box
-		const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].head_detection;
+		const cob_perception_msgs::Rect& source_rect = face_positions->head_detections[i].head_detection;
 		cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 		head_bounding_boxes[i] = rect;
 	}
@@ -178,7 +178,7 @@ void FaceNormalizerNode::facePositionsCallback(const cob_people_detection_msgs::
 		}
 	}
 
-	cob_people_detection_msgs::ColorDepthImageCropArray image_array;
+	cob_perception_msgs::ColorDepthImageCropArray image_array;
 	image_array.cdia = *face_positions;
 	image_array.crops.resize(crops.size());
 	for (unsigned int i = 0; i < crops.size(); i++)

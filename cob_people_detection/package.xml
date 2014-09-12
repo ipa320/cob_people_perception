@@ -37,7 +37,7 @@
   <build_depend>cv_bridge</build_depend>
   <build_depend>cob_image_flip</build_depend>
   <build_depend>cob_vision_utils</build_depend>
-  <build_depend>cob_people_detection_msgs</build_depend>
+  <build_depend>cob_perception_msgs</build_depend>
   <build_depend>kdl_parser</build_depend>
   <build_depend>orocos_kdl</build_depend>
 
@@ -64,7 +64,7 @@
   <run_depend>cv_bridge</run_depend>
   <run_depend>cob_image_flip</run_depend>
   <run_depend>cob_vision_utils</run_depend>
-  <run_depend>cob_people_detection_msgs</run_depend>
+  <run_depend>cob_perception_msgs</run_depend>
   <run_depend>kdl_parser</run_depend>
   <run_depend>orocos_kdl</run_depend>
   <run_depend>openni_camera</run_depend>

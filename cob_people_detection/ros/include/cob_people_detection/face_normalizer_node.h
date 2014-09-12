@@ -72,9 +72,9 @@
 // ROS message includes
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/Point.h>
-#include <cob_people_detection_msgs/DetectionArray.h>
-#include <cob_people_detection_msgs/ColorDepthImageArray.h>
-//#include <cob_people_detection_msgs/ColorDepthImageCropArray.h>
+#include <cob_perception_msgs/DetectionArray.h>
+#include <cob_perception_msgs/ColorDepthImageArray.h>
+//#include <cob_perception_msgs/ColorDepthImageCropArray.h>
 
 // Actions
 #include <actionlib/server/simple_action_server.h>
@@ -98,7 +98,7 @@ public:
 protected:
 
 	/// Callback for incoming head detections
-	void facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions);
+	void facePositionsCallback(const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_positions);
 
 	ros::NodeHandle node_handle_;
 

@@ -162,7 +162,7 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh) :
 			std::cout << "   - " << identification_labels_to_recognize[i] << std::endl;
 
 		// advertise topics
-		face_recognition_publisher_ = node_handle_.advertise<cob_people_detection_msgs::DetectionArray>("face_recognitions", 1);
+		face_recognition_publisher_ = node_handle_.advertise<cob_perception_msgs::DetectionArray>("face_recognitions", 1);
 
 		// subscribe to head detection topic
 		face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceRecognizerNode::facePositionsCallback, this);
@@ -186,7 +186,7 @@ void voidDeleter(const sensor_msgs::Image* const )
 {
 }
 
-//void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageCropArray::ConstPtr& face_positions)
+//void FaceRecognizerNode::facePositionsCallback(const cob_perception_msgs::ColorDepthImageCropArray::ConstPtr& face_positions)
 //{
 //	// receive head and face positions and recognize faces in the face region, finally publish detected and recognized faces
 //
@@ -242,14 +242,14 @@ void voidDeleter(const sensor_msgs::Image* const )
 //		crop_bounding_boxes[i].resize(face_positions->cdia.head_detections[i].face_detections.size());
 //		for (uint j=0; j<face_bounding_boxes[i].size(); j++)
 //		{
-//			const cob_people_detection_msgs::Rect& source_rect = face_positions->cdia.head_detections[i].face_detections[j];
+//			const cob_perception_msgs::Rect& source_rect = face_positions->cdia.head_detections[i].face_detections[j];
 //			cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 //			face_bounding_boxes[i][j] = rect;
 //			crop_bounding_boxes[i][j] = bb;
 //		}
 //
 //		// head bounding box
-//		const cob_people_detection_msgs::Rect& source_rect = face_positions->cdia.head_detections[i].head_detection;
+//		const cob_perception_msgs::Rect& source_rect = face_positions->cdia.head_detections[i].head_detection;
 //		cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 //		head_bounding_boxes[i] = rect;
 //	}
@@ -308,7 +308,7 @@ void voidDeleter(const sensor_msgs::Image* const )
 //	}
 //
 //	// --- publish detection message ---
-//	cob_people_detection_msgs::DetectionArray detection_msg;
+//	cob_perception_msgs::DetectionArray detection_msg;
 //	detection_msg.header = face_positions->header;
 //
 //	// prepare message
@@ -317,7 +317,7 @@ void voidDeleter(const sensor_msgs::Image* const )
 //		if (face_bounding_boxes[head].size() == 0)
 //		{
 //			// no faces detected in head region -> publish head position
-//			cob_people_detection_msgs::Detection det;
+//			cob_perception_msgs::Detection det;
 //			cv::Rect& head_bb = head_bounding_boxes[head];
 //			// set 3d position of head's center
 //			bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], 0.5*(float)head_bb.width, 0.5*(float)head_bb.height, det.pose.pose.position, 6);
@@ -340,7 +340,7 @@ void voidDeleter(const sensor_msgs::Image* const )
 //			// process all faces in head region
 //			for (int face=0; face<(int)face_bounding_boxes[head].size(); face++)
 //			{
-//				cob_people_detection_msgs::Detection det;
+//				cob_perception_msgs::Detection det;
 //				cv::Rect& head_bb = head_bounding_boxes[head];
 //				cv::Rect& face_bb = face_bounding_boxes[head][face];
 //				// set 3d position of head's center
@@ -365,7 +365,7 @@ void voidDeleter(const sensor_msgs::Image* const )
 //	// publish message
 //	face_recognition_publisher_.publish(detection_msg);
 //}
-void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_positions)
+void FaceRecognizerNode::facePositionsCallback(const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_positions)
 {
 	//	Timer tim;
 	//	tim.start();
@@ -415,13 +415,13 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 		face_bounding_boxes[i].resize(face_positions->head_detections[i].face_detections.size());
 		for (uint j = 0; j < face_bounding_boxes[i].size(); j++)
 		{
-			const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].face_detections[j];
+			const cob_perception_msgs::Rect& source_rect = face_positions->head_detections[i].face_detections[j];
 			cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 			face_bounding_boxes[i][j] = rect;
 		}
 
 		// head bounding box
-		const cob_people_detection_msgs::Rect& source_rect = face_positions->head_detections[i].head_detection;
+		const cob_perception_msgs::Rect& source_rect = face_positions->head_detections[i].head_detection;
 		cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
 		head_bounding_boxes[i] = rect;
 	}
@@ -458,7 +458,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	}
 
 	// --- publish detection message ---
-	cob_people_detection_msgs::DetectionArray detection_msg;
+	cob_perception_msgs::DetectionArray detection_msg;
 	detection_msg.header = face_positions->header;
 
 	// prepare message
@@ -467,7 +467,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 		if (face_bounding_boxes[head].size() == 0)
 		{
 			// no faces detected in head region -> publish head position
-			cob_people_detection_msgs::Detection det;
+			cob_perception_msgs::Detection det;
 			cv::Rect& head_bb = head_bounding_boxes[head];
 			// set 3d position of head's center
 			bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], 0.5 * (float)head_bb.width, 0.5 * (float)head_bb.height, det.pose.pose.position, 6);
@@ -496,7 +496,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 			// process all faces in head region
 			for (int face = 0; face < (int)face_bounding_boxes[head].size(); face++)
 			{
-				cob_people_detection_msgs::Detection det;
+				cob_perception_msgs::Detection det;
 				cv::Rect& head_bb = head_bounding_boxes[head];
 				cv::Rect& face_bb = face_bounding_boxes[head][face];
 				// set 3d position of head's center

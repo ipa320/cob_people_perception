@@ -71,8 +71,8 @@
 
 // ROS message includes
 #include <sensor_msgs/Image.h>
-//#include <cob_people_detection_msgs/DetectionArray.h>
-#include <cob_people_detection_msgs/ColorDepthImageArray.h>
+//#include <cob_perception_msgs/DetectionArray.h>
+#include <cob_perception_msgs/ColorDepthImageArray.h>
 
 // topics
 #include <message_filters/subscriber.h>
@@ -142,10 +142,10 @@ protected:
 
 	image_transport::ImageTransport* it_;
 	//	image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
-	//	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_3_;
-	//	message_filters::Subscriber<cob_people_detection_msgs::DetectionArray> face_recognition_subscriber_; ///< receives the face messages from the detection tracker
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_2_;
-	message_filters::Subscriber<cob_people_detection_msgs::ColorDepthImageArray> face_detection_subscriber_; ///< receives the face messages from the face detector
+	//	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_perception_msgs::DetectionArray, cob_perception_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_3_;
+	//	message_filters::Subscriber<cob_perception_msgs::DetectionArray> face_recognition_subscriber_; ///< receives the face messages from the detection tracker
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_perception_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_2_;
+	message_filters::Subscriber<cob_perception_msgs::ColorDepthImageArray> face_detection_subscriber_; ///< receives the face messages from the face detector
 	image_transport::SubscriberFilter color_image_sub_; ///< Color camera image topic
 
 	// actions
@@ -173,7 +173,7 @@ protected:
 	void addDataServerCallback(const cob_people_detection::addDataGoalConstPtr& goal);
 
 	/// checks the detected faces from the input topic against the people segmentation and outputs faces if both are positive
-	void inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg);//, const sensor_msgs::Image::ConstPtr& color_image_msg);
+	void inputCallback(const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg);//, const sensor_msgs::Image::ConstPtr& color_image_msg);
 
 	/// Converts a color image message to cv::Mat format.
 	unsigned long convertColorImageMessageToMat(const sensor_msgs::Image::ConstPtr& image_msg, cv_bridge::CvImageConstPtr& image_ptr, cv::Mat& image);
