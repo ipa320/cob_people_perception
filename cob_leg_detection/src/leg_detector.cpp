@@ -290,7 +290,7 @@ public:
     }
 
     nh_.param<bool>("use_seeds", use_seeds_, !true);
-    ROS_INFO("Execute LegDetector 3");
+
     // advertise topics
     leg_measurements_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("leg_tracker_measurements",0);
     people_measurements_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);

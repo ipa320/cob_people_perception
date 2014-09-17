@@ -52,7 +52,7 @@
 
 // messages
 #include <sensor_msgs/PointCloud.h>
-#include <cob_perception_msgs/PositionMeasurement.h>
+#include <cob_perception_msgs/PositionMeasurementArray.h>
 #include <message_filters/time_sequencer.h>
 #include <message_filters/subscriber.h>
  
@@ -73,10 +73,10 @@ public:
   virtual ~PeopleTrackingNode();
 
   /// callback for messages
-  void callbackRcv(const cob_perception_msgs::PositionMeasurement::ConstPtr& message);
+  void callbackRcv(const cob_perception_msgs::PositionMeasurementArray::ConstPtr& message);
 
   /// callback for dropped messages
-  void callbackDrop(const cob_perception_msgs::PositionMeasurement::ConstPtr& message);
+  void callbackDrop(const cob_perception_msgs::PositionMeasurementArray::ConstPtr& message);
 
   /// tracker loop
   void spin();
@@ -93,7 +93,7 @@ private:
   ros::Subscriber people_meas_sub_;
 
   /// message sequencer
-  message_filters::TimeSequencer<cob_perception_msgs::PositionMeasurement>*  message_sequencer_;
+  message_filters::TimeSequencer<cob_perception_msgs::PositionMeasurementArray>*  message_sequencer_;
 
   /// trackers
   std::list<Tracker*> trackers_;

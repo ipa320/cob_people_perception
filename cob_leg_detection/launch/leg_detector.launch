@@ -1,9 +1,6 @@
 <launch>
   <node pkg="cob_leg_detection" type="leg_detection" name="leg_detection" args="scan:=/scan_unified
  $(find cob_leg_detection)/config/trained_leg_detector.yaml" output="screen"/>
-
-	<param name="max_pub_rate" type="double" value="5.0"/>
-	<param name="connected_thresh" type="double" value="0.06"/> 
-	
+	<include file="$(find cob_scan_unifier)/launch/scan_unifier.launch"/>
 </launch>
 
