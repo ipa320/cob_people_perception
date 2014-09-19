@@ -15,6 +15,7 @@ include_directories(${BULLET_INCLUDE_DIRS})
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   std_msgs
   geometry_msgs
   std_srvs
@@ -40,13 +41,16 @@ include_directories(
 
 catkin_package(INCLUDE_DIRS include
   CATKIN_DEPENDS cob_perception_msgs
-    sensor_msgs std_msgs geometry_msgs visualization_msgs)
+    sensor_msgs std_msgs geometry_msgs visualization_msgs rospy)
 
 ## Declare a cpp executable
-add_executable(leg_detection 
+add_executable(leg_detection               
                src/laser_processor.cpp
                src/leg_detector.cpp 
                src/calc_leg_features.cpp)
+               
+
+
 
 ## Add cmake target dependencies of the executable/library
 #add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
@@ -56,6 +60,16 @@ add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPO
 target_link_libraries(leg_detection
    ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
 )
+
+#add_executable(velocity_tracker src/velocity_tracker.cpp)
+#target_link_libraries(velocity_tracker ${catkin_LIBRARIES})
+#add_dependencies(velocity_tracker ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
+
+
+#install(TARGETS ---
+#  ARCHIVE DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
+#  LIBRARY DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
+#)
 
 install(TARGETS
     leg_detection

@@ -23,6 +23,6 @@
 <param name="cob_people_tracker/sys_sigma_vel_y" value="0.5"/>
 <param name="cob_people_tracker/sys_sigma_vel_z" value="0.5"/>
 
-<node pkg="cob_people_tracking_filter" type="cob_people_tracker" name="people_tracker" output="screen"/>
+<node pkg="cob_people_tracking_filter" type="cob_people_tracker" name="cob_people_tracker" output="screen"/>
 </launch>
 

@@ -35,6 +35,7 @@
 /* Author: Wim Meeussen */
 
 #include "cob_people_tracking_filter/tracker_kalman.h"
+#include <cob_perception_msgs/PositionMeasurement.h>
 
 using namespace MatrixWrapper;
 using namespace BFL;

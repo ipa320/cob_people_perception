@@ -32,14 +32,14 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen , Olha Meyer*/
+/* Author: Wim Meeussen */
 
 #include "cob_people_tracking_filter/people_tracking_node.h"
 #include "cob_people_tracking_filter/tracker_particle.h"
 #include "cob_people_tracking_filter/tracker_kalman.h"
 #include "cob_people_tracking_filter/state_pos_vel.h"
 #include "cob_people_tracking_filter/rgb.h"
-#include <cob_perception_msgs/PositionMeasurementArray.h>
+#include <cob_perception_msgs/PositionMeasurement.h>
 
 
 using namespace std;
@@ -82,8 +82,7 @@ namespace estimation
     local_nh.param("follow_one_person", follow_one_person_, false);
 
     // advertise filter output
-    people_filter_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("people_tracker_filter",10);
-
+    people_filter_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurement>("people_tracker_filter",10);
     // advertise visualization
     people_filter_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_filter_visualization",10);
     people_tracker_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_measurements_visualization",10);
@@ -109,16 +108,14 @@ namespace estimation
 
 
   // callback for messages
-  void PeopleTrackingNode::callbackRcv(const cob_perception_msgs::PositionMeasurementArray::ConstPtr& message)
+  void PeopleTrackingNode::callbackRcv(const cob_perception_msgs::PositionMeasurement::ConstPtr& message)
   {
     ROS_DEBUG("Tracking node got a people position measurement (%f,%f,%f)",
-    		message->people.data()->pos.x,message->people.data()->pos.y,message->people.data()->pos.z
-	     // message->pos.x, message->pos.y, message->pos.z
-    		);
+	      message->pos.x, message->pos.y, message->pos.z);
     // get measurement in fixed frame
     Stamped<tf::Vector3> meas_rel, meas;
-  //  meas_rel.setData(
-	//	     tf::Vector3(message->pos.x, message->pos.y, message->pos.z));
+    meas_rel.setData(
+		     tf::Vector3(message->pos.x, message->pos.y, message->pos.z));
     meas_rel.stamp_ = message->header.stamp;
     meas_rel.frame_id_ = message->header.frame_id;
     robot_state_.transformPoint(fixed_frame_, meas_rel, meas);
@@ -127,11 +124,11 @@ namespace estimation
     SymmetricMatrix cov(3);
     for (unsigned int i = 0; i < 3; i++)
       for (unsigned int j = 0; j < 3; j++)
-//	cov(i + 1, j + 1) = message->covariance[3 * i + j];
+	cov(i + 1, j + 1) = message->covariance[3 * i + j];
     
     // ----- LOCKED ------
     boost::mutex::scoped_lock lock(filter_mutex_);
-  /*
+
     // update tracker if matching tracker found
     for (list<Tracker*>::iterator it = trackers_.begin(); it != trackers_.end(); it++)
       if ((*it)->getName() == message->object_id) {
@@ -183,26 +180,23 @@ namespace estimation
     }
     lock.unlock();
     // ------ LOCKED ------
-*/
     
+
     // visualize measurement
     meas_cloud_.points[0].x = meas[0];
     meas_cloud_.points[0].y = meas[1];
     meas_cloud_.points[0].z = meas[2];
     meas_cloud_.header.frame_id = meas.frame_id_;
     people_tracker_vis_pub_.publish(meas_cloud_);
-
   }
 
 
 
   // callback for dropped messages
-  void PeopleTrackingNode::callbackDrop(const cob_perception_msgs::PositionMeasurementArray::ConstPtr& message)
+  void PeopleTrackingNode::callbackDrop(const cob_perception_msgs::PositionMeasurement::ConstPtr& message)
   {
     ROS_INFO("DROPPED PACKAGE for %s from %s with delay %f !!!!!!!!!!!", 
-	   //  message->object_id.c_str(), message->name.c_str(), (ros::Time::now() - message->header.stamp).toSec());
-    		message->people.data()->object_id.c_str(),
-    		message->people.data()->name.c_str(), (ros::Time::now() -message->people.data()->header.stamp).toSec());
+	     message->object_id.c_str(), message->name.c_str(), (ros::Time::now() - message->header.stamp).toSec());
 
   }
 
@@ -231,17 +225,17 @@ namespace estimation
 	(*it)->updatePrediction(ros::Time::now().toSec() - sequencer_delay);
 
 	// publish filter result
-	cob_perception_msgs::PositionMeasurementArray est_pos;
-	//(*it)->getEstimate(est_pos);
+	cob_perception_msgs::PositionMeasurement est_pos;
+	(*it)->getEstimate(est_pos);
 	est_pos.header.frame_id = fixed_frame_;
 
 	ROS_DEBUG("Publishing people tracker filter.");
 	people_filter_pub_.publish(est_pos);
-/*
+
 	// visualize filter result
 	filter_visualize[i].x = est_pos.pos.x;
 	filter_visualize[i].y = est_pos.pos.y;
-	filter_visualize[i].z = est_pos.pos.z;*/
+	filter_visualize[i].z = est_pos.pos.z;
 	weights[i] = *(float*)&(rgb[min(998, 999-max(1, (int)trunc( (*it)->getQuality()*999.0 )))]);
 
 	// remove trackers that have zero quality
