@@ -86,6 +86,7 @@ namespace estimation
     SymmetricMatrix meas_sigma(3); meas_sigma = 0;
     for (unsigned int i=0; i<3; i++)
       meas_sigma(i+1, i+1) = 0;
+
     Gaussian meas_noise(meas_mu, meas_sigma);
     meas_pdf_   = new LinearAnalyticConditionalGaussian(meas_matrix, meas_noise);
     meas_model_ = new LinearAnalyticMeasurementModelGaussianUncertainty(meas_pdf_);
@@ -135,7 +136,7 @@ namespace estimation
     if (time > filter_time_){
       // set dt in sys model
       for (unsigned int i=1; i<=3; i++)
-	sys_matrix_(i, i+3) = time - filter_time_;
+	  sys_matrix_(i, i+3) = time - filter_time_;
       sys_pdf_->MatrixSet(0, sys_matrix_);
 
       // scale system noise for dt
@@ -155,21 +156,20 @@ namespace estimation
   // update filter correction
 bool TrackerKalman::updateCorrection(const tf::Vector3&  meas, const MatrixWrapper::SymmetricMatrix& cov)
   {
-    assert(cov.columns() == 3);
+	assert(cov.columns() == 3);
 
-    // copy measurement
-    ColumnVector meas_vec(3);
-    for (unsigned int i=0; i<3; i++)
-      meas_vec(i+1) = meas[i];
+	    // copy measurement
+	    ColumnVector meas_vec(3);
+	    for (unsigned int i=0; i<3; i++)
+	      meas_vec(i+1) = meas[i];
 
-    // set covariance
-    ((LinearAnalyticConditionalGaussian*)(meas_model_->MeasurementPdfGet()))->AdditiveNoiseSigmaSet(cov);
+	    // set covariance
+	    ((LinearAnalyticConditionalGaussian*)(meas_model_->MeasurementPdfGet()))->AdditiveNoiseSigmaSet(cov);
 
-    // update filter
-    bool res = filter_->Update(meas_model_, meas_vec);
-    if (!res) quality_ = 0;
-    else quality_ = calculateQuality();
-
+	    // update filter
+	    bool res = filter_->Update(meas_model_, meas_vec);
+	    if (!res) quality_ = 0;
+	    else quality_ = calculateQuality();
     return res;
   };
 
@@ -191,6 +191,10 @@ bool TrackerKalman::updateCorrection(const tf::Vector3&  meas, const MatrixWrapp
     est.pos.x = tmp(1);
     est.pos.y = tmp(2);
     est.pos.z = tmp(3);
+
+    est.vel.x = tmp(4);
+    est.vel.y = tmp(5);
+    est.vel.z = tmp(6);
 
     est.header.stamp.fromSec( filter_time_ );
     est.object_id = getName();

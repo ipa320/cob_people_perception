@@ -6,11 +6,9 @@
 	
 	 
 	<!--include file="$(find cob_leg_detection)/launch/filtered_leg_detector.launch" /-->
+	
     <arg name="limit" default="0.2" />
     <param name="/cob_leg_detector/leg_reliability_limit" value="$(arg limit)" type="double"/>
-    
-    
-    <!--node name="velocity_tracker" pkg="cob_leg_detection" type="velocity_tracker" output="screen"/-->
     
 </launch>
 
