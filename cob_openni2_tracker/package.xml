@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<package>
+  <name>cob_openni2_tracker</name>
+  <version>0.1.0</version>
+  <description>
+    The openni_tracker broadcasts the OpenNI skeleton frames using tf.
+    This new version of the openni_tracker uses OpenNI2 and Nite2</description>
+  <maintainer email="marcus.liebhardt@yujinrobot.com">Marcus Liebhardt</maintainer>
+  <license>BSD</license>
+  <url type="website">http://www.ros.org/wiki/openni_tracker</url>  
+  <author email="marcus.liebhardt@yujinrobot.com">Marcus Liebhardt</author>
+  
+  <author>Olha Meyer</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>cmake_modules</build_depend>
+  <build_depend>libopenni-dev</build_depend>
+  <build_depend>libusb-1.0-dev</build_depend>
+  <!--  <build_depend>libopenni-nite-dev</build_depend> -->
+  <build_depend>libopenni-sensor-primesense-dev</build_depend> -->
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>orocos_kdl</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>roslib</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>cob_perception_msgs</build_depend>
+
+  <run_depend>libopenni-dev</run_depend>
+  <run_depend>libusb-1.0-dev</run_depend>
+<!--  <run_depend>libopenni-nite-dev</run_depend> -->
+  <run_depend>libopenni-sensor-primesense-dev</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>orocos_kdl</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>roslib</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>cob_perception_msgs</run_depend>
+  <run_depend>message_runtime</run_depend>
+</package>

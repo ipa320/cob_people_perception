@@ -1,0 +1,13 @@
+<!-- Entry point for using OpenNI2 devices -->
+<launch>
+<arg name="tracker_name" default="body_tracker" />
+
+<!-- TF Static Transforms to World -->
+<!--node pkg="tf" type="static_transform_publisher" name="world" args=" 0 0 1.25 1.5707 0 1.7707 /world /$(arg tracker_name)_depth_frame 100"/ -->
+
+ <node name="body_tracker" output="screen" pkg="cob_openni2_tracker" type="body_tracker" >
+	<param name="tf_prefix" value="$(arg tracker_name)" />
+	<param name="relative_frame" value="/$(arg tracker_name)_depth_frame" />
+</node>
+
+</launch>
