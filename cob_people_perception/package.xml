@@ -9,14 +9,20 @@
   <license>LGPL</license>
   
   <maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
-  <author>Richard Bormann, Thomas Zwölfer</author>
+  <author>Richard Bormann, Thomas Zwölfer, Olha Meyer</author>
   
   <url>http://ros.org/wiki/cob_people_perception</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <build_depend>cob_leg_detection</build_depend>
+  <build_depend>cob_openni2_tracker</build_depend>
   <build_depend>cob_people_detection</build_depend>
+  <build_depend>cob_people_tracking_filter</build_depend>
 
+  <run_depend>cob_leg_detection</run_depend>
+  <run_depend>cob_openni2_tracker</run_depend>
   <run_depend>cob_people_detection</run_depend>
+  <run_depend>cob_people_tracking_filter</run_depend>
 
 </package>
