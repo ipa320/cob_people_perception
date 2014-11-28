@@ -1269,8 +1269,8 @@ bool FaceNormalizer::read_scene(cv::Mat& depth, cv::Mat& color,std::string path)
 {
   std::cout<<"[FaceNormalizer]Reading from "<<path<<std::endl;
   cv::FileStorage fs(path,FileStorage::READ);
-  fs["depth"]>> depth;
-  fs["color"]>> color;
+  fs["depth"] >> depth;
+  fs["color"] >> color;
   fs.release();
   return true;
 }
@@ -1534,3 +1534,4 @@ bool FaceNormalizer::normalize_img_type(cv::Mat& in,cv::Mat& out)
   in.convertTo(out,CV_64FC1);
   return true;
 }
+

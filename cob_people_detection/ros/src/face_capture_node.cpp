@@ -123,7 +123,7 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	delete_data_server_->start();
 
 	// input synchronization
-//	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
+//	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_perception_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
 //	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
 
 	std::cout << "FaceCaptureNode initialized. " << face_images_.size() << " color images and " << face_depthmaps_.size() << " depth images for training loaded.\n" << std::endl;
@@ -215,7 +215,7 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 }
 
 /// captures the images
-void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg)//, const sensor_msgs::Image::ConstPtr& color_image_msg)
+void FaceCaptureNode::inputCallback(const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg)//, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
 	//ROS_INFO("inputCallback");
 
@@ -249,11 +249,11 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 
 		// store image and label
 // merge todo: check whether new coordinate convention (face_bounding box uses coordinates of head and face) hold in this code as well
-//		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
-//		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
+//		const cob_perception_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
+//		const cob_perception_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
 //		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
-		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[headIndex].face_detections[0];
-		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[headIndex].head_detection;
+		const cob_perception_msgs::Rect& face_rect = face_detection_msg->head_detections[headIndex].face_detections[0];
+		const cob_perception_msgs::Rect& head_rect = face_detection_msg->head_detections[headIndex].head_detection;
 		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
 		cv::Rect head_bounding_box(head_rect.x, head_rect.y, head_rect.width, head_rect.height);
 		cv::Mat img_color = color_image;
@@ -412,3 +412,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+

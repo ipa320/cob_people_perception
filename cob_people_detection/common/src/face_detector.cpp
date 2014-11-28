@@ -294,3 +294,4 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 
 	return ipa_Utils::RET_OK;
 }
+
