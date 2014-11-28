@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(cob_openni2_tracker)
 
+
+ 
 set(catkin_RUN_PACKAGES
 	geometry_msgs
 	visualization_msgs
 	cob_perception_msgs
-	orocos_kdl
 	roscpp
 	roslib
 	tf
@@ -25,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
 	${catkin_BUILD_PACKAGES}
 )
 
+find_package(orocos_kdl REQUIRED)
 find_package(OpenCV REQUIRED)
 #find_package(TinyXML REQUIRED)
 #find_package(Boost REQUIRED COMPONENTS filesystem)
@@ -49,10 +51,10 @@ message(STATUS ${OpenNI2_LIBRARIES})
 #########################################################
 find_path(Nite2_INCLUDEDIR
 	  NAMES NiTE.h
-	  HINTS ~/git/catkin_ws/src/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Include)
+	  HINTS /home/rmb-om/git/catkin_ws/src/cob_people_perception/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Include)
 find_library(Nite2_LIBRARY
 	     NAMES NiTE2 
-	     HINTS ~/git/catkin_ws/src/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Redist)
+	     HINTS /home/rmb-om/git/catkin_ws/src/cob_people_perception/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Redist)
 
 #########################################################
 # FIND GLUT
@@ -94,7 +96,9 @@ LIBRARIES
 CATKIN_DEPENDS
 	${catkin_RUN_PACKAGES}
 	message_runtime
+	cob_perception_msgs
 DEPENDS
+	orocos_kdl
 	OpenCV
 	#TinyXML
 	#Boost
@@ -103,13 +107,15 @@ DEPENDS
 
 
 include_directories(
+	ros/include
+	${orokos_kdl_INCLUDEDIR}
 	${catkin_INCLUDEDIR}
 	${OpenCV_INCLUDE_DIRS}
 	${OpenNI2_INCLUDEDIR}
 	${Nite2_INCLUDEDIR}
 )
 		    
-add_executable(body_tracker src/body_tracker.cpp)
+add_executable(body_tracker ros/src/body_tracker.cpp)
 
 #add_dependencies(body_tracker cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
