@@ -16,7 +16,7 @@
 #include "cob_openni2_tracker/body_tracker.h"
 #include <GL/glut.h>
 #include <cob_perception_msgs/Skeleton.h>
-#include <NiteSampleUtilities.h>
+#include <cob_openni2_tracker/NiteSampleUtilities.h>
 
 //screen and texture measures
 #define GL_WIN_SIZE_X	640
@@ -764,4 +764,26 @@ void SampleViewer::InitOpenGLHooks()
 	glutKeyboardFunc(glutKeyboard);
 	glutDisplayFunc(glutDisplay);
 	glutIdleFunc(glutIdle);
+}
+
+
+int main(int argc, char** argv)
+{
+	ros::init(argc, argv, "body_tracker");
+	//tf::TransformBroadcaster br;
+    ros::NodeHandle nh_priv("~");
+
+
+	openni::Status rc = openni::STATUS_OK;
+	printf("Start body tracker");
+
+	SampleViewer sampleViewer("Tracker", nh_priv);
+
+	rc = sampleViewer.Init(argc, argv);
+	if (rc != openni::STATUS_OK)
+	{
+		return 1;
+	}
+
+	sampleViewer.Run();
 }

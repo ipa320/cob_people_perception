@@ -1,13 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(cob_people_detection)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+set(catkin_RUN_PACKAGES
   roscpp
-  #roslib
-  message_generation
   std_msgs
   std_srvs
   actionlib
@@ -21,20 +16,30 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   nodelet
   dynamic_reconfigure
-  pcl
   pcl_ros
   cv_bridge
   cob_image_flip
   cob_vision_utils
   cob_perception_msgs
-  kdl_parser
-  orocos_kdl
+  #kdl_parser
+)
+
+set(catkin_BUILD_PACKAGES
+	${catkin_RUN_PACKAGES}
+	cmake_modules
+	message_generation
+)
+
+
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS
+	${catkin_BUILD_PACKAGES}
 )
 
 find_package(Boost REQUIRED COMPONENTS signals system filesystem)
-
 find_package(OpenCV REQUIRED)
-
 #find_package(PCL REQUIRED)
 #message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
 
@@ -110,30 +115,8 @@ catkin_package(
     face_recognizer_algorithms
     sensor_message_gateway_nodelet
   CATKIN_DEPENDS
-    roscpp
-    #roslib
+    ${catkin_RUN_PACKAGES}
     message_runtime
-    std_msgs
-    std_srvs
-    actionlib
-    sensor_msgs
-    actionlib_msgs
-    geometry_msgs
-    stereo_msgs
-    image_transport
-    image_geometry
-    image_view
-    tf
-    nodelet
-    dynamic_reconfigure
-    pcl
-    pcl_ros
-    cv_bridge
-    cob_image_flip
-    cob_vision_utils
-    cob_perception_msgs
-    kdl_parser
-    orocos_kdl
   DEPENDS
     #PCL
     OpenCV
