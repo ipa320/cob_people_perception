@@ -1,6 +1,32 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(cob_leg_detection)
 
+set(catkin_RUN_PACKAGES
+	roscpp
+	rospy
+	std_msgs
+	geometry_msgs
+	std_srvs
+	sensor_msgs
+	laser_geometry
+	tf
+	visualization_msgs
+	cob_perception_msgs
+	cob_people_tracking_filter
+	image_geometry
+	dynamic_reconfigure
+)
+
+set(catkin_BUILD_PACKAGES
+	${catkin_RUN_PACKAGES}
+	cmake_modules
+)
+
+## Find catkin macros and libraries
+find_package(catkin REQUIRED COMPONENTS
+	${catkin_BUILD_PACKAGES}
+)
+
 # look for bfl (Bayesian Filtering Library)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
@@ -12,23 +38,6 @@ link_directories(${BFL_LIBRARY_DIRS})
 pkg_check_modules(BULLET bullet)
 include_directories(${BULLET_INCLUDE_DIRS})
 
-## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  std_msgs
-  geometry_msgs
-  std_srvs
-  sensor_msgs
-  laser_geometry
-  tf
-  visualization_msgs
-  cob_perception_msgs
-  cob_people_tracking_filter
-  image_geometry
-  dynamic_reconfigure
-)
-
 ## dynamic reconfigure config
 generate_dynamic_reconfigure_options(
   cfg/LegDetection.cfg
@@ -39,9 +48,23 @@ include_directories(
   include ${catkin_INCLUDE_DIRS}
 )
 
-catkin_package(INCLUDE_DIRS include
-  CATKIN_DEPENDS cob_perception_msgs
-    sensor_msgs std_msgs geometry_msgs visualization_msgs rospy)
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if you package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+INCLUDE_DIRS
+	include
+LIBRARIES
+CATKIN_DEPENDS
+	${catkin_RUN_PACKAGES}
+DEPENDS
+)
 
 ## Declare a cpp executable
 add_executable(leg_detection               
@@ -58,7 +81,9 @@ add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPO
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(leg_detection
-   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+   ${catkin_LIBRARIES}
+   ${BFL_LIBRARIES}
+   ${BULLET_LIBRARIES}
 )
 
 #add_executable(velocity_tracker src/velocity_tracker.cpp)
@@ -66,14 +91,20 @@ target_link_libraries(leg_detection
 #add_dependencies(velocity_tracker ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
 
 
-#install(TARGETS ---
-#  ARCHIVE DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
-#  LIBRARY DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
-#)
+#############
+## Install ##
+#############
+## Mark executables and/or libraries for installation
+install(TARGETS leg_detection
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
-install(TARGETS
-    leg_detection
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+install(DIRECTORY include/${PROJECT_NAME}/
+	DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+	FILES_MATCHING PATTERN "*.h"
+	PATTERN ".svn" EXCLUDE
 )
 
 install(FILES config/trained_leg_detector.yaml
@@ -83,3 +114,4 @@ install(FILES config/trained_leg_detector.yaml
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
+

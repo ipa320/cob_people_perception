@@ -44,7 +44,7 @@ find_package(orocos_kdl REQUIRED)
 #	     PATH_SUFFIXES lib) 
 #message(STATUS ${OpenNI2_LIBRARIES})
 
-find_package(PkgConfig)
+find_package(PkgConfig REQUIRED)
 pkg_check_modules(PC_OPENNI2 libopenni2)
 if (NOT PC_OPENNI2_FOUND)
 	pkg_check_modules(PC_OPENNI2 REQUIRED openni2)
@@ -102,7 +102,7 @@ CATKIN_DEPENDS
 	message_runtime
 DEPENDS
 	OpenCV
-	libopenni2
+	#libopenni2
 	orocos_kdl
 	#TinyXML
 	#Boost
@@ -125,8 +125,6 @@ add_executable(body_tracker ros/src/body_tracker.cpp)
 
 #add_dependencies(body_tracker cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-message(STATUS "openni2_dir: ${PC_OPENNI2_LIBRARY_DIRS}")
-message(STATUS "openni2_libs: ${PC_OPENNI2_LIBRARIES}")
 target_link_libraries(body_tracker
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
@@ -137,4 +135,23 @@ target_link_libraries(body_tracker
 	${GLUT_LIBRARY}
 )
 
-install(TARGETS body_tracker RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#############
+## Install ##
+#############
+## Mark executables and/or libraries for installation
+install(TARGETS body_tracker
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY ros/include/${PROJECT_NAME}/
+	DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+	FILES_MATCHING PATTERN "*.h"
+	PATTERN ".svn" EXCLUDE
+)
+
+install(DIRECTORY ros/launch
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/ros
+	PATTERN ".svn" EXCLUDE
+)
