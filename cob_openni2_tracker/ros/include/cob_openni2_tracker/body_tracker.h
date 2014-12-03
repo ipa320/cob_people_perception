@@ -15,6 +15,10 @@
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
 #include <visualization_msgs/Marker.h>
+#include <cob_perception_msgs/Skeleton.h>
+
+
+
 
 #define MAX_DEPTH 10000
 typedef std::map<std::string, nite::SkeletonJoint>JointMap;
