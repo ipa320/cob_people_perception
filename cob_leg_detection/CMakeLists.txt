@@ -27,25 +27,29 @@ find_package(catkin REQUIRED COMPONENTS
 	${catkin_BUILD_PACKAGES}
 )
 
+find_package(OpenCV REQUIRED)	# name identical to FindOpenCV.cmake in cmake_modules
+
 # look for bfl (Bayesian Filtering Library)
+#find_path(BFL_INCLUDE_DIRS
+#	  NAMES OpenNI.h
+#	  HINTS /opt/ros/indigo/include/bfl)
+#find_library(BFL_LIBRARIES
+#	     NAMES orocos-bfl
+#	     HINTS /opt/ros/indigo/lib
+#	     PATH_SUFFIXES lib) 
+#message(STATUS "BFL_LIBRARIES: ${BFL_LIBRARIES}")
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
-
-include_directories(${BFL_INCLUDE_DIRS})
+#include_directories(${BFL_INCLUDE_DIRS})
 link_directories(${BFL_LIBRARY_DIRS})
+#message(STATUS "----------------------------------- include: ${BFL_INCLUDE_DIRS},  lib: ${BFL_LIBRARY_DIRS},   libs: ${BFL_LIBRARIES}")
 
 # Look for Bullet
 #pkg_check_modules(BULLET bullet)
-#include_directories(${BULLET_INCLUDE_DIRS})
 
 ## dynamic reconfigure config
 generate_dynamic_reconfigure_options(
   cfg/LegDetection.cfg
-)
-
-## Specify additional locations of header files
-include_directories(
-  include ${catkin_INCLUDE_DIRS}
 )
 
 ###################################
@@ -66,6 +70,16 @@ CATKIN_DEPENDS
 DEPENDS
 )
 
+## Specify additional locations of header files
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${BFL_INCLUDE_DIRS}
+  #${BULLET_INCLUDE_DIRS}
+)
+
+
 ## Declare a cpp executable
 add_executable(leg_detection               
                src/laser_processor.cpp
@@ -82,6 +96,7 @@ add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPO
 ## Specify libraries to link a library or executable target against
 target_link_libraries(leg_detection
    ${catkin_LIBRARIES}
+   ${OpenCV_LIBRARIES}
    ${BFL_LIBRARIES}
    #${BULLET_LIBRARIES}
 )

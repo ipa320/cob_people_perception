@@ -27,45 +27,26 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV REQUIRED)
 find_package(orocos_kdl REQUIRED)
-#find_package(TinyXML REQUIRED)
-#find_package(Boost REQUIRED COMPONENTS filesystem)
-#find_package(PCL REQUIRED)
 					
 ########################################################
-# Find OpenNI2 (download)
+# Find OpenNI2 (installed)
 ########################################################
-#find_path(OpenNI2_INCLUDEDIR
-#	  NAMES OpenNI.h
-#	  HINTS /usr/include/openni2)
-#	  
-#find_library(OpenNI2_LIBRARIES
-#	     NAMES OpenNI2 DummyDevice OniFile PS1090
-#	     HINTS /usr/lib/ /usr/lib/OpenNI2/Drivers
-#	     PATH_SUFFIXES lib) 
-#message(STATUS ${OpenNI2_LIBRARIES})
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(PC_OPENNI2 libopenni2)
-if (NOT PC_OPENNI2_FOUND)
-	pkg_check_modules(PC_OPENNI2 REQUIRED openni2)
-endif()
+find_path(OpenNI2_INCLUDE_DIRS
+	  NAMES OpenNI.h
+	  HINTS /usr/include/openni2)
+	  
+find_library(OpenNI2_LIBRARIES
+	     NAMES OpenNI2 DummyDevice OniFile PS1090
+	     HINTS /usr/lib/ /usr/lib/OpenNI2/Drivers
+	     PATH_SUFFIXES lib) 
+message(STATUS ${OpenNI2_LIBRARIES})
 
 #########################################################
-# Find Nite2
-#########################################################
-#find_path(Nite2_INCLUDEDIR
-#	  NAMES NiTE.h
-#	  HINTS ~/git/catkin_ws/src/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Include)
-#find_library(Nite2_LIBRARY
-#	     NAMES NiTE2 
-#	     HINTS ~/git/catkin_ws/src/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Redist)
-
-#########################################################
-# FIND GLUT
+# FIND GLUT (installed)
 #########################################################
 find_package(GLUT REQUIRED)
-include_directories(${GLUT_INCLUDE_DIRS})
-link_directories(${GLUT_LIBRARY_DIRS})
+#include_directories(${GLUT_INCLUDE_DIRS})
+#link_directories(${GLUT_LIBRARY_DIRS})
 add_definitions(${GLUT_DEFINITIONS})
 if(NOT GLUT_FOUND)
     message(ERROR " GLUT was not found!")
@@ -76,8 +57,8 @@ endif(NOT GLUT_FOUND)
 # FIND OPENGL
 #########################################################
 find_package(OpenGL REQUIRED)
-include_directories(${OpenGL_INCLUDE_DIRS})
-link_directories(${OpenGL_LIBRARY_DIRS})
+#include_directories(${OpenGL_INCLUDE_DIRS})
+#link_directories(${OpenGL_LIBRARY_DIRS})
 add_definitions(${OpenGL_DEFINITIONS})
 if(NOT OPENGL_FOUND)
     message(ERROR " OPENGL was not found!")
@@ -102,11 +83,7 @@ CATKIN_DEPENDS
 	message_runtime
 DEPENDS
 	OpenCV
-	#libopenni2
 	orocos_kdl
-	#TinyXML
-	#Boost
-	#PCL
 )
 
 
@@ -115,11 +92,10 @@ include_directories(
 	${catkin_INCLUDE_DIRS}
 	${OpenCV_INCLUDE_DIRS}
 	${orocos_kdl_INCLUDE_DIRS}
-	${PC_OPENNI2_INCLUDE_DIRS}
-	#${Nite2_INCLUDEDIR}
+	${OpenNI2_INCLUDE_DIRS}
+	${GLUT_INCLUDE_DIRS}
+	${OpenGL_INCLUDE_DIRS}
 )
-
-link_directories(${PC_OPENNI2_LIBRARY_DIRS})
 
 add_executable(body_tracker ros/src/body_tracker.cpp)
 
@@ -129,10 +105,9 @@ target_link_libraries(body_tracker
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	${orocos_kdl_LIBRARIES}
-	${PC_OPENNI2_LIBRARIES}
-	#${Nite2_LIBRARY}
+	${OpenNI2_LIBRARIES}
 	${OPENGL_LIBRARIES}
-	${GLUT_LIBRARY}
+	${GLUT_LIBRARIES}
 )
 
 #############

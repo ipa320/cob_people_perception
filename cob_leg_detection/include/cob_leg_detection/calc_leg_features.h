@@ -35,7 +35,7 @@
 #ifndef CALCLEGFEATURES_HH
 #define CALCLEGFEATURES_HH
 
-#include "laser_processor.h"
+#include "cob_leg_detection/laser_processor.h"
 #include "sensor_msgs/LaserScan.h"
 
 // TODO: Should remove scan dependency from here.

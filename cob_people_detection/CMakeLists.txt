@@ -40,7 +40,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Boost REQUIRED COMPONENTS signals system filesystem)
 find_package(OpenCV REQUIRED)
-find_package(orocos_kdl REQUIRED)
+#find_package(orocos_kdl REQUIRED)
 #find_package(PCL REQUIRED)
 #message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
 
@@ -122,7 +122,7 @@ catkin_package(
     #PCL
     OpenCV
     Boost
-    orocos_kdl
+    #orocos_kdl
 )
 
 ###########
@@ -209,9 +209,9 @@ add_executable(tracking_evaluator
 )
 target_link_libraries(tracking_evaluator
   ${catkin_LIBRARIES}
-#  ${Boost_LIBRARIES}
+  #${Boost_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  ${orocos_kdl_LIBRARIES}
+  #${orocos_kdl_LIBRARIES}
 )
 
 add_executable(people_detection_client
