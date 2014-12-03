@@ -1,15 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(cob_people_tracking_filter)
 
-# Look for bfl (Bayesian Filtering Library)
-find_package(PkgConfig)
-pkg_check_modules(BFL REQUIRED orocos-bfl)
-
-include_directories(${BFL_INCLUDE_DIRS})
-link_directories(${BFL_LIBRARY_DIRS})
-
-## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS
+set(catkin_RUN_PACKAGES
   roscpp
   std_msgs
   geometry_msgs
@@ -19,39 +11,70 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
+set(catkin_BUILD_PACKAGES
+	${catkin_RUN_PACKAGES}
+	cmake_modules
+)
+
+## Find catkin macros and libraries
+find_package(catkin REQUIRED COMPONENTS
+	${catkin_BUILD_PACKAGES}
+)
+
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread)
 
+# Look for bfl (Bayesian Filtering Library)
+#find_path(BFL_INCLUDE_DIRS REQUIRED
+#	NAMES bfl_constants.h
+#	HINTS /opt/ros/indigo/include/bfl)
+#find_library(BFL_LIBRARIES REQUIRED
+#	NAMES orocos-bfl
+#	HINTS /opt/ros/indigo/lib)
+#message(STATUS "BFL_LIBRARIES: ${BFL_LIBRARIES},  BFL_INCLUDE_DIRS: ${BFL_INCLUDE_DIRS},  BFL_LIBRARY_DIRS: ${BFL_LIBRARY_DIRS}")
+# this way is recommended by the package (even though link_directories is not encouraged by catkin_lint)
+find_package(PkgConfig)
+pkg_check_modules(BFL REQUIRED orocos-bfl)
+#include_directories(${BFL_INCLUDE_DIRS})
+link_directories(${BFL_LIBRARY_DIRS})
+
+
 ## Declare things to be passed to dependent projects
 catkin_package(
-INCLUDE_DIRS include
+INCLUDE_DIRS
+	include
 CATKIN_DEPENDS
-    sensor_msgs
-    std_msgs
-    geometry_msgs
-    cob_perception_msgs
-LIBRARIES cob_people_tracking_filter
+    ${catkin_RUN_PACKAGES}
+LIBRARIES
+	cob_people_tracking_filter
 )
 
 ## Specify additional locations of header files
 include_directories(
-  include ${catkin_INCLUDE_DIRS}
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${BFL_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
 add_library(cob_people_tracking_filter 
-            src/uniform_vector.cpp 
-            src/gaussian_vector.cpp 
-            src/gaussian_pos_vel.cpp 
-            src/mcpdf_pos_vel.cpp
-            src/mcpdf_vector.cpp
-            src/sysmodel_pos_vel.cpp
-            src/sysmodel_vector.cpp
-            src/measmodel_pos.cpp
-            src/measmodel_vector.cpp
-	    src/tracker_particle.cpp 
-	    src/tracker_kalman.cpp 
-	    src/detector_particle.cpp 
+	src/uniform_vector.cpp 
+	src/gaussian_vector.cpp 
+	src/gaussian_pos_vel.cpp 
+	src/mcpdf_pos_vel.cpp
+	src/mcpdf_vector.cpp
+	src/sysmodel_pos_vel.cpp
+	src/sysmodel_vector.cpp
+	src/measmodel_pos.cpp
+	src/measmodel_vector.cpp
+	src/tracker_particle.cpp 
+	src/tracker_kalman.cpp 
+	src/detector_particle.cpp 
+)
+target_link_libraries(cob_people_tracking_filter
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
+   ${BFL_LIBRARIES}
 )
 
 ## Declare a cpp executable
@@ -62,22 +85,19 @@ add_dependencies(cob_people_tracker cob_perception_msgs_gencpp cob_people_tracki
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(cob_people_tracker
-   cob_people_tracking_filter ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${BFL_LIBRARIES}
+   cob_people_tracking_filter
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
+   ${BFL_LIBRARIES}
 )
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS cob_people_tracker cob_people_tracking_filter
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(TARGETS cob_people_tracker
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(DIRECTORY include/${PROJECT_NAME}/
+install(DIRECTORY include/  # ${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
