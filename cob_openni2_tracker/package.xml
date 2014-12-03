@@ -14,9 +14,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>message_generation</build_depend>
   <build_depend>cmake_modules</build_depend>
-  <build_depend>libopenni-dev</build_depend>
   <build_depend>libusb-1.0-dev</build_depend>
   <!--  <build_depend>libopenni-nite-dev</build_depend> -->
   <build_depend>libopenni-sensor-primesense-dev</build_depend> -->
@@ -27,13 +25,10 @@
   <build_depend>visualization_msgs</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>cob_perception_msgs</build_depend>
-  <!--<build_depend>message_runtime</build_depend>-->
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>geometry_msgs</build_depend>
- 
+  
+  <build_depend>libopenni2-dev</build_depend>
+  <build_depend>libnite2</build_depend>
 
-  <run_depend>libopenni-dev</run_depend>
   <run_depend>libusb-1.0-dev</run_depend>
 <!--  <run_depend>libopenni-nite-dev</run_depend> -->
   <run_depend>libopenni-sensor-primesense-dev</run_depend>
@@ -45,8 +40,7 @@
   <run_depend>tf</run_depend>
   <run_depend>cob_perception_msgs</run_depend>
   <run_depend>message_runtime</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>std_msgs</run_depend>
-  <run_depend>geometry_msgs</run_depend>
- 
+  
+  <run_depend>libopenni2-dev</run_depend>
+  <run_depend>libnite2</run_depend>
 </package>

@@ -926,4 +926,3 @@ void ipa_PeopleDetector::FaceRecognizer::assertDirectories(boost::filesystem::pa
 	if (!boost::filesystem::exists(data_directory / "img"))
 		boost::filesystem::create_directories(data_directory / "img");
 }
-

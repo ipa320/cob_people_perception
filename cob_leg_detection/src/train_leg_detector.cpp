@@ -32,8 +32,8 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_processor.h"
-#include "calc_leg_features.h"
+#include "cob_leg_detection/laser_processor.h"
+#include "cob_leg_detection/calc_leg_features.h"
 
 #include "opencv/cxcore.h"
 #include "opencv/cv.h"

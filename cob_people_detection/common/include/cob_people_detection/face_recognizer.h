@@ -76,6 +76,7 @@
 
 // boost
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
 #include "boost/filesystem/path.hpp"
 #include "boost/lexical_cast.hpp"
 
