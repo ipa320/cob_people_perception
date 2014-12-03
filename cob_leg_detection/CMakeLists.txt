@@ -35,8 +35,8 @@ include_directories(${BFL_INCLUDE_DIRS})
 link_directories(${BFL_LIBRARY_DIRS})
 
 # Look for Bullet
-pkg_check_modules(BULLET bullet)
-include_directories(${BULLET_INCLUDE_DIRS})
+#pkg_check_modules(BULLET bullet)
+#include_directories(${BULLET_INCLUDE_DIRS})
 
 ## dynamic reconfigure config
 generate_dynamic_reconfigure_options(
@@ -83,7 +83,7 @@ add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPO
 target_link_libraries(leg_detection
    ${catkin_LIBRARIES}
    ${BFL_LIBRARIES}
-   ${BULLET_LIBRARIES}
+   #${BULLET_LIBRARIES}
 )
 
 #add_executable(velocity_tracker src/velocity_tracker.cpp)

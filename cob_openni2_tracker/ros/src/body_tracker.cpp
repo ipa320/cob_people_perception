@@ -66,14 +66,14 @@ SampleViewer::SampleViewer(const char* strSampleName, ros::NodeHandle nh_priv) :
 
 	// Get Tracker Parameters
 	if(!nh_priv.getParam("tf_prefix", tf_prefix_)){
-		ROS_ERROR("tf_prefix was not found on Param Server! See your launch file!");
+		ROS_WARN("tf_prefix was not found on Param Server! See your launch file!");
 		//return -1;
 		nh_.shutdown();
 		Finalize();
 	}
 
 	if(!nh_priv.getParam("relative_frame", rel_frame_)){
-		ROS_ERROR("relative_frame was not found on Param Server! See your launch file!");
+		ROS_WARN("relative_frame was not found on Param Server! See your launch file!");
 		nh_.shutdown();
 		Finalize();
 		//return -1;

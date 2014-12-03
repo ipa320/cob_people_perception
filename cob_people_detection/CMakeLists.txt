@@ -40,6 +40,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Boost REQUIRED COMPONENTS signals system filesystem)
 find_package(OpenCV REQUIRED)
+find_package(orocos_kdl REQUIRED)
 #find_package(PCL REQUIRED)
 #message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
 
@@ -121,6 +122,7 @@ catkin_package(
     #PCL
     OpenCV
     Boost
+    orocos_kdl
 )
 
 ###########
@@ -149,7 +151,7 @@ target_link_libraries(subspace_analysis
   decomposition
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
-  ${OpenCV_LIBS}
+  ${OpenCV_LIBRARIES}
 #  ${PCL_LIBRARIES}
 )
 
@@ -159,7 +161,7 @@ add_library(face_normalizer
 target_link_libraries(face_normalizer
   ${catkin_LIBRARIES}
 #  ${Boost_LIBRARIES}
-  ${OpenCV_LIBS}
+  ${OpenCV_LIBRARIES}
 #  ${PCL_LIBRARIES}
 )
 
@@ -191,7 +193,7 @@ add_executable(face_align_test
 target_link_libraries(face_align_test
   face_normalizer
   ${catkin_LIBRARIES}
-  ${OpenCV_LIBS}
+  ${OpenCV_LIBRARIES}
 )
 
 #add_executable(synth_face_test
@@ -208,7 +210,8 @@ add_executable(tracking_evaluator
 target_link_libraries(tracking_evaluator
   ${catkin_LIBRARIES}
 #  ${Boost_LIBRARIES}
-  ${OpenCV_LIBS}
+  ${OpenCV_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
 )
 
 add_executable(people_detection_client
@@ -224,7 +227,7 @@ add_executable(head_detector_node
 )
 target_link_libraries(head_detector_node
   ${catkin_LIBRARIES}
-  ${OpenCV_LIBS}
+  ${OpenCV_LIBRARIES}
 )
     
 add_executable(face_detector_node
