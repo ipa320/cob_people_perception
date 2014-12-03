@@ -21,23 +21,20 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   nodelet
   dynamic_reconfigure
-  pcl
+  #pcl
   pcl_ros
   cv_bridge
   cob_image_flip
   cob_vision_utils
   cob_perception_msgs
   kdl_parser
-  orocos_kdl
 )
 
 find_package(Boost REQUIRED COMPONENTS signals system filesystem)
 
 find_package(OpenCV REQUIRED)
-
-#find_package(PCL REQUIRED)
-#message(STATUS "PCL Include dirs: ${PCL_INCLUDE_DIRS}")
-
+find_package(orocos_kdl REQUIRED)
+find_package(PCL  REQUIRED)
 
 #######################################
 ## Declare ROS messages and services ##
@@ -126,18 +123,19 @@ catkin_package(
     tf
     nodelet
     dynamic_reconfigure
-    pcl
+    #pcl
     pcl_ros
     cv_bridge
     cob_image_flip
     cob_vision_utils
     cob_perception_msgs
     kdl_parser
-    orocos_kdl
+    #orocos_kdl
   DEPENDS
     #PCL
-    OpenCV
+    OpenCV   
     Boost
+    orocos_kdl
 )
 
 ###########
@@ -152,6 +150,8 @@ include_directories(
   common/include
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${orocos_kdl_INCLUDE_DIRS}
 )
 
 #library for eigenvalue decomposition of asymmetric matrices
@@ -166,8 +166,8 @@ target_link_libraries(subspace_analysis
   decomposition
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
-  ${OpenCV_LIBS}
-#  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+# ${PCL_LIBRARIES}
 )
 
 add_library(face_normalizer
@@ -175,9 +175,9 @@ add_library(face_normalizer
 )
 target_link_libraries(face_normalizer
   ${catkin_LIBRARIES}
-#  ${Boost_LIBRARIES}
-  ${OpenCV_LIBS}
-#  ${PCL_LIBRARIES}
+# ${Boost_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+# ${PCL_LIBRARIES}
 )
 
 add_library(face_recognizer_algorithms
@@ -208,7 +208,7 @@ add_executable(face_align_test
 target_link_libraries(face_align_test
   face_normalizer
   ${catkin_LIBRARIES}
-  ${OpenCV_LIBS}
+  ${OpenCV_LIBRARIES}
 )
 
 #add_executable(synth_face_test
@@ -224,8 +224,9 @@ add_executable(tracking_evaluator
 )
 target_link_libraries(tracking_evaluator
   ${catkin_LIBRARIES}
-#  ${Boost_LIBRARIES}
-  ${OpenCV_LIBS}
+# ${Boost_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
 )
 
 add_executable(people_detection_client
@@ -233,6 +234,8 @@ add_executable(people_detection_client
 )
 target_link_libraries(people_detection_client
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
 )
    
 add_executable(head_detector_node
@@ -241,7 +244,7 @@ add_executable(head_detector_node
 )
 target_link_libraries(head_detector_node
   ${catkin_LIBRARIES}
-  ${OpenCV_LIBS}
+  ${OpenCV_LIBRARIES}
 )
     
 add_executable(face_detector_node
