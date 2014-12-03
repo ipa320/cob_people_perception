@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(cob_openni2_tracker)
 
-
- 
 set(catkin_RUN_PACKAGES
 	geometry_msgs
 	visualization_msgs
@@ -10,6 +8,7 @@ set(catkin_RUN_PACKAGES
 	roscpp
 	roslib
 	tf
+	libnite2
 )
 
 set(catkin_BUILD_PACKAGES
@@ -26,8 +25,8 @@ find_package(catkin REQUIRED COMPONENTS
 	${catkin_BUILD_PACKAGES}
 )
 
-find_package(orocos_kdl REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(orocos_kdl REQUIRED)
 #find_package(TinyXML REQUIRED)
 #find_package(Boost REQUIRED COMPONENTS filesystem)
 #find_package(PCL REQUIRED)
@@ -35,26 +34,31 @@ find_package(OpenCV REQUIRED)
 ########################################################
 # Find OpenNI2 (download)
 ########################################################
-find_path(OpenNI2_INCLUDEDIR
-	  NAMES OpenNI.h
-	  HINTS /usr/include/openni2)
-	  
-find_library(OpenNI2_LIBRARIES
-	     NAMES OpenNI2 DummyDevice OniFile PS1090
-	     HINTS /usr/lib/ /usr/lib/OpenNI2/Drivers
-	     PATH_SUFFIXES lib) 
-message(STATUS ${OpenNI2_LIBRARIES})
+#find_path(OpenNI2_INCLUDEDIR
+#	  NAMES OpenNI.h
+#	  HINTS /usr/include/openni2)
+#	  
+#find_library(OpenNI2_LIBRARIES
+#	     NAMES OpenNI2 DummyDevice OniFile PS1090
+#	     HINTS /usr/lib/ /usr/lib/OpenNI2/Drivers
+#	     PATH_SUFFIXES lib) 
+#message(STATUS ${OpenNI2_LIBRARIES})
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PC_OPENNI2 libopenni2)
+if (NOT PC_OPENNI2_FOUND)
+	pkg_check_modules(PC_OPENNI2 REQUIRED openni2)
+endif()
 
 #########################################################
 # Find Nite2
 #########################################################
-find_path(Nite2_INCLUDEDIR
-	  NAMES NiTE.h
-	  HINTS /home/rmb-om/git/catkin_ws/src/cob_people_perception/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Include)
-find_library(Nite2_LIBRARY
-	     NAMES NiTE2 
-	     HINTS /home/rmb-om/git/catkin_ws/src/cob_people_perception/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Redist)
+#find_path(Nite2_INCLUDEDIR
+#	  NAMES NiTE.h
+#	  HINTS ~/git/catkin_ws/src/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Include)
+#find_library(Nite2_LIBRARY
+#	     NAMES NiTE2 
+#	     HINTS ~/git/catkin_ws/src/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Redist)
 
 #########################################################
 # FIND GLUT
@@ -91,15 +95,15 @@ endif(NOT OPENGL_FOUND)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 INCLUDE_DIRS
-	include
+	ros/include
 LIBRARIES
 CATKIN_DEPENDS
 	${catkin_RUN_PACKAGES}
 	message_runtime
-	cob_perception_msgs
 DEPENDS
-	orocos_kdl
 	OpenCV
+	#libopenni2
+	orocos_kdl
 	#TinyXML
 	#Boost
 	#PCL
@@ -108,17 +112,46 @@ DEPENDS
 
 include_directories(
 	ros/include
-	${orokos_kdl_INCLUDEDIR}
-	${catkin_INCLUDEDIR}
+	${catkin_INCLUDE_DIRS}
 	${OpenCV_INCLUDE_DIRS}
-	${OpenNI2_INCLUDEDIR}
-	${Nite2_INCLUDEDIR}
+	${orocos_kdl_INCLUDE_DIRS}
+	${PC_OPENNI2_INCLUDE_DIRS}
+	#${Nite2_INCLUDEDIR}
 )
-		    
+
+link_directories(${PC_OPENNI2_LIBRARY_DIRS})
+
 add_executable(body_tracker ros/src/body_tracker.cpp)
 
 #add_dependencies(body_tracker cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-target_link_libraries(body_tracker ${catkin_LIBRARIES} ${OpenNI2_LIBRARIES} ${Nite2_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
+target_link_libraries(body_tracker
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
+	${orocos_kdl_LIBRARIES}
+	${PC_OPENNI2_LIBRARIES}
+	#${Nite2_LIBRARY}
+	${OPENGL_LIBRARIES}
+	${GLUT_LIBRARY}
+)
 
-install(TARGETS body_tracker RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#############
+## Install ##
+#############
+## Mark executables and/or libraries for installation
+install(TARGETS body_tracker
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY ros/include/${PROJECT_NAME}/
+	DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+	FILES_MATCHING PATTERN "*.h"
+	PATTERN ".svn" EXCLUDE
+)
+
+install(DIRECTORY ros/launch
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/ros
+	PATTERN ".svn" EXCLUDE
+)
