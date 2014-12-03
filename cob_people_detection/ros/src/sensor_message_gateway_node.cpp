@@ -149,7 +149,7 @@ void SensorMessageGatewayNode::imageCallback(const sensor_msgs::ImageConstPtr& c
 	}
 }
 
-void SensorMessageGatewayNode::reconfigureCallback(cob_people_detection::sensorMessageGatewayConfig &config, uint32_t level)
+void SensorMessageGatewayNode::reconfigureCallback(cob_people_detection::sensor_message_gatewayConfig &config, uint32_t level)
 {
 	target_publishing_rate_ = config.target_publishing_rate;
 	target_publishing_delay_ = ros::Duration(1.0 / target_publishing_rate_);

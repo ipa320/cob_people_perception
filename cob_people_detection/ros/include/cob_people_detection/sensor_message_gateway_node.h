@@ -77,7 +77,7 @@
 
 // dynamic reconfigure
 #include <dynamic_reconfigure/server.h>
-#include <cob_people_detection/sensorMessageGatewayConfig.h>
+#include <cob_people_detection/sensor_message_gatewayConfig.h>
 
 // boost
 #include <boost/thread/mutex.hpp>
@@ -100,9 +100,9 @@ protected:
 
 	void imageCallback(const sensor_msgs::ImageConstPtr& color_image_msg);
 
-	void reconfigureCallback(cob_people_detection::sensorMessageGatewayConfig &config, uint32_t level);
+	void reconfigureCallback(cob_people_detection::sensor_message_gatewayConfig &config, uint32_t level);
 
-	dynamic_reconfigure::Server<cob_people_detection::sensorMessageGatewayConfig> reconfigure_server_;
+	dynamic_reconfigure::Server<cob_people_detection::sensor_message_gatewayConfig> reconfigure_server_;
 
 	ros::NodeHandle node_handle_;
 
