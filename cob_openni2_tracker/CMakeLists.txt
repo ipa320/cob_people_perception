@@ -97,10 +97,11 @@ include_directories(
 	${OpenGL_INCLUDE_DIRS}
 )
 
-add_executable(body_tracker ros/src/body_tracker.cpp)
 
+add_executable(body_tracker
+	ros/src/body_tracker.cpp
+)
 #add_dependencies(body_tracker cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
 target_link_libraries(body_tracker
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
@@ -108,6 +109,11 @@ target_link_libraries(body_tracker
 	${OpenNI2_LIBRARIES}
 	${OPENGL_LIBRARIES}
 	${GLUT_LIBRARIES}
+)
+add_custom_command(
+    TARGET body_tracker
+    POST_BUILD
+    COMMAND ${PROJECT_SOURCE_DIR}/launch/create_nite2_link.bash
 )
 
 #############
@@ -129,4 +135,17 @@ install(DIRECTORY ros/include/${PROJECT_NAME}/
 install(DIRECTORY launch
 	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/ros
 	PATTERN ".svn" EXCLUDE
+)
+
+set(LINK_NAME $ENV{HOME}/.ros/NiTE2)
+set(NITE_DIR ${CMAKE_INSTALL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/libnite2/lib/NiTE2/)
+install(CODE "
+		if(EXISTS ${LINK_NAME})
+			message(\"Link ${LINK_NAME} to ${NITE_DIR} already exists. Re-linking ...\")
+			execute_process(COMMAND rm ${LINK_NAME})
+			execute_process(COMMAND ECHO Test = ${LINK_NAME})
+		endif()
+		execute_process(COMMAND ln -s ${NITE_DIR} ${LINK_NAME})
+		message(\"Created link ${LINK_NAME} to ${NITE_DIR}.\")
+	"
 )
