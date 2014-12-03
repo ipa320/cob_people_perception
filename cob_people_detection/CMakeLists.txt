@@ -80,6 +80,9 @@ add_service_files(
     recognitionTrigger.srv
 )
 
+## Generate configurations for dynamic_reconfigure
+generate_dynamic_reconfigure_options(cfg/sensor_message_gateway.cfg)
+
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
@@ -91,10 +94,6 @@ generate_messages(
     stereo_msgs
     cob_perception_msgs
 )
-
-## Generate configurations for dynamic_reconfigure
-generate_dynamic_reconfigure_options(cfg/sensor_message_gateway.cfg)
-
 
 ###################################
 ## catkin specific configuration ##
@@ -357,3 +356,26 @@ add_dependencies(tracking_evaluator ${cob_perception_msgs_EXPORTED_TARGETS})
 #set(SSE_FLAGS "-msse2 -mfpmath=sse")
 
 #rosbuild_add_roslaunch_check(ros/launch)
+
+
+#############
+## Install ##
+#############
+## Mark executables and/or libraries for installation
+install(TARGETS people_detection_client head_detector_node face_detector_node face_recognizer_node detection_tracker_node people_detection_display_node
+		face_capture_node sensor_message_gateway_node sensor_message_gateway_nodelet coordinator_node
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY common/include/${PROJECT_NAME}/ ros/include/${PROJECT_NAME}/
+	DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+	FILES_MATCHING PATTERN "*.h"
+	PATTERN ".svn" EXCLUDE
+)
+
+install(DIRECTORY ros/launch
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/ros
+	PATTERN ".svn" EXCLUDE
+)

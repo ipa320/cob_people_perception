@@ -126,7 +126,7 @@ install(DIRECTORY ros/include/${PROJECT_NAME}/
 	PATTERN ".svn" EXCLUDE
 )
 
-install(DIRECTORY ros/launch
+install(DIRECTORY launch
 	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/ros
 	PATTERN ".svn" EXCLUDE
 )
