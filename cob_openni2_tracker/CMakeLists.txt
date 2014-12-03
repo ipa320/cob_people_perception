@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cob_openni2_tracker)
 
 
- 
 set(catkin_RUN_PACKAGES
 	geometry_msgs
 	visualization_msgs
@@ -52,6 +51,8 @@ message(STATUS ${OpenNI2_LIBRARIES})
 find_path(Nite2_INCLUDEDIR
 	  NAMES NiTE.h
 	  HINTS /home/rmb-om/git/catkin_ws/src/cob_people_perception/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Include)
+	  
+	  
 find_library(Nite2_LIBRARY
 	     NAMES NiTE2 
 	     HINTS /home/rmb-om/git/catkin_ws/src/cob_people_perception/cob_openni2_tracker/include/NiTE-Linux-x64-2.2/Redist)
@@ -117,8 +118,10 @@ include_directories(
 		    
 add_executable(body_tracker ros/src/body_tracker.cpp)
 
-#add_dependencies(body_tracker cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(body_tracker cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 target_link_libraries(body_tracker ${catkin_LIBRARIES} ${OpenNI2_LIBRARIES} ${Nite2_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
 
 install(TARGETS body_tracker RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+

@@ -15,8 +15,7 @@
 
 #include "cob_openni2_tracker/body_tracker.h"
 #include <GL/glut.h>
-#include <cob_perception_msgs/Skeleton.h>
-#include <NiteSampleUtilities.h>
+//#include <NiteSampleUtilities.h>
 
 //screen and texture measures
 #define GL_WIN_SIZE_X	640
