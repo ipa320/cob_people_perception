@@ -82,8 +82,8 @@ AbstractFaceRecognizer::~AbstractFaceRecognizer(void)
 {
 }
 
-unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color_images, std::vector<std::vector<cv::Rect>>& face_coordinates,
-		std::vector<std::vector<std::string>>& identification_labels)
+unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color_images, std::vector<std::vector<cv::Rect> >& face_coordinates,
+		std::vector<std::vector<std::string> >& identification_labels)
 {
 	// prepare index list
 	identification_labels.clear();
@@ -99,8 +99,8 @@ unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color
 	}
 	return ipa_Utils::RET_OK;
 }
-unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color_images, std::vector<cv::Mat>& depth_images, std::vector<std::vector<cv::Rect>>& face_coordinates,
-		std::vector<std::vector<std::string>>& identification_labels)
+unsigned long AbstractFaceRecognizer::recognizeFaces(std::vector<cv::Mat>& color_images, std::vector<cv::Mat>& depth_images, std::vector<std::vector<cv::Rect> >& face_coordinates,
+		std::vector<std::vector<std::string> >& identification_labels)
 {
 	// prepare index list
 	identification_labels.clear();

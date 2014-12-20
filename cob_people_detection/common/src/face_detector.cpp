@@ -112,7 +112,7 @@ FaceDetector::~FaceDetector(void)
 }
 
 unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_images, const std::vector<cv::Mat>& heads_depth_images,
-		std::vector<std::vector<cv::Rect>>& face_coordinates)
+		std::vector<std::vector<cv::Rect> >& face_coordinates)
 {
 	if (m_initialized == false)
 	{

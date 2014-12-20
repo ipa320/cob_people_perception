@@ -37,7 +37,7 @@ munkres::~munkres(void)
 }
 
 //Load wieght_array from a vector of vectors of integers
-void munkres::load_weights(std::vector<std::vector<int>> x)
+void munkres::load_weights(std::vector<std::vector<int> > x)
 {
 	//get the row and column sizes of the vector passed in
 	int a = x.size(), b = x[0].size();

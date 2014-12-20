@@ -92,7 +92,7 @@ PeopleDetectionDisplayNode::PeopleDetectionDisplayNode(ros::NodeHandle nh) :
 	//	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::PointCloud2> >(30);
 	//	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, pointcloud_sub_);
 	sync_input_3_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray,
-			cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image>>(60);
+			cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(60);
 	sync_input_3_->connectInput(face_recognition_subscriber_, face_detection_subscriber_, colorimage_sub_);
 	sync_input_3_->registerCallback(boost::bind(&PeopleDetectionDisplayNode::inputCallback, this, _1, _2, _3));
 

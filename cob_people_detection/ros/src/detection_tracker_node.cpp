@@ -151,7 +151,7 @@ DetectionTrackerNode::DetectionTrackerNode(ros::NodeHandle nh) :
 	sensor_msgs::Image::ConstPtr nullPtr;
 	if (use_people_segmentation_ == true)
 	{
-		sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image>>(2);
+		sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, sensor_msgs::Image> >(2);
 		sync_input_2_->connectInput(face_position_subscriber_, people_segmentation_image_sub_);
 		sync_input_2_->registerCallback(boost::bind(&DetectionTrackerNode::inputCallback, this, _1, _2));
 	}
@@ -476,8 +476,8 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 	if (false)
 	{
 		// build distance matrix
-		std::map<int, std::map<int, double>> distance_matrix; // 1. index = face_position_accumulator_ index of previous detections, 2. index = index of current detections, content = spatial distance between the indexed faces
-		std::map<int, std::map<int, double>>::iterator distance_matrix_it;
+		std::map<int, std::map<int, double> > distance_matrix; // 1. index = face_position_accumulator_ index of previous detections, 2. index = index of current detections, content = spatial distance between the indexed faces
+		std::map<int, std::map<int, double> >::iterator distance_matrix_it;
 		for (unsigned int previous_det = 0; previous_det < face_position_accumulator_.size(); previous_det++)
 		{
 			std::map<int, double> distance_row;
@@ -533,7 +533,7 @@ void DetectionTrackerNode::inputCallback(const cob_people_detection_msgs::Detect
 	else
 	{
 		// create the costs matrix (which consist of Eulidean distance in cm and a punishment for dissimilar labels)
-		std::vector < std::vector<int>> costs_matrix(face_position_accumulator_.size(), std::vector<int>(face_detection_indices.size(), 0));
+		std::vector < std::vector<int> > costs_matrix(face_position_accumulator_.size(), std::vector<int>(face_detection_indices.size(), 0));
 		if (debug_)
 			std::cout << "Costs matrix.\n";
 		for (unsigned int previous_det = 0; previous_det < face_position_accumulator_.size(); previous_det++)

@@ -378,7 +378,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	heads_color_images.resize(face_positions->head_detections.size());
 	std::vector < cv::Mat > heads_depth_images;
 	heads_depth_images.resize(face_positions->head_detections.size());
-	std::vector < std::vector < cv::Rect >> face_bounding_boxes;
+	std::vector < std::vector < cv::Rect > > face_bounding_boxes;
 	face_bounding_boxes.resize(face_positions->head_detections.size());
 	std::vector < cv::Rect > head_bounding_boxes;
 	head_bounding_boxes.resize(face_positions->head_detections.size());
@@ -427,7 +427,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_people_detection_msgs::
 	}
 
 	// --- face recognition ---
-	std::vector < std::vector < std::string >> identification_labels;
+	std::vector < std::vector < std::string > > identification_labels;
 	bool identification_failed = false;
 	if (enable_face_recognition_ == true)
 	{
