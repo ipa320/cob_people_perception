@@ -75,8 +75,9 @@
 #include <opencv/highgui.h>
 
 // boost
-#include "boost/filesystem/operations.hpp"
-#include "boost/filesystem/convenience.hpp"
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/convenience.hpp>
+#include <boost/thread.hpp>
 
 #include <sys/time.h>
 
