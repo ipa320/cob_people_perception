@@ -74,7 +74,7 @@ public:
 	//Load weight array from a vector of vectors of integers
 	//Accepts an object of type vector< vector<int> >, which is
 	//a matrix of any dimensions with integer values > -1
-	void load_weights(std::vector<std::vector<int>> x);
+	void load_weights(std::vector<std::vector<int> > x);
 
 private:
 
@@ -98,10 +98,10 @@ private:
 
 	//The matrix operated on by Munkres' algorithm
 	//(could be better than an array in the future)
-	std::vector<std::vector<cell>> cell_array;
+	std::vector<std::vector<cell> > cell_array;
 
 	//array to store the weights for calculating total weight
-	std::vector<std::vector<int>> weight_array;
+	std::vector<std::vector<int> > weight_array;
 
 	//functions to check if there is a starred zero in the current row or column
 	int find_star_column(int c);

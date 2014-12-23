@@ -110,7 +110,7 @@ protected:
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter colorimage_sub_; ///< Color camera image topic
 	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray,
-			sensor_msgs::Image>>* sync_input_3_;
+			sensor_msgs::Image> >* sync_input_3_;
 	//	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::PointCloud2> >* sync_input_3_;
 	//	message_filters::Subscriber<sensor_msgs::PointCloud2> pointcloud_sub_;
 	message_filters::Subscriber<cob_people_detection_msgs::ColorDepthImageArray> face_detection_subscriber_; ///< receives the face messages from the face detector

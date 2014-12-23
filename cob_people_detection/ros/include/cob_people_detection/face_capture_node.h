@@ -144,7 +144,7 @@ protected:
 	//	image_transport::SubscriberFilter people_segmentation_image_sub_; ///< Color camera image topic
 	//	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::DetectionArray, cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_3_;
 	//	message_filters::Subscriber<cob_people_detection_msgs::DetectionArray> face_recognition_subscriber_; ///< receives the face messages from the detection tracker
-	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image>>* sync_input_2_;
+	message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >* sync_input_2_;
 	message_filters::Subscriber<cob_people_detection_msgs::ColorDepthImageArray> face_detection_subscriber_; ///< receives the face messages from the face detector
 	image_transport::SubscriberFilter color_image_sub_; ///< Color camera image topic
 

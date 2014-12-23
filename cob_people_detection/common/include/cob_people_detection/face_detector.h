@@ -103,7 +103,7 @@ public:
 	/// @param face_coordinates Vector of same size as heads_color_images, each entry becomes filled with another vector with the coordinates of detected faces in color image, i.e. outer index corresponds with index of heads_color_images
 	/// @return Return code
 	virtual unsigned long detectColorFaces(std::vector<cv::Mat>& heads_color_images, const std::vector<cv::Mat>& heads_depth_images,
-			std::vector<std::vector<cv::Rect>>& face_coordinates);
+			std::vector<std::vector<cv::Rect> >& face_coordinates);
 
 protected:
 

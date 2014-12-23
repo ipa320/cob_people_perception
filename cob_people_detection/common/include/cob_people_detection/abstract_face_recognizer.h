@@ -86,10 +86,10 @@ public:
 	/// @param face_coordinates Bounding boxes of detected faces (input parameter, local coordinates wrt. to respective image patch), outer index corresponds to color_image index
 	/// @param identification_labels Vector of labels of classified faces, both indices correspond with face_coordinates
 	/// @return Return code
-	virtual unsigned long recognizeFaces(std::vector<cv::Mat>& color_images, std::vector<std::vector<cv::Rect>>& face_coordinates,
-			std::vector<std::vector<std::string>>& identification_labels);
-	virtual unsigned long recognizeFaces(std::vector<cv::Mat>& color_images, std::vector<cv::Mat>& depth_images, std::vector<std::vector<cv::Rect>>& face_coordinates,
-			std::vector<std::vector<std::string>>& identification_labels);
+	virtual unsigned long recognizeFaces(std::vector<cv::Mat>& color_images, std::vector<std::vector<cv::Rect> >& face_coordinates,
+			std::vector<std::vector<std::string> >& identification_labels);
+	virtual unsigned long recognizeFaces(std::vector<cv::Mat>& color_images, std::vector<cv::Mat>& depth_images, std::vector<std::vector<cv::Rect> >& face_coordinates,
+			std::vector<std::vector<std::string> >& identification_labels);
 
 	/// Trains a model for the recognition of a given set of faces.
 	/// @param identification_labels_to_train List of labels whose corresponding faces shall be trained.
