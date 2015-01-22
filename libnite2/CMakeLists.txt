@@ -16,7 +16,7 @@ find_package(catkin REQUIRED)
 
 add_custom_target(
     build_libnite2 ALL
-    COMMAND cmake -E chdir ${PROJECT_SOURCE_DIR} make -f Makefile.tarball
+    COMMAND test -e ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/${PROJECT_NAME}/INSTALLED || (cmake -E chdir ${PROJECT_SOURCE_DIR} make -f Makefile.tarball && touch ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/${PROJECT_NAME}/INSTALLED)
 )
 
 set(libraries "NiTE2")
