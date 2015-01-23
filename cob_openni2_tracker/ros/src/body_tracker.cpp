@@ -15,59 +15,50 @@
 
 #include "cob_openni2_tracker/body_tracker.h"
 #include <GL/glut.h>
-#include <cob_perception_msgs/Skeleton.h>
 #include <cob_openni2_tracker/NiteSampleUtilities.h>
+#include <cv_bridge/cv_bridge.h>
 
 //screen and texture measures
 #define GL_WIN_SIZE_X	640
 #define GL_WIN_SIZE_Y	512
 #define TEXTURE_SIZE	256
-
-#define DEFAULT_DISPLAY_MODE	DISPLAY_MODE_DEPTH
-
+#define MAX_USERS 10
 #define MIN_NUM_CHUNKS(data_size, chunk_size)	((((data_size)-1) / (chunk_size) + 1))
 #define MIN_CHUNKS_SIZE(data_size, chunk_size)	(MIN_NUM_CHUNKS(data_size, chunk_size) * (chunk_size))
 
-SampleViewer* SampleViewer::ms_self = NULL;
+#define USER_MESSAGE(msg) {\
+		sprintf(g_userStatusLabels[user.getId()], "%s", msg);\
+		printf("[%08" PRIu64 "] User #%d:\t%s\n", ts, user.getId(), msg);}
 
-bool g_drawSkeleton = true;
-bool g_drawCenterOfMass = false;
-bool g_drawStatusLabel = true;
-bool g_drawBoundingBox = false;
-bool g_drawBackground = true;
-bool g_drawDepth = true;
-bool g_drawFrameId = false;
+float Colors[][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 1}};
+bool g_visibleUsers[MAX_USERS] = {false};
+int colorCount = 3;
+nite::SkeletonState g_skeletonStates[MAX_USERS] = {nite::SKELETON_NONE};
+char g_userStatusLabels[MAX_USERS][100] = {{0}};
+char g_generalMessage[100] = {0};
 
-int g_nXRes = 0, g_nYRes = 0;
+static std::string detector_ = "camera";
 
-// time to hold in pose to exit program. In milliseconds.
-const int g_poseTimeoutToExit = 2000;
+BodyTracker* BodyTracker::ms_self = NULL;
 
-void SampleViewer::glutIdle()
+using namespace std;
+
+BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
+:pcl_cloud_(new pcl::PointCloud<pcl::PointXYZRGB>), m_poseUser(0),transform_listener_(nh_), br_()
 {
-	glutPostRedisplay();
-}
-
-void SampleViewer::glutDisplay()
-{
-	SampleViewer::ms_self->Display();
-}
-
-void SampleViewer::glutKeyboard(unsigned char key, int x, int y)
-{
-	SampleViewer::ms_self->OnKey(key, x, y);
-}
-
-SampleViewer::SampleViewer(const char* strSampleName, ros::NodeHandle nh_priv) : m_poseUser(0),transform_listener_(nh_), br_()
-{
-
 	marker_id_ = 0;
-	vis_pub_ = nh_.advertise<visualization_msgs::Marker>( "visualization_marker", 0 );
 
+	nh_ = nh_priv;
 	// Get Tracker Parameters
-	if(!nh_priv.getParam("tf_prefix", tf_prefix_)){
+	if(!nh_priv.getParam("camera_frame_id", cam_frame_)){
 		ROS_WARN("tf_prefix was not found on Param Server! See your launch file!");
 		//return -1;
+		nh_.shutdown();
+		Finalize();
+	}
+
+	if(!nh_priv.getParam("tf_prefix", tf_prefix_)){
+		ROS_WARN("tf_prefix was not found on Param Server! See your launch file!");
 		nh_.shutdown();
 		Finalize();
 	}
@@ -76,33 +67,52 @@ SampleViewer::SampleViewer(const char* strSampleName, ros::NodeHandle nh_priv) :
 		ROS_WARN("relative_frame was not found on Param Server! See your launch file!");
 		nh_.shutdown();
 		Finalize();
-		//return -1;
 	}
 
-	printf("Create SampleViwer");
+	nh_priv.param("g_drawSkeleton", g_drawSkeleton_, true);
+	nh_priv.param("g_drawCenterOfMass", g_drawCenterOfMass_, false);
+	nh_priv.param("g_drawStatusLabel", g_drawStatusLabel_, true);
+	nh_priv.param("g_drawBoundingBox", g_drawBoundingBox_, false);
+	nh_priv.param("g_drawBackground", g_drawBackground_, true);
+	nh_priv.param("g_drawDepth", g_drawDepth_, true);
+	nh_priv.param("g_drawFrameId", g_drawFrameId_, false);
+	nh_priv.param("g_poseTimeoutToExit", g_poseTimeoutToExit_, 2000);
+
+	vis_pub_ = nh_.advertise<visualization_msgs::Marker>( "visualization_marker", 10);
+	pcl_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("body_tracker_filter", 0);
+	people_pub_ = nh_.advertise<cob_perception_msgs::People>("people", 0);
+
+
+	printf("Create BodyTracker.");
 	ms_self = this;
-	strncpy(m_strSampleName, strSampleName, ONI_MAX_STR);
 	m_pUserTracker = new nite::UserTracker;
+	pcl_cloud_->points.clear();
+
+	init();
+
+	while(nh_priv.ok())
+	{
+		runTracker();
+	}
 }
-SampleViewer::~SampleViewer()
+
+BodyTracker::~BodyTracker()
 {
-	Finalize();
 	nh_.shutdown();
-	delete[] m_pTexMap;
-
-	ms_self = NULL;
+	Finalize();
 }
 
-void SampleViewer::Finalize()
+void BodyTracker::Finalize()
 {
+	delete[] m_pTexMap;
 	delete m_pUserTracker;
+	m_device.close();
 	nite::NiTE::shutdown();
 	openni::OpenNI::shutdown();
-	nh_.shutdown();
+
 }
 
-
-openni::Status SampleViewer::Init(int argc, char **argv)
+void BodyTracker::init()
 {
 	m_pTexMap = NULL;
 
@@ -110,61 +120,294 @@ openni::Status SampleViewer::Init(int argc, char **argv)
 	if (rc != openni::STATUS_OK)
 	{
 		printf("Failed to initialize OpenNI\n%s\n", openni::OpenNI::getExtendedError());
-		return rc;
+		nh_.shutdown();
+		return;
 	}
-
 	const char* deviceUri = openni::ANY_DEVICE;
-	/*
-	for (int i = 1; i < argc-1; ++i)
-	{
-		if (strcmp(argv[i], "-device") == 0)
-		{
-			deviceUri = argv[i+1];
-			break;
-		}
-	}
-*/
+
 	rc = m_device.open(deviceUri);
 	if (rc != openni::STATUS_OK)
 	{
 		printf("Failed to open device\n%s\n", openni::OpenNI::getExtendedError());
-		return rc;
+		nh_.shutdown();
+		return;
+	}
+
+	rc = depthSensor_.create(m_device, openni::SENSOR_DEPTH);
+	if (rc != openni::STATUS_OK)
+	{
+		printf("Failed to create a video stream \n%s\n", openni::OpenNI::getExtendedError());
+		nh_.shutdown();
+		return;
 	}
 
 	nite::NiTE::initialize();
-
 	if (m_pUserTracker->create(&m_device) != nite::STATUS_OK)
 	{
-		return openni::STATUS_ERROR;
+		printf(" Get data for NiTE failed\n");
+		nh_.shutdown();
+		return;
+	}
+}
+
+void BodyTracker::runTracker()
+{
+	nite::UserTrackerFrameRef userTrackerFrame;
+	openni::VideoFrameRef depthFrame;
+
+	nite::Status rc = m_pUserTracker->readFrame(&userTrackerFrame);
+	if (rc != nite::STATUS_OK)
+	{
+		printf("GetNextData failed\n");
+		return;
 	}
 
-	return InitOpenGL(argc, argv);
+	depthFrame = userTrackerFrame.getDepthFrame();
+
+	if (m_pTexMap == NULL)
+	{
+		// Texture map init
+		m_nTexMapX = MIN_CHUNKS_SIZE(depthFrame.getVideoMode().getResolutionX(), TEXTURE_SIZE);
+		m_nTexMapY = MIN_CHUNKS_SIZE(depthFrame.getVideoMode().getResolutionY(), TEXTURE_SIZE);
+		m_pTexMap = new openni::RGB888Pixel[m_nTexMapX * m_nTexMapY];
+	}
+	const nite::UserMap& userLabels = userTrackerFrame.getUserMap();
+
+	if (depthFrame.isValid() && g_drawDepth_)
+	{
+		calculateHistogram(m_pDepthHist, MAX_DEPTH, depthFrame);
+	}
+	memset(m_pTexMap, 0, m_nTexMapX*m_nTexMapY*sizeof(openni::RGB888Pixel));
+	float factor[3] = {1, 1, 1};
+
+	//construct pcl
+	if (depthFrame.isValid() && g_drawDepth_)
+	{
+		const nite::UserId* pLabels = userLabels.getPixels();
+
+		const openni::DepthPixel* pDepthRow = (const openni::DepthPixel*)depthFrame.getData();
+		openni::RGB888Pixel* pTexRow = m_pTexMap + depthFrame.getCropOriginY() * m_nTexMapX;
+		int rowSize = depthFrame.getStrideInBytes() / sizeof(openni::DepthPixel);
+		float dX, dY, dZ;
+
+		pcl_cloud_->resize(depthFrame.getHeight()*depthFrame.getWidth());
+		pcl_cloud_->width = depthFrame.getWidth();
+		pcl_cloud_->height = depthFrame.getHeight();
+
+		for (int y = 0; y < depthFrame.getHeight(); ++y)
+		{
+			const openni::DepthPixel* pDepth = pDepthRow;
+			openni::RGB888Pixel* pTex = pTexRow + depthFrame.getCropOriginX();
+
+			for (int x = 0; x < depthFrame.getWidth(); ++x, ++pDepth, ++pTex, ++pLabels)
+			{
+				if (*pLabels == 0)  // determine color
+				{
+					if (!g_drawBackground_)
+					{
+						factor[0] = factor[1] = factor[2] = 0;
+					}
+					else
+					{
+						factor[0] = Colors[colorCount][0];
+						factor[1] = Colors[colorCount][1];
+						factor[2] = Colors[colorCount][2];
+					}
+				}
+				else
+				{
+					factor[0] = Colors[*pLabels % colorCount][0];
+					factor[1] = Colors[*pLabels % colorCount][1];
+					factor[2] = Colors[*pLabels % colorCount][2];
+				}
+				if(*pDepth != 0)
+					openni::CoordinateConverter::convertDepthToWorld(depthSensor_, (float)x, (float)y, (float)(*pDepth), &dX, &dY, &dZ);
+				else
+					dX = dY = dZ = 0.f;
+				pcl::PointXYZRGB& point = pcl_cloud_->at(x,y);
+				point.r = 255*factor[0];
+				point.g = 255*factor[1];
+				point.b = 255*factor[2];
+				point.x = dZ/1000;
+				point.y = -dX/1000;
+				point.z = dY/1000;
+
+				if (*pDepth != 0)
+				{
+					int nHistValue = m_pDepthHist[*pDepth];
+					pTex->r = nHistValue*factor[0];
+					pTex->g = nHistValue*factor[1];
+					pTex->b = nHistValue*factor[2];
+
+					factor[0] = factor[1] = factor[2] = 1;
+				}
+			}
+			pDepthRow += rowSize;
+			pTexRow += m_nTexMapX;
+		}
+	}
+
+	drawPointCloud();
+
+	const nite::Array<nite::UserData>& users = userTrackerFrame.getUsers();
+	tracked_users_ = new list<nite::UserData>();
+
+	if(!tracked_users_->empty())
+	{
+		ROS_INFO("something went wrong");
+	}
+	for (int i = 0; i < users.getSize(); ++i)
+	{
+		const nite::UserData& user = users[i];
+		updateUserState(user, userTrackerFrame.getTimestamp());
+
+		if(user.isNew())
+		{
+			m_pUserTracker->startSkeletonTracking(user.getId());
+			unsigned int id = user.getId();
+			//printf("new user id %u", (unsigned int) id);
+			m_pUserTracker->startPoseDetection(user.getId(), nite::POSE_CROSSED_HANDS);
+		}
+		else if(!user.isLost())
+		{
+			if (users[i].getSkeleton().getState() == nite::SKELETON_TRACKED)
+			{
+				drawSkeleton(m_pUserTracker, user);
+
+//				JointMap joints;
+//				joints["head"] = (user.getSkeleton().getJoint(nite::JOINT_HEAD));
+//				joints["neck"] = (user.getSkeleton().getJoint(nite::JOINT_NECK));
+//				joints["left_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER));
+//				joints["right_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER));
+//				joints["left_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW));
+//				joints["right_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW));
+//				joints["left_hand"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND));
+//				joints["right_hand"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND));
+//				joints["torso"] = (user.getSkeleton().getJoint(nite::JOINT_TORSO));
+//				joints["left_hip"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HIP));
+//				joints["right_hip"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP));
+//				joints["left_knee"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE));
+//				joints["right_knee"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE));
+//				joints["left_foot"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT));
+//				joints["right_foot"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT));
+//
+//								for (JointMap::iterator it=joints.begin(); it!=joints.end(); ++it){
+//									publishJoints(nh_, br_, it->first, it->second, tf_prefix_, rel_frame_, user.getId());
+//								}
+//												if (g_drawStatusLabel_){
+//													drawStatusLabel(m_pUserTracker, user);
+//												}
+//												if (g_drawCenterOfMass_){
+//													drawCenterOfMass(m_pUserTracker, user);
+//												}
+//												if (g_drawBoundingBox_){
+//													drawBoundingBox(user);
+//												}
+//												if (g_drawSkeleton_){
+//													drawSkeleton(m_pUserTracker, user);
+//												}
+
+				tracked_users_->insert(tracked_users_->end(), user);
+			}
+		}
+
+		if (m_poseUser == 0 || m_poseUser == user.getId())
+		{
+			const nite::PoseData& pose = user.getPose(nite::POSE_CROSSED_HANDS);
+
+			if (pose.isEntered())
+			{
+				// Start timer
+				sprintf(g_generalMessage, "In exit pose. Keep it for %d second%s to exit\n", g_poseTimeoutToExit_/1000, g_poseTimeoutToExit_/1000 == 1 ? "" : "s");
+				printf("Counting down %d second to exit\n", g_poseTimeoutToExit_/1000);
+				m_poseUser = user.getId();
+				m_poseTime = userTrackerFrame.getTimestamp();
+			}
+			else if (pose.isExited())
+			{
+				memset(g_generalMessage, 0, sizeof(g_generalMessage));
+				printf("Count-down interrupted\n");
+				m_poseTime = 0;
+				m_poseUser = 0;
+			}
+			else if (pose.isHeld())
+			{
+				if (userTrackerFrame.getTimestamp() - m_poseTime > g_poseTimeoutToExit_ * 1000)
+				{
+					printf("Count down complete. Exit ...\n");
+				}
+			}
+		}
+	}
+
+	//publish tracked users
+	std::vector<cob_perception_msgs::Person> detected_people;
+	for(std::list<nite::UserData>::iterator iter_ = tracked_users_->begin(); iter_ != tracked_users_->end(); ++iter_){
+
+		cob_perception_msgs::Person person;
+		cob_perception_msgs::Skeleton skeleton;
+
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_HEAD)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_NECK)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_HAND)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_HAND)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_TORSO)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_HIP)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_HIP)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_KNEE)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_FOOT)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT)));
+
+		char id[100];
+		snprintf(id,100,"bodytrack %d", (*iter_).getId());
+		string id_ = std::string(id);
+
+		person.name = id_;
+		person.detector = detector_;
+		person.position.position.x = (*iter_).getCenterOfMass().x/1000.0;
+		person.position.position.y = -(*iter_).getCenterOfMass().y/1000.0;
+		person.position.position.z = (*iter_).getCenterOfMass().z/1000.0;
+
+		person.skeleton = skeleton;
+
+		unsigned int length =
+				( person.position.position.x * person.position.position.x +
+						person.position.position.y * person.position.position.y +
+						person.position.position.z * person.position.position.z);
+
+		if(length != 0)
+			detected_people.push_back(person);
+	}
+
+	cob_perception_msgs::People array;
+	array.header.stamp = ros::Time::now();
+	array.header.frame_id = rel_frame_;
+	array.people = detected_people;
+	people_pub_.publish(array);
+
+	/*
+	if (g_drawFrameId_)
+	{
+		drawFrameId(userTrackerFrame.getFrameIndex());
+	}
+
+	if (g_generalMessage[0] != '\0')
+	{
+		char *msg = g_generalMessage;
+		float colors[3] = {1, 0, 0};
+		//rasterPos2i(100, 20);
+		//To Do : print message, msg);
+	}
+	 */
 
 }
 
-openni::Status SampleViewer::Run()	//Does not return
-{
-
-	glutMainLoop();
-
-	return openni::STATUS_OK;
-}
-
-float Colors[][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 1}};
-int colorCount = 3;
-
-#define MAX_USERS 10
-bool g_visibleUsers[MAX_USERS] = {false};
-nite::SkeletonState g_skeletonStates[MAX_USERS] = {nite::SKELETON_NONE};
-char g_userStatusLabels[MAX_USERS][100] = {{0}};
-
-char g_generalMessage[100] = {0};
-
-#define USER_MESSAGE(msg) {\
-		sprintf(g_userStatusLabels[user.getId()], "%s", msg);\
-		printf("[%08" PRIu64 "] User #%d:\t%s\n", ts, user.getId(), msg);}
-
-void updateUserState(const nite::UserData& user, uint64_t ts)
+void BodyTracker::updateUserState(const nite::UserData& user, uint64_t ts)
 {
 	if(user.isNew()){
 		USER_MESSAGE("New User detected.");
@@ -179,7 +422,6 @@ void updateUserState(const nite::UserData& user, uint64_t ts)
 		USER_MESSAGE("Lost");
 	}
 	g_visibleUsers[user.getId()] = user.isVisible();
-
 
 	if(g_skeletonStates[user.getId()] != user.getSkeleton().getState())
 	{
@@ -205,169 +447,18 @@ void updateUserState(const nite::UserData& user, uint64_t ts)
 	}
 }
 
-#ifndef USE_GLES
-void glPrintString(void *font, const char *str)
-{
-	int i,l = (int)strlen(str);
 
-	for(i=0; i<l; i++)
-	{   
-		glutBitmapCharacter(font,*str++);
-	}   
-}
-#endif
-void DrawStatusLabel(nite::UserTracker* pUserTracker, const nite::UserData& user)
-{
-	int color = user.getId() % colorCount;
-	glColor3f(1.0f - Colors[color][0], 1.0f - Colors[color][1], 1.0f - Colors[color][2]);
-
-	float x,y;
-	pUserTracker->convertJointCoordinatesToDepth(user.getCenterOfMass().x, user.getCenterOfMass().y, user.getCenterOfMass().z, &x, &y);
-	x *= GL_WIN_SIZE_X/(float)g_nXRes;
-	y *= GL_WIN_SIZE_Y/(float)g_nYRes;
-	char *msg = g_userStatusLabels[user.getId()];
-	glRasterPos2i(x-((strlen(msg)/2)*8),y);
-	glPrintString(GLUT_BITMAP_HELVETICA_18, msg);
-}
-void DrawFrameId(int frameId)
-{
-	char buffer[80] = "";
-	sprintf(buffer, "%d", frameId);
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glRasterPos2i(20, 20);
-	glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
-}
-void DrawCenterOfMass(nite::UserTracker* pUserTracker, const nite::UserData& user)
-{
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	float coordinates[3] = {0};
-
-	pUserTracker->convertJointCoordinatesToDepth(user.getCenterOfMass().x, user.getCenterOfMass().y, user.getCenterOfMass().z, &coordinates[0], &coordinates[1]);
-
-	coordinates[0] *= GL_WIN_SIZE_X/(float)g_nXRes;
-	coordinates[1] *= GL_WIN_SIZE_Y/(float)g_nYRes;
-	glPointSize(8);
-	glVertexPointer(3, GL_FLOAT, 0, coordinates);
-	glDrawArrays(GL_POINTS, 0, 1);
-
-}
-void DrawBoundingBox(const nite::UserData& user)
-{
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	float coordinates[] =
-	{
-			user.getBoundingBox().max.x, user.getBoundingBox().max.y, 0,
-			user.getBoundingBox().max.x, user.getBoundingBox().min.y, 0,
-			user.getBoundingBox().min.x, user.getBoundingBox().min.y, 0,
-			user.getBoundingBox().min.x, user.getBoundingBox().max.y, 0,
-	};
-	coordinates[0]  *= GL_WIN_SIZE_X/(float)g_nXRes;
-	coordinates[1]  *= GL_WIN_SIZE_Y/(float)g_nYRes;
-	coordinates[3]  *= GL_WIN_SIZE_X/(float)g_nXRes;
-	coordinates[4]  *= GL_WIN_SIZE_Y/(float)g_nYRes;
-	coordinates[6]  *= GL_WIN_SIZE_X/(float)g_nXRes;
-	coordinates[7]  *= GL_WIN_SIZE_Y/(float)g_nYRes;
-	coordinates[9]  *= GL_WIN_SIZE_X/(float)g_nXRes;
-	coordinates[10] *= GL_WIN_SIZE_Y/(float)g_nYRes;
-
-	glPointSize(2);
-	glVertexPointer(3, GL_FLOAT, 0, coordinates);
-	glDrawArrays(GL_LINE_LOOP, 0, 4);
-
-}
-
-
-
-void DrawLimb(nite::UserTracker* pUserTracker, const nite::SkeletonJoint& joint1, const nite::SkeletonJoint& joint2, int color)
-{
-	float coordinates[6] = {0};
-	pUserTracker->convertJointCoordinatesToDepth(joint1.getPosition().x, joint1.getPosition().y, joint1.getPosition().z, &coordinates[0], &coordinates[1]);
-	pUserTracker->convertJointCoordinatesToDepth(joint2.getPosition().x, joint2.getPosition().y, joint2.getPosition().z, &coordinates[3], &coordinates[4]);
-
-	coordinates[0] *= GL_WIN_SIZE_X/(float)g_nXRes;
-	coordinates[1] *= GL_WIN_SIZE_Y/(float)g_nYRes;
-	coordinates[3] *= GL_WIN_SIZE_X/(float)g_nXRes;
-	coordinates[4] *= GL_WIN_SIZE_Y/(float)g_nYRes;
-
-	if (joint1.getPositionConfidence() == 1 && joint2.getPositionConfidence() == 1)
-	{
-		glColor3f(1.0f - Colors[color][0], 1.0f - Colors[color][1], 1.0f - Colors[color][2]);
-	}
-	else if (joint1.getPositionConfidence() < 0.5f || joint2.getPositionConfidence() < 0.5f)
-	{
-		return;
-	}
-	else
-	{
-		glColor3f(.5, .5, .5);
-	}
-	glPointSize(2);
-	glVertexPointer(3, GL_FLOAT, 0, coordinates);
-	glDrawArrays(GL_LINES, 0, 2);
-
-	glPointSize(10);
-	if (joint1.getPositionConfidence() == 1)
-	{
-		glColor3f(1.0f - Colors[color][0], 1.0f - Colors[color][1], 1.0f - Colors[color][2]);
-	}
-	else
-	{
-		glColor3f(.5, .5, .5);
-	}
-	glVertexPointer(3, GL_FLOAT, 0, coordinates);
-	glDrawArrays(GL_POINTS, 0, 1);
-
-	if (joint2.getPositionConfidence() == 1)
-	{
-		glColor3f(1.0f - Colors[color][0], 1.0f - Colors[color][1], 1.0f - Colors[color][2]);
-	}
-	else
-	{
-		glColor3f(.5, .5, .5);
-	}
-	glVertexPointer(3, GL_FLOAT, 0, coordinates+3);
-	glDrawArrays(GL_POINTS, 0, 1);
-}
-void DrawSkeleton(nite::UserTracker* pUserTracker, const nite::UserData& userData)
-{
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_HEAD), userData.getSkeleton().getJoint(nite::JOINT_NECK), userData.getId() % colorCount);
-
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getId() % colorCount);
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HAND), userData.getId() % colorCount);
-
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getId() % colorCount);
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND), userData.getId() % colorCount);
-
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getId() % colorCount);
-
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
-
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getId() % colorCount);
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
-
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
-
-
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getId() % colorCount);
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT), userData.getId() % colorCount);
-
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getId() % colorCount);
-	DrawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT), userData.getId() % colorCount);
-}
-
-
-void SampleViewer::publishJoints(ros::NodeHandle& nh, tf::TransformBroadcaster& br, std::string joint_name,
+void BodyTracker::publishJoints(ros::NodeHandle& nh, tf::TransformBroadcaster& br, std::string joint_name,
 		nite::SkeletonJoint joint, std::string tf_prefix, std::string rel_frame, int id){
 
-	if (joint.getPositionConfidence() > 0.0){
-
+	if (joint.getPositionConfidence() > 0.0)
+	{
 		tf::Transform transform;
-		transform.setOrigin(tf::Vector3(joint.getPosition().x/1000.0, joint.getPosition().y/1000.0,
+		transform.setOrigin(tf::Vector3(joint.getPosition().x/1000.0, -joint.getPosition().y/1000.0,
 				joint.getPosition().z/1000.0));
-		transform.setRotation(tf::Quaternion(0, 0, 0, 1));
+		tf::Quaternion frame_rotation;
+		frame_rotation.setEuler(0, 0, 0);
+		transform.setRotation(frame_rotation);
 		std::stringstream frame_id_stream;
 		std::string frame_id;
 		frame_id_stream << "/" << tf_prefix << "/user_" << id << "/" << joint_name;
@@ -377,10 +468,170 @@ void SampleViewer::publishJoints(ros::NodeHandle& nh, tf::TransformBroadcaster& 
 	}
 }
 
+geometry_msgs::Pose BodyTracker::convertNiteJointToMsgs(nite::SkeletonJoint joint)
+{
+	geometry_msgs::Pose transform_msgs;
+
+	if (joint.getPositionConfidence() > 0.0)
+	{
+		tf::Transform transform;
+		transform.setOrigin(tf::Vector3(joint.getPosition().x/1000.0, -joint.getPosition().y/1000.0,
+				joint.getPosition().z/1000.0));
+		tf::Quaternion frame_rotation;
+		frame_rotation.setEuler(0, 0, 0);
+		transform.setRotation(frame_rotation);
+		tf::poseTFToMsg(transform, transform_msgs);
+	}
+	return transform_msgs;
+}
+
+
+void BodyTracker::drawPointCloud()
+{
+	ros::Time time = ros::Time::now();
+	uint64_t st = time.toNSec();
+	pcl_cloud_->header.stamp = st;
+	pcl_cloud_->header.frame_id = cam_frame_;
+
+	pcl_pub_.publish(pcl_cloud_);
+	pcl_cloud_->points.clear();
+}
+//TO DO
+void BodyTracker::drawCenterOfMass(nite::UserTracker* pUserTracker, const nite::UserData& user)
+{
+
+	float coordinates[3] = {0};
+
+	double x = user.getCenterOfMass().x;
+	double y = user.getCenterOfMass().y;
+	double z = user.getCenterOfMass().z;
+
+	//ROS_INFO("%f %f %f", (float) x, (float) y, (float) z);
+
+	pUserTracker->convertJointCoordinatesToDepth(x, y, z, &coordinates[0], &coordinates[1]);
+	//coordinates[0] *= GL_WIN_SIZE_X/(float)g_nXRes;
+	//coordinates[1] *= GL_WIN_SIZE_Y/(float)g_nYRes;
+	drawCircle(1.0, 0.0, 0.0, 1.0, nite::Point3f(x, -y, z));
+}
+
+void BodyTracker::drawLimb(nite::UserTracker* pUserTracker, const nite::SkeletonJoint& joint1, const nite::SkeletonJoint& joint2, int color)
+{
+	float coordinates[6] = {0};
+	pUserTracker->convertJointCoordinatesToDepth(joint1.getPosition().x, joint1.getPosition().y, joint1.getPosition().z, &coordinates[0], &coordinates[1]);
+	pUserTracker->convertJointCoordinatesToDepth(joint2.getPosition().x, joint2.getPosition().y, joint2.getPosition().z, &coordinates[3], &coordinates[4]);
+
+	//	coordinates[0] *= GL_WIN_SIZE_X/(float)g_nXRes;
+	//	coordinates[1] *= GL_WIN_SIZE_Y/(float)g_nYRes;
+	//	coordinates[3] *= GL_WIN_SIZE_X/(float)g_nXRes;
+	//	coordinates[4] *= GL_WIN_SIZE_Y/(float)g_nYRes;
+
+	if (joint1.getPositionConfidence() == 1 && joint2.getPositionConfidence() == 1)
+	{
+		//colors = [1.0f - Colors[color][0], 1.0f - Colors[color][1], 1.0f - Colors[color][2]];
+	}
+	else if (joint1.getPositionConfidence() < 0.5f || joint2.getPositionConfidence() < 0.5f)
+	{
+		return;
+	}
+	else
+	{
+		//colors = [0.5f, 0.5f, 0.5f];
+	}
+
+	//To Do : publish lines, coordinates
+
+	if (joint1.getPositionConfidence() == 1)
+	{
+		//colors =  float[1.0f - Colors[color][0], 1.0f - Colors[color][1], 1.0f - Colors[color][2]];
+	}
+	else
+	{
+		//colors = [0.5f, 0.5f, 0.5f];
+	}
+	//To Do : publish points, coordinates
+
+	if (joint2.getPositionConfidence() == 1)
+	{
+		//colors = [1.0f - Colors[color][0], 1.0f - Colors[color][1], 1.0f - Colors[color][2]];
+	}
+	else
+	{
+		//colors = [0.5f, 0.5f, 0.5f];
+	}
+	//To Do: ponints, coordinates + 3
+}
+
+void BodyTracker::drawSkeleton(nite::UserTracker* pUserTracker, const nite::UserData& userData)
+{
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_HEAD), userData.getSkeleton().getJoint(nite::JOINT_NECK), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HAND), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT), userData.getId() % colorCount);
+}
+
+
+//TO DO
+void BodyTracker::drawBoundingBox(const nite::UserData& user)
+{
+	float colors[3] = {1.0f, 1.0f, 1.0f};
+
+	float coordinates[] =
+	{
+			user.getBoundingBox().max.x, user.getBoundingBox().max.y, 0,
+			user.getBoundingBox().max.x, user.getBoundingBox().min.y, 0,
+			user.getBoundingBox().min.x, user.getBoundingBox().min.y, 0,
+			user.getBoundingBox().min.x, user.getBoundingBox().max.y, 0,
+	};
+	//	coordinates[0]  *= GL_WIN_SIZE_X/(float)g_nXRes;
+	//	coordinates[1]  *= GL_WIN_SIZE_Y/(float)g_nYRes;
+	//	coordinates[3]  *= GL_WIN_SIZE_X/(float)g_nXRes;
+	//	coordinates[4]  *= GL_WIN_SIZE_Y/(float)g_nYRes;
+	//	coordinates[6]  *= GL_WIN_SIZE_X/(float)g_nXRes;
+	//	coordinates[7]  *= GL_WIN_SIZE_Y/(float)g_nYRes;
+	//	coordinates[9]  *= GL_WIN_SIZE_X/(float)g_nXRes;
+	//	coordinates[10] *= GL_WIN_SIZE_Y/(float)g_nYRes;
+
+	//To Do: draw liones: coordinates
+}
+
+void BodyTracker::drawStatusLabel(nite::UserTracker* pUserTracker, const nite::UserData& user)
+{
+	int color = user.getId() % colorCount;
+	float colors[3] = {1.0f - Colors[color][0], 1.0f - Colors[color][1], 1.0f - Colors[color][2]};
+
+	float x,y;
+	pUserTracker->convertJointCoordinatesToDepth(user.getCenterOfMass().x, user.getCenterOfMass().y, user.getCenterOfMass().z, &x, &y);
+	//	x *= GL_WIN_SIZE_X/(float)g_nXRes;
+	//	y *= GL_WIN_SIZE_Y/(float)g_nYRes;
+	char *msg = g_userStatusLabels[user.getId()];
+	//rasterPos : (x-((strlen(msg)/2)*8),y);
+
+	//To Do: print string (user name), msg.
+}
+
+void BodyTracker::drawFrameId(int frameId)
+{
+	char buffer[80] = "";
+	sprintf(buffer, "%d", frameId);
+	float colors[3] = {1, 0, 0};
+
+	//To Do: print string (frame id) , buffer.
+}
 /**
  * A helper function to draw a simple line in rviz.
  */
-void SampleViewer::drawLine (const double r, const double g, const double b, const double a,
+void BodyTracker::drawLine (const double r, const double g, const double b, const double a,
 		const nite::Point3f& pose_start, const nite::Point3f& pose_end )
 {
 	visualization_msgs::Marker marker;
@@ -414,12 +665,12 @@ void SampleViewer::drawLine (const double r, const double g, const double b, con
  * A helper function to draw circles in rviz
  */
 
-void SampleViewer::drawCircle(const double r, const double g, const double b, const double a,
+void BodyTracker::drawCircle(const double r, const double g, const double b, const double a,
 		const nite::Point3f& pose){
 	visualization_msgs::Marker m;
 	m.header.stamp = ros::Time::now();
 	m.action = visualization_msgs::Marker::ADD;
-	m.header.frame_id = rel_frame_;
+	m.header.frame_id = "/camra_link";
 	m.type = m.SPHERE;
 	m.id = marker_id_;
 	m.pose.position.x = pose.x/1000.0;
@@ -434,356 +685,48 @@ void SampleViewer::drawCircle(const double r, const double g, const double b, co
 	vis_pub_.publish(m);
 	marker_id_++;
 }
-void SampleViewer::Display()
+
+void BodyTracker::calculateHistogram(float* pHistogram, int histogramSize, const openni::VideoFrameRef& depthFrame)
 {
-	nite::UserTrackerFrameRef userTrackerFrame;
-	openni::VideoFrameRef depthFrame;
+	const openni::DepthPixel* pDepth = (const openni::DepthPixel*)depthFrame.getData();
+	int width = depthFrame.getWidth();
+	int height = depthFrame.getHeight();
+	// Calculate the accumulative histogram (the yellow display...)
+	memset(pHistogram, 0, histogramSize*sizeof(float));
+	int restOfRow = depthFrame.getStrideInBytes() / sizeof(openni::DepthPixel) - width;
 
-
-	nite::Status rc = m_pUserTracker->readFrame(&userTrackerFrame);
-	if (rc != nite::STATUS_OK)
+	unsigned int nNumberOfPoints = 0;
+	for (int y = 0; y < height; ++y)
 	{
-		printf("GetNextData failed\n");
-		return;
-	}
-
-	depthFrame = userTrackerFrame.getDepthFrame();
-
-	if (m_pTexMap == NULL)
-	{
-		// Texture map init
-		m_nTexMapX = MIN_CHUNKS_SIZE(depthFrame.getVideoMode().getResolutionX(), TEXTURE_SIZE);
-		m_nTexMapY = MIN_CHUNKS_SIZE(depthFrame.getVideoMode().getResolutionY(), TEXTURE_SIZE);
-		m_pTexMap = new openni::RGB888Pixel[m_nTexMapX * m_nTexMapY];
-	}
-
-	const nite::UserMap& userLabels = userTrackerFrame.getUserMap();
-
-	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	glOrtho(0, GL_WIN_SIZE_X, GL_WIN_SIZE_Y, 0, -1.0, 1.0);
-
-	if (depthFrame.isValid() && g_drawDepth)
-	{
-		calculateHistogram(m_pDepthHist, MAX_DEPTH, depthFrame);
-	}
-
-	memset(m_pTexMap, 0, m_nTexMapX*m_nTexMapY*sizeof(openni::RGB888Pixel));
-
-	float factor[3] = {1, 1, 1};
-	// check if we need to draw depth frame to texture
-	if (depthFrame.isValid() && g_drawDepth)
-	{
-		const nite::UserId* pLabels = userLabels.getPixels();
-
-		const openni::DepthPixel* pDepthRow = (const openni::DepthPixel*)depthFrame.getData();
-		openni::RGB888Pixel* pTexRow = m_pTexMap + depthFrame.getCropOriginY() * m_nTexMapX;
-		int rowSize = depthFrame.getStrideInBytes() / sizeof(openni::DepthPixel);
-
-		for (int y = 0; y < depthFrame.getHeight(); ++y)
+		for (int x = 0; x < width; ++x, ++pDepth)
 		{
-			const openni::DepthPixel* pDepth = pDepthRow;
-			openni::RGB888Pixel* pTex = pTexRow + depthFrame.getCropOriginX();
-
-			for (int x = 0; x < depthFrame.getWidth(); ++x, ++pDepth, ++pTex, ++pLabels)
+			if (*pDepth != 0)
 			{
-				if (*pDepth != 0)
-				{
-					if (*pLabels == 0)
-					{
-						if (!g_drawBackground)
-						{
-							factor[0] = factor[1] = factor[2] = 0;
-
-						}
-						else
-						{
-							factor[0] = Colors[colorCount][0];
-							factor[1] = Colors[colorCount][1];
-							factor[2] = Colors[colorCount][2];
-						}
-					}
-					else
-					{
-						factor[0] = Colors[*pLabels % colorCount][0];
-						factor[1] = Colors[*pLabels % colorCount][1];
-						factor[2] = Colors[*pLabels % colorCount][2];
-					}
-					//					// Add debug lines - every 10cm
-					// 					else if ((*pDepth / 10) % 10 == 0)
-					// 					{
-					// 						factor[0] = factor[2] = 0;
-					// 					}
-
-					int nHistValue = m_pDepthHist[*pDepth];
-					pTex->r = nHistValue*factor[0];
-					pTex->g = nHistValue*factor[1];
-					pTex->b = nHistValue*factor[2];
-
-					factor[0] = factor[1] = factor[2] = 1;
-				}
-			}
-
-			pDepthRow += rowSize;
-			pTexRow += m_nTexMapX;
-		}
-	}
-
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_nTexMapX, m_nTexMapY, 0, GL_RGB, GL_UNSIGNED_BYTE, m_pTexMap);
-
-	// Display the OpenGL texture map
-	glColor4f(1,1,1,1);
-
-	glEnable(GL_TEXTURE_2D);
-	glBegin(GL_QUADS);
-
-	g_nXRes = depthFrame.getVideoMode().getResolutionX();
-	g_nYRes = depthFrame.getVideoMode().getResolutionY();
-
-	// upper left
-	glTexCoord2f(0, 0);
-	glVertex2f(0, 0);
-	// upper right
-	glTexCoord2f((float)g_nXRes/(float)m_nTexMapX, 0);
-	glVertex2f(GL_WIN_SIZE_X, 0);
-	// bottom right
-	glTexCoord2f((float)g_nXRes/(float)m_nTexMapX, (float)g_nYRes/(float)m_nTexMapY);
-	glVertex2f(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
-	// bottom left
-	glTexCoord2f(0, (float)g_nYRes/(float)m_nTexMapY);
-	glVertex2f(0, GL_WIN_SIZE_Y);
-
-	glEnd();
-	glDisable(GL_TEXTURE_2D);
-
-	//check ROS connection
-	if(!nh_.ok()){
-		Finalize();
-	}
-
-	const nite::Array<nite::UserData>& users = userTrackerFrame.getUsers();
-	for (int i = 0; i < users.getSize(); ++i)
-	{
-		const nite::UserData& user = users[i];
-
-		updateUserState(user, userTrackerFrame.getTimestamp());
-		if (user.isNew())
-		{
-			m_pUserTracker->startSkeletonTracking(user.getId());
-			unsigned int id = user.getId();
-			//printf("new user id %u", (unsigned int) id);
-			m_pUserTracker->startPoseDetection(user.getId(), nite::POSE_CROSSED_HANDS);
-		}
-		else if (!user.isLost())
-		{
-			if (g_drawStatusLabel)
-			{
-				DrawStatusLabel(m_pUserTracker, user);
-			}
-			if (g_drawCenterOfMass)
-			{
-				DrawCenterOfMass(m_pUserTracker, user);
-			}
-			if (g_drawBoundingBox)
-			{
-				DrawBoundingBox(user);
-			}
-
-			if (users[i].getSkeleton().getState() == nite::SKELETON_TRACKED && g_drawSkeleton)
-			{
-				DrawSkeleton(m_pUserTracker, user);
-
-				JointMap joints;
-				joints["head"] = (user.getSkeleton().getJoint(nite::JOINT_HEAD) );
-				joints["neck"] = (user.getSkeleton().getJoint(nite::JOINT_NECK) );
-				joints["left_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER) );
-				joints["right_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER) );
-				joints["left_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW) );
-				joints["right_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW) );
-				joints["left_hand"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND) );
-				joints["right_hand"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND) );
-				joints["torso"] = (user.getSkeleton().getJoint(nite::JOINT_TORSO) );
-				joints["left_hip"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HIP) );
-				joints["right_hip"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP) );
-				joints["left_knee"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE) );
-				joints["right_knee"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE) );
-				joints["left_foot"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT) );
-				joints["right_foot"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT) );
-
-				drawCircle(0.6, 0.0, 0.0,1.0, joints["head"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["head"].getPosition(), joints["neck"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["neck"].getPosition(), joints["left_shoulder"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["neck"].getPosition(), joints["right_shoulder"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["right_shoulder"].getPosition(), joints["right_elbow"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["left_shoulder"].getPosition(), joints["left_elbow"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["right_elbow"].getPosition(), joints["right_hand"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["left_elbow"].getPosition(), joints["left_hand"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["neck"].getPosition(), joints["torso"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["torso"].getPosition(), joints["left_hip"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["torso"].getPosition(), joints["right_hip"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["right_hip"].getPosition(), joints["right_knee"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["left_hip"].getPosition(), joints["left_knee"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["right_knee"].getPosition(), joints["right_foot"].getPosition());
-				drawLine(0.6, 0.0, 0.0,1.0, joints["left_knee"].getPosition(), joints["left_foot"].getPosition());
-				drawCircle(0.6, 0.0, 0.0,1.0, joints["right_hand"].getPosition());
-				drawCircle(0.6, 0.0, 0.0,1.0, joints["left_hand"].getPosition());
-				drawCircle(0.6, 0.0, 0.0,1.0, joints["right_foot"].getPosition());
-				drawCircle(0.6, 0.0, 0.0,1.0, joints["left_foot"].getPosition());
-
-				for (JointMap::iterator it=joints.begin(); it!=joints.end(); ++it){
-					publishJoints(nh_,br_,it->first,it->second,tf_prefix_,rel_frame_,user.getId());
-				}
+				pHistogram[*pDepth]++;
+				nNumberOfPoints++;
 			}
 		}
-
-		if (m_poseUser == 0 || m_poseUser == user.getId())
+		pDepth += restOfRow;
+	}
+	for (int nIndex=1; nIndex<histogramSize; nIndex++)
+	{
+		pHistogram[nIndex] += pHistogram[nIndex-1];
+	}
+	if (nNumberOfPoints)
+	{
+		for (int nIndex=1; nIndex<histogramSize; nIndex++)
 		{
-			const nite::PoseData& pose = user.getPose(nite::POSE_CROSSED_HANDS);
-
-			if (pose.isEntered())
-			{
-				// Start timer
-				sprintf(g_generalMessage, "In exit pose. Keep it for %d second%s to exit\n", g_poseTimeoutToExit/1000, g_poseTimeoutToExit/1000 == 1 ? "" : "s");
-				printf("Counting down %d second to exit\n", g_poseTimeoutToExit/1000);
-				m_poseUser = user.getId();
-				m_poseTime = userTrackerFrame.getTimestamp();
-			}
-			else if (pose.isExited())
-			{
-				memset(g_generalMessage, 0, sizeof(g_generalMessage));
-				printf("Count-down interrupted\n");
-				m_poseTime = 0;
-				m_poseUser = 0;
-			}
-			else if (pose.isHeld())
-			{
-				// tick
-				if (userTrackerFrame.getTimestamp() - m_poseTime > g_poseTimeoutToExit * 1000)
-				{
-					printf("Count down complete. Exit...\n");
-					Finalize();
-					nh_.shutdown();
-					exit(2);
-				}
-			}
+			pHistogram[nIndex] = (256 * (1.0f - (pHistogram[nIndex] / nNumberOfPoints)));
 		}
 	}
-
-	if (g_drawFrameId)
-	{
-		DrawFrameId(userTrackerFrame.getFrameIndex());
-	}
-
-	if (g_generalMessage[0] != '\0')
-	{
-		char *msg = g_generalMessage;
-		glColor3f(1.0f, 0.0f, 0.0f);
-		glRasterPos2i(100, 20);
-		glPrintString(GLUT_BITMAP_HELVETICA_18, msg);
-	}
-
-
-
-	// Swap the OpenGL display buffers
-	glutSwapBuffers();
-
 }
-
-
-
-void SampleViewer::OnKey(unsigned char key, int /*x*/, int /*y*/)
-{
-	unsigned char q = 27;
-
-	switch (key)
-	{
-	case 27:
-		Finalize();
-		nh_.shutdown();
-		exit (1);
-	case 's':
-		// Draw skeleton?
-		g_drawSkeleton = !g_drawSkeleton;
-		break;
-	case 'l':
-		// Draw user status label?
-		g_drawStatusLabel = !g_drawStatusLabel;
-		break;
-	case 'c':
-		// Draw center of mass?
-		g_drawCenterOfMass = !g_drawCenterOfMass;
-		break;
-	case 'x':
-		// Draw bounding box?
-		g_drawBoundingBox = !g_drawBoundingBox;
-		break;
-	case 'b':
-		// Draw background?
-		g_drawBackground = !g_drawBackground;
-		break;
-	case 'd':
-		// Draw depth?
-		g_drawDepth = !g_drawDepth;
-		break;
-	case 'f':
-		// Draw frame ID
-		g_drawFrameId = !g_drawFrameId;
-		break;
-	}
-
-}
-
-openni::Status SampleViewer::InitOpenGL(int argc, char **argv)
-{
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-	glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
-	glutCreateWindow (m_strSampleName);
-	// 	glutFullScreen();
-	glutSetCursor(GLUT_CURSOR_NONE);
-
-	InitOpenGLHooks();
-
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_TEXTURE_2D);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
-
-	return openni::STATUS_OK;
-
-}
-void SampleViewer::InitOpenGLHooks()
-{
-	glutKeyboardFunc(glutKeyboard);
-	glutDisplayFunc(glutDisplay);
-	glutIdleFunc(glutIdle);
-}
-
-
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "body_tracker");
-	//tf::TransformBroadcaster br;
-    ros::NodeHandle nh_priv("~");
+	ros::init(argc, argv, "cob_body_tracker");
+	ros::NodeHandle nh_priv("~");
+	BodyTracker BodyTracker(nh_priv);
 
+	ros::spin();
+	return 0;
 
-	openni::Status rc = openni::STATUS_OK;
-	printf("Start body tracker");
-
-	SampleViewer sampleViewer("Tracker", nh_priv);
-
-	rc = sampleViewer.Init(argc, argv);
-	if (rc != openni::STATUS_OK)
-	{
-		return 1;
-	}
-
-	sampleViewer.Run();
 }

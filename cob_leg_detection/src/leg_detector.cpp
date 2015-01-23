@@ -44,6 +44,7 @@
 #include <cob_perception_msgs/PositionMeasurement.h>
 #include <cob_perception_msgs/PositionMeasurementArray.h>
 #include <cob_perception_msgs/Person.h>
+#include <cob_perception_msgs/People.h>
 #include <sensor_msgs/LaserScan.h>
 
 #include <tf/transform_listener.h>
@@ -60,6 +61,7 @@
 #include <tf/transform_listener.h>
 
 #include <algorithm>
+#include <vector>
 
 using namespace std;
 using namespace laser_processor;
@@ -81,6 +83,8 @@ static double cov_meas_people_m        = 0.025;
 
 static double kal_p = 4, kal_q = .002, kal_r = 10;
 static bool use_filter = true;
+
+static string detector_ = "laser_scaner";
 
 
 
@@ -434,7 +438,8 @@ public:
 		// advertise topics
 		leg_measurements_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("leg_tracker_measurements",0);
 		people_measurements_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
-		people_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("people",0);
+		//people_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("people",0);
+		people_pub_ = nh_.advertise<cob_perception_msgs::People>("people",0);
 		markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 20);
 
 		laser_notifier_.registerCallback(boost::bind(&LegDetector::laserCallback, this, _1));
@@ -580,25 +585,24 @@ public:
 		//publish data
 
 		int i = 0;
-		vector<cob_perception_msgs::PositionMeasurement> people;
+
+		vector<cob_perception_msgs::Person> people;
 
 		for (list<SavedPersonFeature*>::iterator sp_iter = saved_people_.begin();
 				sp_iter != saved_people_.end(); sp_iter++,i++){
 			//ROS_INFO("Velocity [%f, %f, %f]}: ", (*sp_iter)->velocity_[0], (*sp_iter)->velocity_[1], (*sp_iter)->velocity_[2]);
-			cob_perception_msgs::PositionMeasurement pos;
-			pos.header.stamp = (*sp_iter)->time_;
-			pos.header.frame_id = fixed_frame;
-			pos.name = (*sp_iter)->person_name; // name of the person
-			pos.object_id = (*sp_iter)->id_;
-			pos.pos.x = (*sp_iter)->position_[0];
-			pos.pos.y = (*sp_iter)->position_[1];
-			pos.pos.z = (*sp_iter)->position_[2];
-			pos.vel.x = (*sp_iter)->velocity_[0];
-			pos.vel.y = (*sp_iter)->velocity_[1];
-			pos.vel.z = (*sp_iter)->velocity_[2];
-			//	pos.reliability = (*sp_iter)->getReliability();;
+			cob_perception_msgs::Person person;
+			person.detector = detector_;
+			person.name = (*sp_iter)->person_name; // name of the person
+			person.position.position.x = (*sp_iter)->position_[0];
+			person.position.position.y = (*sp_iter)->position_[1];
+			person.position.position.z = (*sp_iter)->position_[2];
 
-			people.push_back(pos);
+			person.velocity.x = (*sp_iter)->velocity_[0];
+			person.velocity.y = (*sp_iter)->velocity_[1];
+			person.velocity.z = (*sp_iter)->velocity_[2];
+
+			people.push_back(person);
 
 			double dx = (*sp_iter)->velocity_[0], dy = (*sp_iter)->velocity_[1];
 			visualization_msgs::Marker m;
@@ -623,7 +627,8 @@ public:
 
 			markers_pub_.publish(m);
 		}
-		cob_perception_msgs::PositionMeasurementArray array;
+		//cob_perception_msgs::PositionMeasurementArray array;
+		cob_perception_msgs::People array;
 		array.header.stamp = ros::Time::now();
 		array.people = people;
 		people_pub_.publish(array);

@@ -27,25 +27,16 @@ find_package(catkin REQUIRED COMPONENTS
 	${catkin_BUILD_PACKAGES}
 )
 
-find_package(OpenCV REQUIRED)	# name identical to FindOpenCV.cmake in cmake_modules
+find_package(OpenCV REQUIRED)	
+find_package(orocos_kdl REQUIRED)
+find_package(Eigen REQUIRED)
 
-# look for bfl (Bayesian Filtering Library)
-#find_path(BFL_INCLUDE_DIRS
-#	  NAMES OpenNI.h
-#	  HINTS /opt/ros/indigo/include/bfl)
-#find_library(BFL_LIBRARIES
-#	     NAMES orocos-bfl
-#	     HINTS /opt/ros/indigo/lib
-#	     PATH_SUFFIXES lib) 
-#message(STATUS "BFL_LIBRARIES: ${BFL_LIBRARIES}")
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
-#include_directories(${BFL_INCLUDE_DIRS})
-link_directories(${BFL_LIBRARY_DIRS})
-#message(STATUS "----------------------------------- include: ${BFL_INCLUDE_DIRS},  lib: ${BFL_LIBRARY_DIRS},   libs: ${BFL_LIBRARIES}")
 
-# Look for Bullet
-#pkg_check_modules(BULLET bullet)
+#message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
+#message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
+
 
 ## dynamic reconfigure config
 generate_dynamic_reconfigure_options(
@@ -68,6 +59,7 @@ LIBRARIES
 CATKIN_DEPENDS
 	${catkin_RUN_PACKAGES}
 DEPENDS
+	orocos_kdl
 )
 
 ## Specify additional locations of header files
@@ -75,10 +67,14 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${orocos_kdl_INCLUDE_DIRS}
   ${BFL_INCLUDE_DIRS}
-  #${BULLET_INCLUDE_DIRS}
+  ${EIGEN_INCLUDE_DIRS}
 )
 
+link_directories(${BFL_LIBRARY_DIRS})
+
+add_definitions(${EIGEN_DEFINITIONS})
 
 ## Declare a cpp executable
 add_executable(leg_detection               
@@ -86,24 +82,21 @@ add_executable(leg_detection
                src/leg_detector.cpp 
                src/calc_leg_features.cpp)
                
-
+#add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 
 ## Add cmake target dependencies of the executable/library
 #add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
-add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+#add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(leg_detection
    ${catkin_LIBRARIES}
    ${OpenCV_LIBRARIES}
-   ${BFL_LIBRARIES}
-   #${BULLET_LIBRARIES}
+   ${orocos_kdl_LIBRARIES}
 )
 
-#add_executable(velocity_tracker src/velocity_tracker.cpp)
-#target_link_libraries(velocity_tracker ${catkin_LIBRARIES})
-#add_dependencies(velocity_tracker ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
 
 
 #############
