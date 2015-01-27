@@ -8,6 +8,7 @@ set(catkin_RUN_PACKAGES
 	cob_perception_msgs
 	image_transport
 	cv_bridge
+	std_msgs
 	roscpp
 	roslib
 	tf

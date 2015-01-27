@@ -72,7 +72,7 @@
 
 // ROS message includes
 #include <sensor_msgs/Image.h>
-#include <cob_perception_msgs2/DetectionArray.h>
+#include <cob_perception_msgs/DetectionArray.h>
 
 // services
 //#include <cob_people_detection/DetectPeople.h>

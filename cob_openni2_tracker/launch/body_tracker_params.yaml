@@ -1,32 +1,32 @@
 
 #define timeout to exit (in milliseconds)
 #int
-# g_poseTimeoutToExit: 2000
- g_poseTimeoutToExit: 1000
+ poseTimeoutToExit: 2000
+
 #set the visibility parameter for a skeleton
 #bool 
- g_drawSkeleton: true
+ drawSkeleton: true
 
 #set the visibility parameter for a center of user mass
 #bool 
- g_drawCenterOfMass: false
+ drawCenterOfMass: true
 
 #set the visibility parameter for a status label
 #bool 
- g_drawStatusLabel: true
+ drawStatusLabel: true
 
 #set the visibility parameter for a bounding box
 #bool 
- g_drawBoundingBox: false
+ drawBoundingBox: true
 
 #set the visibility parameter for a background 
 #bool 
- g_drawBackground: true
+ drawBackground: true
 
 #set the visibility parameter for a depth
 #bool 
- g_drawDepth: true
+ drawDepth: true
 
 #set the visibility parameter for a frame id
 #bool 
- g_drawFrameId: false
+ drawFrameId: false

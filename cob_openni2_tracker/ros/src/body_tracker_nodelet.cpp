@@ -13,14 +13,16 @@
 
 PLUGINLIB_EXPORT_CLASS(BodyTrackerNodelet, nodelet::Nodelet)
 
-BodyTrackerNodelet::BodyTrackerNodelet(): Nodelet(), bt_listener(0)
+BodyTrackerNodelet::BodyTrackerNodelet(): Nodelet(), bt_listener(NULL)
 {
 	ROS_INFO("Init BodyTrackerNodelet.");
 }
 
 BodyTrackerNodelet::~BodyTrackerNodelet()
 {
-	if (bt_listener != 0) {
+	if (bt_listener != NULL) {
+
+		bt_listener->Finalize();
 		delete bt_listener;
 	}
 }
@@ -29,6 +31,9 @@ void BodyTrackerNodelet::onInit()
 {
 	if(bt_listener == 0)
 		bt_listener = new BodyTracker(getPrivateNodeHandle());
+	    bt_listener->runTracker();
+
 }
+
 
 
