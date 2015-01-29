@@ -1,7 +1,8 @@
 <launch>
 
  <include file="$(find openni2_launch)/launch/openni2.launch" />
-<rosparam command="load" ns="/cob_openni2_tracker/cob_body_tracker" file="$(find cob_openni2_tracker)/launch/body_tracker_params.yaml"/>
+ 
+
 
 <arg name="tracker_name" default="cob_body_tracker" />
 <arg name="camera_name" default="camera" />
@@ -12,6 +13,9 @@
 	<param name="camera_frame_id" type="str" value="$(arg camera_name)_link" /> <!-- $(arg camera_name)_depth_optical_frame -->
 	<param name="tf_prefix" value="$(arg tracker_name)" />
 	<param name="relative_frame" value="$(arg camera_name)_depth_optical_frame" />
+	
+	<rosparam file="$(find cob_openni2_tracker)/launch/body_tracker_params.yaml"/>
+	
  </node>  
-           
+ 
 </launch>

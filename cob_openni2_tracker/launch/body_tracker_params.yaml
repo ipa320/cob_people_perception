@@ -5,15 +5,15 @@
 
 #set the visibility parameter for a skeleton
 #bool 
- drawSkeleton: true
+ drawSkeleton: false
 
 #set the visibility parameter for a center of user mass
 #bool 
- drawCenterOfMass: true
+ drawCenterOfMass: false
 
 #set the visibility parameter for a status label
 #bool 
- drawStatusLabel: true
+ drawStatusLabel: false
 
 #set the visibility parameter for a bounding box
 #bool 
@@ -29,4 +29,4 @@
 
 #set the visibility parameter for a frame id
 #bool 
- drawFrameId: false
+ drawFrames: false

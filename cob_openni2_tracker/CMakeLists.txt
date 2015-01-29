@@ -122,7 +122,7 @@ target_link_libraries(cob_body_tracker
     ${PCL_IO_LIBRARIES}
 )
 
-add_library(body_tracker_nodelet ros/src/body_tracker_nodelet.cpp ros/src/body_tracker.cpp)
+add_library(body_tracker_nodelet ros/src/body_tracker.cpp ros/src/body_tracker_nodelet.cpp )
 
 target_link_libraries(body_tracker_nodelet 
 	${catkin_LIBRARIES} 
