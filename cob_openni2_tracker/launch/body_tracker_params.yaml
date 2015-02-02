@@ -1,32 +1,32 @@
 
-#define timeout to exit (in milliseconds)
+#defines timeout to exit the tracking (in milliseconds)
 #int
  poseTimeoutToExit: 2000
 
-#set the visibility parameter for a skeleton
+#sets the visibility parameter for skeletons of the tracked users
 #bool 
  drawSkeleton: false
 
-#set the visibility parameter for a center of user mass
+#sets the visibility parameter for a center of tracked users mass
 #bool 
  drawCenterOfMass: false
 
-#set the visibility parameter for a status label
+#sets the visibility parameter for names of the tracked users
 #bool 
- drawStatusLabel: false
+ drawUserName: false
 
-#set the visibility parameter for a bounding box
+#sets the visibility parameter for bounding boxes of the tracked users
 #bool 
  drawBoundingBox: true
 
-#set the visibility parameter for a background 
+#sets the visibility parameter for a background
 #bool 
  drawBackground: true
 
-#set the visibility parameter for a depth
+#sets the visibility parameter for a detected depth data
 #bool 
  drawDepth: true
 
-#set the visibility parameter for a frame id
+#sets the visibility parameter for skeleton frames of the tracked users
 #bool 
  drawFrames: false

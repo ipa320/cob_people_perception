@@ -1,6 +1,6 @@
  Installation
 
-1. Clone cob_openni2_tracker and other repositories from Github (hydro-dev branch) in a catkin workspace:
+1. Clone cob_openni2_tracker and other repositories from Github (hydro_dev branch) in a catkin workspace:
 
     $ cd catkin_ws/src
 
@@ -21,22 +21,16 @@
 	3.1.2 (if cloned) Clone      
        
   	 $ git clone git@github.com:OpenNI/OpenNI2.git :
-  	 
-    
+  	  
   	 $ cd OpenNI
   	 $ mkdir build
-   	$ cd build
-   	$ cmake .. -DBUILD_OPENNI2_DRIVER=ON
-   	$ make
-
-3.2. Install Nite2 and unpack:
-    
-   $ cd NiTE-Linux-x64-2.2
-   $ sudo ./install.sh
+   	 $ cd build
+   	 $ cmake .. -DBUILD_OPENNI2_DRIVER=ON
+   	 $ make
 
 4. Try to run the launch file:
 
-   $ roslaunch cob_openni2_tracker openni2_tracker.launch
+   $ roslaunch cob_openni2_tracker o.launch
 
 
 5. Run an example in ~/NiTE-Linux-x64-2.2/Samples/Bin/

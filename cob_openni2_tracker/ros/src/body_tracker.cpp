@@ -138,8 +138,8 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 	std::cout << "drawSkeleton = " << drawSkeleton_ << "\n";
 	nh_.param("drawCenterOfMass", drawCenterOfMass_, false);
 	std::cout << "drawCenterOfMass = " << drawCenterOfMass_ << "\n";
-	nh_.param("drawStatusLabel", drawStatusLabel_, true);
-	std::cout << "drawStatusLabel = " << drawStatusLabel_ << "\n";
+	nh_.param("drawUserName", drawUserName_, true);
+	std::cout << "drawUserName = " << drawUserName_ << "\n";
 	nh_.param("drawBoundingBox", drawBoundingBox_, true);
 	std::cout << "drawBoundingBox = " << drawBoundingBox_ << "\n";
 	nh_.param("drawBackground", drawBackground_, false);
@@ -223,6 +223,10 @@ void BodyTracker::imageCallback(const sensor_msgs::ImageConstPtr& color_image_ms
 				{
 					cv::circle(color_image_, cv::Point(100, 100), 10, CV_RGB(r, g, b));
 				}
+				if(drawUserName_)
+				{
+					//drawUserName((*iter_), color_image, cv::Point(100, 100));
+				}
 			}
 		}
 	}
@@ -256,7 +260,7 @@ void BodyTracker::init()
 
 	openni::Status rc = openni::OpenNI::initialize();
 	if (rc != openni::STATUS_OK)
-	{write down a label on image view
+	{
 		printf("Failed to initialize OpenNI\n%s\n", openni::OpenNI::getExtendedError());
 		nh_.shutdown();
 		return;
@@ -508,354 +512,355 @@ void BodyTracker::runTracker()
 		}
 		publishTrackedUserMsg();
 	}
-	/*
-	 * Publishes user message [@cob_perception_msgs::Person] on the given topic of [@people_pub] publisher.
-	 */
-	void BodyTracker::publishTrackedUserMsg()
+}
+/*
+ * Publishes user message [@cob_perception_msgs::Person] on the given topic of [@people_pub] publisher.
+ */
+void BodyTracker::publishTrackedUserMsg()
+{
+	//publish tracked users
+	std::vector<cob_perception_msgs::Person> detected_people;
+	for(std::list<nite::UserData>::iterator iter_ = tracked_users_->begin(); iter_ != tracked_users_->end(); ++iter_)
 	{
-		//publish tracked users
-		std::vector<cob_perception_msgs::Person> detected_people;
-		for(std::list<nite::UserData>::iterator iter_ = tracked_users_->begin(); iter_ != tracked_users_->end(); ++iter_)
-		{
-			cob_perception_msgs::Person person;
-			cob_perception_msgs::Skeleton skeleton;
+		cob_perception_msgs::Person person;
+		cob_perception_msgs::Skeleton skeleton;
 
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_HEAD)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_NECK)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_HAND)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_HAND)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_TORSO)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_HIP)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_HIP)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_KNEE)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_FOOT)));
-			skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_HEAD)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_NECK)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_HAND)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_HAND)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_TORSO)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_HIP)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_HIP)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_KNEE)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_LEFT_FOOT)));
+		skeleton.joints.push_back(convertNiteJointToMsgs((*iter_).getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT)));
 
-			char id[100];
-			snprintf(id,100,"person %d", (*iter_).getId());
-			string id_ = std::string(id);
+		char id[100];
+		snprintf(id,100,"person %d", (*iter_).getId());
+		string id_ = std::string(id);
 
-			person.name = id_;
-			person.detector = detector_;
-			person.position.position.x = (*iter_).getCenterOfMass().x/1000.0;
-			person.position.position.y = -(*iter_).getCenterOfMass().y/1000.0;
-			person.position.position.z = (*iter_).getCenterOfMass().z/1000.0;
+		person.name = id_;
+		person.detector = detector_;
+		person.position.position.x = (*iter_).getCenterOfMass().x/1000.0;
+		person.position.position.y = -(*iter_).getCenterOfMass().y/1000.0;
+		person.position.position.z = (*iter_).getCenterOfMass().z/1000.0;
 
-			person.skeleton = skeleton;
+		person.skeleton = skeleton;
 
-			unsigned int length = sqrt(person.position.position.x) + sqrt(person.position.position.y) +
-					sqrt(person.position.position.z);
+		unsigned int length = sqrt(person.position.position.x) + sqrt(person.position.position.y) +
+				sqrt(person.position.position.z);
 
-			//save only valid data and no empty points
-			if(length != 0)
-				detected_people.push_back(person);
-		}
-		cob_perception_msgs::People array;
-		array.header.stamp = ros::Time::now();
-		array.header.frame_id = rel_frame_;
-		array.people = detected_people;
-		people_pub_.publish(array);
-
+		//save only valid data and no empty points
+		if(length != 0)
+			detected_people.push_back(person);
 	}
+	cob_perception_msgs::People array;
+	array.header.stamp = ros::Time::now();
+	array.header.frame_id = rel_frame_;
+	array.people = detected_people;
+	people_pub_.publish(array);
+
+}
 /*
  * Updates and prints the user information.
  */
-	void BodyTracker::updateUserState(const nite::UserData& user, uint64_t ts)
-	{
-		if(user.isNew()){
-			USER_MESSAGE("New User detected.");
-		}
-		else if(user.isVisible() && !visibleUsers[user.getId()]){
-			printf("[%08" PRIu64 "] User #%d:\tVisible\n", ts, user.getId());
-		}
-		else if(!user.isVisible() && visibleUsers[user.getId()]){
-			printf("[%08" PRIu64 "] User #%d:\tOut of Scene\n", ts, user.getId());
-		}
-		else if(user.isLost()){
-			USER_MESSAGE("Lost");
-		}
-		visibleUsers[user.getId()] = user.isVisible();
+void BodyTracker::updateUserState(const nite::UserData& user, uint64_t ts)
+{
+	if(user.isNew()){
+		USER_MESSAGE("New User detected.");
+	}
+	else if(user.isVisible() && !visibleUsers[user.getId()]){
+		printf("[%08" PRIu64 "] User #%d:\tVisible\n", ts, user.getId());
+	}
+	else if(!user.isVisible() && visibleUsers[user.getId()]){
+		printf("[%08" PRIu64 "] User #%d:\tOut of Scene\n", ts, user.getId());
+	}
+	else if(user.isLost()){
+		USER_MESSAGE("Lost");
+	}
+	visibleUsers[user.getId()] = user.isVisible();
 
-		if(skeletonStates[user.getId()] != user.getSkeleton().getState())
+	if(skeletonStates[user.getId()] != user.getSkeleton().getState())
+	{
+		switch(skeletonStates[user.getId()] = user.getSkeleton().getState())
 		{
-			switch(skeletonStates[user.getId()] = user.getSkeleton().getState())
-			{
-			case nite::SKELETON_NONE:
-				USER_MESSAGE("Stopped tracking !")
-				break;
-			case nite::SKELETON_CALIBRATING:
-				USER_MESSAGE("Calibrating...")
-				break;
-			case nite::SKELETON_TRACKED:
-				USER_MESSAGE("Tracking ...");
-				break;
-			case nite::SKELETON_CALIBRATION_ERROR_NOT_IN_POSE:
-			case nite::SKELETON_CALIBRATION_ERROR_HANDS:
-			case nite::SKELETON_CALIBRATION_ERROR_LEGS:
-			case nite::SKELETON_CALIBRATION_ERROR_HEAD:
-			case nite::SKELETON_CALIBRATION_ERROR_TORSO:
-				USER_MESSAGE("Calibration Failed... :-|")
-				break;
-			}
+		case nite::SKELETON_NONE:
+			USER_MESSAGE("Stopped tracking !")
+			break;
+		case nite::SKELETON_CALIBRATING:
+			USER_MESSAGE("Calibrating...")
+			break;
+		case nite::SKELETON_TRACKED:
+			USER_MESSAGE("Tracking ...");
+			break;
+		case nite::SKELETON_CALIBRATION_ERROR_NOT_IN_POSE:
+		case nite::SKELETON_CALIBRATION_ERROR_HANDS:
+		case nite::SKELETON_CALIBRATION_ERROR_LEGS:
+		case nite::SKELETON_CALIBRATION_ERROR_HEAD:
+		case nite::SKELETON_CALIBRATION_ERROR_TORSO:
+			USER_MESSAGE("Calibration Failed... :-|")
+			break;
 		}
 	}
+}
 
 /*
  * Publishes joints on TF.
  */
-	void BodyTracker::publishJoints(ros::NodeHandle& nh, tf::TransformBroadcaster& br, std::string joint_name,
-			nite::SkeletonJoint joint, std::string tf_prefix, std::string rel_frame, int id){
+void BodyTracker::publishJoints(ros::NodeHandle& nh, tf::TransformBroadcaster& br, std::string joint_name,
+		nite::SkeletonJoint joint, std::string tf_prefix, std::string rel_frame, int id){
 
-		if (joint.getPositionConfidence() > 0.0)
-		{
-			tf::Transform transform;
-			transform.setOrigin(tf::Vector3(joint.getPosition().x/1000.0, -joint.getPosition().y/1000.0,
-					joint.getPosition().z/1000.0));
-			tf::Quaternion frame_rotation;
-			frame_rotation.setEuler(0, 0, 0);
-			transform.setRotation(frame_rotation);
-			std::stringstream frame_id_stream;
-			std::string frame_id;
-			frame_id_stream << "/" << tf_prefix << "/user_" << id << "/" << joint_name;
-			frame_id = frame_id_stream.str();
-			// std::cout << frame_id << std::endl;
-			br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), rel_frame, frame_id));
-		}
-	}
-
-	/*
-	 * Converts a nite message to a geometry message.
-	 */
-	geometry_msgs::Pose BodyTracker::convertNiteJointToMsgs(nite::SkeletonJoint joint)
+	if (joint.getPositionConfidence() > 0.0)
 	{
-		geometry_msgs::Pose transform_msgs;
-
-		if (joint.getPositionConfidence() > 0.0)
-		{
-			tf::Transform transform;
-			transform.setOrigin(tf::Vector3(joint.getPosition().x/1000.0, -joint.getPosition().y/1000.0,
-					joint.getPosition().z/1000.0));
-			tf::Quaternion frame_rotation;
-			frame_rotation.setEuler(0, 0, 0);
-			transform.setRotation(frame_rotation);
-			tf::poseTFToMsg(transform, transform_msgs);
-		}
-		return transform_msgs;
+		tf::Transform transform;
+		transform.setOrigin(tf::Vector3(joint.getPosition().x/1000.0, -joint.getPosition().y/1000.0,
+				joint.getPosition().z/1000.0));
+		tf::Quaternion frame_rotation;
+		frame_rotation.setEuler(0, 0, 0);
+		transform.setRotation(frame_rotation);
+		std::stringstream frame_id_stream;
+		std::string frame_id;
+		frame_id_stream << "/" << tf_prefix << "/user_" << id << "/" << joint_name;
+		frame_id = frame_id_stream.str();
+		// std::cout << frame_id << std::endl;
+		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), rel_frame, frame_id));
 	}
+}
+
+/*
+ * Converts a nite message to a geometry message.
+ */
+geometry_msgs::Pose BodyTracker::convertNiteJointToMsgs(nite::SkeletonJoint joint)
+{
+	geometry_msgs::Pose transform_msgs;
+
+	if (joint.getPositionConfidence() > 0.0)
+	{
+		tf::Transform transform;
+		transform.setOrigin(tf::Vector3(joint.getPosition().x/1000.0, -joint.getPosition().y/1000.0,
+				joint.getPosition().z/1000.0));
+		tf::Quaternion frame_rotation;
+		frame_rotation.setEuler(0, 0, 0);
+		transform.setRotation(frame_rotation);
+		tf::poseTFToMsg(transform, transform_msgs);
+	}
+	return transform_msgs;
+}
 
 /*
  * Draws a Point Cloud. Resets the points of a [@pcl_cloud].
  */
-	void BodyTracker::drawPointCloud()
-	{
-		ros::Time time = ros::Time::now();
-		uint64_t st = time.toNSec();
-		pcl_cloud_->header.stamp = st;
-		pcl_cloud_->header.frame_id = cam_frame_;
+void BodyTracker::drawPointCloud()
+{
+	ros::Time time = ros::Time::now();
+	uint64_t st = time.toNSec();
+	pcl_cloud_->header.stamp = st;
+	pcl_cloud_->header.frame_id = cam_frame_;
 
-		pcl_pub_.publish(pcl_cloud_);
-		pcl_cloud_->points.clear();
-	}
+	pcl_pub_.publish(pcl_cloud_);
+	pcl_cloud_->points.clear();
+}
 /*
  * Draws the limbs of a person on an image view.
  */
-	void BodyTracker::drawLimb(nite::UserTracker* pUserTracker, const nite::SkeletonJoint& joint1, const nite::SkeletonJoint& joint2, int color)
-	{
-		//TO DO: compose limbs for drawing function
-	}
+void BodyTracker::drawLimb(nite::UserTracker* pUserTracker, const nite::SkeletonJoint& joint1, const nite::SkeletonJoint& joint2, int color)
+{
+	//TO DO: compose limbs for drawing function
+}
 /*
  * Draws a skeleton on an image view.
  */
-	void BodyTracker::drawSkeleton(nite::UserTracker* pUserTracker, const nite::UserData& userData)
-	{
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_HEAD), userData.getSkeleton().getJoint(nite::JOINT_NECK), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HAND), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getId() % colorCount);
-		//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT), userData.getId() % colorCount);
+void BodyTracker::drawSkeleton(nite::UserTracker* pUserTracker, const nite::UserData& userData)
+{
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_HEAD), userData.getSkeleton().getJoint(nite::JOINT_NECK), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HAND), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getId() % colorCount);
+	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT), userData.getId() % colorCount);
 
-		//TO DO: draw skeleton on image view
-	}
+	//TO DO: draw skeleton on image view
+}
 
 /*
  * Writes down a label on an image view
  */
-	void BodyTracker::drawStatusLabel(const nite::UserData& user, cv::Mat& color_image, cv::Point& tag_coords)
-	{
-		//
-		//	std::string tag_label = "User" + user.getId();
-		//	std::cout << "The text tag reads: " << tag_label << "." << std::endl;
-		//	cv::putText(color_image, tag_label, tag_coords, cv::FONT_HERSHEY_PLAIN, 3, CV_RGB(0,0,255), 2);
+void BodyTracker::drawUserName(const nite::UserData& user, cv::Mat& color_image, cv::Point& tag_coords)
+{
+	//
+	//	std::string tag_label = "User" + user.getId();
+	//	std::cout << "The text tag reads: " << tag_label << "." << std::endl;
+	//	cv::putText(color_image, tag_label, tag_coords, cv::FONT_HERSHEY_PLAIN, 3, CV_RGB(0,0,255), 2);
 
-		//TO DO: write down a label on image view
+	//TO DO: write down a label on image view
 
-	}
+}
 /*
  * Publishes frames and joints markers on TF.
  */
-	void BodyTracker::drawFrames(const nite::UserData& user)
-	{
-		int r = 255*Colors[user.getId() % colorCount][0];
-		int g = 255*Colors[user.getId() % colorCount][1];
-		int b = 255*Colors[user.getId() % colorCount][2];
+void BodyTracker::drawFrames(const nite::UserData& user)
+{
+	int r = 255*Colors[user.getId() % colorCount][0];
+	int g = 255*Colors[user.getId() % colorCount][1];
+	int b = 255*Colors[user.getId() % colorCount][2];
 
-		JointMap joints;
-		joints["head"] = (user.getSkeleton().getJoint(nite::JOINT_HEAD));
-		joints["neck"] = (user.getSkeleton().getJoint(nite::JOINT_NECK));
-		joints["left_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER));
-		joints["right_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER));
-		joints["left_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW));
-		joints["right_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW));
-		joints["left_hand"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND));
-		joints["right_hand"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND));
-		joints["torso"] = (user.getSkeleton().getJoint(nite::JOINT_TORSO));
-		joints["left_hip"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HIP));
-		joints["right_hip"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP));
-		joints["left_knee"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE));
-		joints["right_knee"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE));
-		joints["left_foot"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT));
-		joints["right_foot"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT));
+	JointMap joints;
+	joints["head"] = (user.getSkeleton().getJoint(nite::JOINT_HEAD));
+	joints["neck"] = (user.getSkeleton().getJoint(nite::JOINT_NECK));
+	joints["left_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER));
+	joints["right_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER));
+	joints["left_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW));
+	joints["right_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW));
+	joints["left_hand"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND));
+	joints["right_hand"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND));
+	joints["torso"] = (user.getSkeleton().getJoint(nite::JOINT_TORSO));
+	joints["left_hip"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HIP));
+	joints["right_hip"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP));
+	joints["left_knee"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE));
+	joints["right_knee"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE));
+	joints["left_foot"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT));
+	joints["right_foot"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT));
 
-		for (JointMap::iterator it=joints.begin(); it!=joints.end(); ++it){
-			publishJoints(nh_, br_, it->first, it->second, tf_prefix_, rel_frame_, user.getId());
-		}
-
-		drawCircle(r, g, b, joints["head"].getPosition());
-		drawCircle(r, g, b, joints["right_hand"].getPosition());
-		drawCircle(r, g, b, joints["left_hand"].getPosition());
-		drawCircle(r, g, b, joints["right_foot"].getPosition());
-		drawCircle(r, g, b, joints["left_foot"].getPosition());
-
-		drawLine(r, g, b, joints["head"].getPosition(), joints["neck"].getPosition());
-		drawLine(r, g, b, joints["neck"].getPosition(), joints["left_shoulder"].getPosition());
-		drawLine(r, g, b, joints["neck"].getPosition(), joints["right_shoulder"].getPosition());
-		drawLine(r, g, b, joints["right_shoulder"].getPosition(), joints["right_elbow"].getPosition());
-		drawLine(r, g, b, joints["left_shoulder"].getPosition(), joints["left_elbow"].getPosition());
-		drawLine(r, g, b, joints["right_elbow"].getPosition(), joints["right_hand"].getPosition());
-		drawLine(r, g, b, joints["left_elbow"].getPosition(), joints["left_hand"].getPosition());
-		drawLine(r, g, b, joints["neck"].getPosition(), joints["torso"].getPosition());
-		drawLine(r, g, b, joints["torso"].getPosition(), joints["left_hip"].getPosition());
-		drawLine(r, g, b, joints["torso"].getPosition(), joints["right_hip"].getPosition());
-		drawLine(r, g, b, joints["right_hip"].getPosition(), joints["right_knee"].getPosition());
-		drawLine(r, g, b, joints["left_hip"].getPosition(), joints["left_knee"].getPosition());
-		drawLine(r, g, b, joints["right_knee"].getPosition(), joints["right_foot"].getPosition());
-		drawLine(r, g, b, joints["left_knee"].getPosition(), joints["left_foot"].getPosition());
-
+	for (JointMap::iterator it=joints.begin(); it!=joints.end(); ++it){
+		publishJoints(nh_, br_, it->first, it->second, tf_prefix_, rel_frame_, user.getId());
 	}
 
-	/**
-	 * A helper function to draw a simple line in rviz.
-	 */
-	void BodyTracker::drawLine (const double r, const double g, const double b,
-			const nite::Point3f& pose_start, const nite::Point3f& pose_end )
+	drawCircle(r, g, b, joints["head"].getPosition());
+	drawCircle(r, g, b, joints["right_hand"].getPosition());
+	drawCircle(r, g, b, joints["left_hand"].getPosition());
+	drawCircle(r, g, b, joints["right_foot"].getPosition());
+	drawCircle(r, g, b, joints["left_foot"].getPosition());
+
+	drawLine(r, g, b, joints["head"].getPosition(), joints["neck"].getPosition());
+	drawLine(r, g, b, joints["neck"].getPosition(), joints["left_shoulder"].getPosition());
+	drawLine(r, g, b, joints["neck"].getPosition(), joints["right_shoulder"].getPosition());
+	drawLine(r, g, b, joints["right_shoulder"].getPosition(), joints["right_elbow"].getPosition());
+	drawLine(r, g, b, joints["left_shoulder"].getPosition(), joints["left_elbow"].getPosition());
+	drawLine(r, g, b, joints["right_elbow"].getPosition(), joints["right_hand"].getPosition());
+	drawLine(r, g, b, joints["left_elbow"].getPosition(), joints["left_hand"].getPosition());
+	drawLine(r, g, b, joints["neck"].getPosition(), joints["torso"].getPosition());
+	drawLine(r, g, b, joints["torso"].getPosition(), joints["left_hip"].getPosition());
+	drawLine(r, g, b, joints["torso"].getPosition(), joints["right_hip"].getPosition());
+	drawLine(r, g, b, joints["right_hip"].getPosition(), joints["right_knee"].getPosition());
+	drawLine(r, g, b, joints["left_hip"].getPosition(), joints["left_knee"].getPosition());
+	drawLine(r, g, b, joints["right_knee"].getPosition(), joints["right_foot"].getPosition());
+	drawLine(r, g, b, joints["left_knee"].getPosition(), joints["left_foot"].getPosition());
+
+}
+
+/**
+ * A helper function to draw a simple line in rviz.
+ */
+void BodyTracker::drawLine (const double r, const double g, const double b,
+		const nite::Point3f& pose_start, const nite::Point3f& pose_end )
+{
+	visualization_msgs::Marker marker;
+	marker.header.frame_id = rel_frame_;
+	marker.header.stamp = ros::Time::now();
+	marker.action = visualization_msgs::Marker::ADD;
+	marker.type = visualization_msgs::Marker::LINE_STRIP;
+	geometry_msgs::Point p;
+	marker.id = marker_id_;
+	p.x = pose_start.x/1000.0;
+	p.y = -pose_start.y/1000.0;
+	p.z = pose_start.z/1000.0;
+	marker.points.push_back(p);
+	p.x =pose_end.x/1000.0;
+	p.y = pose_end.y/1000.0;
+	p.z = pose_end.z/1000.0;
+	marker.points.push_back(p);
+	marker.scale.x = 0.019;
+	marker.scale.y = 0.0;
+	marker.scale.z = 0.0;
+	marker.color.r = r;
+	marker.color.g = g;
+	marker.color.b = b;
+	marker.lifetime = ros::Duration(0.01);
+	vis_pub_.publish(marker);
+	marker_id_++;
+}
+
+/*
+ * A helper function to draw circles in rviz
+ */
+
+void BodyTracker::drawCircle(const double r, const double g, const double b,
+		const nite::Point3f& pose){
+	visualization_msgs::Marker m;
+	m.header.stamp = ros::Time::now();
+	m.action = visualization_msgs::Marker::ADD;
+	m.header.frame_id = "/camra_link";
+	m.type = m.SPHERE;
+	m.id = marker_id_;
+	m.pose.position.x = pose.x/1000.0;
+	m.pose.position.y = -pose.y/1000.0;
+	m.pose.position.z = pose.z/1000.0;
+	m.scale.x = .1;
+	m.scale.y = .1;
+	m.scale.z = .1;
+	m.color.r = 1;
+	m.lifetime = ros::Duration(0.01);
+	vis_pub_.publish(m);
+	marker_id_++;
+}
+
+void BodyTracker::calculateHistogram(float* pHistogram, int histogramSize, const openni::VideoFrameRef& depthFrame)
+{
+	const openni::DepthPixel* pDepth = (const openni::DepthPixel*)depthFrame.getData();
+	int width = depthFrame.getWidth();
+	int height = depthFrame.getHeight();
+	// Calculate the accumulative histogram (the yellow display...)
+	memset(pHistogram, 0, histogramSize*sizeof(float));
+	int restOfRow = depthFrame.getStrideInBytes() / sizeof(openni::DepthPixel) - width;
+
+	unsigned int nNumberOfPoints = 0;
+	for (int y = 0; y < height; ++y)
 	{
-		visualization_msgs::Marker marker;
-		marker.header.frame_id = rel_frame_;
-		marker.header.stamp = ros::Time::now();
-		marker.action = visualization_msgs::Marker::ADD;
-		marker.type = visualization_msgs::Marker::LINE_STRIP;
-		geometry_msgs::Point p;
-		marker.id = marker_id_;
-		p.x = pose_start.x/1000.0;
-		p.y = -pose_start.y/1000.0;
-		p.z = pose_start.z/1000.0;
-		marker.points.push_back(p);
-		p.x =pose_end.x/1000.0;
-		p.y = pose_end.y/1000.0;
-		p.z = pose_end.z/1000.0;
-		marker.points.push_back(p);
-		marker.scale.x = 0.019;
-		marker.scale.y = 0.0;
-		marker.scale.z = 0.0;
-		marker.color.r = r;
-		marker.color.g = g;
-		marker.color.b = b;
-		marker.lifetime = ros::Duration(0.01);
-		vis_pub_.publish(marker);
-		marker_id_++;
-	}
-
-	/*
-	 * A helper function to draw circles in rviz
-	 */
-
-	void BodyTracker::drawCircle(const double r, const double g, const double b,
-			const nite::Point3f& pose){
-		visualization_msgs::Marker m;
-		m.header.stamp = ros::Time::now();
-		m.action = visualization_msgs::Marker::ADD;
-		m.header.frame_id = "/camra_link";
-		m.type = m.SPHERE;
-		m.id = marker_id_;
-		m.pose.position.x = pose.x/1000.0;
-		m.pose.position.y = -pose.y/1000.0;
-		m.pose.position.z = pose.z/1000.0;
-		m.scale.x = .1;
-		m.scale.y = .1;
-		m.scale.z = .1;
-		m.color.r = 1;
-		m.lifetime = ros::Duration(0.01);
-		vis_pub_.publish(m);
-		marker_id_++;
-	}
-
-	void BodyTracker::calculateHistogram(float* pHistogram, int histogramSize, const openni::VideoFrameRef& depthFrame)
-	{
-		const openni::DepthPixel* pDepth = (const openni::DepthPixel*)depthFrame.getData();
-		int width = depthFrame.getWidth();
-		int height = depthFrame.getHeight();
-		// Calculate the accumulative histogram (the yellow display...)
-		memset(pHistogram, 0, histogramSize*sizeof(float));
-		int restOfRow = depthFrame.getStrideInBytes() / sizeof(openni::DepthPixel) - width;
-
-		unsigned int nNumberOfPoints = 0;
-		for (int y = 0; y < height; ++y)
+		for (int x = 0; x < width; ++x, ++pDepth)
 		{
-			for (int x = 0; x < width; ++x, ++pDepth)
+			if (*pDepth != 0)
 			{
-				if (*pDepth != 0)
-				{
-					pHistogram[*pDepth]++;
-					nNumberOfPoints++;
-				}
+				pHistogram[*pDepth]++;
+				nNumberOfPoints++;
 			}
-			pDepth += restOfRow;
 		}
+		pDepth += restOfRow;
+	}
+	for (int nIndex=1; nIndex<histogramSize; nIndex++)
+	{
+		pHistogram[nIndex] += pHistogram[nIndex-1];
+	}
+	if (nNumberOfPoints)
+	{
 		for (int nIndex=1; nIndex<histogramSize; nIndex++)
 		{
-			pHistogram[nIndex] += pHistogram[nIndex-1];
-		}
-		if (nNumberOfPoints)
-		{
-			for (int nIndex=1; nIndex<histogramSize; nIndex++)
-			{
-				pHistogram[nIndex] = (256 * (1.0f - (pHistogram[nIndex] / nNumberOfPoints)));
-			}
+			pHistogram[nIndex] = (256 * (1.0f - (pHistogram[nIndex] / nNumberOfPoints)));
 		}
 	}
+}
 
-	int main(int argc, char** argv)
-	{
-		ros::init(argc, argv, "cob_body_tracker");
-		ros::NodeHandle nh_priv("~");
-		BodyTracker BodyTracker(nh_priv);
+int main(int argc, char** argv)
+{
+	ros::init(argc, argv, "cob_body_tracker");
+	ros::NodeHandle nh_priv("~");
+	BodyTracker BodyTracker(nh_priv);
 
-		ros::spin();
-		return 0;
+	ros::spin();
+	return 0;
 
-	}
+}

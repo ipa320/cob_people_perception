@@ -153,7 +153,7 @@ private:
 
 	bool drawSkeleton_;
 	bool drawCenterOfMass_;
-	bool drawStatusLabel_;
+	bool drawUserName_;
 	bool drawBoundingBox_;
 	bool drawBackground_;
 	bool drawDepth_;
@@ -161,8 +161,6 @@ private:
 
 	BodyTracker(const BodyTracker&);
 	BodyTracker& operator=(BodyTracker&);
-
-
 
 	void init();
 	void imageCallback(const sensor_msgs::ImageConstPtr& rgb_image_msg);
@@ -175,7 +173,7 @@ private:
 	void drawCircle(const double r, const double g, const double b,
 			const nite::Point3f& pose);
 	void drawSkeleton(nite::UserTracker* pUserTracker, const nite::UserData& userData);
-	void drawStatusLabel(const nite::UserData& user, cv::Mat& color_image, cv::Point& tag_coords);
+	void drawUserName(const nite::UserData& user, cv::Mat& color_image, cv::Point& tag_coords);
 	void drawFrames(const nite::UserData& user);
 	void drawPointCloud();
 	void drawLimb(nite::UserTracker* pUserTracker, const nite::SkeletonJoint& joint1, const nite::SkeletonJoint& joint2, int color);
