@@ -42,6 +42,11 @@
 #include "people_msgs/PositionMeasurement.h"
 #include "sensor_msgs/LaserScan.h"
 
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+
+#include <boost/foreach.hpp>
+
 using namespace std;
 using namespace laser_processor;
 using namespace ros;
@@ -84,37 +89,71 @@ public:
         break;
       }
 
-      ros::record::Player p;
-      if (p.open(file, ros::Time()))
-      {
-        mask_.clear();
-        mask_count_ = 0;    
+      //ros::record::Player p; is deprecated
+      rosbag::Bag bag;
 
-      switch (load)
-      {
-      case LOADING_POS:
-        p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, &pos_data_);
-        break;
-      case LOADING_NEG:
-        mask_count_ = 1000; // effectively disable masking
-        p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, &neg_data_);
-        break;
-      case LOADING_TEST:
-        p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, &test_data_);
-        break;
-      default:
-        break;
-      }
-    
-        while (p.nextMsg())
-        {}
-    } 
+      // topics to load
+      std::vector<std::string> topics;
+      topics.push_back("*");
+
+      rosbag::View view(bag, rosbag::TopicQuery(topics));
+
+      // Read the bag file
+	  //if (p.open(file, ros::Time()))
+      if(bag.open(file, rosbag::bagmode::Read))
+	  {
+		mask_.clear();
+		mask_count_ = 0;
+
+    	BOOST_FOREACH(rosbag::MessageInstance const m, view) // Iterate through the messages
+		{
+    	  sensor_msgs::LaserScan::ConstPtr scan = m.instantiate<sensor_msgs::LaserScan>();
+
+  		  switch (load)
+  		  {
+  		  case LOADING_POS:
+  			  //p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, &pos_data_);
+  			  this->loadCb(scan,pos_data_);
+  			  break;
+  		  case LOADING_NEG:
+  			  mask_count_ = 1000; // effectively disable masking
+  			  p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, neg_data_);
+  			  break;
+  		  case LOADING_TEST:
+  			  p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, test_data_);
+  			  break;
+  		  default:
+  			  break;
+  		  }
+		}
+
+
+
+
+		  // Iterate through messages
+		  //while (p.nextMsg())
+		  //{}
+	  }
     }
   }
 
-  void loadCb(string name, sensor_msgs::LaserScan* scan, ros::Time t, ros::Time t_no_use, void* n)
+  /**
+  * a normal member taking two arguments and returning an integer value.
+  * @param unused??? //TODO
+  * @param the message beeing parsed
+  * @param unused time //TODO
+  * @param unused time //TODO
+  * @param unused time //TODO
+  * @see Test()
+  * @see ~Test()
+  * @see testMeToo()
+  * @see publicVar()
+  * @return The test results
+  */
+  //void loadCb(string name, sensor_msgs::LaserScan* scan, ros::Time t, ros::Time t_no_use, vector< vector<float> >& data) //TODO Remove first parameter
+  void loadCb(sensor_msgs::LaserScan::ConstPtr scan, vector< vector<float> >& data)
   {
-    vector< vector<float> >* data = (vector< vector<float> >*)(n);
+    //vector< vector<float> >* data = n;
 
     if (mask_count_++ < 20)
     {
