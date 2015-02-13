@@ -112,27 +112,20 @@ public:
   		  switch (load)
   		  {
   		  case LOADING_POS:
-  			  //p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, &pos_data_);
   			  this->loadCb(scan,pos_data_);
   			  break;
   		  case LOADING_NEG:
   			  mask_count_ = 1000; // effectively disable masking
-  			  p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, neg_data_);
+  			  this->loadCb(scan,neg_data_);
   			  break;
   		  case LOADING_TEST:
-  			  p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, test_data_);
+  			  this->loadCb(scan,test_data_)
   			  break;
   		  default:
   			  break;
   		  }
 		}
 
-
-
-
-		  // Iterate through messages
-		  //while (p.nextMsg())
-		  //{}
 	  }
     }
   }
