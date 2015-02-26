@@ -40,6 +40,21 @@
 using namespace laser_processor;
 using namespace std;
 
+// Features:
+// #1: StandartDeviation
+// #2: Average Median Deviation
+// #3: Jump Distance Before
+// #4: Jump Distance After
+// #5: Width
+// #6: Linearity
+// #7: Circularity
+// #8: Radius
+// #9: Boundary Length
+// #10: Angular Difference
+// #11: Mean Curvature
+// #12: Mean angular difference
+// #13: Mean angular difference (Std)
+
 vector<float> calcLegFeatures(SampleSet* cluster, const sensor_msgs::LaserScan& scan)
 {
 
@@ -89,8 +104,8 @@ vector<float> calcLegFeatures(SampleSet* cluster, const sensor_msgs::LaserScan& 
   float std = sqrt(1.0 / (num_points - 1.0) * sum_std_diff);
   float avg_median_dev = sum_med_diff / num_points;
 
-  features.push_back(std);
-  features.push_back(avg_median_dev);
+  features.push_back(std);//#1
+  features.push_back(avg_median_dev);//#2
 
 
   // Take first at last
@@ -126,12 +141,12 @@ vector<float> calcLegFeatures(SampleSet* cluster, const sensor_msgs::LaserScan& 
     }
   }
 
-  features.push_back(prev_jump);
-  features.push_back(next_jump);
+  features.push_back(prev_jump);//#3
+  features.push_back(next_jump);//#4
 
   // Compute Width
   float width = sqrt(pow((*first)->x - (*last)->x, 2) + pow((*first)->y - (*last)->y, 2));
-  features.push_back(width);
+  features.push_back(width);//#5
 
   // Compute Linearity
 
@@ -173,7 +188,7 @@ vector<float> calcLegFeatures(SampleSet* cluster, const sensor_msgs::LaserScan& 
   cvReleaseMat(&rot_points);
   rot_points = 0;
 
-  features.push_back(linearity);
+  features.push_back(linearity);//#6
 
   // Compute Circularity
   CvMat* A = cvCreateMat(num_points, 3, CV_64FC1);
@@ -218,12 +233,12 @@ vector<float> calcLegFeatures(SampleSet* cluster, const sensor_msgs::LaserScan& 
     circularity += pow(rc - sqrt(pow(xc - (*i)->x, 2) + pow(yc - (*i)->y, 2)), 2);
   }
 
-  features.push_back(circularity);
+  features.push_back(circularity);//#7
 
   // Radius
   float radius = rc;
 
-  features.push_back(radius);
+  features.push_back(radius);//#8
 
   //Curvature:
   float mean_curvature = 0.0;
@@ -291,11 +306,11 @@ vector<float> calcLegFeatures(SampleSet* cluster, const sensor_msgs::LaserScan& 
 
   boundary_regularity = sqrt((sum_boundary_reg_sq - pow(boundary_length, 2) / num_points) / (num_points - 1));
 
-  features.push_back(boundary_length);
-  features.push_back(ang_diff);
-  features.push_back(mean_curvature);
+  features.push_back(boundary_length); //#9
+  features.push_back(ang_diff); //#10
+  features.push_back(mean_curvature);//#11
 
-  features.push_back(boundary_regularity);
+  features.push_back(boundary_regularity);//#12
 
 
   // Mean angular difference
@@ -339,8 +354,8 @@ vector<float> calcLegFeatures(SampleSet* cluster, const sensor_msgs::LaserScan& 
   float iav = sum_iav / num_points;
   float std_iav = sqrt((sum_iav_sq - pow(sum_iav, 2) / num_points) / (num_points - 1));
 
-  features.push_back(iav);
-  features.push_back(std_iav);
+  features.push_back(iav);//#13
+  features.push_back(std_iav);//#14
 
   return features;
 }

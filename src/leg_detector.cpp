@@ -44,6 +44,7 @@
 #include <people_msgs/PositionMeasurement.h>
 #include <people_msgs/PositionMeasurementArray.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/PointCloud.h>
 
 #include <tf/transform_listener.h>
 #include <tf/message_filter.h>
@@ -68,14 +69,13 @@ using namespace MatrixWrapper;
 
 static double no_observation_timeout_s = 0.5;
 static double max_second_leg_age_s     = 2.0;
-static double max_track_jump_m         = 1.0;
+static double max_track_jump_m         = 1.0; //Maximale jump distance for a track
 static double max_meas_jump_m          = 0.75; // 1.0
 static double leg_pair_separation_m    = 1.0;
 static string fixed_frame              = "odom_combined";
 
 static double kal_p = 4, kal_q = .002, kal_r = 10;
 static bool use_filter = true;
-
 
 class SavedFeature
 {
@@ -94,7 +94,7 @@ public:
   double reliability, p;
 
   Stamped<Point> position_;
-  SavedFeature* other;
+  SavedFeature* other; //other leg?
   float dist_to_person_;
 
   // one leg tracker
@@ -208,9 +208,9 @@ int SavedFeature::nextid = 0;
 class MatchedFeature
 {
 public:
-  SampleSet* candidate_;
-  SavedFeature* closest_;
-  float distance_;
+  SampleSet* candidate_;  // The point cluster
+  SavedFeature* closest_; // The feature/leg tracker
+  float distance_;		  // The distance between the
   double probability_;
 
   MatchedFeature(SampleSet* candidate, SavedFeature* closest, float distance, double probability)
@@ -258,7 +258,7 @@ public:
   int feature_id_;
 
   bool use_seeds_;
-  bool publish_legs_, publish_people_, publish_leg_markers_, publish_people_markers_;
+  bool publish_legs_, publish_people_, publish_leg_markers_, publish_people_markers_, publish_clusters_;
   int next_p_id_;
   double leg_reliability_limit_;
   int min_points_per_group;
@@ -266,6 +266,7 @@ public:
   ros::Publisher people_measurements_pub_;
   ros::Publisher leg_measurements_pub_;
   ros::Publisher markers_pub_;
+  ros::Publisher clusters_pub_;
 
   dynamic_reconfigure::Server<leg_detector::LegDetectorConfig> server_;
 
@@ -302,6 +303,7 @@ public:
     leg_measurements_pub_ = nh_.advertise<people_msgs::PositionMeasurementArray>("leg_tracker_measurements", 0);
     people_measurements_pub_ = nh_.advertise<people_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
     markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 20);
+    clusters_pub_ = nh_.advertise<sensor_msgs::PointCloud>("clusters", 20);
 
     if (use_seeds_)
     {
@@ -332,6 +334,7 @@ public:
     publish_people_         = config.publish_people;
     publish_leg_markers_    = config.publish_leg_markers;
     publish_people_markers_ = config.publish_people_markers;
+    publish_clusters_       = config.publish_clusters;
 
     no_observation_timeout_s = config.no_observation_timeout;
     max_second_leg_age_s     = config.max_second_leg_age;
@@ -693,8 +696,8 @@ public:
     {
       if ((*sf_iter)->meas_time_ < purge)
       {
-        if ((*sf_iter)->other)
-          (*sf_iter)->other->other = NULL;
+        if ((*sf_iter)->other) // If leg is paired
+          (*sf_iter)->other->other = NULL; //Remove link to itself from partner
         delete(*sf_iter);
         saved_features_.erase(sf_iter++);
       }
@@ -713,7 +716,6 @@ public:
       propagated.push_back(*sf_iter);
     }
 
-
     // Detection step: build up the set of "candidate" clusters
     // For each candidate, find the closest tracker (within threshold) and add to the match list
     // If no tracker is found, start a new one
@@ -722,16 +724,19 @@ public:
          i != processor.getClusters().end();
          i++)
     {
-      vector<float> f = calcLegFeatures(*i, *scan);
+      vector<float> f = calcLegFeatures(*i, *scan); // Calculate the single features -> results in a vector
 
-      for (int k = 0; k < feat_count_; k++)
-        tmp_mat->data.fl[k] = (float)(f[k]);
+      for (int k = 0; k < feat_count_; k++){
+    	  tmp_mat->data.fl[k] = (float)(f[k]);
+    	  //cout << "Feature " << k << " :" << (float)(f[k]) << endl;
+      }
 
-      float probability = forest.predict_prob(tmp_mat);
+
+      float probability = forest.predict_prob(tmp_mat);  // Predict the probability using the forest
       Stamped<Point> loc((*i)->center(), scan->header.stamp, scan->header.frame_id);
       try
       {
-        tfl_.transformPoint(fixed_frame, loc, loc);
+        tfl_.transformPoint(fixed_frame, loc, loc); //Transform using odometry information
       }
       catch (...)
       {
@@ -741,6 +746,7 @@ public:
       list<SavedFeature*>::iterator closest = propagated.end();
       float closest_dist = max_track_jump_m;
 
+      // Iterate through the trackers
       for (list<SavedFeature*>::iterator pf_iter = propagated.begin();
            pf_iter != propagated.end();
            pf_iter++)
@@ -759,21 +765,32 @@ public:
         list<SavedFeature*>::iterator new_saved = saved_features_.insert(saved_features_.end(), new SavedFeature(loc, tfl_));
       }
       // Add the candidate, the tracker and the distance to a match list
-      else
+      else{
         matches.insert(MatchedFeature(*i, *closest, closest_dist, probability));
-    }
+      }
+
+    }// end iterate the clusters
 
     // loop through _sorted_ matches list
     // find the match with the shortest distance for each tracker
+
+    // Plot the matches list
+    for (multiset<MatchedFeature>::iterator mpi = matches.begin();
+    		mpi != matches.end();
+    		mpi++)
+    {
+    	//printf("%.6f %p %s %f\n", mpi->distance_, &(mpi->candidate_), mpi->closest_->id_.c_str(), (float) mpi->probability_);
+    }
+
     while (matches.size() > 0)
     {
-      multiset<MatchedFeature>::iterator matched_iter = matches.begin();
+      multiset<MatchedFeature>::iterator matched_iter = matches.begin();  // Matches iterator
       bool found = false;
-      list<SavedFeature*>::iterator pf_iter = propagated.begin();
-      while (pf_iter != propagated.end())
+      list<SavedFeature*>::iterator pf_iter = propagated.begin(); // Tracker iterator
+      while (pf_iter != propagated.end()) // Iterate through all the trackers
       {
         // update the tracker with this candidate
-        if (matched_iter->closest_ == *pf_iter)
+        if (matched_iter->closest_ == *pf_iter) // If this is already the pair
         {
           // Transform candidate to fixed frame
           Stamped<Point> loc(matched_iter->candidate_->center(), scan->header.stamp, scan->header.frame_id);
@@ -806,6 +823,8 @@ public:
       // try to assign the candidate to another tracker
       if (!found)
       {
+    	//cout << "No tracker found!" << endl;
+
         Stamped<Point> loc(matched_iter->candidate_->center(), scan->header.stamp, scan->header.frame_id);
         try
         {
@@ -911,6 +930,38 @@ public:
         }
 
         markers_pub_.publish(m);
+
+
+
+        visualization_msgs::Marker m_text;
+        m_text.header.stamp = (*sf_iter)->time_;
+		m_text.header.frame_id = fixed_frame;
+		m_text.ns = "LEGS_LABEL";
+		m_text.id = i;
+		m_text.type = m_text.TEXT_VIEW_FACING;
+		m_text.pose.position.x = (*sf_iter)->position_[0];
+		m_text.pose.position.y = (*sf_iter)->position_[1];
+		m_text.pose.position.z = (*sf_iter)->position_[2];
+		m_text.scale.z = .2;
+		m_text.color.a = 1;
+		m_text.lifetime = ros::Duration(0.5);
+
+		// Add text
+		char buf[100];
+
+		if ((*sf_iter)->object_id != "")
+        {
+        	m_text.color.r = 1;
+        	sprintf(buf, "%s\n%s-%.2f", (*sf_iter)->object_id.c_str(), (*sf_iter)->id_.c_str(), reliability);
+        }
+        else
+        {
+        	m_text.color.b = (*sf_iter)->getReliability();
+        	sprintf(buf, "#%d-%s-%.2f",i,(*sf_iter)->id_.c_str(), reliability);
+        }
+		m_text.text = buf;
+
+        markers_pub_.publish(m_text);
       }
 
       if (publish_people_ || publish_people_markers_)
@@ -928,7 +979,7 @@ public:
             people_msgs::PositionMeasurement pos;
             pos.header.stamp = (*sf_iter)->time_;
             pos.header.frame_id = fixed_frame;
-            pos.name = (*sf_iter)->object_id;;
+            pos.name = (*sf_iter)->object_id;
             pos.object_id = (*sf_iter)->id_ + "|" + other->id_;
             pos.pos.x = dx;
             pos.pos.y = dy;
@@ -969,7 +1020,63 @@ public:
           }
         }
       }
+
+      if(publish_clusters_){
+          // Visualize the clusters by creating a pointcloud, each cluster has the same color
+
+          sensor_msgs::PointCloud clusters;
+          sensor_msgs::ChannelFloat32 rgb_channel;
+          rgb_channel.name="rgb";
+          clusters.channels.push_back(rgb_channel);
+          clusters.header = scan->header;
+
+          //clusters->channels.a
+          int count = 0;
+          for (list<SampleSet*>::iterator i = processor.getClusters().begin();
+               i != processor.getClusters().end();
+               i++)
+          {
+
+              int r[3] = { 0, 125, 255};
+              int g[3] = { 0, 125, 255};
+              int b[3] = { 0, 125, 255};
+
+              int r_ind = count % 3;
+              int g_ind = (count/3) % 3;
+              int b_ind = (count/9) % 3;
+              count++;
+
+              (*i)->appendToCloud(clusters,r[r_ind],g[g_ind],b[b_ind]);
+
+              visualization_msgs::Marker m_text;
+              m_text.header = clusters.header;
+              m_text.ns = "CLUSTERS_LABEL";
+              m_text.id = count;
+              m_text.type = m_text.TEXT_VIEW_FACING;
+              m_text.pose.position.x = (*i)->center()[0]+0.15;
+              m_text.pose.position.y = (*i)->center()[1]+0.15;
+              m_text.pose.position.z = (*i)->center()[2];
+              m_text.scale.z = .15;
+              m_text.color.a = 1;
+              m_text.lifetime = ros::Duration(0.5);
+
+              // Add text
+              char buf[100];
+              m_text.color.r = r[r_ind]/255.0;
+              m_text.color.g = g[g_ind]/255.0;
+              m_text.color.b = b[b_ind]/255.0;
+              sprintf(buf, "#%d",count);
+
+              m_text.text = buf;
+
+              markers_pub_.publish(m_text);
+          }
+
+          clusters_pub_.publish(clusters);
+      }
     }
+
+
 
     people_msgs::PositionMeasurementArray array;
     array.header.stamp = ros::Time::now();
@@ -982,6 +1089,7 @@ public:
     {
       array.people = people;
       people_measurements_pub_.publish(array);
+
     }
   }
 };
