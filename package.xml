@@ -22,6 +22,8 @@
   <build_depend>people_tracking_filter</build_depend>
   <build_depend>image_geometry</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>message_generation</build_depend>
+
 
   <run_depend>roscpp</run_depend>
   <run_depend>std_msgs</run_depend>
@@ -38,5 +40,6 @@
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>laser_filters</run_depend>
   <run_depend>map_laser</run_depend>
+  <run_depend>message_runtime</run_depend>
 
 </package>

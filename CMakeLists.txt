@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(leg_detector)
 
+# set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+
 # look for bfl (Bayesian Filtering Library)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
@@ -26,11 +28,14 @@ find_package(catkin REQUIRED COMPONENTS
   people_tracking_filter
   image_geometry
   dynamic_reconfigure
+  rosbag
+  message_generation
 )
 
 ## dynamic reconfigure config
 generate_dynamic_reconfigure_options(
   cfg/LegDetector.cfg
+  cfg/TrainingSetCreator.cfg
 )
 
 ## Specify additional locations of header files
@@ -38,10 +43,23 @@ include_directories(
   include ${catkin_INCLUDE_DIRS}
 )
 
-catkin_package(INCLUDE_DIRS include
-  CATKIN_DEPENDS people_msgs sensor_msgs std_msgs geometry_msgs visualization_msgs)
+add_message_files(
+  FILES
+  ClusterMsg.msg
+  LabeledRangeScanMsg.msg
+)
 
-## Declare a cpp executable
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+   rosgraph_msgs
+   tf2_msgs
+)
+
+catkin_package(INCLUDE_DIRS include
+  CATKIN_DEPENDS people_msgs sensor_msgs std_msgs geometry_msgs visualization_msgs message_runtime)
+
+## The leg detector
 add_executable(leg_detector 
                src/laser_processor.cpp
                src/leg_detector.cpp 
@@ -66,4 +84,30 @@ install(FILES config/trained_leg_detector.yaml
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+)
+
+## The training set creator
+add_executable(training_set_creator 
+               src/laser_processor.cpp
+               src/training_set_creator.cpp 
+               src/calc_leg_features.cpp)
+               
+## Add cmake target dependencies of the executable/library
+add_dependencies(training_set_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(training_set_creator
+   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+)
+
+## The labeled scan data creator
+add_executable(labeled_scan_data_creator
+               src/labeled_scan_data_creator.cpp)
+               
+## Add cmake target dependencies of the executable/library
+add_dependencies(labeled_scan_data_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(labeled_scan_data_creator
+   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
 )

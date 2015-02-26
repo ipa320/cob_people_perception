@@ -91,6 +91,11 @@ struct CompareSample
 class SampleSet : public std::set<Sample*, CompareSample>
 {
 public:
+  int id_;
+
+  std::string label;
+
+public:
   SampleSet() {}
 
   ~SampleSet()
@@ -151,6 +156,7 @@ public:
   void removeLessThan(uint32_t num);
 
   void splitConnected(float thresh);
+
 };
 };
 
