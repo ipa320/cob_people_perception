@@ -386,13 +386,9 @@ public:
                     cout << "unkown input!" << endl;
                 }
 
-
             }
             ros::spinOnce();
         } //foreach
-
-
-
 
 
         // Write labels to the output file
@@ -682,11 +678,7 @@ public:
             clearingMarker.ns = "CLUSTERS_LABEL";
             clearingMarker.id = i;
             clearingMarker.type = clearingMarker.TEXT_VIEW_FACING;
-            clearingMarker.scale.x = 1;
-            clearingMarker.scale.y = 1;
-            clearingMarker.scale.z = 1;
-            clearingMarker.color.a = 0;
-            clearingMarker.text = "a";
+            clearingMarker.action = visualization_msgs::Marker::DELETE;
 
             markers_pub_.publish(clearingMarker);
         }
