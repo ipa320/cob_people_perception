@@ -41,15 +41,11 @@
 #include <boost/regex.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include <leg_detector/LegDetectorConfig.h>
+#include <leg_detector/TrainingSetCreatorConfig.h>
 #include <leg_detector/laser_processor.h>
 #include <leg_detector/calc_leg_features.h>
 #include <leg_detector/ClusterMsg.h>
 #include <leg_detector/LabeledRangeScanMsg.h>
-
-#include <opencv/cxcore.h>
-#include <opencv/cv.h>
-#include <opencv/ml.h>
 
 #include <people_msgs/PositionMeasurement.h>
 #include <people_msgs/PositionMeasurementArray.h>
@@ -105,13 +101,6 @@ using namespace MatrixWrapper;
 
 namespace po = boost::program_options;
 
-static double no_observation_timeout_s = 0.5;
-static double max_second_leg_age_s = 2.0;
-static double max_track_jump_m = 1.0; //Maximale jump distance for a track
-static double max_meas_jump_m = 0.75; // 1.0
-static double leg_pair_separation_m = 1.0;
-static string fixed_frame = "odom_combined";
-
 int g_argc;
 char** g_argv;
 
@@ -152,24 +141,25 @@ public:
     int next_p_id_;
     int min_points_per_group_;
 
+    // The publishers
     ros::Publisher markers_pub_;
     ros::Publisher clusters_pub_;
     ros::Publisher clock_pub_;
     ros::Publisher tf_pub_;
 
-    dynamic_reconfigure::Server<leg_detector::LegDetectorConfig> server_;
+
+    dynamic_reconfigure::Server<leg_detector::TrainingSetCreatorConfig> server_;
 
     TrainingSetCreator(ros::NodeHandle nh) :
-            nh_(nh), mask_count_(0), feat_count_(0), next_p_id_(0) {
+        nh_(nh), mask_count_(0), feat_count_(0), next_p_id_(0) {
 
         // advertise topics
-        markers_pub_ = nh_.advertise<visualization_msgs::Marker>(
-                "visualization_marker", 20);
+        markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 20);
         clusters_pub_ = nh_.advertise<sensor_msgs::PointCloud>("clusters", 20);
         clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("clock", 20);
         tf_pub_ = nh_.advertise<tf2_msgs::TFMessage>("tf", 20);
 
-        dynamic_reconfigure::Server<leg_detector::LegDetectorConfig>::CallbackType f;
+        dynamic_reconfigure::Server<leg_detector::TrainingSetCreatorConfig>::CallbackType f;
         f = boost::bind(&TrainingSetCreator::configure, this, _1, _2);
         server_.setCallback(f);
 
@@ -179,7 +169,7 @@ public:
     ~TrainingSetCreator() {
     }
 
-    void configure(leg_detector::LegDetectorConfig &config, uint32_t level) {
+    void configure(leg_detector::TrainingSetCreatorConfig &config, uint32_t level) {
         connected_thresh_ = config.connection_threshold;
         min_points_per_group_ = config.min_points_per_group;
     }
@@ -191,6 +181,7 @@ public:
 
         printf("Input file: %s\n", file);
 
+        // Check if file exists
         if (!std::ifstream(file)) {
             std::cout << "File does not exist!" << std::endl;
             return;
@@ -199,9 +190,7 @@ public:
         }
 
         rosbag::Bag bag;
-        std::cout << "Starting opening the file..." << std::endl;
         bag.open(file, rosbag::bagmode::Read);
-        std::cout << "Done" << std::endl;
 
         // TODO should be later all the topics
         std::vector<std::string> topics;
@@ -267,6 +256,7 @@ public:
                 //User interaction loop
                 while (true) {
 
+                    // TODO seems to be needed for proper label update inside rviz, yet very ugly
                     ros::spinOnce();
                     publishClusters(*pClusters, s);
                     ros::spinOnce();
@@ -340,7 +330,6 @@ public:
 
         // Write labels to the output file
         cout << "Writing labels to the output" << endl;
-
 
         //The output file
         rosbag::Bag output_bag;
@@ -534,10 +523,6 @@ public:
             markers_pub_.publish(clearingMarker);
         }
 
-        //cout << clusters_pcl.channels[0].values.size() << " # color values" << endl;
-        //cout << clusters_pcl.points.size() << " # points" << endl;
-
-        //cout << "# " << clusters.points.size() << " points in cloud" << endl;
         clusters_pub_.publish(clusters_pcl);
 
     }
