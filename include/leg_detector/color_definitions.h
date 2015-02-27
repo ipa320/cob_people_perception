@@ -27,6 +27,7 @@
         #define BOLDMAGENTA "\033[1m\033[35m"      /* Bold Magenta */
         #define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
         #define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
+        #define CLEAR       "\033[2J"              // Clear
 
     #else
 
@@ -47,6 +48,7 @@
         #define BOLDMAGENTA ""      /* Bold Magenta */
         #define BOLDCYAN    ""      /* Bold Cyan */
         #define BOLDWHITE   ""      /* Bold White */
+        #define CLEAR ""
 
     #endif
 #endif /* PEOPLE_LEG_DETECTOR_INCLUDE_LEG_DETECTOR_COLOR_DEFINITIONS_H_ */

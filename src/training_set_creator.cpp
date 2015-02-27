@@ -96,17 +96,28 @@ bool sample_y_comp(laser_processor::Sample* i, laser_processor::Sample* j) {
     return i->y < j->y;
 }
 
+/** Mapping time -> list<SampleSet*>* (Pointer to a list of pointers to SampleSets(Clusters)) */
 typedef std::map<ros::Time, list<SampleSet*>*> timeSampleSetMap;
 typedef std::map<ros::Time, list<SampleSet*>*>::iterator timeSampleSetMapIt;
 
-// actual legdetector node
+/** Mapping time -> list<SampleSet*>* (Pointer to a list of pointers to visual markers) */
+typedef std::map<ros::Time, list<visualization_msgs::Marker*>*> timeVisualMarkerMap;
+typedef std::map<ros::Time, list<visualization_msgs::Marker*>*>::iterator timeVisualMarkerMapIt;
+
+/**
+* The TrainingSetCreator Class helps creating bagfiles with annotated and visualized labels.
+*/
 class TrainingSetCreator {
 public:
     NodeHandle nh_;
 
     TransformListener tfl_;
 
-    timeSampleSetMap clusterTimeMap_;
+    /** The mapping between time and clusters */
+    timeSampleSetMap timeClusterMap_;
+
+    /** The mapping between time and visual markers */
+    timeVisualMarkerMap timeVisualMarkerMap_;
 
     float connected_thresh_;
 
@@ -128,9 +139,10 @@ public:
     ros::Publisher clock_pub_;
     ros::Publisher tf_pub_;
 
-
+    /** The reconfiguration Server */
     dynamic_reconfigure::Server<leg_detector::TrainingSetCreatorConfig> server_;
 
+    /** Constructor */
     TrainingSetCreator(ros::NodeHandle nh) :
         nh_(nh), feat_count_(0), next_p_id_(0) {
 
@@ -147,17 +159,23 @@ public:
         feature_id_ = 0;
     }
 
+    /** Deconstructor */
     ~TrainingSetCreator() {
     }
 
+    /** configure callback - Reacts to changes of the configuration by rqt_reconfigure */
     void configure(leg_detector::TrainingSetCreatorConfig &config, uint32_t level) {
         connected_thresh_ = config.connection_threshold;
         min_points_per_group_ = config.min_points_per_group;
     }
 
+    /**
+    * creates the trainingSet bagfile.
+    * @param file Input bagfile. Should contain the scan-data.
+    */
     void createTrainingSet(const char* file) {
         // Copy the input bagfile
-        boost::filesystem::copy_file(file,"output.bag",boost::filesystem::copy_option::fail_if_exists);
+        boost::filesystem::copy_file(file,"output.bag",boost::filesystem::copy_option::overwrite_if_exists);
         cout << "Creating copy" << endl;
 
         printf("Input file: %s\n", file);
@@ -170,8 +188,23 @@ public:
             std::cout << "File exists!" << std::endl;
         }
 
-        rosbag::Bag bag;
-        bag.open(file, rosbag::bagmode::Read);
+        // Open the bagfile
+        rosbag::Bag bag(file, rosbag::bagmode::Read);
+
+        // Read the available topics
+        rosbag::View topicView(bag);
+        std::vector<const rosbag::ConnectionInfo *> connection_infos = topicView.getConnections();
+        std::set<std::string> topics_strings;
+
+        cout << "Topics: " << endl;
+        BOOST_FOREACH(const rosbag::ConnectionInfo *info, connection_infos) {
+          if(topics_strings.find(info->topic) == topics_strings.end()) {
+             topics_strings.insert(info->topic);
+           cout << "\t" << info->topic << "\t" << info->datatype << endl;
+         }
+        }
+
+        // TODO Check if allready a topic label topic there
 
         // TODO should be later all the topics
         std::vector<std::string> topics;
@@ -187,37 +220,12 @@ public:
         rosbag::View::iterator viewIt = view.begin();
         rosbag::MessageInstance message = (*viewIt);
 
-        // Iterate through the message
-        // foreach(rosbag::MessageInstance const m, view)
-        // {
-        bool run=false;
-
-        while (viewIt != view.end()) {
-            if(run){
-                break;
-            }
-
-            rosbag::MessageInstance m = (*viewIt);
-
-            // Before anything publish the current Time
-            rosgraph_msgs::Clock::Ptr simTime(new rosgraph_msgs::Clock());
-            simTime->clock = m.getTime();
-            clock_pub_.publish(simTime);
-
-            // Check if tf Message -> these should be 'forwarded'
-            tf2_msgs::TFMessagePtr tfMsgPtr = m.instantiate<tf2_msgs::TFMessage>();
-            if (tfMsgPtr != NULL) {
-                //cout << "TF-Message: " << tfMsgPtr->transforms[0].header.stamp << endl;
-                tf_pub_.publish(tfMsgPtr);
-                ++viewIt;
-            }
-
+        // Iterate through the message -> generate the clusters
+        foreach(rosbag::MessageInstance const m, view)
+        {
             // If scan is a LaserScan (to avoid stopping at every tf)
             sensor_msgs::LaserScan::Ptr s = m.instantiate<sensor_msgs::LaserScan>();
             if (s != NULL) {
-
-                std::cout << "topic : " << m.getTopic() << " " << m.getTime()<< endl;
-
                 // Process the scan, generate the clusters
                 ScanProcessor* pProcessor = new ScanProcessor(*s);
                 pProcessor->splitConnected(connected_thresh_);
@@ -234,81 +242,158 @@ public:
                       count++;
                  }
 
-                //User interaction loop
-                while (true) {
+                // Insert this clusters with their labels into the map. Important: These are only pointers. Change is still possible! Change is always possible ;-)
+                timeClusterMap_.insert(std::pair<ros::Time, list<SampleSet*>*>(m.getTime(),pClusters));
+                cout << m.getTime() << "clustered and saved!" << endl;
+            }
+        }
 
-                    // TODO seems to be needed for proper label update inside rviz, yet very ugly
-                    ros::spinOnce();
-                    publishClusters(*pClusters, s);
-                    ros::spinOnce();
-                    ros::spinOnce();
-                    ros::spinOnce();
+        bool run=false;
+        viewIt = view.begin();
 
-                    // Insert this clusters with their labels into the map
-                    clusterTimeMap_.insert(std::pair<ros::Time, list<SampleSet*>*>(m.getTime(),pClusters));
-                    cout << "Inserted into map!" << endl;
+        // Store the first seq for later
+        //rosbag::MessageInstance m = (*viewIt);
 
-                    for (timeSampleSetMapIt iterator = clusterTimeMap_.begin(); iterator != clusterTimeMap_.end(); iterator++) {
-                        cout << GREEN << "Time: " << iterator->first << RESET << std::endl;
+        while (viewIt != view.end() && !run) {
 
-                        // Print out the clusters with their assigned labels
-                        for (list<SampleSet*>::iterator clusterIt = iterator->second->begin(); clusterIt != iterator->second->end(); clusterIt++) {
-                            cout << RED << "[" << (*clusterIt)->id_ << "]" << (*clusterIt)->size() << (*clusterIt)->label << RESET << endl;
+            rosbag::MessageInstance m = (*viewIt);
+
+            // Before anything publish the current Time
+            rosgraph_msgs::Clock::Ptr simTime(new rosgraph_msgs::Clock());
+            simTime->clock = m.getTime();
+            clock_pub_.publish(simTime);
+            cout << "Publishing time" << simTime <<  endl;
+
+
+            // Check if tf Message -> these should be 'forwarded'
+            tf2_msgs::TFMessagePtr tfMsgPtr = m.instantiate<tf2_msgs::TFMessage>();
+            if (tfMsgPtr != NULL) {
+                cout << "Publish tf: " << tfMsgPtr->transforms[0].header.stamp << endl;
+                tf_pub_.publish(tfMsgPtr);
+                ++viewIt;
+            }
+
+            // If scan is a LaserScan (to avoid stopping at every tf)
+            sensor_msgs::LaserScan::Ptr s = m.instantiate<sensor_msgs::LaserScan>();
+            if (s != NULL) {
+
+                // Get the clusters (as list and vec)
+                list<SampleSet*>* pClusters;
+                vector<SampleSet*>* pClustersVec;
+
+                timeSampleSetMapIt search = timeClusterMap_.find(m.getTime());
+
+                if (search != timeClusterMap_.end() ) {
+                    pClusters = search->second;
+                    pClustersVec = new std::vector<SampleSet*>(pClusters->begin(), pClusters->end());
+                }else{
+                    cout << "Error! Could not find associated clusters!" << endl;
+                    return;
+                }
+
+
+
+                // TODO seems to be needed for proper label update inside rviz, yet very ugly
+                ros::spinOnce();
+                for(int i=0; i<10;i++){
+                    publishClusters(*pClusters, s, m.getTime());
+                    ros::spinOnce();
+                }
+
+                cout << "publish cluster" << endl;
+
+
+
+                // Print the current cluster
+                // cout << CLEAR << endl;
+                cout << GREEN << "Time: " << m.getTime() << RESET << " Seq: " << YELLOW << s->header.seq << RESET << std::endl;
+                for (list<SampleSet*>::iterator clusterIt = pClusters->begin(); clusterIt != pClusters->end(); clusterIt++){
+                    cout << RED << "[" << (*clusterIt)->id_ << "]" << (*clusterIt)->size() << (*clusterIt)->label << RESET << endl;
+                }
+
+                // Inform user about the usage
+                cout << "Usage:" << endl;
+                cout << "\t(n)ext - Jump to next laser scan message" << endl;
+                cout << "\t[#n] \'label\' - Assign label \'label\' to cluster #n" << endl;
+                cout << "\t(e)xit" << endl;
+
+                // Get User input
+                std::string userinput;
+                std::getline(std::cin, userinput);
+
+                //regex
+                boost::regex expr_label("#?([0-9]+) ([a-zA-z]+) *"); //User enters label for a cluster
+                boost::regex expr_next("next|n"); //User enters label for a cluster
+                boost::regex expr_prev("prev|p"); //User enters label for a cluster
+                boost::regex expr_exit("exit|e"); //User enters label for a cluster
+                boost::regex expr_run("r|run"); //User enters label for a cluster
+
+                boost::cmatch what;
+
+                // Set label
+                if (boost::regex_match(userinput.c_str(), what, expr_label))
+                    {
+                    int clusterNumber = boost::lexical_cast<int>(what[1]);
+                    std::string label = boost::lexical_cast<string>(what[2]);
+
+                    // Check that this Index is within reach
+                    if (clusterNumber >= pClustersVec->size()) {
+                        cout << "Index out of reach" << endl;
+                    } else {
+                        cout << clusterNumber << " " << label << endl;
+                        (*pClustersVec)[clusterNumber]->label = label;
+                    }
+                } else if (boost::regex_match(userinput.c_str(), what, expr_next)) { // Next
+                    viewIt++;
+                }
+                else if (boost::regex_match(userinput.c_str(), what, expr_prev)) { // Prev
+                    cout << "Prev" << endl;
+                    // Store current seq
+                    int currentSeq = s->header.seq;
+                    // Reset iterator
+                    viewIt = view.begin();
+                    while(viewIt != view.end()){
+                        rosbag::MessageInstance m = (*viewIt);
+
+                        // Publish current time
+                        rosgraph_msgs::Clock::Ptr simTime(new rosgraph_msgs::Clock());
+                        simTime->clock = m.getTime();
+                        clock_pub_.publish(simTime);
+
+                        sensor_msgs::LaserScan::Ptr s = m.instantiate<sensor_msgs::LaserScan>();
+                        if(s != NULL){
+                            cout << s->header.seq << endl;
+                            if(currentSeq < s->header.seq + 2){
+                                break;
+                            }
                         }
-                    }
 
-                    // Inform user about the usage
-                    cout << "Usage:" << endl;
-                    cout << "\t(n)ext - Jump to next laser scan message" << endl;
-                    cout << "\t[#n] \'label\' - Assign label \'label\' to cluster #n" << endl;
-                    cout << "\t(e)xit" << endl;
-
-                    // Get User input
-                    std::string userinput;
-                    if(!run){
-                        std::getline(std::cin, userinput);
-                    }else{
-                        viewIt++;
-                        break;
-                    }
-
-                    //regex
-                    boost::regex expr_label("#?([0-9]+) ([a-zA-z]+) *"); //User enters label for a cluster
-                    boost::regex expr_next("next|n"); //User enters label for a cluster
-                    boost::regex expr_exit("exit|e"); //User enters label for a cluster
-                    boost::regex expr_run("r|run"); //User enters label for a cluster
-
-                    boost::cmatch what;
-
-                    if (boost::regex_match(userinput.c_str(), what, expr_label)) // Set label
-                        {
-                        int clusterNumber = boost::lexical_cast<int>(what[1]);
-                        std::string label = boost::lexical_cast<string>(what[2]);
-
-                        // Check that this Index is within reach
-                        if (clusterNumber >= pClustersVec->size()) {
-                            cout << "Index out of reach" << endl;
-                        } else {
-                            cout << clusterNumber << " " << label << endl;
-                            (*pClustersVec)[clusterNumber]->label = label;
+                        // Check if tf Message -> these should be 'forwarded'
+                        tf2_msgs::TFMessagePtr tfMsgPtr = m.instantiate<tf2_msgs::TFMessage>();
+                        if (tfMsgPtr != NULL) {
+                            cout << "TF-Message: " << tfMsgPtr->transforms[0].header.stamp << endl;
+                            tf_pub_.publish(tfMsgPtr);
                         }
-                        continue;
 
-                    } else if (boost::regex_match(userinput.c_str(), what, expr_next)) { // Next
-                        viewIt++;
-                        break;
-                    } else if (boost::regex_match(userinput.c_str(), what, expr_exit)) { // Exit
-                        cout << "exit!" << endl;
-                        return;
-                    } else if (boost::regex_match(userinput.c_str(), what, expr_run)) { // Exit
-                        run = true;
-                    } else { // Unknown input
-                        cout << "unkown input!" << endl;
+                        ++viewIt;
                     }
-                }// User interaction loop
+                }else if (boost::regex_match(userinput.c_str(), what, expr_exit)) { // Exit
+                    cout << "exit!" << endl;
+                    return;
+                } else if (boost::regex_match(userinput.c_str(), what, expr_run)) { // Run
+                    run = true;
+                } else { // Unknown input
+                    cout << "unkown input!" << endl;
+                }
+
+
             }
             ros::spinOnce();
         } //foreach
+
+
+
+
 
         // Write labels to the output file
         cout << "Writing labels to the output" << endl;
@@ -326,15 +411,16 @@ public:
             // Write the message to the output file
             output_bag.write(m.getTopic(), m.getTime(), m);
 
-            // Check if that message is inside clusterTimeMap_
+            // Check if that message is inside timeClusterMap_
             sensor_msgs::LaserScan::Ptr s = m.instantiate<sensor_msgs::LaserScan>();
-            if (s != NULL) {
-                timeSampleSetMapIt search = clusterTimeMap_.find(m.getTime());
-                if (search == clusterTimeMap_.end() ) {
 
-                }
-                else
-                {
+            // If message is a laserscan
+            if (s != NULL) {
+
+                // Check if there are labels associated
+                timeSampleSetMapIt search = timeClusterMap_.find(m.getTime());
+                if (search != timeClusterMap_.end() ) {
+
                     cout << "Found labels at time: " << search->first << endl;
                     // The Labeled Range Scan Message
                     leg_detector::LabeledRangeScanMsg rangeScanLabelMsg;
@@ -342,8 +428,19 @@ public:
                     // Use the same header as
                     rangeScanLabelMsg.header = s->header;
 
+                    // Generate Pointcloud
+                    sensor_msgs::PointCloudPtr pPcl = generatePointCloudMessageFromClusters(*(search->second),s->header);
+                    output_bag.write("/clusters", m.getTime(), *pPcl);
+
+                    // Generate Label Messages
+                    list<visualization_msgs::Marker>* pLabelMarkers = generateLabelMarkerMsgsFromClusters(*(search->second),s->header);
+                    for(list<visualization_msgs::Marker>::iterator markerPtrIt = pLabelMarkers->begin(); markerPtrIt != pLabelMarkers->end(); markerPtrIt++){
+                        output_bag.write("/visualization_marker", m.getTime(), *markerPtrIt);
+                    }
+
                     // Iterate the clusters
                     for(list<SampleSet*>::iterator clusterIt = search->second->begin(); clusterIt != search->second->end(); clusterIt++){
+
                         // A single ClusterMsg
                         leg_detector::ClusterMsg clusterMsg;
 
@@ -435,14 +532,102 @@ public:
 
     }
 
-    void publishClusters(list<SampleSet*> clusters, const sensor_msgs::LaserScan::ConstPtr& scan) {
+    sensor_msgs::PointCloudPtr generatePointCloudMessageFromClusters(list<SampleSet*>& clusters, std_msgs::Header header){
+        sensor_msgs::PointCloudPtr pClusters_pcl(new sensor_msgs::PointCloud);
+        sensor_msgs::ChannelFloat32 rgb_channel;
+        rgb_channel.name = "rgb";
+        pClusters_pcl->channels.push_back(rgb_channel);
+        pClusters_pcl->header = header;
+
+        for (list<SampleSet*>::iterator i = clusters.begin(); i != clusters.end(); i++) {
+
+            int r[3] = { 50, 180, 255 };
+            int g[3] = { 50, 180, 255 };
+            int b[3] = { 50, 180, 255 };
+
+            int r_ind = (*i)->id_ % 3;
+            int g_ind = ((*i)->id_ / 3) % 3;
+            int b_ind = ((*i)->id_ / 9) % 3;
+
+            (*i)->appendToCloud(*pClusters_pcl, r[r_ind], g[g_ind], b[b_ind]);
+        }
+        return pClusters_pcl;
+    }
+
+
+    list<visualization_msgs::Marker>* generateLabelMarkerMsgsFromClusters(list<SampleSet*>& clusters, std_msgs::Header header){
+
+        list<visualization_msgs::Marker>* pMarkerMsgPtrList = new list<visualization_msgs::Marker>;
+
+        sensor_msgs::PointCloudPtr pClusters_pcl(new sensor_msgs::PointCloud);
+        sensor_msgs::ChannelFloat32 rgb_channel;
+        rgb_channel.name = "rgb";
+        pClusters_pcl->channels.push_back(rgb_channel);
+        pClusters_pcl->header = header;
+
+        int r[3] = { 50, 180, 255 };
+        int g[3] = { 50, 180, 255 };
+        int b[3] = { 50, 180, 255 };
+
+        for (list<SampleSet*>::iterator i = clusters.begin(); i != clusters.end(); i++) {
+
+            visualization_msgs::Marker m_text;
+            m_text.header = header;
+            m_text.ns = "CLUSTERS_LABEL";
+            m_text.id = (*i)->id_;
+            m_text.type = m_text.TEXT_VIEW_FACING;
+            m_text.pose.position.x = (*i)->center()[0] + 0.15;
+            m_text.pose.position.y = (*i)->center()[1] + 0.15;
+            m_text.pose.position.z = (*i)->center()[2];
+            m_text.scale.z = .15;
+            m_text.color.a = 1;
+            m_text.lifetime = ros::Duration(0.00001);
+
+            // Add text
+            char buf[100];
+            int r_ind = (*i)->id_ % 3;
+            int g_ind = ((*i)->id_ / 3) % 3;
+            int b_ind = ((*i)->id_ / 9) % 3;
+            m_text.color.r = r[r_ind] / 255.0;
+            m_text.color.g = g[g_ind] / 255.0;
+            m_text.color.b = b[b_ind] / 255.0;
+            if((*i)->label.empty()){
+                sprintf(buf, "#%d-p%lu", (*i)->id_, (*i)->size());
+            }
+            else{
+                sprintf(buf, "#%d-p%lu-%s", (*i)->id_, (*i)->size(), (*i)->label.c_str());
+            }
+            m_text.text = buf;
+
+            pMarkerMsgPtrList->push_back(m_text);
+        }
+        // Clearing markers
+        for (int i = 30; clusters.size() <= i; i--) {
+            visualization_msgs::Marker clearingMarker;
+            clearingMarker.header = header;
+            clearingMarker.ns = "CLUSTERS_LABEL";
+            clearingMarker.id = i;
+            clearingMarker.type = clearingMarker.TEXT_VIEW_FACING;
+            clearingMarker.scale.x = 1;
+            clearingMarker.scale.y = 1;
+            clearingMarker.scale.z = 1;
+            clearingMarker.color.a = 0;
+            clearingMarker.text = "a";
+
+            pMarkerMsgPtrList->push_back(clearingMarker);
+        }
+
+        return pMarkerMsgPtrList;
+    }
+
+    void publishClusters(list<SampleSet*> clusters, const sensor_msgs::LaserScan::ConstPtr& scan, ros::Time time) {
 
         sensor_msgs::PointCloud clusters_pcl;
         sensor_msgs::ChannelFloat32 rgb_channel;
         rgb_channel.name = "rgb";
         clusters_pcl.channels.push_back(rgb_channel);
         clusters_pcl.header = scan->header;
-        clusters_pcl.header.stamp = scan->header.stamp;
+        clusters_pcl.header.stamp = time;
         clusters_pcl.header.frame_id = scan->header.frame_id;
 
         for (list<SampleSet*>::iterator i = clusters.begin(); i != clusters.end(); i++) {
@@ -464,7 +649,8 @@ public:
             visualization_msgs::Marker m_text;
             m_text.header = clusters_pcl.header;
             m_text.header.frame_id = scan->header.frame_id;
-            m_text.header.stamp = scan->header.stamp;
+            m_text.header.stamp = time;
+
             m_text.ns = "CLUSTERS_LABEL";
             m_text.id = (*i)->id_;
             m_text.type = m_text.TEXT_VIEW_FACING;
@@ -473,7 +659,6 @@ public:
             m_text.pose.position.z = (*i)->center()[2];
             m_text.scale.z = .15;
             m_text.color.a = 1;
-            m_text.lifetime = ros::Duration(0.00001);
 
             // Add text
             char buf[100];
@@ -493,6 +678,7 @@ public:
         for (int i = 30; clusters.size() <= i; i--) {
             visualization_msgs::Marker clearingMarker;
             clearingMarker.header = clusters_pcl.header;
+            clearingMarker.header.stamp = time;
             clearingMarker.ns = "CLUSTERS_LABEL";
             clearingMarker.id = i;
             clearingMarker.type = clearingMarker.TEXT_VIEW_FACING;
@@ -504,6 +690,8 @@ public:
 
             markers_pub_.publish(clearingMarker);
         }
+
+        cout << "Published markers with time:" << time << endl;
 
         clusters_pub_.publish(clusters_pcl);
 
