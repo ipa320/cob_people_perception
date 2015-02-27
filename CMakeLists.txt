@@ -99,15 +99,3 @@ add_dependencies(training_set_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPOR
 target_link_libraries(training_set_creator
    ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
 )
-
-## The labeled scan data creator
-add_executable(labeled_scan_data_creator
-               src/labeled_scan_data_creator.cpp)
-               
-## Add cmake target dependencies of the executable/library
-add_dependencies(labeled_scan_data_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(labeled_scan_data_creator
-   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
-)
