@@ -166,7 +166,22 @@ bool ScanMask::hasSample(Sample* s, float thresh)
   return false;
 }
 
+ScanProcessor::ScanProcessor(const sensor_msgs::LaserScan& scan)
+{
+  scan_ = scan;
 
+  SampleSet* cluster = new SampleSet;
+
+  for (uint32_t i = 0; i < scan.ranges.size(); i++)
+  {
+    Sample* s = Sample::Extract(i, scan);
+    if (s != NULL)
+    {
+        cluster->insert(s);
+    }
+  }
+  clusters_.push_back(cluster);
+}
 
 ScanProcessor::ScanProcessor(const sensor_msgs::LaserScan& scan, ScanMask& mask_, float mask_threshold)
 {

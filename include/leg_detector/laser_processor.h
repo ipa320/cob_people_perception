@@ -149,6 +149,8 @@ public:
     return clusters_;
   }
 
+  ScanProcessor(const sensor_msgs::LaserScan& scan);
+
   ScanProcessor(const sensor_msgs::LaserScan& scan, ScanMask& mask_, float mask_threshold = 0.03);
 
   ~ScanProcessor();
