@@ -130,19 +130,6 @@ public:
     }
   }
 
-  /**
-  * a normal member taking two arguments and returning an integer value.
-  * @param unused??? //TODO
-  * @param the message beeing parsed
-  * @param unused time //TODO
-  * @param unused time //TODO
-  * @param unused time //TODO
-  * @see Test()
-  * @see ~Test()
-  * @see testMeToo()
-  * @see publicVar()
-  * @return The test results
-  */
   //void loadCb(string name, sensor_msgs::LaserScan* scan, ros::Time t, ros::Time t_no_use, vector< vector<float> >& data) //TODO Remove first parameter
   void loadCb(sensor_msgs::LaserScan::ConstPtr scan, vector< vector<float> >& data)
   {
