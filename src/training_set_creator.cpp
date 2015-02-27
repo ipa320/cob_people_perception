@@ -108,10 +108,6 @@ public:
 
     timeSampleSetMap clusterTimeMap_;
 
-    ScanMask mask_;
-
-    int mask_count_;
-
     float connected_thresh_;
 
     int feat_count_;
@@ -136,7 +132,7 @@ public:
     dynamic_reconfigure::Server<leg_detector::TrainingSetCreatorConfig> server_;
 
     TrainingSetCreator(ros::NodeHandle nh) :
-        nh_(nh), mask_count_(0), feat_count_(0), next_p_id_(0) {
+        nh_(nh), feat_count_(0), next_p_id_(0) {
 
         // advertise topics
         markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 20);
@@ -223,7 +219,7 @@ public:
                 std::cout << "topic : " << m.getTopic() << " " << m.getTime()<< endl;
 
                 // Process the scan, generate the clusters
-                ScanProcessor* pProcessor = new ScanProcessor(*s, mask_);
+                ScanProcessor* pProcessor = new ScanProcessor(*s);
                 pProcessor->splitConnected(connected_thresh_);
                 pProcessor->removeLessThan(min_points_per_group_);
 
