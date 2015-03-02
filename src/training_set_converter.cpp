@@ -70,7 +70,6 @@ namespace po = boost::program_options;
 int g_argc;
 char** g_argv;
 
-
 void TrainingSetConverter::convertTrainingSet(const char* file) {
     printf("Input file: %s\n", file);
 
@@ -166,6 +165,7 @@ void TrainingSetConverter::convertTrainingSet(const char* file) {
                     }
 
                     clusterList.push_back(pCluster);
+                    pCluster->saveAsSVG((pCluster->label.append(".svg")).c_str());
                 }
 
                 labeledScanList.push_back(new LabeledScanData(pLaserScan,pLabeledRangeScanMsg));

@@ -108,6 +108,8 @@ public:
   void appendToCloud(sensor_msgs::PointCloud& cloud, int r = 0, int g = 0, int b = 0);
 
   tf::Point center();
+
+  void saveAsSVG(const char* file);
 };
 
 //! A mask for filtering out Samples based on range

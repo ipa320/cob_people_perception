@@ -36,6 +36,10 @@
 
 #include <stdexcept>
 
+#include <iostream>
+#include <fstream>
+#include <string>
+
 using namespace ros;
 using namespace std;
 using namespace laser_processor;
@@ -89,6 +93,31 @@ void SampleSet::appendToCloud(sensor_msgs::PointCloud& cloud, int r, int g, int 
     if (cloud.channels[0].name == "rgb")
       cloud.channels[0].values.push_back(color_val);
   }
+}
+
+void SampleSet::saveAsSVG(const char * file){
+    ofstream myfile (file);
+    if (myfile.is_open())
+    {
+        myfile << "<?xml version='1.0' standalone='no'?>" << endl;
+        myfile << "<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>" << endl;
+        myfile << "<svg width='12cm' height='12cm' viewBox='-3 -3 6 6' xmlns='http://www.w3.org/2000/svg' version='1.1'>" << endl;
+        myfile << "<desc>Example circle01 - circle filled with red and stroked with blue</desc>" << endl;
+
+        myfile << "<!-- Show outline of canvas using 'rect' element -->" << endl;
+        //myfile << "<rect x='1' y='1' width='1198' height='398' fill='none' stroke='blue' stroke-width='2'/>" << endl;
+
+        // Iterate through the points
+        for (iterator sample_iter = begin();
+             sample_iter != end();
+             sample_iter++)
+        {
+            myfile << "<circle cx='"<< (*sample_iter)->x << "' cy='"<< (*sample_iter)->y <<"' r='0.02' fill='red' stroke='blue' stroke-width='0.005'  />" << endl;
+        }
+        myfile << "</svg>" << endl;
+        myfile.close();
+    }
+    else cout << "Unable to open file";
 }
 
 tf::Point SampleSet::center()
