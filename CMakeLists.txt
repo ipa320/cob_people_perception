@@ -99,3 +99,17 @@ add_dependencies(training_set_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPOR
 target_link_libraries(training_set_creator
    ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
 )
+
+## The training set converter
+add_executable(training_set_converter
+               src/laser_processor.cpp
+               src/training_set_converter.cpp 
+               src/calc_leg_features.cpp)
+               
+## Add cmake target dependencies of the executable/library
+add_dependencies(training_set_converter people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(training_set_converter
+   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+)
