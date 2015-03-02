@@ -1,2 +1,2 @@
-uint8[] indices
+int16[] indices
 string label

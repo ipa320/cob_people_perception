@@ -31,6 +31,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
+
 #include <ros/ros.h>
 
 #include <rosbag/bag.h>
@@ -41,111 +42,140 @@
 #include <boost/regex.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include <people_msgs/PositionMeasurement.h>
-#include <people_msgs/PositionMeasurementArray.h>
-#include <sensor_msgs/LaserScan.h>
-#include <sensor_msgs/PointCloud.h>
+#include <leg_detector/ClusterMsg.h>
+#include <leg_detector/LabeledRangeScanMsg.h>
+#include <leg_detector/laser_processor.h>
+
 #include <rosgraph_msgs/Clock.h>
 #include <tf2_msgs/TFMessage.h>
 
-#include <tf/transform_listener.h>
-#include <tf/message_filter.h>
-#include <message_filters/subscriber.h>
-
-#include <algorithm>
+#include <leg_detector/training_set_converter.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <string>
 
-#define foreach BOOST_FOREACH
-
 #define USE_BASH_COLORS
 #include <leg_detector/color_definitions.h>
-
-//#include <leg_detector/debug.h>
 
 using namespace std;
 using namespace ros;
 using namespace tf;
+using namespace laser_processor;
+
+#define foreach BOOST_FOREACH
 
 namespace po = boost::program_options;
 
 int g_argc;
 char** g_argv;
 
-/**
-* The TrainingSetCreator Class helps creating bagfiles with annotated and visualized labels.
-*/
-class TrainingSetConverter {
-public:
-    /** Constructor */
-    TrainingSetConverter(){}
 
-    /** Deconstructor */
-    ~TrainingSetConverter() {}
+void TrainingSetConverter::convertTrainingSet(const char* file) {
+    printf("Input file: %s\n", file);
 
-    /**
-    * Converts the training set (given as bagfile)
-    * @param file Input bagfile. Should contain the scan-data.
-    */
-    void convertTrainingSet(const char* file) {
-        printf("Input file: %s\n", file);
+    // Check if file exists
+    if (!ifstream(file)) {
+        std::cout << "File does not exist!" << std::endl;
+        return;
+    } else {
+        std::cout << "File exists!" << std::endl;
+    }
 
-        // Check if file exists
-        if (!ifstream(file)) {
-            std::cout << "File does not exist!" << std::endl;
-            return;
-        } else {
-            std::cout << "File exists!" << std::endl;
+    // Open the bagfile
+    rosbag::Bag bag(file, rosbag::bagmode::Read);
+
+    // Read the available topics
+    rosbag::View topicView(bag);
+    std::vector<const rosbag::ConnectionInfo *> connection_infos = topicView.getConnections();
+    std::set<std::string> topics_strings;
+
+    cout << "Topics: " << endl;
+    BOOST_FOREACH(const rosbag::ConnectionInfo *info, connection_infos) {
+      if(topics_strings.find(info->topic) == topics_strings.end()) {
+         topics_strings.insert(info->topic);
+       cout << "\t" << info->topic << "\t" << info->datatype << endl;
+     }
+    }
+
+    // TODO Check if necessary topics are available
+    // TODO Check if allready a topic label topic there
+
+    // TODO should be later all the topics
+    std::vector<std::string> topics;
+    topics.push_back(std::string("/scan_front"));
+    topics.push_back(std::string("/labels"));
+    //topics.push_back(std::string("/tf"));
+    std::cout << "Pushed topics" << std::endl;
+
+    // Create the view
+    rosbag::View view(bag, rosbag::TopicQuery(topics));
+    //rosbag::View view(bag, rosbag::TopicQuery(topics));
+
+    rosbag::View::iterator viewIt = view.begin();
+    rosbag::MessageInstance message = (*viewIt);
+
+    // Iterate through the message -> generate the clusters
+    sensor_msgs::LaserScan::Ptr pLaserScan;
+    leg_detector::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg;
+
+    // Create a sampleSetList
+    list<SampleSet*> clusterList;
+
+
+    foreach(rosbag::MessageInstance const m, view)
+    {
+
+        //cout << m.getTime() << " " << m.getTopic() << endl;
+        // If scan is a LaserScan (to avoid stopping at every tf)
+        sensor_msgs::LaserScan::Ptr pLaserScanTemp = m.instantiate<sensor_msgs::LaserScan>();
+        leg_detector::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsgTemp = m.instantiate<leg_detector::LabeledRangeScanMsg>();
+
+        if (pLaserScanTemp != NULL) {
+            pLaserScan = pLaserScanTemp;
+        }
+        if (pLabeledRangeScanMsgTemp != NULL) {
+            pLabeledRangeScanMsg = pLabeledRangeScanMsgTemp;
         }
 
-        // Open the bagfile
-        rosbag::Bag bag(file, rosbag::bagmode::Read);
+        // Check if both messages are defined and have the 'same' timestamp
+        if (pLaserScan != NULL && pLabeledRangeScanMsg != NULL &&
+            abs(pLaserScan->header.stamp.nsec - pLabeledRangeScanMsg->header.stamp.nsec) < (uint32_t) 10){
 
-        // Read the available topics
-        rosbag::View topicView(bag);
-        std::vector<const rosbag::ConnectionInfo *> connection_infos = topicView.getConnections();
-        std::set<std::string> topics_strings;
+            if(pLabeledRangeScanMsg->clusters.size() > 0){ //If there are clusters
 
-        cout << "Topics: " << endl;
-        BOOST_FOREACH(const rosbag::ConnectionInfo *info, connection_infos) {
-          if(topics_strings.find(info->topic) == topics_strings.end()) {
-             topics_strings.insert(info->topic);
-           cout << "\t" << info->topic << "\t" << info->datatype << endl;
-         }
-        }
 
-        // TODO Check if necessary topics are available
-        // TODO Check if allready a topic label topic there
+                cout << endl;
+                //cout << RED << pLabeledRangeScanMsg->header.stamp <<  "RangeScan" << RESET << endl;
 
-        // TODO should be later all the topics
-        std::vector<std::string> topics;
-        topics.push_back(std::string("/scan_front"));
-        topics.push_back(std::string("/label"));
-        topics.push_back(std::string("/tf"));
-        std::cout << "Pushed topics" << std::endl;
 
-        // Create the view
-        rosbag::View view(bag, rosbag::TopicQuery(topics));
-        //rosbag::View view(bag, rosbag::TopicQuery(topics));
+                for(leg_detector::LabeledRangeScanMsg::_clusters_type::iterator clusterIt = pLabeledRangeScanMsg->clusters.begin(); clusterIt != pLabeledRangeScanMsg->clusters.end(); clusterIt++){
+                    SampleSet* pCluster = new SampleSet();
+                    cout << GREEN << pLaserScan->header.stamp << RESET << endl;
+                    cout << "\tLabel:[" << clusterIt->label << "] " << endl;
+                    pCluster->label = clusterIt->label;
 
-        rosbag::View::iterator viewIt = view.begin();
-        rosbag::MessageInstance message = (*viewIt);
+                    for(leg_detector::ClusterMsg::_indices_type::iterator indexIt = clusterIt->indices.begin(); indexIt != clusterIt->indices.end(); indexIt++){
+                        int16_t index = ((int16_t)(*indexIt));
 
-        // Iterate through the message -> generate the clusters
-        foreach(rosbag::MessageInstance const m, view)
-        {
-            // If scan is a LaserScan (to avoid stopping at every tf)
-            sensor_msgs::LaserScan::Ptr s = m.instantiate<sensor_msgs::LaserScan>();
-            if (s != NULL) {
+                        // TODO Generate SampleSet here
+                        Sample* s = Sample::Extract(index, *pLaserScan);
+                        pCluster->insert(s);
 
+                        cout << "\t\t" << YELLOW << index <<  " " << RED << "x: " << s->x << " y: " << s->y << BLUE << " range: " << s->range << RESET << endl;
+                    }
+
+                    clusterList.push_back(pCluster);
+                }
+
+                labeledScanList.push_back(new LabeledScanData(pLaserScan,pLabeledRangeScanMsg));
             }
         }
-        // Close the files
-        bag.close();
     }
-};
+
+    // Close the file
+    bag.close();
+}
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "training_set_converter");

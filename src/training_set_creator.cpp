@@ -417,7 +417,6 @@ public:
                 timeSampleSetMapIt search = timeClusterMap_.find(m.getTime());
                 if (search != timeClusterMap_.end() ) {
 
-                    //cout << "Found labels at time: " << search->first << endl;
                     // The Labeled Range Scan Message
                     leg_detector::LabeledRangeScanMsg rangeScanLabelMsg;
 
@@ -441,16 +440,21 @@ public:
                         leg_detector::ClusterMsg clusterMsg;
 
                         // If this cluster is labeled
-                        std::string test  = "test";
                         if(!(*clusterIt)->label.empty()){
                             clusterMsg.label = (*clusterIt)->label;
-
-                            cout << "Adding indices to message!" << endl;
+                            cout << GREEN << s->header.stamp << RESET << endl;
+                            cout << "\tLabel:[" << clusterMsg.label << "]" << endl;
                             // Iterate through the samples of this cluster
                             for(std::set<laser_processor::Sample*>::iterator sampleIt = (*clusterIt)->begin(); sampleIt != (*clusterIt)->end(); sampleIt++){
                                 // Add the indice to the ClusterMsg
-                                clusterMsg.indices.push_back((uint8_t)(*sampleIt)->index);
-                                cout << BLUE << "\t" << (int)(*sampleIt)->index << RESET << endl;
+                                clusterMsg.indices.push_back((int16_t)(*sampleIt)->index);
+                                int16_t index = (int16_t)(*sampleIt)->index;
+                                //cout << BLUE << "\t" << (int)((uint8_t)(*sampleIt)->index) << RESET << endl;
+
+                                laser_processor::Sample* s = *sampleIt;
+                                cout << "\t\t" << YELLOW << static_cast<int16_t>(index) <<  " " << RED << "x: " << s->x << " y: " << s->y << BLUE << " range: " << s->range << RESET << endl;
+
+
                             }
                             // Add the cluster message to the rangeScanLabelMsg
                             rangeScanLabelMsg.clusters.push_back(clusterMsg);
