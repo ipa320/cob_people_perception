@@ -417,7 +417,7 @@ public:
                 timeSampleSetMapIt search = timeClusterMap_.find(m.getTime());
                 if (search != timeClusterMap_.end() ) {
 
-                    cout << "Found labels at time: " << search->first << endl;
+                    //cout << "Found labels at time: " << search->first << endl;
                     // The Labeled Range Scan Message
                     leg_detector::LabeledRangeScanMsg rangeScanLabelMsg;
 
@@ -449,8 +449,8 @@ public:
                             // Iterate through the samples of this cluster
                             for(std::set<laser_processor::Sample*>::iterator sampleIt = (*clusterIt)->begin(); sampleIt != (*clusterIt)->end(); sampleIt++){
                                 // Add the indice to the ClusterMsg
-                                clusterMsg.indices.push_back((unsigned int)(*sampleIt)->index);
-                                cout << BLUE << "\t" << (unsigned int)(*sampleIt)->index << RESET << endl;
+                                clusterMsg.indices.push_back((uint8_t)(*sampleIt)->index);
+                                cout << BLUE << "\t" << (int)(*sampleIt)->index << RESET << endl;
                             }
                             // Add the cluster message to the rangeScanLabelMsg
                             rangeScanLabelMsg.clusters.push_back(clusterMsg);
