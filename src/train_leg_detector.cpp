@@ -59,6 +59,14 @@ using namespace ros;
 
 enum LoadType {LOADING_NONE, LOADING_TRAIN, LOADING_TEST};
 
+enum ClassificatorType {CVBOOST, CVRTREES};
+
+struct classificator {
+  ClassificatorType type;
+  string desc;
+  CvStatModel* pClassificator;
+};
+
 class TrainLegDetector
 {
 public:
@@ -72,7 +80,10 @@ public:
   vector< vector<float> > test_pos_data_;  //Positiv test data
   vector< vector<float> > test_neg_data_;  //Negative test data
 
-  CvRTrees forest;
+  vector<classificator> classificators;
+
+  //CvRTrees forest;
+  //CvBoost adaBoost;
 
   float connected_thresh_;
 
@@ -240,10 +251,59 @@ public:
     
     float priors[] = {1.0, 1.0};
     
-    CvRTParams fparam(8,20,0,false,10,priors,false,5,50,0.001f,CV_TERMCRIT_ITER);
+    CvRTParams fparam(8, // Maximal tree depth
+                      20,
+                      0,
+                      false,
+                      10,
+                      priors,
+                      false,
+                      5,
+                      50,
+                      0.001f,
+                      CV_TERMCRIT_ITER);
     fparam.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100, 0.1);
     
-    forest.train( cv_data, CV_ROW_SAMPLE, cv_resp, 0, 0, var_type, 0, fparam);
+    CvRTrees* forest = new CvRTrees();
+    forest->train(cv_data, //Training Data
+                 CV_ROW_SAMPLE, // each row is a sample
+                 cv_resp, // The response that is expected
+                 0, // Can be used to choose as subset of the features
+                 0, // Can be used to choose as subset of the samples
+                 var_type, // ???
+                 0, // Can be used to mark missing values
+                 fparam);
+
+    CvBoostParams boostParams;
+        boostParams.boost_type = CvBoost::REAL;
+        boostParams.weak_count = feat_count_;
+        boostParams.weight_trim_rate = 0.50; //A threshold between 0 and 1 used to save computational time. Samples with summary weight \leq 1 - weight\_trim\_rate do not participate in the next iteration of training. Set this parameter to 0 to turn off this functionality.
+        boostParams.max_depth = 1;
+        boostParams.cv_folds = 0;
+        //boostParams.priors = priors;
+
+    CvBoost* adaBoost = new CvBoost();
+    adaBoost->train(cv_data, //Training Data
+                   CV_ROW_SAMPLE, // each row is a sample
+                   cv_resp, // The response that is expected
+                   0, // Can be used to choose as subset of the features
+                   0, // Can be used to choose as subset of the samples
+                   var_type, // ???
+                   0, // Can be used to mark missing values
+                   boostParams);
+
+    // Store the forestClassificator
+    classificator forestClassificator;
+    forestClassificator.desc = "forestClassificator";
+    forestClassificator.pClassificator = forest;
+    forestClassificator.type = CVRTREES;
+    classificators.push_back(forestClassificator);
+
+    classificator adaBoostClassificator;
+    adaBoostClassificator.desc = "adaBoostClassificator";
+    adaBoostClassificator.pClassificator = adaBoost;
+    adaBoostClassificator.type = CVBOOST;
+    classificators.push_back(adaBoostClassificator);
 
     cvReleaseMat(&cv_data);
     cvReleaseMat(&cv_resp);
@@ -252,92 +312,145 @@ public:
 
   void test()
   {
-    CvMat* tmp_mat = cvCreateMat(1,feat_count_,CV_32FC1);
+    // Test every iterator there is
+    for(vector<classificator>::iterator classificatorIt = classificators.begin(); classificatorIt != classificators.end(); classificatorIt++){
+        cout << BOLDMAGENTA << classificatorIt->desc << RESET << endl;
 
-    int pos_right = 0;
-    int pos_total = 0;    
-    for (vector< vector<float> >::iterator i = pos_data_.begin();
-         i != pos_data_.end();
-         i++)
-    {
-      for (int k = 0; k < feat_count_; k++)
-        tmp_mat->data.fl[k] = (float)((*i)[k]);
-      if (forest.predict( tmp_mat) > 0)
-        pos_right++;
-      pos_total++;
+        CvMat* tmp_mat = cvCreateMat(1,feat_count_,CV_32FC1);
+
+        int pos_right = 0;
+        int pos_total = 0;
+        for (vector< vector<float> >::iterator i = pos_data_.begin();
+             i != pos_data_.end();
+             i++)
+        {
+          for (int k = 0; k < feat_count_; k++)
+            tmp_mat->data.fl[k] = (float)((*i)[k]);
+
+          float prediction = 0;
+          switch(classificatorIt->type){
+              case CVBOOST:
+                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+              case CVRTREES:
+                  prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+          }
+          if (prediction > 0)
+            pos_right++;
+          pos_total++;
+        }
+
+        int neg_right = 0;
+        int neg_total = 0;
+        for (vector< vector<float> >::iterator i = neg_data_.begin();
+             i != neg_data_.end();
+             i++)
+        {
+          for (int k = 0; k < feat_count_; k++)
+            tmp_mat->data.fl[k] = (float)((*i)[k]);
+          float prediction = 0;
+          switch(classificatorIt->type){
+              case CVBOOST:
+                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+              case CVRTREES:
+                  prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+          }
+          if (prediction < 0)
+            neg_right++;
+          neg_total++;
+        }
+
+        // Test for positive data (no legs)
+        int test_pos_right = 0;
+        int test_pos_total = 0;
+        for (vector< vector<float> >::iterator i = test_pos_data_.begin();
+             i != test_pos_data_.end();
+             i++)
+        {
+          for (int k = 0; k < feat_count_; k++)
+            tmp_mat->data.fl[k] = (float)((*i)[k]);
+          float prediction = 0;
+          switch(classificatorIt->type){
+              case CVBOOST:
+                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+              case CVRTREES:
+                  prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+          }
+          if (prediction > 0)
+            test_pos_right++;
+          test_pos_total++;
+        }
+
+        // Test for negative data (no legs)
+        int test_neg_right = 0;
+        int test_neg_total = 0;
+        for (vector< vector<float> >::iterator i = test_neg_data_.begin();
+             i != test_neg_data_.end();
+             i++)
+        {
+          for (int k = 0; k < feat_count_; k++)
+            tmp_mat->data.fl[k] = (float)((*i)[k]);
+          float prediction = 0;
+          switch(classificatorIt->type){
+              case CVBOOST:
+                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+              case CVRTREES:
+                  prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+          }
+          if (prediction > 0)
+              test_neg_right++;
+          test_neg_total++;
+        }
+
+
+        // Test for negative data
+
+        printf("\t----- Training Set -----(N=%lu)\n", neg_data_.size()+pos_data_.size());
+        printf("\t True positives: %d\n",pos_right);
+        printf("\t False positives: %d\n",pos_total-pos_right);
+
+        printf("\t True negatives: %d\n",neg_right);
+        printf("\t False negatives: %d\n\n",neg_total-neg_right);
+
+        printf("\t True positives Rate(Sensitivity): %g %%\n",(float)(pos_right)/pos_total * 100);
+        printf("\t True negatives Rate(Specificity): %g %%\n\n",(float) (neg_right)/neg_total * 100);
+
+        printf("\t-----   Test Set   -----(N=%lu)\n", test_neg_data_.size()+test_pos_data_.size());
+
+        printf("\t True positives: %d\n",test_pos_right);
+        printf("\t False positives: %d\n",test_pos_total-test_pos_right);
+
+        printf("\t True negatives: %d\n",test_neg_right);
+        printf("\t False negatives: %d\n\n",test_neg_total-test_neg_right);
+
+        printf("\t True positives Rate(Sensitivity): %g %% \n",(float) (test_pos_right)/test_pos_total * 100);
+        printf("\t True negatives Rate(Specificity): %g %% \n\n",(float) (test_neg_right)/test_neg_total * 100);
+
+        cvReleaseMat(&tmp_mat);
     }
-
-    int neg_right = 0;
-    int neg_total = 0;
-    for (vector< vector<float> >::iterator i = neg_data_.begin();
-         i != neg_data_.end();
-         i++)
-    {
-      for (int k = 0; k < feat_count_; k++)
-        tmp_mat->data.fl[k] = (float)((*i)[k]);
-      if (forest.predict( tmp_mat ) < 0)
-        neg_right++;
-      neg_total++;
-    }
-
-    // Test for positive data (no legs)
-    int test_pos_right = 0;
-    int test_pos_total = 0;
-    for (vector< vector<float> >::iterator i = test_pos_data_.begin();
-         i != test_pos_data_.end();
-         i++)
-    {
-      for (int k = 0; k < feat_count_; k++)
-        tmp_mat->data.fl[k] = (float)((*i)[k]);
-      if (forest.predict( tmp_mat ) > 0)
-        test_pos_right++;
-      test_pos_total++;
-    }
-
-    // Test for negative data (no legs)
-    int test_neg_right = 0;
-    int test_neg_total = 0;
-    for (vector< vector<float> >::iterator i = test_neg_data_.begin();
-         i != test_neg_data_.end();
-         i++)
-    {
-      for (int k = 0; k < feat_count_; k++)
-        tmp_mat->data.fl[k] = (float)((*i)[k]);
-      if (forest.predict( tmp_mat ) > 0)
-        test_neg_right++;
-      test_neg_total++;
-    }
-
-    // Test for negative data
-
-    printf("----- Training Set -----\n");
-    printf(" True positives: %d\n",pos_right);
-    printf(" False positives: %d\n",pos_total-pos_right);
-
-    printf(" True negatives: %d\n",neg_right);
-    printf(" False negatives: %d\n\n",neg_total-neg_right);
-
-    printf(" True positives Rate(Sensitivity): %g %%\n",(float)(pos_right)/pos_total * 100);
-    printf(" True negatives Rate(Specificity): %g %%\n\n",(float) (neg_right)/neg_total * 100);
-
-    printf("-----   Test Set   -----\n");
-
-    printf(" True positives: %d\n",test_pos_right);
-    printf(" False positives: %d\n",test_pos_total-test_pos_right);
-
-    printf(" True negatives: %d\n",test_neg_right);
-    printf(" False negatives: %d\n\n",test_neg_total-test_neg_right);
-
-    printf(" True positives Rate(Sensitivity): %g %% \n",(float) (test_pos_right)/test_pos_total * 100);
-    printf(" True negatives Rate(Specificity): %g %% \n\n",(float) (test_neg_right)/test_neg_total * 100);
-
-    cvReleaseMat(&tmp_mat);
 
   }
 
-  void save(char* file)
+  void save(char* outputfile_prefix)
   {
-    forest.save(file);
+      cout << "Save called!" << endl;
+      for(vector<classificator>::iterator classificatorIt = classificators.begin(); classificatorIt != classificators.end(); classificatorIt++){
+          char outputfile[1000];
+          outputfile[0] = 0;
+          strcpy(outputfile,outputfile_prefix);
+          strncat(outputfile,(("_" + classificatorIt->desc + ".yaml").c_str()),100);
+          cout << "Saving: " << outputfile << endl;
+
+          //classificatorIt->pClassificator->save(outputfile);
+      }
+    //forest.save(file);
   }
 };
 
@@ -347,8 +460,8 @@ int main(int argc, char **argv)
 
   LoadType loading = LOADING_NONE;
 
-  char save_file[100];
-  save_file[0] = 0;
+  char outputfile_prefix[100];
+  outputfile_prefix[0] = 0;
 
   printf("Loading data...\n");
   for (int i = 1; i < argc; i++)
@@ -357,10 +470,10 @@ int main(int argc, char **argv)
       loading = LOADING_TRAIN;
     else if (!strcmp(argv[i],"--test"))
       loading = LOADING_TEST;
-    else if (!strcmp(argv[i],"--save"))
+    else if (!strcmp(argv[i],"--outputfileprefix"))
     {
       if (++i < argc)
-        strncpy(save_file,argv[i],100);
+        strncpy(outputfile_prefix,argv[i],100);
 
         // TODO Check existenz of the file
 
@@ -379,9 +492,9 @@ int main(int argc, char **argv)
   printf("Evaluating classifier...\n");
   tld.test();
   
-  if (strlen(save_file) > 0)
+  if (strlen(outputfile_prefix) > 0)
   {
-    printf("Saving classifier as: %s\n", save_file);
-    tld.save(save_file);
+    //printf("Saving classifier as: %s\n", outputfile_prefix);
+    tld.save(outputfile_prefix);
   }
 }
