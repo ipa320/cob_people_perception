@@ -113,3 +113,17 @@ add_dependencies(training_set_converter people_msgs_gencpp ${${PROJECT_NAME}_EXP
 target_link_libraries(training_set_converter
    ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
 )
+
+## The leg train detector
+add_executable(train_leg_detector
+               src/laser_processor.cpp
+               src/train_leg_detector.cpp 
+               src/calc_leg_features.cpp)
+               
+## Add cmake target dependencies of the executable/library
+add_dependencies(train_leg_detector people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(train_leg_detector
+   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+)
