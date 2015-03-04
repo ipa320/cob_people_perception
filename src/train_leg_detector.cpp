@@ -48,6 +48,7 @@
 #include <rosbag/view.h>
 
 #include <boost/foreach.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #define USE_BASH_COLORS
 #include <leg_detector/color_definitions.h>
@@ -328,14 +329,21 @@ public:
             tmp_mat->data.fl[k] = (float)((*i)[k]);
 
           float prediction = 0;
+          boost::posix_time::ptime time_start;
+          boost::posix_time::ptime time_end;
+          time_start = boost::posix_time::microsec_clock::local_time();
           switch(classificatorIt->type){
-              case CVBOOST:
-                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
-                  break;
               case CVRTREES:
                   prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
                   break;
+              case CVBOOST:
+                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
           }
+          time_end = boost::posix_time::microsec_clock::local_time();
+          boost::posix_time::time_duration duration(time_end - time_start);
+          cout << "Duration: " << duration.total_microseconds() << '\n';
+
           if (prediction > 0)
             pos_right++;
           pos_total++;
@@ -479,6 +487,8 @@ int main(int argc, char **argv)
 
       continue;
     }
+    else if (!strcmp(argv[i],"--help"))
+      cout << "help" << endl;
     else
       tld.loadData(loading, argv[i]);
   }
