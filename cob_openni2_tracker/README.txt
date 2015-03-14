@@ -1,45 +1,34 @@
- Installation
+Please also have a look at our more detailed documentation at http://wiki.ros.org/cob_people_detection .
 
-1. Clone cob_openni2_tracker and other repositories from Github (hydro-dev branch) in a catkin workspace:
+Installation
+-----------
 
-    $ cd catkin_ws/src
+1. Clone cob_openni2_tracker in catkin workspace:
 
    $ git clone https://github.com/ros-drivers/cob_openni2_tracker.git
+
+2. Install ros packages and dependencies:
+
+	ros-hydro-openni2-camera
+	ros-hydro-openni2-launch
+	ros-hydro-rgbd-launch
+	ros-hydro-nodelet 
+
+or clone the git repositories:
+
    $ git clone https://github.com/ros-drivers/openni2_camera.git
    $ git clone https://github.com/ros-drivers/openni2_launch.git
    $ git clone https://github.com/ros-drivers/rgbd_launch.git
-   
-2.  Run catkin_make 
 
-3.1. Download OpenNI2 or clone the OpenNI2 repository from Github:
-    
-	3.1.1. (if downloaded) Download and unpack OpenNI2 2.2.0.33 from www.http://structure.io/openni 
+3. Download and install OpenNI 2.2.
+
+4. Run catkin_make
+
+
+Quik Start
+----------
      
-      $  cd OpenNI
-      $ sudo ./install.sh
-       
-	3.1.2 (if cloned) Clone      
-       
-  	 $ git clone git@github.com:OpenNI/OpenNI2.git :
-  	 
-    
-  	 $ cd OpenNI
-  	 $ mkdir build
-   	$ cd build
-   	$ cmake .. -DBUILD_OPENNI2_DRIVER=ON
-   	$ make
+Run the launch file:
 
-3.2. Install Nite2 and unpack:
-    
-   $ cd NiTE-Linux-x64-2.2
-   $ sudo ./install.sh
-
-4. Try to run the launch file:
-
-   $ roslaunch cob_openni2_tracker openni2_tracker.launch
-
-
-5. Run an example in ~/NiTE-Linux-x64-2.2/Samples/Bin/
-   If these don't work, then something went wrong with the installation. Check your directories and libraries in
-   in the CMakeLists.txt file inside the cob_openni2_tracker package.
+   $ roslaunch cob_openni2_tracker body_tracker_nodelet.launch
 

@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread)
 
+
 # Look for bfl (Bayesian Filtering Library)
 #find_path(BFL_INCLUDE_DIRS REQUIRED
 #	NAMES bfl_constants.h
@@ -32,12 +33,13 @@ find_package(Boost REQUIRED COMPONENTS thread)
 #	NAMES orocos-bfl
 #	HINTS /opt/ros/indigo/lib)
 #message(STATUS "BFL_LIBRARIES: ${BFL_LIBRARIES},  BFL_INCLUDE_DIRS: ${BFL_INCLUDE_DIRS},  BFL_LIBRARY_DIRS: ${BFL_LIBRARY_DIRS}")
+
 # this way is recommended by the package (even though link_directories is not encouraged by catkin_lint)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
-#include_directories(${BFL_INCLUDE_DIRS})
-link_directories(${BFL_LIBRARY_DIRS})
 
+message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
+message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
 
 ## Declare things to be passed to dependent projects
 catkin_package(
@@ -55,6 +57,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${BFL_INCLUDE_DIRS}
 )
+
+link_directories(${BFL_LIBRARY_DIRS})
 
 ## Declare a cpp library
 add_library(cob_people_tracking_filter 

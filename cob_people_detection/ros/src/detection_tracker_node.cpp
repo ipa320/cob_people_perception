@@ -72,7 +72,6 @@
 
 // ROS message includes
 #include <sensor_msgs/Image.h>
-//#include <sensor_msgs/PointCloud2.h>
 #include <cob_perception_msgs/DetectionArray.h>
 
 // services
