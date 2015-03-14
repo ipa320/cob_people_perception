@@ -491,7 +491,7 @@ void BodyTracker::runTracker()
 				{
 					// Start timer
 					sprintf(generalMessage, "In exit pose. Keep it for %d second%s to exit\n", poseTimeoutToExit_/1000, poseTimeoutToExit_/1000 == 1 ? "" : "s");
-					printf("Waiting to start timeout \n", poseTimeoutToExit_/1000);
+					printf("Waiting to start timeout %i \n", poseTimeoutToExit_/1000);
 					m_poseUser = user.getId();
 					m_poseTime_ = userTrackerFrame.getTimestamp();
 				}
