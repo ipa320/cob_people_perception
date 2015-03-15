@@ -8,7 +8,8 @@
   <license>LGPL</license>
 
   <maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
-  <author>Richard Bormann, Thomas Zwölfer</author>
+  <author email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</author>
+  <author>Thomas Zwölfer</author>
 
   <url>http://ros.org/wiki/cob_people_detection</url>
 

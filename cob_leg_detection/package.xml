@@ -2,11 +2,11 @@
   <name>cob_leg_detection</name>
   <version>1.0.4</version>
   <description>Leg Detector using a machine learning approach to find leg-like patterns of laser scanner readings.</description>
-  <author>Caroline Pantofaru, Olha Meyer</author>
-  <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
   <maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
+  <author>Caroline Pantofaru, Olha Meyer</author>
   <license>LGPL</license>
-  <!--url>http://ros.org/wiki/leg_detector</url-->  
+  <!--url>http://ros.org/wiki/leg_detector</url-->
+  <url type="website">http://ros.org/wiki/cob_people_perception</url>
 
   <buildtool_depend>catkin</buildtool_depend>
   <!--buildtool_depend>catkin_simple</buildtool_depend-->

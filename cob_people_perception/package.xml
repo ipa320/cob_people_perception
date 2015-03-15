@@ -10,7 +10,8 @@
   <license>LGPL</license>
   
   <maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
-  <author>Richard Bormann, Thomas Zwölfer, Olha Meyer</author>
+  <author email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</author>
+  <author>Thomas Zwölfer, Olha Meyer</author>
   
   <url type="website">http://ros.org/wiki/cob_people_perception</url>
 

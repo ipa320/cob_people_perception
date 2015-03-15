@@ -2,13 +2,13 @@
   <name>cob_people_tracking_filter</name>
   <version>1.0.4</version>
   <description>
-  A collection of filtering tools for tracking people's locations
+    A collection of filtering tools for tracking people's locations
   </description>
-  <author>Caroline Pantofaru, Olha Meyer</author>
-  <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
   <maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
+  <author>Caroline Pantofaru, Olha Meyer</author>
   <license>BSD</license>
-  <!--url>http://ros.org/wiki/people_tracking_filter</url-->  
+  <!--url>http://ros.org/wiki/people_tracking_filter</url-->
+  <url type="website">http://ros.org/wiki/cob_people_perception</url>
 
   <buildtool_depend>catkin</buildtool_depend>
   

@@ -5,7 +5,7 @@
   <description>
     The openni_tracker broadcasts the OpenNI skeleton frames using tf.
     This new version of the openni_tracker uses OpenNI2 and Nite2</description>
-  <maintainer email="marcus.liebhardt@yujinrobot.com">Marcus Liebhardt</maintainer>
+  <maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
   
   <license>BSD</license>
   <url type="website">http://www.ros.org/wiki/openni_tracker</url>  
