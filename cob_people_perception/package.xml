@@ -22,7 +22,6 @@
   <run_depend>cob_people_detection</run_depend>
   <run_depend>cob_people_tracking_filter</run_depend>
   <run_depend>libnite2</run_depend>
-  <run_depend>cob_perception_msgs</run_depend>
 
   <export>
     <metapackage />
