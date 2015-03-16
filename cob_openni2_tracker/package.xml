@@ -32,8 +32,11 @@
   <build_depend>pcl_ros</build_depend>
   <build_depend>image_transport</build_depend>
   <build_depend>cv_bridge</build_depend>
-  <build_depend>libopencv-dev</build_depend>
   <build_depend>std_msgs</build_depend>
+  
+  <build_depend>libopencv-dev</build_depend>
+  <build_depend>glut</build_depend>
+  <build_depend>opengl</build_depend>
 
   <run_depend>libusb-1.0-dev</run_depend>
 <!--  <run_depend>libopenni-nite-dev</run_depend> -->
@@ -53,10 +56,12 @@
   <run_depend>pcl_ros</run_depend> 
   <run_depend>image_transport</run_depend>
   <run_depend>cv_bridge</run_depend>
-  <run_depend>libopencv-dev</run_depend>
   <run_depend>std_msgs</run_depend>
   
+  <run_depend>libopencv-dev</run_depend>
   <run_depend>boost</run_depend>
+  <run_depend>glut</run_depend>
+  <run_depend>opengl</run_depend>
   
    <export>
   <nodelet plugin="${prefix}/nodelet.xml" />	

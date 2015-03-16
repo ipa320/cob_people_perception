@@ -12,7 +12,6 @@
   <!--buildtool_depend>catkin_simple</buildtool_depend-->
 
   <build_depend>cmake_modules</build_depend>
-  <build_depend>libopencv-dev</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
@@ -31,8 +30,10 @@
   <!--build_depend>numpy_eigen</build_depend-->
   <!--build_depend>eigen_catkin</build_depend-->
   <build_depend>orocos_kdl</build_depend>
+  
+  <build_depend>libopencv-dev</build_depend>
+  <build_depend>eigen</build_depend>
 
-  <run_depend>libopencv-dev</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
@@ -50,6 +51,9 @@
   <run_depend>laser_filters</run_depend>
   <!--run_depend>map_laser</run_depend-->
   <run_depend>orocos_kdl</run_depend>
+  
+  <run_depend>libopencv-dev</run_depend>
+  <run_depend>eigen</run_depend>
 
 
 </package>
