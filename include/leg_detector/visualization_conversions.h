@@ -89,7 +89,7 @@ bool savedFeatureToPeopleMarkerMsg(SavedFeature* leg1, SavedFeature* leg2, visua
   pPeopleSphereMsg->color.a = 0.7;
 
   int r, g, b;
-  getValueBetweenTwoFixedColors(leg1->getReliability(),r,g,b);
+  redGreenGradient(leg1->getReliability(),r,g,b);
 
   pPeopleSphereMsg->color.r = r / 255.0;
   pPeopleSphereMsg->color.g = g / 255.0;

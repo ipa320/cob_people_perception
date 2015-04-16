@@ -87,20 +87,35 @@ struct CompareSample
 };
 
 
-//! An ordered set of Samples
+//! An ordered set of Samples( a Cluster)
 class SampleSet : public std::set<Sample*, CompareSample>
 {
 public:
-  int id_;
+  int id_; /** < Id of the SampleSet */
 
-  std::string label;
+  std::string label; /**< A given label */
+
+  double probability_; /**< The probability in being a leg */
 
 public:
-  SampleSet() {}
+  SampleSet():
+    probability_(0.0),
+    id_(0)
+    {
+
+    }
 
   ~SampleSet()
   {
     clear();
+  }
+
+  void setProbability(double probability){
+    probability_ = probability;
+  }
+
+  double getProbability(){
+    return probability_;
   }
 
   void clear();
