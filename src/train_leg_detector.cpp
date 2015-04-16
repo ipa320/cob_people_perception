@@ -278,7 +278,7 @@ public:
     CvBoostParams boostParams;
         boostParams.boost_type = CvBoost::REAL;
         boostParams.weak_count = feat_count_;
-        boostParams.weight_trim_rate = 0.50; //A threshold between 0 and 1 used to save computational time. Samples with summary weight \leq 1 - weight\_trim\_rate do not participate in the next iteration of training. Set this parameter to 0 to turn off this functionality.
+        boostParams.weight_trim_rate = 0.5; //A threshold between 0 and 1 used to save computational time. Samples with summary weight \leq 1 - weight\_trim\_rate do not participate in the next iteration of training. Set this parameter to 0 to turn off this functionality.
         boostParams.max_depth = 1;
         boostParams.cv_folds = 0;
         //boostParams.priors = priors;
@@ -329,7 +329,7 @@ public:
             tmp_mat->data.fl[k] = (float)((*i)[k]);
 
           float prediction = 0;
-          boost::posix_time::ptime time_start;
+          boost::posix_time::ptime time_start; // TODO use the timer class
           boost::posix_time::ptime time_end;
           time_start = boost::posix_time::microsec_clock::local_time();
           switch(classificatorIt->type){
@@ -344,8 +344,10 @@ public:
           boost::posix_time::time_duration duration(time_end - time_start);
           cout << "Duration: " << duration.total_microseconds() << '\n';
 
-          if (prediction > 0)
-            pos_right++;
+          if (prediction > 0){
+              pos_right++;
+              //cout << "Positiv with " << prediction << endl;
+          }
           pos_total++;
         }
 
@@ -360,14 +362,18 @@ public:
           float prediction = 0;
           switch(classificatorIt->type){
               case CVBOOST:
+                  //prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat, 0,0,CV_WHOLE_SEQ, true,false);
                   prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
                   break;
               case CVRTREES:
                   prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
                   break;
           }
-          if (prediction < 0)
-            neg_right++;
+          if (prediction < 0){
+              neg_right++;
+              //cout << "Negative with " << prediction << endl;
+          }
+
           neg_total++;
         }
 
@@ -389,8 +395,10 @@ public:
                   prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
                   break;
           }
-          if (prediction > 0)
-            test_pos_right++;
+          if (prediction > 0){
+              test_pos_right++;
+              //cout << "Positiv with " << prediction << endl;
+          }
           test_pos_total++;
         }
 
@@ -412,8 +420,10 @@ public:
                   prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
                   break;
           }
-          if (prediction > 0)
+          if (prediction < 0){
               test_neg_right++;
+              //cout << "Negative with " << prediction;
+          }
           test_neg_total++;
         }
 

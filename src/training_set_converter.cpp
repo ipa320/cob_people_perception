@@ -70,11 +70,11 @@ namespace po = boost::program_options;
 int g_argc;
 char** g_argv;
 
-void TrainingSetConverter::convertTrainingSet(const char* file) {
-    printf("Input file: %s\n", file);
+void TrainingSetConverter::convertTrainingSet(const char* input_file) {
+    printf("Input file: %s\n", input_file);
 
     // Check if file exists
-    if (!ifstream(file)) {
+    if (!ifstream(input_file)) {
         std::cout << "File does not exist!" << std::endl;
         return;
     } else {
@@ -82,7 +82,7 @@ void TrainingSetConverter::convertTrainingSet(const char* file) {
     }
 
     // Open the bagfile
-    rosbag::Bag bag(file, rosbag::bagmode::Read);
+    rosbag::Bag bag(input_file, rosbag::bagmode::Read);
 
     // Read the available topics
     rosbag::View topicView(bag);
@@ -143,10 +143,8 @@ void TrainingSetConverter::convertTrainingSet(const char* file) {
 
             if(pLabeledRangeScanMsg->clusters.size() > 0){ //If there are clusters
 
-
                 cout << endl;
                 //cout << RED << pLabeledRangeScanMsg->header.stamp <<  "RangeScan" << RESET << endl;
-
 
                 for(leg_detector::LabeledRangeScanMsg::_clusters_type::iterator clusterIt = pLabeledRangeScanMsg->clusters.begin(); clusterIt != pLabeledRangeScanMsg->clusters.end(); clusterIt++){
                     SampleSet* pCluster = new SampleSet();
@@ -222,9 +220,9 @@ int main(int argc, char **argv) {
                 << "\n";
     }
 
-    const char* filename = (vm["input-file"].as<std::string>()).c_str();
+    const char* input_file = (vm["input-file"].as<std::string>()).c_str();
 
-    trainingSetConverter.convertTrainingSet(filename);
+    trainingSetConverter.convertTrainingSet(input_file);
 
     return 0;
 }

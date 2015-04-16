@@ -136,6 +136,7 @@ public:
     // The publishers
     ros::Publisher markers_pub_;
     ros::Publisher clusters_pub_;
+    ros::Publisher scan_pub_;
     ros::Publisher clock_pub_;
     ros::Publisher tf_pub_;
 
@@ -149,6 +150,7 @@ public:
         // advertise topics
         markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 20);
         clusters_pub_ = nh_.advertise<sensor_msgs::PointCloud>("clusters", 20);
+        scan_pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 20);
         clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("clock", 20);
         tf_pub_ = nh_.advertise<tf2_msgs::TFMessage>("tf", 20);
 
@@ -173,15 +175,15 @@ public:
     * creates the trainingSet bagfile.
     * @param file Input bagfile. Should contain the scan-data.
     */
-    void createTrainingSet(const char* file) {
+    void createTrainingSet(const char* input_file, const char* output_file) {
         // Copy the input bagfile
-        boost::filesystem::copy_file(file,"output.bag",boost::filesystem::copy_option::overwrite_if_exists);
+        boost::filesystem::copy_file(input_file, output_file, boost::filesystem::copy_option::overwrite_if_exists);
         cout << "Creating copy" << endl;
 
-        printf("Input file: %s\n", file);
+        printf("Input file: %s\n", input_file);
 
         // Check if file exists
-        if (!std::ifstream(file)) {
+        if (!std::ifstream(input_file)) {
             std::cout << "File does not exist!" << std::endl;
             return;
         } else {
@@ -189,7 +191,7 @@ public:
         }
 
         // Open the bagfile
-        rosbag::Bag bag(file, rosbag::bagmode::Read);
+        rosbag::Bag bag(input_file, rosbag::bagmode::Read);
 
         // Read the available topics
         rosbag::View topicView(bag);
@@ -292,7 +294,7 @@ public:
                 }
 
 
-
+                scan_pub_.publish(s);
                 // TODO seems to be needed for proper label update inside rviz, yet very ugly
                 ros::spinOnce();
                 for(int i=0; i<10;i++){
@@ -314,8 +316,10 @@ public:
                 // Inform user about the usage
                 cout << "Usage:" << endl;
                 cout << "\t(n)ext - Jump to next laser scan message" << endl;
+                cout << "\t(p)revious - Jump to previous laser scan message" << endl;
                 cout << "\t[#n] \'label\' - Assign label \'label\' to cluster #n" << endl;
-                cout << "\t(e)xit" << endl;
+                cout << "\t(s)ave - Save and exit" << endl;
+                cout << "\t(e)xit without saving" << endl;
 
                 // Get User input
                 std::string userinput;
@@ -323,10 +327,10 @@ public:
 
                 //regex
                 boost::regex expr_label("#?([0-9]+) ([a-zA-z]+) *"); //User enters label for a cluster
-                boost::regex expr_next("next|n"); //User enters label for a cluster
-                boost::regex expr_prev("prev|p"); //User enters label for a cluster
-                boost::regex expr_exit("exit|e"); //User enters label for a cluster
-                boost::regex expr_run("r|run"); //User enters label for a cluster
+                boost::regex expr_next("next|n"); //User wants to see the next frame
+                boost::regex expr_prev("prev|p"); //User wants to see the previous frame
+                boost::regex expr_exit("exit|e"); //User wants to exit the program without saving
+                boost::regex expr_run("s|save"); //User wants to store
 
                 boost::cmatch what;
 
@@ -392,11 +396,11 @@ public:
 
 
         // Write labels to the output file
-        cout << "Writing labels to the output" << endl;
+        cout << "Writing labels to " << output_file << endl;
 
         //The output file
         rosbag::Bag output_bag;
-        output_bag.open("output.bag", rosbag::bagmode::Write);
+        output_bag.open(output_file, rosbag::bagmode::Write);
 
         rosbag::View view_all(bag);
 
@@ -737,13 +741,13 @@ int main(int argc, char **argv) {
     }
 
     if (vm.count("output-file")) {
-        cout << "Input files are: " << vm["input-file"].as<std::string>()
-                << "\n";
+        cout << "output files are: " << vm["output-file"].as<std::string>() << "\n";
     }
 
-    const char* filename = (vm["input-file"].as<std::string>()).c_str();
+    const char* input_file = (vm["input-file"].as<std::string>()).c_str();
+    const char* output_file = (vm["output-file"].as<std::string>()).c_str();
 
-    trainingSetCreator.createTrainingSet(filename);
+    trainingSetCreator.createTrainingSet(input_file, output_file);
 
     return 0;
 }

@@ -266,6 +266,13 @@ ScanProcessor::removeLessThan(uint32_t num)
 }
 
 
+/**
+ *  @brief Split the scan into clusters.
+ *
+ *  Splits the scan into clusters.
+ *
+ *  @param thresh Influences the splitting. Increate to get bigger clusters.
+ */
 void
 ScanProcessor::splitConnected(float thresh)
 {

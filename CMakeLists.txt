@@ -3,6 +3,10 @@ project(leg_detector)
 
 # set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
+# OpenCV
+find_package( OpenCV REQUIRED )
+
+
 # look for bfl (Bayesian Filtering Library)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
@@ -13,6 +17,8 @@ link_directories(${BFL_LIBRARY_DIRS})
 # Look for Bullet
 pkg_check_modules(BULLET bullet)
 include_directories(${BULLET_INCLUDE_DIRS})
+
+include_directories(.)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
@@ -35,6 +41,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## dynamic reconfigure config
 generate_dynamic_reconfigure_options(
   cfg/LegDetector.cfg
+  cfg/DualTracker.cfg
   cfg/TrainingSetCreator.cfg
 )
 
@@ -63,7 +70,8 @@ catkin_package(INCLUDE_DIRS include
 add_executable(leg_detector 
                src/laser_processor.cpp
                src/leg_detector.cpp 
-               src/calc_leg_features.cpp)
+               src/calc_leg_features.cpp
+               src/saved_feature.cpp)
 
 ## Add cmake target dependencies of the executable/library
 add_dependencies(leg_detector people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
@@ -73,10 +81,28 @@ target_link_libraries(leg_detector
    ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
 )
 
+
+
+## The leg detector
+add_executable(dual_tracker src/laser_processor.cpp src/dual_tracker.cpp src/calc_leg_features.cpp src/saved_feature.cpp)
+
+## Add cmake target dependencies of the executable/library
+add_dependencies(dual_tracker people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(dual_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES})
+
+
+
 install(TARGETS
     leg_detector
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+#install(TARGETS
+#    dual_tracker
+#    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#)
 
 install(FILES config/trained_leg_detector.yaml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
@@ -85,6 +111,8 @@ install(FILES config/trained_leg_detector.yaml
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
+
+
 
 ## The training set creator
 add_executable(training_set_creator 
