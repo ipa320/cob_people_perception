@@ -71,9 +71,7 @@ TrackerParticle::~TrackerParticle()
 // initialize prior density of filter
 void TrackerParticle::initialize(const StatePosVel& mu, const StatePosVel& sigma, const double time)
 {
-  cout << "Initializing tracker with " << num_particles_ << " particles, with covariance "
-       << sigma << " around " << mu << endl;
-
+  cout << "Initializing tracker with " << num_particles_ << " particles, with covariance " << sigma << " around " << mu << endl;
 
   GaussianPosVel gauss_pos_vel(mu, sigma);
   vector<Sample<StatePosVel> > prior_samples(num_particles_);

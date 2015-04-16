@@ -134,9 +134,6 @@ void TrackerKalman::initialize(const StatePosVel& mu, const StatePosVel& sigma, 
   init_time_ = time;
 }
 
-
-
-
 // update filter prediction
 bool TrackerKalman::updatePrediction(const double time)
 {
@@ -214,7 +211,7 @@ double TrackerKalman::calculateQuality()
 {
   double sigma_max = 0;
   SymmetricMatrix cov = filter_->PostGet()->CovarianceGet();
-  for (unsigned int i = 1; i <= 2; i++)
+  for (unsigned int i = 1; i <= 2; i++) // TODO why online the last two? should it be the first two?
     sigma_max = max(sigma_max, sqrt(cov(i, i)));
 
   return 1.0 - min(1.0, sigma_max / 1.5);
