@@ -7,20 +7,21 @@
 
 
 // Own includes
-#include <leg_detector/saved_feature.h>
+#include <leg_detector/leg_feature.h>
+#include <people_tracking_filter/advanced_tracker_particle.h>
 
-int SavedFeature::nextid = 0;
+int LegFeature::nextid = 0;
 
-static std::string fixed_frame = "odom_combined";  // The fixed frame in which ? //TODO find out
+static std::string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
 static double kal_p = 4, kal_q = .002, kal_r = 10;
 static bool use_filter = false;
 
 // one leg tracker
-SavedFeature::SavedFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
+LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
     sys_sigma_(tf::Vector3(0.05, 0.05, 0.05), tf::Vector3(1.0, 1.0, 1.0)),
-    filter_("tracker_name", sys_sigma_),
+    filter_("tracker_name", 100, sys_sigma_),
     reliability(-1.), p(4),
     use_filter_(true)
 {
@@ -30,7 +31,9 @@ SavedFeature::SavedFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tf
   snprintf(id, 100, "legtrack%d", int_id_);
   id_ = std::string(id);
 
-  ROS_DEBUG_COND(DEBUG_SAVED_FEATURE,"SavedFeature::%s Created new SavedFeature with id: %s", __func__, id_.c_str());
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created new leg_tracker with ID %s", __func__, id_.c_str());
+
+
 
   object_id = "";
   time_ = loc.stamp_;
@@ -45,12 +48,16 @@ SavedFeature::SavedFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tf
   {
     ROS_WARN("TF exception spot 6.");
   }
+
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Created new TF for leg tracker %s", id_.c_str());
   tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
   tfl_.setTransform(pose);
 
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Initializing filter of leg tracker %s", id_.c_str());
   BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.1), tf::Vector3(0.0000001, 0.0000001, 0.0000001));
   filter_.initialize(loc, prior_sigma, time_.toSec());
 
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Evaluating first estimation %s", id_.c_str());
   BFL::StatePosVel est;
   filter_.getEstimate(est);
 
@@ -60,7 +67,7 @@ SavedFeature::SavedFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tf
 /**
  * Propagate the Position of the Feature using the Kalman filter
  */
-void SavedFeature::propagate(ros::Time time)
+void LegFeature::propagate(ros::Time time)
 {
   time_ = time;
 
@@ -69,7 +76,7 @@ void SavedFeature::propagate(ros::Time time)
   updatePosition();
 }
 
-void SavedFeature::update(tf::Stamped<tf::Point> loc, double probability)
+void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 {
   tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
   tfl_.setTransform(pose);
@@ -101,7 +108,7 @@ void SavedFeature::update(tf::Stamped<tf::Point> loc, double probability)
   }
 }
 
-void SavedFeature::updatePosition()
+void LegFeature::updatePosition()
 {
   BFL::StatePosVel est;
   filter_.getEstimate(est);

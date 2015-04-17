@@ -34,6 +34,7 @@
 #include <ros/ros.h>
 
 // Own includes
+#include <leg_detector/constants.h>
 #include <leg_detector/leg_detector.h>
 #include <leg_detector/LegDetectorConfig.h>
 #include <leg_detector/laser_processor.h>

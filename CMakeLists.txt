@@ -84,7 +84,11 @@ target_link_libraries(leg_detector
 
 
 ## The leg detector
-add_executable(dual_tracker src/laser_processor.cpp src/dual_tracker.cpp src/calc_leg_features.cpp src/saved_feature.cpp)
+add_executable(dual_tracker 
+               src/laser_processor.cpp 
+               src/dual_tracker.cpp 
+               src/calc_leg_features.cpp 
+               src/leg_feature.cpp)
 
 ## Add cmake target dependencies of the executable/library
 add_dependencies(dual_tracker people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})

@@ -34,13 +34,14 @@
 #include <ros/ros.h>
 
 // Own includes
+#include <leg_detector/constants.h>
 #include <leg_detector/dual_tracker.h>
 #include <leg_detector/DualTrackerConfig.h>
 #include <leg_detector/laser_processor.h>
 #include <leg_detector/calc_leg_features.h>
 #include <leg_detector/visualization_conversions.h>
 #include <benchmarking/timer.h>
-#include <leg_detector/saved_feature.h>
+#include <leg_detector/leg_feature.h>
 #include <leg_detector/people_tracker.h>
 #include <leg_detector/color_definitions.h>
 
@@ -83,6 +84,7 @@ using namespace MatrixWrapper;
 // Default variables
 // static string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
+
 // Defines
 #define DUALTRACKER_DEBUG 1         // Debug the leg detector
 #define DUALTRACKER_TIME_DEBUG 1    // Debug the calculation time inside the leg_detector
@@ -91,11 +93,11 @@ class MatchedFeature
 {
 public:
   SampleSet* candidate_;  // The point cluster
-  SavedFeature* closest_; // The feature/leg tracker
+  LegFeature* closest_; // The feature/leg tracker
   float distance_;		  // The distance between the
   double probability_;
 
-  MatchedFeature(SampleSet* candidate, SavedFeature* closest, float distance, double probability)
+  MatchedFeature(SampleSet* candidate, LegFeature* closest, float distance, double probability)
     : candidate_(candidate)
     , closest_(closest)
     , distance_(distance)
@@ -139,7 +141,9 @@ public:
 
   std::vector<PeopleTrackerPtr> people_tracker_;
 
-  list<SavedFeature*> saved_features_; /**< List of SavedFeatures(Legs) that are currently tracked*/
+  //list<SavedFeature*> saved_features_; /**< List of SavedFeatures that are currently tracked*/
+
+  list<LegFeature*> saved_leg_features; /**< List of SavedFeatures(Legs) that are currently tracked*/
 
   boost::mutex saved_mutex_; /**< Mutex to handle the access to the Saved Features */
 
@@ -260,10 +264,10 @@ public:
       people_notifier_.setTargetFrame(fixed_frame);
     }
 
-    kal_p                    = config.kalman_p;
-    kal_q                    = config.kalman_q;
-    kal_r                    = config.kalman_r;
-    use_filter               = config.kalman_on == 0;
+    //kal_p                    = config.kalman_p;
+    //kal_q                    = config.kalman_q;
+    //kal_r                    = config.kalman_r;
+    //use_filter               = config.kalman_on == 0;
 
     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - Configuration done", __func__);
   }
@@ -273,12 +277,14 @@ public:
    *
    *  Calculates the euclidian distance between to features(legs)
    */
-  double distance(list<SavedFeature*>::iterator it1,  list<SavedFeature*>::iterator it2)
+  double distance(list<LegFeature*>::iterator it1,  list<LegFeature*>::iterator it2)
   {
     Stamped<Point> one = (*it1)->position_;
     Stamped<Point> two = (*it2)->position_;
 
     double distance = (one-two).length();
+
+    return distance;
   }
 
   /**
@@ -300,9 +306,9 @@ public:
     benchmarking::Timer pairLegsTimer; pairLegsTimer.start();
 
     // Deal With legs that already have ids
-    list<SavedFeature*>::iterator begin = saved_features_.begin();
-    list<SavedFeature*>::iterator end = saved_features_.end();
-    list<SavedFeature*>::iterator leg1, leg2, best, it;
+    list<LegFeature*>::iterator begin = saved_leg_features.begin();
+    list<LegFeature*>::iterator end = saved_leg_features.end();
+    list<LegFeature*>::iterator leg1, leg2, best, it;
 
     for (leg1 = begin; leg1 != end; ++leg1)
     {
@@ -363,7 +369,7 @@ public:
     // Attempt to pair up legs with no id
     for (;;)
     {
-      list<SavedFeature*>::iterator best1 = end, best2 = end;
+      list<LegFeature*>::iterator best1 = end, best2 = end;
       double closest_dist = leg_pair_separation_m;
 
       for (leg1 = begin; leg1 != end; ++leg1)
@@ -449,9 +455,9 @@ public:
     benchmarking::Timer removeTimer; removeTimer.start();
     // Iterate through the saved features and remove those who havent been observed since (no_observation_timeout_s)
     int deletionCounter = 0;
-    int numberOfSavedFeaturesBefore = saved_features_.size();
-    list<SavedFeature*>::iterator sf_iter = saved_features_.begin();
-    while (sf_iter != saved_features_.end())
+    int numberOfSavedFeaturesBefore = saved_leg_features.size();
+    list<LegFeature*>::iterator sf_iter = saved_leg_features.begin();
+    while (sf_iter != saved_leg_features.end())
     {
       // If there was no measurement of this feature in the last 'no_observation_timeout_s' seconds-> removed it and clear the link of its partner
       // IDEA_ make this dependent on the observation model
@@ -460,7 +466,7 @@ public:
         if ((*sf_iter)->other) // If leg is paired
           (*sf_iter)->other->other = NULL; //Remove link to itself from partner
         delete(*sf_iter);
-        saved_features_.erase(sf_iter++);
+        saved_leg_features.erase(sf_iter++);
         ++deletionCounter;
       }
       else
@@ -477,9 +483,9 @@ public:
 
     // System update of trackers, and copy updated ones in propagate list
     benchmarking::Timer propagationTimer; propagationTimer.start();
-    list<SavedFeature*> propagated;
-    for (list<SavedFeature*>::iterator sf_iter = saved_features_.begin();
-         sf_iter != saved_features_.end();
+    list<LegFeature*> propagated;
+    for (list<LegFeature*>::iterator sf_iter = saved_leg_features.begin();
+         sf_iter != saved_leg_features.end();
          sf_iter++)
     {
       (*sf_iter)->propagate(scan->header.stamp); // Propagate <-> Predict the filters
@@ -564,11 +570,11 @@ public:
       // Find the closest tracker (Note that the tracker has been updated using the kalman filter!)
       // Multiple measurements could be assigned to the same tracker! This problem is solved below. Better methods could be thought of.
       // IDEA_ Do this better! The closest is no necessarily the right one
-      list<SavedFeature*>::iterator closest = propagated.end();
+      list<LegFeature*>::iterator closest = propagated.end();
       float closest_dist = max_track_jump_m;
 
       // Iterate through the trackers
-      for (list<SavedFeature*>::iterator pf_iter = propagated.begin();
+      for (list<LegFeature*>::iterator pf_iter = propagated.begin();
            pf_iter != propagated.end();
            pf_iter++)
       {
@@ -583,7 +589,7 @@ public:
       // Nothing close to it, start a new track
       if (closest == propagated.end())
       {
-        list<SavedFeature*>::iterator new_saved = saved_features_.insert(saved_features_.end(), new SavedFeature(loc, tfl_));
+        list<LegFeature*>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), new LegFeature(loc, tfl_));
         ++newTrackCounter;
       }
       // Add the candidate, the tracker and the distance to a match list
@@ -596,23 +602,23 @@ public:
 
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Associated tracks to legs - %i matches - %i new tracks",__func__, matchesCounter, newTrackCounter);
 
+    assert(false);
     //////////////////////////////////////////////////////////////////////////
     //// Combination of saved features to people tracker
     //////////////////////////////////////////////////////////////////////////
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Starting to combine %lu leg_tracks to people tracker",__func__, saved_features_.size());
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Starting to combine %lu leg_tracks to people tracker",__func__, saved_leg_features.size());
 
     // Do the combinations
-    for (list<SavedFeature*>::iterator legIt0 = saved_features_.begin();
-        legIt0 != saved_features_.end();
+    for (list<LegFeature*>::iterator legIt0 = saved_leg_features.begin();
+        legIt0 != saved_leg_features.end();
         legIt0++)
     {
-      list<SavedFeature*>::iterator legIt1 = boost::next(legIt0,1);
+      list<LegFeature*>::iterator legIt1 = boost::next(legIt0,1);
       for (;
-          legIt1 != saved_features_.end();
+          legIt1 != saved_leg_features.end();
           legIt1++)
       {
-
-        std::cout << "Investigation of combination " << (*legIt0)->int_id_ << " - " << (*legIt1)->int_id_ << std::endl;
+        //std::cout << "Investigation of combination " << (*legIt0)->int_id_ << " - " << (*legIt1)->int_id_ << std::endl;
       }
     }
 
@@ -634,7 +640,7 @@ public:
       bool found = false;
 
       // Iterate the propagated SavedFeatures(Legs)
-      list<SavedFeature*>::iterator pf_iter = propagated.begin(); // Tracker iterator
+      list<LegFeature*>::iterator pf_iter = propagated.begin(); // Tracker iterator
       while (pf_iter != propagated.end()) // Iterate through all the trackers
       {
         // update the tracker with this candidate
@@ -683,10 +689,10 @@ public:
           ROS_WARN("TF exception spot 5.");
         }
 
-        list<SavedFeature*>::iterator closest = propagated.end();
+        list<LegFeature*>::iterator closest = propagated.end();
         float closest_dist = max_track_jump_m;
 
-        for (list<SavedFeature*>::iterator remain_iter = propagated.begin();
+        for (list<LegFeature*>::iterator remain_iter = propagated.begin();
              remain_iter != propagated.end();
              remain_iter++)
         {
@@ -701,7 +707,7 @@ public:
         // no tracker is within a threshold of this candidate
         // so create a new tracker for this candidate
         if (closest == propagated.end())
-          list<SavedFeature*>::iterator new_saved = saved_features_.insert(saved_features_.end(), new SavedFeature(loc, tfl_));
+          list<LegFeature*>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), new LegFeature(loc, tfl_));
         else
           matches.insert(MatchedFeature(matched_iter->candidate_, *closest, closest_dist, matched_iter->probability_));
         matches.erase(matched_iter);
@@ -722,8 +728,8 @@ public:
     vector<people_msgs::PositionMeasurement> legs;
 
     // Iterate the features
-    for (list<SavedFeature*>::iterator sf_iter = saved_features_.begin();
-         sf_iter != saved_features_.end();
+    for (list<LegFeature*>::iterator sf_iter = saved_leg_features.begin();
+         sf_iter != saved_leg_features.end();
          sf_iter++, i++)
     {
       // reliability
@@ -760,24 +766,24 @@ public:
       {
         // Publish the cluster as Sphere
         visualization_msgs::Marker::Ptr m(new visualization_msgs::Marker);
-        visualization::savedFeatureToSphereLegMarkerMsg((*sf_iter), m, fixed_frame, i);
+        visualization::legFeatureToSphereLegMarkerMsg((*sf_iter), m, fixed_frame, i);
         markers_pub_.publish(m);
 
         // Publish the cluster properties as text
         visualization_msgs::Marker::Ptr m_text(new visualization_msgs::Marker);
-        visualization::clusterToTextMarkerMsg((*sf_iter), m_text, fixed_frame, i);
-        markers_pub_.publish(m_text);
+        //visualization::clusterToTextMarkerMsg((*sf_iter), m_text, fixed_frame, i);
+        //markers_pub_.publish(m_text);
       }
 
       if (publish_people_ || publish_people_markers_)
       {
-        SavedFeature* other = (*sf_iter)->other;
+        LegFeature* other = (*sf_iter)->other;
 
         // If pairs
         if (other != NULL && other < (*sf_iter))
         {
-          SavedFeature* leg1;
-          SavedFeature* leg2;
+          LegFeature* leg1;
+          LegFeature* leg2;
 
           leg1 = (*sf_iter);
           leg2 = (*sf_iter)->other;
@@ -813,7 +819,7 @@ public:
           {
             visualization_msgs::Marker::Ptr pPeopleSphereMsg(new visualization_msgs::Marker);
             visualization_msgs::Marker::Ptr plegLineMsg(new visualization_msgs::Marker);
-            visualization::savedFeatureToPeopleMarkerMsg(leg1, leg2, pPeopleSphereMsg, plegLineMsg, fixed_frame, peoplePos, i);
+            //visualization::savedFeatureToPeopleMarkerMsg(leg1, leg2, pPeopleSphereMsg, plegLineMsg, fixed_frame, peoplePos, i);
             markers_pub_.publish(pPeopleSphereMsg);
             markers_pub_.publish(plegLineMsg);
 

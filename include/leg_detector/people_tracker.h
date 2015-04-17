@@ -13,10 +13,10 @@
  */
 class PeopleTracker{
   private:
-    std::vector<SavedFeature*> legs_; /**< the legs, should be maximum 2! */
+    std::vector<LegFeature*> legs_; /**< the legs, should be maximum 2! */
 
   public:
-    bool addLeg(SavedFeature* leg);
+    bool addLeg(LegFeature* leg);
 };
 
 typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr;

@@ -5,8 +5,8 @@
  *      Author: frm-ag
  */
 
-#ifndef SAVED_FEATURE_H_
-#define SAVED_FEATURE_H_
+#ifndef LEG_FEATURE_H_
+#define LEG_FEATURE_H_
 
 #include <ros/ros.h>
 
@@ -16,7 +16,7 @@
 #include <tf/transform_listener.h>
 
 // People tracking
-#include <people_tracking_filter/tracker_kalman.h>
+#include <people_tracking_filter/advanced_tracker_particle.h>
 #include <people_tracking_filter/state_pos_vel.h>
 #include <people_tracking_filter/rgb.h>
 
@@ -28,12 +28,14 @@
 //using namespace MatrixWrapper;
 
 // Default variables
-#define DEBUG_SAVED_FEATURE 1
+#define DEBUG_LEG_TRACKER 1
+
+
 
 /**
- *  \brief
+ *  \brief The low level tracker to track each leg
  */
-class SavedFeature
+class LegFeature
 {
 public:
   static int nextid;
@@ -41,7 +43,7 @@ public:
   std::string fixed_frame_;
 
   BFL::StatePosVel sys_sigma_;
-  estimation::TrackerKalman filter_;
+  estimation::AdvancedTrackerParticle filter_;
 
   std::string id_;
   std::string object_id;
@@ -56,11 +58,11 @@ public:
 
 
   tf::Stamped<tf::Point> position_;
-  SavedFeature* other;
+  LegFeature* other;
   float dist_to_person_;
 
 
-  SavedFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl);
+  LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl);
 
   void propagate(ros::Time time);
 
@@ -80,4 +82,4 @@ private:
   void updatePosition();
 };
 
-#endif /* SAVED_FEATURE_H_ */
+#endif /* LEG_FEATURE_H_ */

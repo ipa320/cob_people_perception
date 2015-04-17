@@ -11,6 +11,7 @@
 //#include <leg_detector/leg_detector.h>
 #include <leg_detector/color_gradient.hpp>
 #include <leg_detector/saved_feature.h>
+#include <leg_detector/leg_feature.h>
 
 namespace visualization{
 
@@ -41,6 +42,39 @@ bool savedFeatureToSphereLegMarkerMsg(SavedFeature* sf, visualization_msgs::Mark
 
     return true;
 }
+
+
+bool legFeatureToSphereLegMarkerMsg(LegFeature* sf, visualization_msgs::Marker::Ptr markerMsg, std::string& fixed_frame, unsigned int id = 0){
+
+    markerMsg->header.stamp = sf->time_;
+    markerMsg->header.frame_id = fixed_frame;
+    markerMsg->ns = "LEGS";
+    markerMsg->id = id;
+    markerMsg->type = markerMsg->SPHERE;
+    markerMsg->pose.position.x = sf->position_[0];
+    markerMsg->pose.position.y = sf->position_[1];
+    markerMsg->pose.position.z = sf->position_[2];
+
+    markerMsg->scale.x = .1;
+    markerMsg->scale.y = .1;
+    markerMsg->scale.z = .1;
+    markerMsg->color.a = 0.7;
+    markerMsg->lifetime = ros::Duration(0.5);
+    if (sf->object_id != "")
+    {
+        markerMsg->color.r = 1;
+    }
+    else
+    {
+        markerMsg->color.b = (float) sf->getReliability();
+    }
+
+    return true;
+}
+
+
+
+
 
 bool clusterToTextMarkerMsg(SavedFeature* sf, visualization_msgs::Marker::Ptr markerMsg, std::string& fixed_frame, unsigned int id = 0){
 
