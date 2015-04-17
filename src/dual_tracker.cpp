@@ -155,6 +155,10 @@ public:
 
   int min_points_per_group;
 
+  unsigned int cycle_; /**< Cycle counter to count the filter cycles */
+
+  benchmarking::Timer cycleTimer; /**< Timer to measure the cycle time */
+
   // The publishers
   ros::Publisher people_measurements_pub_; /**< Publisher for people measurements */
   ros::Publisher leg_measurements_pub_; /**< Publisher for leg measurements */
@@ -177,7 +181,8 @@ public:
     people_sub_(nh_, "dual_tracker", 10),
     laser_sub_(nh_, "scan", 10),
     people_notifier_(people_sub_, tfl_, fixed_frame, 10),
-    laser_notifier_(laser_sub_, tfl_, fixed_frame, 10)
+    laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
+    cycle_(0)
   {
     if (g_argc > 1)
     {
@@ -419,10 +424,13 @@ public:
   {
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Received Laserscan",__func__);
 
+    // Start Cycle Timer
+    cycleTimer.start();
+
     //////////////////////////////////////////////////////////////////////////
     //// Create clusters
     //////////////////////////////////////////////////////////////////////////
-
+    ROS_DEBUG("%sCreating Clusters [Cycle %u]", BOLDWHITE, cycle_);
     // Process the incoming scan
     benchmarking::Timer processTimer; processTimer.start();
     ScanProcessor processor(*scan, mask_);
@@ -463,8 +471,9 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Removing features took %f ms",__func__, removeTimer.getElapsedTimeMs());
 
     //////////////////////////////////////////////////////////////////////////
-    //// Propagation
+    //// Propagation/Prediction using the motion model-
     //////////////////////////////////////////////////////////////////////////
+    ROS_DEBUG("%sPrediction [Cycle %u]", BOLDWHITE, cycle_);
 
     // System update of trackers, and copy updated ones in propagate list
     benchmarking::Timer propagationTimer; propagationTimer.start();
@@ -483,6 +492,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
     //// Detection (Search for the existing trackers)
     //////////////////////////////////////////////////////////////////////////
+    ROS_DEBUG("%sDetection [Cycle %u]", BOLDWHITE, cycle_);
 
     std::vector<LegDetectionProb> detections; // vector of leg detections along with their probabilities
 
@@ -527,6 +537,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
     //// Matching (Match Leg Detection to Trackers)
     //////////////////////////////////////////////////////////////////////////
+    ROS_DEBUG("%sMatching [Cycle %u]", BOLDWHITE, cycle_);
 
     // Detection step: build up the set of "candidate" clusters
     // For each candidate, find the closest tracker (within threshold) and add to the match list
@@ -586,10 +597,33 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Associated tracks to legs - %i matches - %i new tracks",__func__, matchesCounter, newTrackCounter);
 
     //////////////////////////////////////////////////////////////////////////
+    //// Combination of saved features to people tracker
+    //////////////////////////////////////////////////////////////////////////
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Starting to combine %lu leg_tracks to people tracker",__func__, saved_features_.size());
+
+    // Do the combinations
+    for (list<SavedFeature*>::iterator legIt0 = saved_features_.begin();
+        legIt0 != saved_features_.end();
+        legIt0++)
+    {
+      list<SavedFeature*>::iterator legIt1 = boost::next(legIt0,1);
+      for (;
+          legIt1 != saved_features_.end();
+          legIt1++)
+      {
+
+        std::cout << "Investigation of combination " << (*legIt0)->int_id_ << " - " << (*legIt1)->int_id_ << std::endl;
+      }
+    }
+
+    // Evaluate the combinations (What is the probability for this people tracker
+    //assert(false);
+
+
+    //////////////////////////////////////////////////////////////////////////
     //// Update
     //////////////////////////////////////////////////////////////////////////
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker:: %s UPDATE",BOLDWHITE);
-
+    ROS_DEBUG("%sUpdate [Cycle %u]", BOLDWHITE, cycle_);
 
     // IDEA_ The next step contains one flaw, it is random which closest tracker get choosen and update the tracker, this unacceptable
     // IDEA_ Deploy Linear Association Problem Solver Here
@@ -859,6 +893,14 @@ public:
       people_measurements_pub_.publish(array);
 
     }
+
+    // Stop the timer
+    cycleTimer.stop();
+
+    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"%sCycle %u took %.2f ms to complete", BOLDRED, cycle_, cycleTimer.stopAndGetTimeMs());
+
+    // Iterate the cycle counter
+    ++cycle_;
  }
 
   /**

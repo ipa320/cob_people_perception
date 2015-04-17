@@ -19,9 +19,13 @@ SavedFeature::SavedFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tf
     reliability(-1.), p(4),
     use_filter_(true)
 {
+  int_id_ = nextid++;
+
   char id[100];
-  snprintf(id, 100, "legtrack%d", nextid++);
+  snprintf(id, 100, "legtrack%d", int_id_);
   id_ = std::string(id);
+
+
 
   object_id = "";
   time_ = loc.stamp_;

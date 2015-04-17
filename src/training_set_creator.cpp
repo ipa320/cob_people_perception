@@ -71,7 +71,6 @@
 
 #define foreach BOOST_FOREACH
 
-#define USE_BASH_COLORS
 #include <leg_detector/color_definitions.h>
 
 //#include <leg_detector/debug.h>

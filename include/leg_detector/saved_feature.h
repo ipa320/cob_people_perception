@@ -49,6 +49,7 @@ public:
 
   std::string id_;
   std::string object_id;
+  int int_id_;
   ros::Time time_;
   ros::Time meas_time_;
 
