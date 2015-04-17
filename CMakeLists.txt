@@ -52,6 +52,7 @@ add_library(people_tracking_filter
             src/tracker_particle.cpp 
             src/tracker_kalman.cpp 
             src/detector_particle.cpp 
+            src/advanced_tracker_particle.cpp
 )
 
 ## Declare a cpp executable
