@@ -448,10 +448,12 @@ public:
     processor.removeLessThan(3);
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Process scan(clustering) took %f ms",__func__, processTimer.stopAndGetTimeMs());
 
-
+    ROS_DEBUG("%sCreating Clusters done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
     //// Remove the Trackers
     //////////////////////////////////////////////////////////////////////////
+
+    ROS_DEBUG("%sRemoving old Trackers [Cycle %u]", BOLDWHITE, cycle_);
 
     // if no measurement matches to a tracker in the last <no_observation_timeout>  seconds: erase tracker
     ros::Time purge = scan->header.stamp + ros::Duration().fromSec(-no_observation_timeout_s);
@@ -480,6 +482,7 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Removed %i of %i features because the havent been detected in the last %f seconds",__func__, deletionCounter, numberOfSavedFeaturesBefore, no_observation_timeout_s);
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Removing features took %f ms",__func__, removeTimer.getElapsedTimeMs());
 
+    ROS_DEBUG("%sRemoving old Trackers done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
     //// Propagation/Prediction using the motion model-
     //////////////////////////////////////////////////////////////////////////
@@ -499,6 +502,7 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Propagated %i SavedFeatures",__func__, (int) propagated.size());
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Propagating took %f ms",__func__, propagationTimer.getElapsedTimeMs());
 
+    ROS_DEBUG("%sPrediction done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
     //// Detection (Search for the existing trackers)
     //////////////////////////////////////////////////////////////////////////
@@ -544,18 +548,20 @@ public:
 
     }
 
-    publishClusters(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
-
-
+    ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
     //// Matching (Match Leg Detection to Trackers)
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sMatching [Cycle %u]", BOLDWHITE, cycle_);
 
+    // Input: The propagated and new trackers, the leg detections
+
     // Detection step: build up the set of "candidate" clusters
     // For each candidate, find the closest tracker (within threshold) and add to the match list
     // If no tracker is found, start a new one
     // Match = cluster <-> Saved Feature (LEG)
+
+
 
 
     unsigned int newTrackCounter = 0;
@@ -608,14 +614,12 @@ public:
     }// end iterate the clusters
 
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Associated tracks to legs - %i matches - %i new tracks",__func__, matchesCounter, newTrackCounter);
+    ROS_DEBUG("%sMatching Done! [Cycle %u]", BOLDWHITE, cycle_);
 
-    publishLegFeatures(saved_leg_features, scan->header.stamp);
-    publishMatches(matches, scan->header.stamp, scan);
-
-    //assert(false);
     //////////////////////////////////////////////////////////////////////////
     //// Combination of saved features to people tracker
     //////////////////////////////////////////////////////////////////////////
+    ROS_DEBUG("%sHigh Level Association [Cycle %u]", BOLDWHITE, cycle_);
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Starting to combine %lu leg_tracks to people tracker",__func__, saved_leg_features.size());
 
     // Do the combinations
@@ -628,6 +632,9 @@ public:
           legIt1 != saved_leg_features.end();
           legIt1++)
       {
+
+
+
         //std::cout << "Investigation of combination " << (*legIt0)->int_id_ << " - " << (*legIt1)->int_id_ << std::endl;
       }
     }
@@ -635,10 +642,10 @@ public:
     // Evaluate the combinations (What is the probability for this people tracker
     //assert(false);
 
-    return;
-
+    //return;
+    ROS_DEBUG("%sHigh Level Association done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
-    //// Update
+    //// Update (Update the Trackers using the latest measurements
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sUpdate [Cycle %u]", BOLDWHITE, cycle_);
 
@@ -721,25 +728,74 @@ public:
           list<LegFeature*>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), new LegFeature(loc, tfl_));
         else
           matches.insert(MatchedFeature(matched_iter->candidate_, *closest, closest_dist, matched_iter->probability_));
-        matches.erase(matched_iter);
+          matches.erase(matched_iter);
       }
     }
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Updated the trackers",__func__);
+    ROS_DEBUG("%sUpdate done! [Cycle %u]", BOLDWHITE, cycle_);
 
+    //////////////////////////////////////////////////////////////////////////
+    //// Publish data
+    //////////////////////////////////////////////////////////////////////////
 
-    // Clearance
+    ROS_DEBUG("%sPublishing [Cycle %u]", BOLDWHITE, cycle_);
+
+    // Publish clusters
+    if(false){ // TODO Implement this as configuration
+      publishClusters(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
+    }
+
+    if(true){ // TODO Implement this as configuration
+      publishLegFeaturesVisualization(saved_leg_features, scan->header.stamp);
+    }
+
+    if(true){ // TODO Implement this as configuration
+      publishMatches(matches, scan->header.stamp, scan);
+    }
+
+    // Publish leg Measurements on
+    if(publish_legs_){
+      //publishLegMeasurementArray(saved_leg_features);
+    }
+
+    ROS_DEBUG("%sPublishing done! [Cycle %u]", BOLDWHITE, cycle_);
+    //////////////////////////////////////////////////////////////////////////
+    //// Cleaning (Clear data)
+    //////////////////////////////////////////////////////////////////////////
     cvReleaseMat(&tmp_mat);
     tmp_mat = 0;
-    if (use_seeds_)
-      pairLegs();
+    //if (use_seeds_)
+    //  pairLegs();
 
-    // Publish Data!
+
+    //////////////////////////////////////////////////////////////////////////
+    //// Finalize the Cycle
+    //////////////////////////////////////////////////////////////////////////
+    cycleTimer.stop();
+    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"%sCycle %u took %.2f ms to complete", BOLDRED, cycle_, cycleTimer.stopAndGetTimeMs());
+    assert(cycle_ < 2);
+
+    // Iterate the cycle counter
+    ++cycle_;
+ }
+
+  /**
+   * Publish a list of pointers to legFeatures
+   * @param legFeatures List of Leg Feature Pointers
+   */
+  void publishLegMeasurementArray(std::list<LegFeature*> legFeatures){
+
+    // Abort if List is empty
+    if(legFeatures.size() == 0){
+      ROS_WARN("Called publishLegMeasurementArray, but the given list is empty. Nothing to publish.");
+      return;
+    }
+
+    // Iterator variable
     int i = 0;
-    vector<people_msgs::PositionMeasurement> people;
     vector<people_msgs::PositionMeasurement> legs;
 
     // Iterate the features
-    for (list<LegFeature*>::iterator sf_iter = saved_leg_features.begin();
+    for (list<LegFeature*>::iterator sf_iter = legFeatures.begin();
          sf_iter != saved_leg_features.end();
          sf_iter++, i++)
     {
@@ -749,8 +805,8 @@ public:
       if ((*sf_iter)->getReliability() > leg_reliability_limit_ && publish_legs_)
       {
         people_msgs::PositionMeasurement pos;
-        pos.header.stamp = scan->header.stamp;
-        pos.header.frame_id = scan->header.frame_id;
+        pos.header.stamp = legFeatures.front()->meas_time_;
+        pos.header.frame_id = legFeatures.front()->fixed_frame_;
         pos.name = "leg_detector";
         pos.object_id = (*sf_iter)->id_;
         pos.pos.x = (*sf_iter)->position_[0];
@@ -769,156 +825,18 @@ public:
         pos.initialization = 0;
         legs.push_back(pos);
       }
+  }
 
+  // Create the Position Measurement Array
+  people_msgs::PositionMeasurementArray array;
+  array.header.stamp =  saved_leg_features.front()->time_;
+  array.header.frame_id = saved_leg_features.front()->fixed_frame_;
 
-
-
-      if (publish_leg_markers_)
-      {
-        // Publish the cluster as Sphere
-        visualization_msgs::Marker::Ptr m(new visualization_msgs::Marker);
-        visualization::legFeatureToSphereLegMarkerMsg((*sf_iter), m, fixed_frame, i);
-        markers_pub_.publish(m);
-
-        // Publish the cluster properties as text
-        visualization_msgs::Marker::Ptr m_text(new visualization_msgs::Marker);
-        //visualization::clusterToTextMarkerMsg((*sf_iter), m_text, fixed_frame, i);
-        //markers_pub_.publish(m_text);
-      }
-
-      if (publish_people_ || publish_people_markers_)
-      {
-        LegFeature* other = (*sf_iter)->other;
-
-        // If pairs
-        if (other != NULL && other < (*sf_iter))
-        {
-          LegFeature* leg1;
-          LegFeature* leg2;
-
-          leg1 = (*sf_iter);
-          leg2 = (*sf_iter)->other;
-
-          tf::Vector3 peoplePos = (leg1->position_ + leg2->position_ ) / 2.0;
-
-          if (publish_people_)
-          {
-            reliability = reliability * other->reliability;
-            people_msgs::PositionMeasurement pos;
-            pos.header.stamp = (*sf_iter)->time_;
-            pos.header.frame_id = fixed_frame;
-            pos.name = (*sf_iter)->object_id;
-            pos.object_id = (*sf_iter)->id_ + "|" + other->id_;
-            pos.pos.x = peoplePos[0];
-            pos.pos.y = peoplePos[1];
-            pos.pos.z = peoplePos[2];
-            pos.reliability = reliability;
-            pos.covariance[0] = pow(0.3 / reliability, 2.0);
-            pos.covariance[1] = 0.0;
-            pos.covariance[2] = 0.0;
-            pos.covariance[3] = 0.0;
-            pos.covariance[4] = pow(0.3 / reliability, 2.0);
-            pos.covariance[5] = 0.0;
-            pos.covariance[6] = 0.0;
-            pos.covariance[7] = 0.0;
-            pos.covariance[8] = 10000.0;
-            pos.initialization = 0;
-            people.push_back(pos);
-          }
-
-          if (publish_people_markers_)
-          {
-            visualization_msgs::Marker::Ptr pPeopleSphereMsg(new visualization_msgs::Marker);
-            visualization_msgs::Marker::Ptr plegLineMsg(new visualization_msgs::Marker);
-            //visualization::savedFeatureToPeopleMarkerMsg(leg1, leg2, pPeopleSphereMsg, plegLineMsg, fixed_frame, peoplePos, i);
-            markers_pub_.publish(pPeopleSphereMsg);
-            markers_pub_.publish(plegLineMsg);
-
-          }
-        }
-      }
-    }
-
-    if(publish_clusters_){
-        // Visualize the clusters by creating a pointcloud, each cluster has the same color
-        ROS_DEBUG_COND(DUALTRACKER_DEBUG,"Publishing Clusters!");
-        sensor_msgs::PointCloud clusters;
-        sensor_msgs::ChannelFloat32 rgb_channel;
-        rgb_channel.name="rgb";
-        clusters.channels.push_back(rgb_channel);
-        clusters.header = scan->header;
-
-        //clusters->channels.a
-        int count = 0;
-        for (list<SampleSet*>::iterator i = processor.getClusters().begin();
-             i != processor.getClusters().end();
-             i++)
-        {
-
-            int r[3] = { 0, 125, 255};
-            int g[3] = { 0, 125, 255};
-            int b[3] = { 0, 125, 255};
-
-            int r_ind = count % 3;
-            int g_ind = (count/3) % 3;
-            int b_ind = (count/9) % 3;
-            count++;
-
-            (*i)->appendToCloud(clusters,r[r_ind],g[g_ind],b[b_ind]);
-
-            visualization_msgs::Marker m_text;
-            m_text.header = clusters.header;
-            m_text.ns = "CLUSTERS_LABEL";
-            m_text.id = count;
-            m_text.type = m_text.TEXT_VIEW_FACING;
-            m_text.pose.position.x = (*i)->center()[0]+0.15;
-            m_text.pose.position.y = (*i)->center()[1]+0.15;
-            m_text.pose.position.z = (*i)->center()[2];
-            m_text.scale.z = .15;
-            m_text.color.a = 1;
-            m_text.lifetime = ros::Duration(0.5);
-
-            // Add text
-            char buf[100];
-            m_text.color.r = r[r_ind]/255.0;
-            m_text.color.g = g[g_ind]/255.0;
-            m_text.color.b = b[b_ind]/255.0;
-            sprintf(buf, "#%d",count);
-
-            m_text.text = buf;
-
-            markers_pub_.publish(m_text);
-        }
-
-        clusters_pub_.publish(clusters);
-    }
-
-
-
-    people_msgs::PositionMeasurementArray array;
-    array.header.stamp =  scan->header.stamp;
-    array.header.frame_id = scan->header.frame_id;
-    if (publish_legs_)
-    {
-      array.people = legs;
-      leg_measurements_pub_.publish(array);
-      ROS_DEBUG("Publishing legs positions on %s", array.header.frame_id.c_str());
-    }
-    if (publish_people_)
-    {
-      array.people = people;
-      people_measurements_pub_.publish(array);
-
-    }
-
-    // Stop the timer
-    cycleTimer.stop();
-
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"%sCycle %u took %.2f ms to complete", BOLDRED, cycle_, cycleTimer.stopAndGetTimeMs());
-
-    // Iterate the cycle counter
-    ++cycle_;
- }
+  // Publish
+  array.people = legs;
+  leg_measurements_pub_.publish(array);
+  ROS_DEBUG("Publishing legs positions on %s", array.header.frame_id.c_str());
+  }
 
   /**
    * Publish the detected Clusters for debugging and illustration purposes
@@ -983,7 +901,7 @@ public:
     ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
   }
 
-  void publishLegFeatures(list<LegFeature*>& legFeatures, ros::Time time){
+  void publishLegFeaturesVisualization(list<LegFeature*>& legFeatures, ros::Time time){
 
     // The pointcloud message
     sensor_msgs::PointCloud legPcl;

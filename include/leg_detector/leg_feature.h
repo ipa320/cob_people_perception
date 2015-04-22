@@ -53,11 +53,10 @@ public:
 
   double reliability, p;
 
-  bool use_filter_;
+  bool use_filter_; /**< Flag if the Filter should be used currently */
 
+  tf::Stamped<tf::Point> position_; /**< The currently estimated leg position */
 
-
-  tf::Stamped<tf::Point> position_;
   LegFeature* other;
   float dist_to_person_;
 

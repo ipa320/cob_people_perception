@@ -81,8 +81,6 @@ target_link_libraries(leg_detector
    ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
 )
 
-
-
 ## The leg detector
 add_executable(dual_tracker 
                src/laser_processor.cpp 

@@ -17,12 +17,12 @@ static std::string fixed_frame              = "odom_combined";  // The fixed fra
 static double kal_p = 4, kal_q = .002, kal_r = 10;
 static bool use_filter = false;
 
-// one leg tracker
+// The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    sys_sigma_(tf::Vector3(0.05, 0.05, 0.05), tf::Vector3(1.0, 1.0, 1.0)),
-    filter_("tracker_name", 100, sys_sigma_),
-    reliability(-1.), p(4),
+    sys_sigma_(tf::Vector3(0.05, 0.05, 0.05), tf::Vector3(1.0, 1.0, 1.0)), // The initialize system noise
+    filter_("tracker_name", 100, sys_sigma_), // Name, NumberOfParticles, Noise
+    //reliability(-1.), p(4),
     use_filter_(true)
 {
   int_id_ = nextid++;
@@ -31,9 +31,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   snprintf(id, 100, "legtrack%d", int_id_);
   id_ = std::string(id);
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created new leg_tracker with ID %s", __func__, id_.c_str());
-
-
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created new LegFeature with ID %s", __func__, id_.c_str());
 
   object_id = "";
   time_ = loc.stamp_;
@@ -49,15 +47,19 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
     ROS_WARN("TF exception spot 6.");
   }
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Created new TF for leg tracker %s", id_.c_str());
+  // Create tranform to the tracker position
+  //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Created new TF for leg tracker %s", id_.c_str());
   tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
   tfl_.setTransform(pose);
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Initializing filter of leg tracker %s", id_.c_str());
+  // Initialize the filter
+  // ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Initializing filter of leg tracker %s", id_.c_str());
   BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.1), tf::Vector3(0.0000001, 0.0000001, 0.0000001));
-  filter_.initialize(loc, prior_sigma, time_.toSec());
+  BFL::StatePosVel mu(loc);
+  filter_.initialize(mu, prior_sigma, time_.toSec());
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Evaluating first estimation %s", id_.c_str());
+  // Get the first estimation of the particle state
+  // ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Evaluating first estimation %s", id_.c_str());
   BFL::StatePosVel est;
   filter_.getEstimate(est);
 
@@ -65,7 +67,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
 }
 
 /**
- * Propagate the Position of the Feature using the Kalman filter
+ * Propagate the Position of the Feature using the Particle Filter
  */
 void LegFeature::propagate(ros::Time time)
 {
@@ -74,16 +76,23 @@ void LegFeature::propagate(ros::Time time)
   filter_.updatePrediction(time.toSec());
 
   updatePosition();
+
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Propagating leg_tracker with ID %s", __func__, id_.c_str());
+
 }
 
+// TODO Rewrite this to accept all(!) measurements
 void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 {
+  // Set the tf to represent this
   tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
   tfl_.setTransform(pose);
 
+  // Update the measurement time
   meas_time_ = loc.stamp_;
   time_ = meas_time_;
 
+  // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
   cov = 0.0;
   cov(1, 1) = 0.0025;
@@ -92,6 +101,7 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 
   filter_.updateCorrection(loc, cov);
 
+  // Update the position based on the latest measurements
   updatePosition();
 
   if (reliability < 0 || !use_filter_)
@@ -108,8 +118,15 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   }
 }
 
+// Update own position based on the Estimation of the Filter
+
+/**
+ * Update the Position(position_) of the Leg Feature
+ */
 void LegFeature::updatePosition()
 {
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
+
   BFL::StatePosVel est;
   filter_.getEstimate(est);
 
@@ -118,7 +135,7 @@ void LegFeature::updatePosition()
   position_[2] = est.pos_[2];
   position_.stamp_ = time_;
   position_.frame_id_ = fixed_frame_;
-  double nreliability = fmin(1.0, fmax(0.1, est.vel_.length() / 0.5));
+  double nreliability = fmin(1.0, fmax(0.1, est.vel_.length() / 0.5)); //TODO ???????
   //reliability = fmax(reliability, nreliability);
 }
 
