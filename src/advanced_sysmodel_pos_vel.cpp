@@ -34,80 +34,75 @@
 
 /* Author: Wim Meeussen */
 
-#ifndef SYSMODEL_POS_VEL_H
-#define SYSMODEL_POS_VEL_H
+#include "people_tracking_filter/advanced_sysmodel_pos_vel.h"
+
+using namespace std;
+using namespace BFL;
+using namespace tf;
+
+static const unsigned int NUM_SYS_POS_VEL_COND_ARGS = 1;
+static const unsigned int DIM_SYS_POS_VEL           = 6;
+
+// Constructor
+AdvancedSysPdfPosVel::AdvancedSysPdfPosVel(const StatePosVel& sigma)
+  : ConditionalPdf<StatePosVel, StatePosVel>(DIM_SYS_POS_VEL, NUM_SYS_POS_VEL_COND_ARGS),
+    noise_(StatePosVel(Vector3(0, 0, 0), Vector3(0, 0, 0)), sigma),
+    dt_(0.0)
+{}
 
 
-#include "state_pos_vel.h"
-#include "gaussian_pos_vel.h"
-#include <model/systemmodel.h>
-#include <pdf/conditionalpdf.h>
-#include <wrappers/matrix/matrix_wrapper.h>
-#include <string>
 
-namespace BFL
+// Destructor
+AdvancedSysPdfPosVel::~AdvancedSysPdfPosVel()
+{}
+
+
+
+Probability
+AdvancedSysPdfPosVel::ProbabilityGet(const StatePosVel& state) const
 {
+  cerr << "SysPdfPosVel::ProbabilityGet Method not applicable" << endl;
+  assert(0);
+  return 0;
+}
 
-class SysPdfPosVel
-  : public ConditionalPdf<StatePosVel, StatePosVel>
+
+bool
+AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void *args) const
 {
-public:
+  StatePosVel& res = one_sample.ValueGet();
 
-  int parameter_; // Further thing here
+  // get conditional argument: state
+  res = this->ConditionalArgumentGet(0);
 
-  /// Constructor
-  SysPdfPosVel(const StatePosVel& sigma);
+  // apply system model
+  res.pos_ += (res.vel_ * dt_);
 
-  /// Destructor
-  virtual ~SysPdfPosVel();
+  // add noise
+  Sample<StatePosVel> noise_sample;
+  noise_.SetDt(dt_);
+  noise_.SampleFrom(noise_sample, method, args);
+  res += noise_sample.ValueGet();
 
-  // set time
-  void SetDt(double dt)
-  {
-    dt_ = dt;
-  };
-
-  // Redefining pure virtual methods
-  virtual bool SampleFrom(BFL::Sample<StatePosVel>& one_sample, int method, void *args) const;
-  virtual StatePosVel ExpectedValueGet() const; // not applicable
-  virtual Probability ProbabilityGet(const StatePosVel& state) const; // not applicable
-  virtual MatrixWrapper::SymmetricMatrix  CovarianceGet() const; // Not applicable
+  return true;
+}
 
 
-private:
-  GaussianPosVel noise_;
-  double dt_; // Time delta
-
-}; // class
-
-
-
-
-class SysModelPosVel
-  : public SystemModel<StatePosVel>
+StatePosVel
+AdvancedSysPdfPosVel::ExpectedValueGet() const
 {
-public:
-  SysModelPosVel(const StatePosVel& sigma)
-    : SystemModel<StatePosVel>(new SysPdfPosVel(sigma))
-  {};
+  cerr << "SysPdfPosVel::ExpectedValueGet Method not applicable" << endl;
+  assert(0);
+  return StatePosVel();
 
-  /// destructor
-  ~SysModelPosVel()
-  {
-    delete SystemPdfGet();
-  };
+}
 
-  // set time
-  void SetDt(double dt)
-  {
-    ((SysPdfPosVel*)SystemPdfGet())->SetDt(dt);
-  };
+SymmetricMatrix
+AdvancedSysPdfPosVel::CovarianceGet() const
+{
+  cerr << "SysPdfPosVel::CovarianceGet Method not applicable" << endl;
+  SymmetricMatrix Covar(DIM_SYS_POS_VEL);
+  assert(0);
+  return Covar;
+}
 
-}; // class
-
-
-
-} //namespace
-
-
-#endif

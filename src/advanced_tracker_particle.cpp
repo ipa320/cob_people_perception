@@ -32,16 +32,19 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen */
+#include <people_tracking_filter/advanced_tracker_particle.h>
+#include <people_tracking_filter/gaussian_pos_vel.h>
+#include <people_tracking_filter/people_particle_filter.h>
 
-#include "people_tracking_filter/advanced_tracker_particle.h"
-#include "people_tracking_filter/gaussian_pos_vel.h"
 
 using namespace MatrixWrapper;
 using namespace BFL;
 using namespace tf;
 using namespace std;
 using namespace ros;
+
+#define DEBUG_ADVANCEDTRACKERPARTICLE 1
+#define DEBUG_ADVANCEDTRACKERPARTICLE_TIME 1
 
 
 namespace estimation
@@ -66,30 +69,69 @@ AdvancedTrackerParticle::~AdvancedTrackerParticle()
 };
 
 
-// initialize prior density of filter
+/**
+ * Initialize the Filter
+ * @param mu The mean of the position
+ * @param sigma The variance of the initialization
+ * @param time The current time
+ */
 void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVel& sigma, const double time)
 {
-  cout << "Initializing tracker with " << num_particles_ << " particles, with covariance " << sigma << " around " << mu << endl;
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
+  //cout << "Initializing tracker with " << num_particles_ << " particles, with covariance " << sigma << " around " << mu << endl;
+
+  // This is the initialization of the tracker, particles are choosen as gaussian
+
+  // Create the Gaussian
   GaussianPosVel gauss_pos_vel(mu, sigma);
+
+  // Prepare vector to store the particles
   vector<Sample<StatePosVel> > prior_samples(num_particles_);
-  gauss_pos_vel.SampleFrom(prior_samples, num_particles_, CHOLESKY, NULL);
+
+  // Create the particles from the Gaussian,
+  gauss_pos_vel.SampleFrom(prior_samples, num_particles_, CHOLESKY, NULL); // TODO Check if the CHOLESKY can be NULL
   prior_.ListOfSamplesSet(prior_samples);
-  filter_ = new BootstrapFilter<StatePosVel, tf::Vector3>(&prior_, &prior_, 0, num_particles_ / 4.0);
+
+  //filter_ = new BootstrapFilter<StatePosVel, tf::Vector3>(&prior_, &prior_, 0, num_particles_ / 4.0);
+
+  filter_ = new PeopleParticleFilter(&prior_, &prior_, 0, num_particles_ / 4.0, 0);
+  // TODO input own filter here
+
+  // Output the Samples
+  //for(vector<Sample<StatePosVel> >::iterator sampleIt = prior_samples.begin(); sampleIt != prior_samples.end(); sampleIt++){
+  //  std::cout << (*sampleIt) << std::endl;
+  //}
+
+  //assert(0);
 
   // tracker initialized
   tracker_initialized_ = true;
   quality_ = 1;
   filter_time_ = time;
   init_time_ = time;
+
+  cout << "Initialization done" << endl;
+
 }
 
 
 
 
-// update filter prediction
+// Perform prediction using the motion model
 bool AdvancedTrackerParticle::updatePrediction(const double time)
 {
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+  // Here the particles are the Particles before the Update
+  vector<WeightedSample<StatePosVel> > samples = prior_.ListOfSamplesGet();
+
+  // Prediction using
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s - Doing update prediction of %u particles",__func__, prior_.NumSamplesGet());
+
+
+  //assert(0);
+
   bool res = true;
   if (time > filter_time_)
   {
@@ -98,24 +140,38 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
     filter_time_ = time;
 
     // update filter
-    res = filter_->Update(&sys_model_);
+    res = filter_->Update(&sys_model_); // TODO!! // Call Update internal of the particle Filter
     if (!res) quality_ = 0;
   }
   return res;
 };
 
 
-
-// update filter correction
+// update filter correction based on measurement
+/**
+ * Update the Particle Filter using a Measurement
+ * @param meas The Measurement
+ * @param cov The covariance of the Measurement
+ * @return true if success, false if failed
+ */
 bool AdvancedTrackerParticle::updateCorrection(const tf::Vector3&  meas, const MatrixWrapper::SymmetricMatrix& cov)
+
 {
   assert(cov.columns() == 3);
+
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
 
   // set covariance
   ((MeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
 
   // update filter
-  bool res = filter_->Update(&meas_model_, meas);
+  bool res = filter_->Update(&meas_model_, meas); // Old code
+
+
+
+
+  // If update failed for some reason
   if (!res) quality_ = 0;
 
   return res;
@@ -129,10 +185,34 @@ void AdvancedTrackerParticle::getParticleCloud(const tf::Vector3& step, double t
 };
 
 
-// get most recent filter posterior
+// Get the Filter Posterior
+/**
+ * Get the current Tracker estimation
+ * @param est
+ */
 void AdvancedTrackerParticle::getEstimate(StatePosVel& est) const
 {
+
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+  // Here the particles are the Particles before the Update
+  // vector<WeightedSample<StatePosVel> > samples = prior_.ListOfSamplesGet(); // TODO Should be the posterior maybe?
+
+  //for(vector<WeightedSample<StatePosVel> >::iterator wSampleIt = samples.begin(); wSampleIt != samples.end(); wSampleIt++){
+  //  std::cout << (*wSampleIt).WeightGet() << std::endl;
+  //}
+
+  // Calculate the Estimation getting the priors
+  //est = prior_.ExpectedValueGet();
+
+
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s - Doing update prediction of %u particles",__func__, prior_.NumSamplesGet());
+
   est = ((MCPdfPosVel*)(filter_->PostGet()))->ExpectedValueGet();
+
+#ifdef DEBUG_ADVANCEDTRACKERPARTICLE
+  //std::cout << "Estimation: " << est << std::endl;
+#endif
 };
 
 
@@ -164,7 +244,10 @@ Matrix AdvancedTrackerParticle::getHistogramVel(const tf::Vector3& min, const tf
   return ((MCPdfPosVel*)(filter_->PostGet()))->getHistogramVel(min, max, step);
 };
 
-
+/**
+ * Get the lifetime (time since initialization) of the filter
+ * @return time in seconds since initialization
+ */
 double AdvancedTrackerParticle::getLifetime() const
 {
   if (tracker_initialized_)

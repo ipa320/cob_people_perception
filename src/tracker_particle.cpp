@@ -44,8 +44,6 @@ using namespace std;
 using namespace ros;
 
 
-
-
 namespace estimation
 {
 // constructor

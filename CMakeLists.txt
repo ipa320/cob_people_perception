@@ -30,7 +30,7 @@ CATKIN_DEPENDS
     std_msgs
     geometry_msgs
     people_msgs
-LIBRARIES people_tracking_filter
+LIBRARIES people_tracking_filter dual_people_tracking_filter
 )
 
 ## Specify additional locations of header files
@@ -49,11 +49,14 @@ add_library(people_tracking_filter
             src/sysmodel_vector.cpp
             src/measmodel_pos.cpp
             src/measmodel_vector.cpp
-            src/tracker_particle.cpp 
+            src/tracker_particle.cpp
             src/tracker_kalman.cpp 
-            src/detector_particle.cpp 
+            src/detector_particle.cpp
+            src/people_particle_filter.cpp
             src/advanced_tracker_particle.cpp
+            src/advanced_sysmodel_pos_vel.cpp
 )
+
 
 ## Declare a cpp executable
 add_executable(people_tracker src/people_tracking_node.cpp)

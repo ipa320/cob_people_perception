@@ -1,3 +1,6 @@
+#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_SYS_MODEL_H_
+#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_SYS_MODEL_H_
+
 /*********************************************************************
 * Software License Agreement (BSD License)
 *
@@ -32,11 +35,6 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen */
-
-#ifndef SYSMODEL_POS_VEL_H
-#define SYSMODEL_POS_VEL_H
-
 
 #include "state_pos_vel.h"
 #include "gaussian_pos_vel.h"
@@ -48,18 +46,16 @@
 namespace BFL
 {
 
-class SysPdfPosVel
+class DualSysPdfPosVel
   : public ConditionalPdf<StatePosVel, StatePosVel>
 {
 public:
 
-  int parameter_; // Further thing here
-
   /// Constructor
-  SysPdfPosVel(const StatePosVel& sigma);
+  DualSysPdfPosVel(const StatePosVel& sigma);
 
   /// Destructor
-  virtual ~SysPdfPosVel();
+  virtual ~DualSysPdfPosVel();
 
   // set time
   void SetDt(double dt)
@@ -76,23 +72,23 @@ public:
 
 private:
   GaussianPosVel noise_;
-  double dt_; // Time delta
+  double dt_;
 
 }; // class
 
 
 
 
-class SysModelPosVel
+class DualSysModelPosVel
   : public SystemModel<StatePosVel>
 {
 public:
-  SysModelPosVel(const StatePosVel& sigma)
+    DualSysModelPosVel(const StatePosVel& sigma)
     : SystemModel<StatePosVel>(new SysPdfPosVel(sigma))
   {};
 
   /// destructor
-  ~SysModelPosVel()
+  ~DualSysModelPosVel()
   {
     delete SystemPdfGet();
   };
@@ -109,5 +105,4 @@ public:
 
 } //namespace
 
-
-#endif
+#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_SYS_MODEL_H_ */

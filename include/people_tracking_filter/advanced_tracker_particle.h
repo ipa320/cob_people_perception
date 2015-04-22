@@ -43,8 +43,11 @@
 #include <filter/bootstrapfilter.h>
 #include "state_pos_vel.h"
 #include "mcpdf_pos_vel.h"
-#include "sysmodel_pos_vel.h"
+//#include "sysmodel_pos_vel.h"
 #include "measmodel_pos.h"
+
+#include <people_tracking_filter/people_particle_filter.h>
+#include <people_tracking_filter/advanced_sysmodel_pos_vel.h>
 
 // TF
 #include <tf/tf.h>
@@ -106,15 +109,21 @@ public:
 
 private:
   // pdf / model / filter
-  BFL::MCPdfPosVel                                          prior_;
-  BFL::BootstrapFilter<BFL::StatePosVel, tf::Vector3>*      filter_;
-  BFL::SysModelPosVel                                       sys_model_;
+  BFL::MCPdfPosVel                                          prior_; // The particles
+  //BFL::BootstrapFilter<BFL::StatePosVel, tf::Vector3>*      filter_;
+  PeopleParticleFilter*      filter_;
+
+  BFL::AdvancedSysModelPosVel                               sys_model_;
   BFL::MeasModelPos                                         meas_model_;
 
   // vars
   bool tracker_initialized_;
-  double init_time_, filter_time_, quality_;
+  double init_time_; /**< The initialization time of the Tracker */
+  double filter_time_; /**< The last filter time */
+  double quality_;
   unsigned int num_particles_;
+
+
 
 
 }; // class

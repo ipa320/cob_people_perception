@@ -34,8 +34,8 @@
 
 /* Author: Wim Meeussen */
 
-#ifndef SYSMODEL_POS_VEL_H
-#define SYSMODEL_POS_VEL_H
+#ifndef ADVANCED_SYSMODEL_POS_VEL_H
+#define ADVANCED_SYSMODEL_POS_VEL_H
 
 
 #include "state_pos_vel.h"
@@ -45,21 +45,21 @@
 #include <wrappers/matrix/matrix_wrapper.h>
 #include <string>
 
+#define DEBUG_ADVANCEDSYSMODELPOSVEL 1
+
 namespace BFL
 {
 
-class SysPdfPosVel
+class AdvancedSysPdfPosVel
   : public ConditionalPdf<StatePosVel, StatePosVel>
 {
 public:
 
-  int parameter_; // Further thing here
-
   /// Constructor
-  SysPdfPosVel(const StatePosVel& sigma);
+  AdvancedSysPdfPosVel(const StatePosVel& sigma);
 
   /// Destructor
-  virtual ~SysPdfPosVel();
+  virtual ~AdvancedSysPdfPosVel();
 
   // set time
   void SetDt(double dt)
@@ -76,23 +76,22 @@ public:
 
 private:
   GaussianPosVel noise_;
-  double dt_; // Time delta
+  double dt_;
 
 }; // class
 
 
 
-
-class SysModelPosVel
+class AdvancedSysModelPosVel
   : public SystemModel<StatePosVel>
 {
 public:
-  SysModelPosVel(const StatePosVel& sigma)
-    : SystemModel<StatePosVel>(new SysPdfPosVel(sigma))
+    AdvancedSysModelPosVel(const StatePosVel& sigma)
+    : SystemModel<StatePosVel>(new AdvancedSysPdfPosVel(sigma))
   {};
 
   /// destructor
-  ~SysModelPosVel()
+  ~AdvancedSysModelPosVel()
   {
     delete SystemPdfGet();
   };
@@ -100,7 +99,8 @@ public:
   // set time
   void SetDt(double dt)
   {
-    ((SysPdfPosVel*)SystemPdfGet())->SetDt(dt);
+    ROS_DEBUG_COND(DEBUG_ADVANCEDSYSMODELPOSVEL,"------AdvancedSysModelPosVel::%s",__func__);
+    ((AdvancedSysPdfPosVel*)SystemPdfGet())->SetDt(dt);
   };
 
 }; // class

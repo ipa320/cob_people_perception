@@ -34,80 +34,80 @@
 
 /* Author: Wim Meeussen */
 
-#ifndef SYSMODEL_POS_VEL_H
-#define SYSMODEL_POS_VEL_H
+#include "people_tracking_filter/advanced_measmodel_pos.h"
+
+using namespace std;
+using namespace BFL;
+using namespace tf;
 
 
-#include "state_pos_vel.h"
-#include "gaussian_pos_vel.h"
-#include <model/systemmodel.h>
-#include <pdf/conditionalpdf.h>
-#include <wrappers/matrix/matrix_wrapper.h>
-#include <string>
+static const unsigned int NUM_MEASMODEL_POS_COND_ARGS   = 1;
+static const unsigned int DIM_MEASMODEL_POS             = 13;
 
-namespace BFL
+// Constructor
+AdvancedMeasPdfPos::AdvancedMeasPdfPos(const Vector3& sigma)
+  : ConditionalPdf<Vector3, StatePosVel>(DIM_MEASMODEL_POS, NUM_MEASMODEL_POS_COND_ARGS),
+    meas_noise_(Vector3(0, 0, 0), sigma)
+{}
+
+
+// Destructor
+AdvancedMeasPdfPos::~AdvancedMeasPdfPos()
+{}
+
+
+/**
+ * Calculate the probability of this measurement
+ * @param measurement The measurement
+ * @return Probability to measure this
+ */
+Probability
+AdvancedMeasPdfPos::ProbabilityGet(const Vector3& measurement) const
 {
+  return meas_noise_.ProbabilityGet(measurement - ConditionalArgumentGet(0).pos_);
+}
 
-class SysPdfPosVel
-  : public ConditionalPdf<StatePosVel, StatePosVel>
+
+
+bool
+AdvancedMeasPdfPos::SampleFrom(Sample<Vector3>& one_sample, int method, void *args) const
 {
-public:
-
-  int parameter_; // Further thing here
-
-  /// Constructor
-  SysPdfPosVel(const StatePosVel& sigma);
-
-  /// Destructor
-  virtual ~SysPdfPosVel();
-
-  // set time
-  void SetDt(double dt)
-  {
-    dt_ = dt;
-  };
-
-  // Redefining pure virtual methods
-  virtual bool SampleFrom(BFL::Sample<StatePosVel>& one_sample, int method, void *args) const;
-  virtual StatePosVel ExpectedValueGet() const; // not applicable
-  virtual Probability ProbabilityGet(const StatePosVel& state) const; // not applicable
-  virtual MatrixWrapper::SymmetricMatrix  CovarianceGet() const; // Not applicable
-
-
-private:
-  GaussianPosVel noise_;
-  double dt_; // Time delta
-
-}; // class
+  cerr << "AdvancedMeasPdfPos::SampleFrom Method not applicable" << endl;
+  assert(0);
+  return false;
+}
 
 
 
 
-class SysModelPosVel
-  : public SystemModel<StatePosVel>
+Vector3
+AdvancedMeasPdfPos::ExpectedValueGet() const
 {
-public:
-  SysModelPosVel(const StatePosVel& sigma)
-    : SystemModel<StatePosVel>(new SysPdfPosVel(sigma))
-  {};
-
-  /// destructor
-  ~SysModelPosVel()
-  {
-    delete SystemPdfGet();
-  };
-
-  // set time
-  void SetDt(double dt)
-  {
-    ((SysPdfPosVel*)SystemPdfGet())->SetDt(dt);
-  };
-
-}; // class
+  cerr << "AdvancedMeasPdfPos::ExpectedValueGet Method not applicable" << endl;
+  Vector3 result;
+  assert(0);
+  return result;
+}
 
 
 
-} //namespace
+
+SymmetricMatrix
+AdvancedMeasPdfPos::CovarianceGet() const
+{
+  cerr << "AdvancedMeasPdfPos::CovarianceGet Method not applicable" << endl;
+  SymmetricMatrix Covar(DIM_MEASMODEL_POS);
+  assert(0);
+  return Covar;
+}
 
 
-#endif
+void
+AdvancedMeasPdfPos::CovarianceSet(const MatrixWrapper::SymmetricMatrix& cov)
+{
+  tf::Vector3 cov_vec(sqrt(cov(1, 1)), sqrt(cov(2, 2)), sqrt(cov(3, 3)));
+  meas_noise_.sigmaSet(cov_vec);
+}
+
+
+
