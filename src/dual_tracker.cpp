@@ -533,17 +533,22 @@ public:
       try
       {
         tfl_.transformPoint(fixed_frame, loc, loc); //Transform using odometry information into the fixed frame
+        loc.setZ(0); // Ugly //TODO
       }
       catch (...)
       {
         ROS_WARN("TF exception spot 3.");
       }
 
+
+
       if((*clusterIt)->getProbability() > leg_reliability_limit_){
         LegDetectionProb detection;
         detection.point = loc;
         detection.cluster = (*clusterIt);
         detections.push_back(detection);
+
+        //std::cout << (*clusterIt)->center().getX() << " " << (*clusterIt)->center().getY() << " " << (*clusterIt)->center().getZ() << std::endl;
       }
 
     }
@@ -560,9 +565,13 @@ public:
     // For each candidate, find the closest tracker (within threshold) and add to the match list
     // If no tracker is found, start a new one
     // Match = cluster <-> Saved Feature (LEG)
-
-
-
+    for (vector<LegDetectionProb>::iterator detectionIt = detections.begin();
+        detectionIt != detections.end();
+        detectionIt++)
+    {
+      assert(detectionIt->point.getZ() == 0);
+      //std::cout << detectionIt->point.getZ() << std::endl;
+    }
 
     unsigned int newTrackCounter = 0;
     unsigned int matchesCounter = 0;
@@ -579,6 +588,8 @@ public:
 
       Stamped<Point> loc = detectionIt->point;
       SampleSet* cluster = detectionIt->cluster;
+
+
 
       // Find the closest tracker (Note that the tracker has been updated using the kalman filter!)
       // Multiple measurements could be assigned to the same tracker! This problem is solved below. Better methods could be thought of.
@@ -602,6 +613,7 @@ public:
       // Nothing close to it, start a new track
       if (closest == propagated.end())
       {
+        loc.setZ(0); // TODO ugly fix
         list<LegFeature*>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), new LegFeature(loc, tfl_));
         ++newTrackCounter;
       }
@@ -724,10 +736,15 @@ public:
 
         // no tracker is within a threshold of this candidate
         // so create a new tracker for this candidate
-        if (closest == propagated.end())
+        if (closest == propagated.end()){
+          loc.setZ(0); // TODO
           list<LegFeature*>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), new LegFeature(loc, tfl_));
-        else
+
+        }
+        else{
           matches.insert(MatchedFeature(matched_iter->candidate_, *closest, closest_dist, matched_iter->probability_));
+
+        }
           matches.erase(matched_iter);
       }
     }
@@ -772,7 +789,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
     cycleTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"%sCycle %u took %.2f ms to complete", BOLDRED, cycle_, cycleTimer.stopAndGetTimeMs());
-    assert(cycle_ < 2);
+    //assert(cycle_ < 2);
 
     // Iterate the cycle counter
     ++cycle_;

@@ -20,8 +20,8 @@ static bool use_filter = false;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    sys_sigma_(tf::Vector3(0.05, 0.05, 0.05), tf::Vector3(1.0, 1.0, 1.0)), // The initialize system noise
-    filter_("tracker_name", 100, sys_sigma_), // Name, NumberOfParticles, Noise
+    sys_sigma_(tf::Vector3(0.05, 0.05, 0.0), tf::Vector3(1.0, 1.0, 0.0)), // The initialize system noise
+    filter_("tracker_name", 10, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true)
 {
@@ -31,7 +31,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   snprintf(id, 100, "legtrack%d", int_id_);
   id_ = std::string(id);
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created new LegFeature with ID %s", __func__, id_.c_str());
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created new LegFeature with ID %s at %f - %f - %f", __func__, id_.c_str(), loc.getX(), loc.getY(), loc.getZ());
 
   object_id = "";
   time_ = loc.stamp_;
@@ -54,7 +54,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
 
   // Initialize the filter
   // ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Initializing filter of leg tracker %s", id_.c_str());
-  BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.1), tf::Vector3(0.0000001, 0.0000001, 0.0000001));
+  BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(0.0000001, 0.0000001, 0.000000));
   BFL::StatePosVel mu(loc);
   filter_.initialize(mu, prior_sigma, time_.toSec());
 
