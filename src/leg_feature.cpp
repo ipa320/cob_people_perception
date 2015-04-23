@@ -17,11 +17,13 @@ static std::string fixed_frame              = "odom_combined";  // The fixed fra
 static double kal_p = 4, kal_q = .002, kal_r = 10;
 static bool use_filter = false;
 
+static int NumberOfParticles = 1000;
+
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
     sys_sigma_(tf::Vector3(0.05, 0.05, 0.0), tf::Vector3(1.0, 1.0, 0.0)), // The initialize system noise
-    filter_("tracker_name", 10, sys_sigma_), // Name, NumberOfParticles, Noise
+    filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true)
 {

@@ -171,7 +171,7 @@ public:
   ros::Publisher leg_measurements_vis_pub_;/**< Visualization of leg detections */
   ros::Publisher leg_features_vis_pub_;/**< Visualization of leg tracks */
   ros::Publisher matches_vis_pub_;/**< Visualization of the pairing leg_detection <-> leg_track */
-
+  ros::Publisher particles_pub_;/**< Visualization of particles */
   dynamic_reconfigure::Server<leg_detector::DualTrackerConfig> server_; /**< The configuration server*/
 
   message_filters::Subscriber<people_msgs::PositionMeasurement> people_sub_;
@@ -209,6 +209,7 @@ public:
     people_measurements_pub_ = nh_.advertise<people_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
     markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 0);
     clusters_pub_ = nh_.advertise<sensor_msgs::PointCloud>("clusters", 0);
+    particles_pub_ = nh_.advertise<sensor_msgs::PointCloud>("particles", 0);
 
     // Visualization topics
     leg_measurements_vis_pub_= nh_.advertise<sensor_msgs::PointCloud>("leg_detections", 0);
@@ -766,6 +767,10 @@ public:
     }
 
     if(true){ // TODO Implement this as configuration
+      publishParticles(saved_leg_features, scan->header.stamp);
+    }
+
+    if(true){ // TODO Implement this as configuration
       publishMatches(matches, scan->header.stamp, scan);
     }
 
@@ -916,6 +921,44 @@ public:
     leg_measurements_vis_pub_.publish(clusterPcl);
 
     ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
+  }
+
+  void publishParticles(list<LegFeature*>& legFeatures, ros::Time time){
+    // The pointcloud message
+    sensor_msgs::PointCloud particlesPCL;
+
+    sensor_msgs::ChannelFloat32 rgb_channel;
+    rgb_channel.name="rgb";
+    particlesPCL.channels.push_back(rgb_channel);
+
+    particlesPCL.header.frame_id = fixed_frame;
+    particlesPCL.header.stamp = time;
+
+    for (list<LegFeature*>::iterator legFeatureIt = legFeatures.begin();
+        legFeatureIt != legFeatures.end();
+        legFeatureIt++)
+    {
+        MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+
+        vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
+
+        for(vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
+          geometry_msgs::Point32 point;
+          point.x = (*sampleIt).ValueGet().pos_[0];
+          point.y = (*sampleIt).ValueGet().pos_[1];
+          point.z = (*sampleIt).ValueGet().pos_[2];
+
+          //std::cout << (*sampleIt) << std::endl;
+
+          particlesPCL.points.push_back(point);
+        }
+
+    }
+
+    // Publish the pointcloud
+    particles_pub_.publish(particlesPCL);
+
+    ROS_DEBUG("DualTracker::%s Publishing Particles on %s", __func__, fixed_frame.c_str());
   }
 
   void publishLegFeaturesVisualization(list<LegFeature*>& legFeatures, ros::Time time){
