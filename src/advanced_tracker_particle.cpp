@@ -84,6 +84,7 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
   // This is the initialization of the tracker, particles are choosen as gaussian
 
   // Create the Gaussian
+  std::cout << "Mu: " << mu << "Sigma: " << sigma << std::endl;
   GaussianPosVel gauss_pos_vel(mu, sigma);
 
   // Prepare vector to store the particles
@@ -93,17 +94,16 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
   gauss_pos_vel.SampleFrom(prior_samples, num_particles_, CHOLESKY, NULL); // TODO Check if the CHOLESKY can be NULL
   prior_.ListOfSamplesSet(prior_samples);
 
+  //Output the Samples
+  std::cout << "Prior Samples:" << std::endl;
+  for(vector<Sample<StatePosVel> >::iterator sampleIt = prior_samples.begin(); sampleIt != prior_samples.end(); sampleIt++){
+    std::cout << (*sampleIt) << std::endl;
+  }
+
   //filter_ = new BootstrapFilter<StatePosVel, tf::Vector3>(&prior_, &prior_, 0, num_particles_ / 4.0);
 
   filter_ = new PeopleParticleFilter(&prior_, &prior_, 0, num_particles_ / 4.0, 0);
   // TODO input own filter here
-
-  // Output the Samples
-  //for(vector<Sample<StatePosVel> >::iterator sampleIt = prior_samples.begin(); sampleIt != prior_samples.end(); sampleIt++){
-  //  std::cout << (*sampleIt) << std::endl;
-  //}
-
-  //assert(0);
 
   // tracker initialized
   tracker_initialized_ = true;
@@ -163,18 +163,20 @@ bool AdvancedTrackerParticle::updateCorrection(const tf::Vector3&  meas, const M
 
 
   // set covariance
-  ((MeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
+  // ((MeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
 
   // update filter
-  bool res = filter_->Update(&meas_model_, meas); // Old code
+  // bool res = filter_->Update(&meas_model_, meas); // Old code
 
 
 
 
   // If update failed for some reason
-  if (!res) quality_ = 0;
+  // if (!res) quality_ = 0;
 
-  return res;
+  // return res;
+
+  return true;
 };
 
 

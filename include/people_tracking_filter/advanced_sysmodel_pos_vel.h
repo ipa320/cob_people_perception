@@ -67,6 +67,12 @@ public:
     dt_ = dt;
   };
 
+  // get the time (for debugging)
+  double getDt()
+  {
+    return dt_;
+  };
+
   // Redefining pure virtual methods
   virtual bool SampleFrom(BFL::Sample<StatePosVel>& one_sample, int method, void *args) const;
   virtual StatePosVel ExpectedValueGet() const; // not applicable

@@ -53,7 +53,7 @@ PeopleParticleFilter::PeopleParticleFilter(MCPdf<StatePosVel> * prior,
 
   // for a bootstrapfilter, the proposal does not depend on the
   // measurement
-  //this->_proposal_depends_on_meas = false;
+  this->_proposal_depends_on_meas = false;
 }
 
 PeopleParticleFilter::~PeopleParticleFilter(){}
@@ -62,21 +62,55 @@ bool
 PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel,
              const StatePosVel& u,
              BFL::MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
-             const StatePosVel& z,
+             const tf::Vector3& z,
              const StatePosVel& s)
 {
   ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
 
   bool result = true;
 
+  // Update using the system model
   if (sysmodel != NULL){
-    //this->ProposalSet(sysmodel->SystemPdfGet());
-    assert(false); // TODO Reimplementation here
+    ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s -> System Model Update",__func__);
+
+    // Proposal is the same as the SystemPdf
+    this->ProposalSet(sysmodel->SystemPdfGet());
+
+    // Check this before next
+    assert(this->_proposal != NULL);
+    assert(this->_post != NULL);
+
+    std::vector<WeightedSample<StatePosVel> > samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
+
+    for(std::vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
+      StatePosVel sample = (*sampleIt).ValueGet();
+      double weight = (*sampleIt).WeightGet();
+      std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
+    }
+
+    result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(sysmodel,u,NULL,z,s) && result;
+
+    std::cout << "Update ###############################" << std::endl;
+    std::cout << "Update ###############################" << std::endl;
+    std::cout << "Delta T: " << ((AdvancedSysPdfPosVel*) sysmodel->SystemPdfGet())->getDt() << std::endl;
+
+
+    samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
+
+    for(std::vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
+      StatePosVel sample = (*sampleIt).ValueGet();
+      double weight = (*sampleIt).WeightGet();
+      std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
+    }
+
+    ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s -> Internal Update done",__func__);
     //result = this->ParticleFilter<SVar,MVar>::UpdateInternal(sysmodel,u,NULL,z,s) && result;
+
   }
   if (measmodel != NULL)
-    assert(false); // TODO Reimplementation here
-    //result = this->ParticleFilter<SVar,MVar>::UpdateInternal(NULL,u,measmodel,z,s) && result;
+    ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s -> measurement Update",__func__);
+
+    result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(NULL,u,measmodel,z,s) && result;
 
   return result;
 }

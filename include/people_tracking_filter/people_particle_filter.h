@@ -30,16 +30,16 @@ class PeopleParticleFilter
     // Destructor
     virtual ~PeopleParticleFilter();
 
-//    bool
-//    Update(BFL::AdvancedSysModelPosVel* const sysmodel)
-//    {
-//      ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER,"------PeopleParticleFilter::%s",__func__);
-//
-//      //SVar s; MVar z; SVar u;
-//      return this->UpdateInternal(sysmodel,NULL,NULL,NULL,NULL);
-//
-//      assert(false);
-//    }
+    bool
+    Update(BFL::AdvancedSysModelPosVel* const sysmodel)
+    {
+      ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER,"----PeopleParticleFilter::%s -> System Model Update",__func__);
+
+      StatePosVel s; // Sensing Parameter ??!
+      tf::Vector3 z; // Measurement
+      StatePosVel u; // Input to the system
+      return this->UpdateInternal(sysmodel,u,NULL,z,s);
+    }
 
     /**
      * Do a internal update
@@ -53,7 +53,7 @@ class PeopleParticleFilter
     bool UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel,
                  const StatePosVel& u,
                  MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
-                 const StatePosVel& z,
+                 const tf::Vector3& z,
                  const StatePosVel& s);
 };
 

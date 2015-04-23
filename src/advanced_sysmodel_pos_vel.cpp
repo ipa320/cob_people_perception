@@ -34,6 +34,8 @@
 
 /* Author: Wim Meeussen */
 
+#include <ros/console.h>
+
 #include "people_tracking_filter/advanced_sysmodel_pos_vel.h"
 
 using namespace std;
@@ -42,6 +44,8 @@ using namespace tf;
 
 static const unsigned int NUM_SYS_POS_VEL_COND_ARGS = 1;
 static const unsigned int DIM_SYS_POS_VEL           = 6;
+
+#define DEBUG_ADVANCEDSYSPDFPOSVEL 1
 
 // Constructor
 AdvancedSysPdfPosVel::AdvancedSysPdfPosVel(const StatePosVel& sigma)
@@ -70,6 +74,10 @@ AdvancedSysPdfPosVel::ProbabilityGet(const StatePosVel& state) const
 bool
 AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void *args) const
 {
+  ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"--------AdvancedSysPdfPosVel::%s",__func__);
+
+  std::cout << "Input Sample: " << one_sample.ValueGet() << std::endl;
+
   StatePosVel& res = one_sample.ValueGet();
 
   // get conditional argument: state
@@ -83,6 +91,8 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   noise_.SetDt(dt_);
   noise_.SampleFrom(noise_sample, method, args);
   res += noise_sample.ValueGet();
+
+  std::cout << "Output Sample: " << res << std::endl;
 
   return true;
 }

@@ -165,7 +165,7 @@ void PeopleTrackingNode::callbackRcv(const people_msgs::PositionMeasurement::Con
       if ((cur_dist = pow(loc[0], 2.0) + pow(loc[1], 2.0)) < tracker_init_dist)
       {
 
-        cout << "starting new tracker" << endl;
+        cout << "Starting new tracker" << endl;
         stringstream tracker_name;
         StatePosVel prior_sigma(tf::Vector3(sqrt(cov(1, 1)), sqrt(cov(
                                               2, 2)), sqrt(cov(3, 3))), tf::Vector3(0.0000001, 0.0000001, 0.0000001));

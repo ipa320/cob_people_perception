@@ -49,8 +49,8 @@ GaussianVector::GaussianVector(const Vector3& mu, const Vector3& sigma)
     sigma_(sigma),
     sigma_changed_(true)
 {
-  for (unsigned int i = 0; i < 3; i++)
-    assert(sigma[i] > 0);
+  //for (unsigned int i = 0; i < 3; i++)
+    //assert(sigma[i] > 0);
 }
 
 
