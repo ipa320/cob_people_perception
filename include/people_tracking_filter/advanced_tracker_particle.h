@@ -107,6 +107,10 @@ public:
   MatrixWrapper::Matrix getHistogramPos(const tf::Vector3& min, const tf::Vector3& max, const tf::Vector3& step) const;
   MatrixWrapper::Matrix getHistogramVel(const tf::Vector3& min, const tf::Vector3& max, const tf::Vector3& step) const;
 
+  //// Get the filter
+  PeopleParticleFilter* getFilter(){
+    return filter_;
+  }
 private:
   // pdf / model / filter
   BFL::MCPdfPosVel                                          prior_; // The particles

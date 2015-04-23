@@ -84,7 +84,7 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
   // This is the initialization of the tracker, particles are choosen as gaussian
 
   // Create the Gaussian
-  std::cout << "Mu: " << mu << "Sigma: " << sigma << std::endl;
+//  std::cout << "Mu: " << mu << "Sigma: " << sigma << std::endl;
   GaussianPosVel gauss_pos_vel(mu, sigma);
 
   // Prepare vector to store the particles
@@ -95,10 +95,10 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
   prior_.ListOfSamplesSet(prior_samples);
 
   //Output the Samples
-  std::cout << "Prior Samples:" << std::endl;
-  for(vector<Sample<StatePosVel> >::iterator sampleIt = prior_samples.begin(); sampleIt != prior_samples.end(); sampleIt++){
-    std::cout << (*sampleIt) << std::endl;
-  }
+//  std::cout << "Prior Samples:" << std::endl;
+//  for(vector<Sample<StatePosVel> >::iterator sampleIt = prior_samples.begin(); sampleIt != prior_samples.end(); sampleIt++){
+//    std::cout << (*sampleIt) << std::endl;
+//  }
 
   //filter_ = new BootstrapFilter<StatePosVel, tf::Vector3>(&prior_, &prior_, 0, num_particles_ / 4.0);
 

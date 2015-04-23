@@ -85,14 +85,14 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     for(std::vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
       StatePosVel sample = (*sampleIt).ValueGet();
       double weight = (*sampleIt).WeightGet();
-      std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
+      //std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
     }
 
     result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(sysmodel,u,NULL,z,s) && result;
 
-    std::cout << "Update ###############################" << std::endl;
-    std::cout << "Update ###############################" << std::endl;
-    std::cout << "Delta T: " << ((AdvancedSysPdfPosVel*) sysmodel->SystemPdfGet())->getDt() << std::endl;
+//    std::cout << "Update ###############################" << std::endl;
+//    std::cout << "Update ###############################" << std::endl;
+//    std::cout << "Delta T: " << ((AdvancedSysPdfPosVel*) sysmodel->SystemPdfGet())->getDt() << std::endl;
 
 
     samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
@@ -100,7 +100,7 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     for(std::vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
       StatePosVel sample = (*sampleIt).ValueGet();
       double weight = (*sampleIt).WeightGet();
-      std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
+//      std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
     }
 
     ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s -> Internal Update done",__func__);

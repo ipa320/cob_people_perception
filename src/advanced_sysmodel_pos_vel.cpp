@@ -74,9 +74,9 @@ AdvancedSysPdfPosVel::ProbabilityGet(const StatePosVel& state) const
 bool
 AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void *args) const
 {
-  ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"--------AdvancedSysPdfPosVel::%s",__func__);
+  //ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"--------AdvancedSysPdfPosVel::%s",__func__);
 
-  std::cout << "Input Sample: " << one_sample.ValueGet() << std::endl;
+  //std::cout << "Input Sample: " << one_sample.ValueGet() << std::endl;
 
   StatePosVel& res = one_sample.ValueGet();
 
@@ -92,7 +92,7 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   noise_.SampleFrom(noise_sample, method, args);
   res += noise_sample.ValueGet();
 
-  std::cout << "Output Sample: " << res << std::endl;
+  //std::cout << "Output Sample: " << res << std::endl;
 
   return true;
 }

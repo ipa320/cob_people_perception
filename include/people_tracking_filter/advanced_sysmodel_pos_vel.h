@@ -73,7 +73,7 @@ public:
     return dt_;
   };
 
-  // Redefining pure virtual methods
+  // Redefining pure virtual methodsw
   virtual bool SampleFrom(BFL::Sample<StatePosVel>& one_sample, int method, void *args) const;
   virtual StatePosVel ExpectedValueGet() const; // not applicable
   virtual Probability ProbabilityGet(const StatePosVel& state) const; // not applicable
