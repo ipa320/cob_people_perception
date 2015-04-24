@@ -453,7 +453,6 @@ public:
     //////////////////////////////////////////////////////////////////////////
     //// Remove the Trackers
     //////////////////////////////////////////////////////////////////////////
-
     ROS_DEBUG("%sRemoving old Trackers [Cycle %u]", BOLDWHITE, cycle_);
 
     // if no measurement matches to a tracker in the last <no_observation_timeout>  seconds: erase tracker
@@ -540,7 +539,6 @@ public:
       {
         ROS_WARN("TF exception spot 3.");
       }
-
 
 
       if((*clusterIt)->getProbability() > leg_reliability_limit_){
@@ -688,6 +686,7 @@ public:
             ROS_WARN("TF exception spot 4.");
           }
 
+          loc.setZ(0.); // TODO ugly fix that
           // Update the tracker with the candidate location
           matched_iter->closest_->update(loc, matched_iter->probability_);
 

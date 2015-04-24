@@ -86,6 +86,8 @@ void LegFeature::propagate(ros::Time time)
 // TODO Rewrite this to accept all(!) measurements
 void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 {
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
+
   // Set the tf to represent this
   tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
   tfl_.setTransform(pose);
@@ -106,7 +108,7 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   // Update the position based on the latest measurements
   updatePosition();
 
-  if (reliability < 0 || !use_filter_)
+/*  if (reliability < 0 || !use_filter_)
   {
     reliability = probability;
     p = kal_p;
@@ -117,7 +119,7 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
     double k = p / (p + kal_r);
     reliability += k * (probability - reliability);
     p *= (1 - k);
-  }
+  }*/
 }
 
 // Update own position based on the Estimation of the Filter
