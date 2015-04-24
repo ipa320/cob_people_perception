@@ -151,13 +151,13 @@ public:
 
   bool use_seeds_;
 
-  bool publish_legs_, publish_people_, publish_leg_markers_, publish_people_markers_, publish_clusters_;
+  bool publish_legs_, publish_people_, publish_leg_markers_, publish_people_markers_, publish_clusters_, publish_particles_, publish_matches_;
 
   int next_p_id_;
 
   double leg_reliability_limit_;
 
-  int min_points_per_group;
+  int min_points_per_group_;
 
   unsigned int cycle_; /**< Cycle counter to count the filter cycles */
 
@@ -247,20 +247,24 @@ public:
 
   void configure(leg_detector::DualTrackerConfig &config, uint32_t level)
   {
-    connected_thresh_       = config.connection_threshold;
-    min_points_per_group    = config.min_points_per_group;
-    leg_reliability_limit_  = config.leg_reliability_limit;
-    publish_legs_           = config.publish_legs;
-    publish_people_         = config.publish_people;
+    connected_thresh_       = config.connection_threshold;    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - connected_thresh_ %f", __func__, connected_thresh_ );
+    min_points_per_group_    = config.min_points_per_group;    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - min_points_per_group %i", __func__, min_points_per_group_ );
+    leg_reliability_limit_  = config.leg_reliability_limit;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, leg_reliability_limit_ );
+    publish_legs_           = config.publish_legs;            ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_legs_ %d", __func__, publish_legs_ );
+    publish_people_         = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_ %d", __func__, publish_people_ );
     publish_leg_markers_    = config.publish_leg_markers;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_markers_ %d", __func__, publish_leg_markers_ );
     publish_people_markers_ = config.publish_people_markers;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_markers_ %d", __func__, publish_people_markers_ );
     publish_clusters_       = config.publish_clusters;        ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
+    publish_particles_      = config.publish_particles;        ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_particles_ %d", __func__, publish_particles_ );
+    publish_matches_        = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
+
 
     no_observation_timeout_s = config.no_observation_timeout;
     max_second_leg_age_s     = config.max_second_leg_age;
     max_track_jump_m         = config.max_track_jump;
     max_meas_jump_m          = config.max_meas_jump;
     leg_pair_separation_m    = config.leg_pair_separation;
+
 
     if (fixed_frame.compare(config.fixed_frame) != 0)
     {
@@ -446,7 +450,7 @@ public:
     benchmarking::Timer processTimer; processTimer.start();
     ScanProcessor processor(*scan, mask_);
     processor.splitConnected(connected_thresh_);
-    processor.removeLessThan(3);
+    processor.removeLessThan(min_points_per_group_);
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Process scan(clustering) took %f ms",__func__, processTimer.stopAndGetTimeMs());
 
     ROS_DEBUG("%sCreating Clusters done! [Cycle %u]", BOLDWHITE, cycle_);
@@ -551,6 +555,10 @@ public:
       }
 
     }
+
+    // Create test data
+
+
 
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
@@ -690,6 +698,8 @@ public:
           // Update the tracker with the candidate location
           matched_iter->closest_->update(loc, matched_iter->probability_);
 
+          //assert(false);
+
           // remove this match and
           matches.erase(matched_iter);
           propagated.erase(pf_iter++);
@@ -757,19 +767,23 @@ public:
     ROS_DEBUG("%sPublishing [Cycle %u]", BOLDWHITE, cycle_);
 
     // Publish clusters
-    if(false){ // TODO Implement this as configuration
+    if(publish_legs_){
+      publishLegMeasurements(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
+    }
+
+    if(publish_clusters_){
       publishClusters(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
     }
 
-    if(true){ // TODO Implement this as configuration
+    if(publish_leg_markers_){
       publishLegFeaturesVisualization(saved_leg_features, scan->header.stamp);
     }
 
-    if(true){ // TODO Implement this as configuration
+    if(publish_particles_){
       publishParticles(saved_leg_features, scan->header.stamp);
     }
 
-    if(true){ // TODO Implement this as configuration
+    if(publish_leg_markers_){
       publishMatches(matches, scan->header.stamp, scan);
     }
 
@@ -864,7 +878,7 @@ public:
    * @param set
    * @param frame // Frame the clusters are in
    */
-  void publishClusters(std::list<SampleSet*>& clusters, ros::Time time, std::string frame, bool publishAll = false){
+  void publishLegMeasurements(std::list<SampleSet*>& clusters, ros::Time time, std::string frame, bool publishAll = false){
 
     // The pointcloud message
     sensor_msgs::PointCloud clusterPcl;
@@ -922,6 +936,50 @@ public:
     ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
   }
 
+  /**
+   * Publish some clusters
+   * @param clusters  The clusters
+   * @param time  Time at which the clusters must be published
+   * @param frame Frame in which the clusters are published
+   */
+  void publishClusters(std::list<SampleSet*>& clusters, ros::Time time, std::string frame){
+
+        // Visualize the clusters by creating a pointcloud, each cluster has the same color
+        sensor_msgs::PointCloud clusterPCL;
+        sensor_msgs::ChannelFloat32 rgb_channel;
+        rgb_channel.name="rgb";
+        clusterPCL.channels.push_back(rgb_channel);
+        clusterPCL.header.frame_id = frame;
+        clusterPCL.header.stamp = time;
+
+        int count = 0;
+        // Iterate the clusters
+        for (list<SampleSet*>::iterator i = clusters.begin();
+             i != clusters.end();
+             i++)
+        {
+
+            int r[3] = { 0, 125, 255};
+            int g[3] = { 0, 125, 255};
+            int b[3] = { 0, 125, 255};
+
+            int r_ind = count % 3;
+            int g_ind = (count/3) % 3;
+            int b_ind = (count/9) % 3;
+            count++;
+
+            (*i)->appendToCloud(clusterPCL,r[r_ind],g[g_ind],b[b_ind]);
+        }
+
+        // Publish the clustering
+        clusters_pub_.publish(clusterPCL);
+  }
+
+  /**
+   * Publish the set Particles
+   * @param legFeatures List of Leg Features(Leg Tracker)
+   * @param time The current time
+   */
   void publishParticles(list<LegFeature*>& legFeatures, ros::Time time){
     // The pointcloud message
     sensor_msgs::PointCloud particlesPCL;
