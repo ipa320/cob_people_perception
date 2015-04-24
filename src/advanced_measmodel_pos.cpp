@@ -64,10 +64,17 @@ AdvancedMeasPdfPos::~AdvancedMeasPdfPos()
 Probability
 AdvancedMeasPdfPos::ProbabilityGet(const Vector3& measurement) const
 {
-  std::cout << ConditionalArgumentGet(0).pos_.getX() << " " << ConditionalArgumentGet(0).pos_.getY() << " " << ConditionalArgumentGet(0).pos_.getZ()<< std::endl;
 
-  assert(false);
-  return meas_noise_.ProbabilityGet(measurement - ConditionalArgumentGet(0).pos_);
+  tf::Vector3 delta = measurement - ConditionalArgumentGet(0).pos_;
+
+  Probability prob = meas_noise_.ProbabilityGet(delta);
+
+/*  std::cout << ConditionalArgumentGet(0).pos_.getX() << " " << ConditionalArgumentGet(0).pos_.getY() << " " << ConditionalArgumentGet(0).pos_.getZ()<< std::endl;
+  std::cout << "Delta" << delta.getX() << " " << delta.getY() << " " << delta.getZ() << " Norm:" << delta.length() << std::endl;
+  std::cout << prob.getValue() << std::endl;*/
+
+
+  return prob;
 }
 
 

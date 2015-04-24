@@ -121,14 +121,14 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
 
     result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(NULL,u,measmodel,z,s) && result;
 
-    samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
+/*    samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
     for(std::vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
       std::cout << (*sampleIt) << std::endl;
-    }
-
-    assert(false);
+    }*/
 
   }
+
+  //assert(false);
 
   return result;
 }
