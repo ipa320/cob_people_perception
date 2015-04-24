@@ -45,6 +45,8 @@
 #include <wrappers/matrix/matrix_wrapper.h>
 #include <string>
 
+#define DEBUG_ADVANCEDMEASMODELPOS 1
+
 namespace BFL
 {
 
@@ -81,7 +83,9 @@ public:
   /// constructor
     AdvancedMeasModelPos(const tf::Vector3& sigma)
     : BFL::MeasurementModel<tf::Vector3, StatePosVel>(new AdvancedMeasPdfPos(sigma))
-  {};
+  {
+    ROS_DEBUG_COND(DEBUG_ADVANCEDMEASMODELPOS, "AdvancedMeasModelPos::%s", __func__);
+  };
 
   /// destructor
   ~AdvancedMeasModelPos()

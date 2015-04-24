@@ -57,13 +57,16 @@ AdvancedMeasPdfPos::~AdvancedMeasPdfPos()
 
 
 /**
- * Calculate the probability of this measurement
+ * Calculate the probability of this measurement(particle)
  * @param measurement The measurement
  * @return Probability to measure this
  */
 Probability
 AdvancedMeasPdfPos::ProbabilityGet(const Vector3& measurement) const
 {
+  std::cout << ConditionalArgumentGet(0).pos_.getX() << " " << ConditionalArgumentGet(0).pos_.getY() << " " << ConditionalArgumentGet(0).pos_.getZ()<< std::endl;
+
+  assert(false);
   return meas_noise_.ProbabilityGet(measurement - ConditionalArgumentGet(0).pos_);
 }
 

@@ -44,10 +44,11 @@
 #include "state_pos_vel.h"
 #include "mcpdf_pos_vel.h"
 //#include "sysmodel_pos_vel.h"
-#include "measmodel_pos.h"
+//#include "measmodel_pos.h"
 
 #include <people_tracking_filter/people_particle_filter.h>
 #include <people_tracking_filter/advanced_sysmodel_pos_vel.h>
+#include <people_tracking_filter/advanced_measmodel_pos.h>
 
 // TF
 #include <tf/tf.h>
@@ -118,7 +119,7 @@ private:
   PeopleParticleFilter*      filter_;
 
   BFL::AdvancedSysModelPosVel                               sys_model_;
-  BFL::MeasModelPos                                         meas_model_;
+  BFL::AdvancedMeasModelPos                                 meas_model_;
 
   // vars
   bool tracker_initialized_;

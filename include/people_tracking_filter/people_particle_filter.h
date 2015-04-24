@@ -6,6 +6,7 @@
 #include <filter/particlefilter.h>
 #include <people_tracking_filter/sysmodel_pos_vel.h>
 #include <people_tracking_filter/advanced_sysmodel_pos_vel.h>
+#include <people_tracking_filter/advanced_measmodel_pos.h>
 
 #define DEBUG_PEOPLE_PARTICLE_FILTER 1
 
@@ -30,6 +31,11 @@ class PeopleParticleFilter
     // Destructor
     virtual ~PeopleParticleFilter();
 
+    /**
+     * Update(Prediction) using the system model
+     * @param sysmodel
+     * @return true on success
+     */
     bool
     Update(BFL::AdvancedSysModelPosVel* const sysmodel)
     {
@@ -39,6 +45,25 @@ class PeopleParticleFilter
       tf::Vector3 z; // Measurement
       StatePosVel u; // Input to the system
       return this->UpdateInternal(sysmodel,u,NULL,z,s);
+    }
+
+    /**
+     *
+     * @param sysmodel
+     * @return
+     */
+    bool
+    Update(BFL::AdvancedMeasModelPos* const measmodel, const tf::Vector3& meas)
+    {
+      ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER,"----PeopleParticleFilter::%s -> System Model Update",__func__);
+
+      StatePosVel s; // Sensing Parameter ??!
+      tf::Vector3 z; // Measurement
+      StatePosVel u; // Input to the system
+
+      z = meas;
+
+      return this->UpdateInternal(NULL,u,measmodel,z,s);
     }
 
     /**

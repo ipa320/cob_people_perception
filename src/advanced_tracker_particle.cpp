@@ -34,7 +34,7 @@
 
 #include <people_tracking_filter/advanced_tracker_particle.h>
 #include <people_tracking_filter/gaussian_pos_vel.h>
-#include <people_tracking_filter/people_particle_filter.h>
+//#include <people_tracking_filter/people_particle_filter.h>
 
 
 using namespace MatrixWrapper;
@@ -163,20 +163,17 @@ bool AdvancedTrackerParticle::updateCorrection(const tf::Vector3&  meas, const M
 
 
   // set covariance
-  // ((MeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+  //meas_model_.MeasurementPdfGet();
+  ((AdvancedMeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
 
   // update filter
-  // bool res = filter_->Update(&meas_model_, meas); // Old code
-
-
-
+  bool res = filter_->Update(&meas_model_, meas); // Old code
 
   // If update failed for some reason
-  // if (!res) quality_ = 0;
-
-  // return res;
-
-  return true;
+  if (!res) quality_ = 0;
+  return res;
 };
 
 
