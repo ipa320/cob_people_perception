@@ -32,6 +32,7 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   people_msgs
   people_tracking_filter
+  dual_people_leg_tracker
   image_geometry
   dynamic_reconfigure
   rosbag

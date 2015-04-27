@@ -57,11 +57,15 @@ public:
 
   tf::Stamped<tf::Point> position_; /**< The currently estimated leg position */
 
+  std::list<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_;
+
   LegFeature* other;
   float dist_to_person_;
 
 
   LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl);
+
+  ~LegFeature();
 
   void propagate(ros::Time time);
 

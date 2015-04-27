@@ -33,7 +33,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   snprintf(id, 100, "legtrack%d", int_id_);
   id_ = std::string(id);
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created new LegFeature with ID %s at %f - %f - %f", __func__, id_.c_str(), loc.getX(), loc.getY(), loc.getZ());
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created <NEW_LEGFEATURE %s> at %f - %f - %f", __func__, id_.c_str(), loc.getX(), loc.getY(), loc.getZ());
 
   object_id = "";
   time_ = loc.stamp_;
@@ -66,6 +66,13 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   filter_.getEstimate(est);
 
   updatePosition();
+}
+
+/**
+ * Destructor
+ */
+LegFeature::~LegFeature(){
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s <DELETE_LEGFEATURE %s>", __func__, id_.c_str());
 }
 
 /**
@@ -141,5 +148,13 @@ void LegFeature::updatePosition()
   position_.frame_id_ = fixed_frame_;
   double nreliability = fmin(1.0, fmax(0.1, est.vel_.length() / 0.5)); //TODO ???????
   //reliability = fmax(reliability, nreliability);
+
+  // Update history
+  boost::shared_ptr<tf::Stamped<tf::Point> > point(new tf::Stamped<tf::Point>());
+  point->setX( est.pos_[0]);
+  point->setY( est.pos_[1]);
+  point->setZ( est.pos_[2]);
+
+  position_history_.push_back(point);
 }
 

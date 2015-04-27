@@ -73,9 +73,6 @@ bool legFeatureToSphereLegMarkerMsg(LegFeature* sf, visualization_msgs::Marker::
 }
 
 
-
-
-
 bool clusterToTextMarkerMsg(SavedFeature* sf, visualization_msgs::Marker::Ptr markerMsg, std::string& fixed_frame, unsigned int id = 0){
 
     markerMsg->header.stamp = sf->time_;
@@ -130,7 +127,6 @@ bool savedFeatureToPeopleMarkerMsg(SavedFeature* leg1, SavedFeature* leg2, visua
   pPeopleSphereMsg->color.b = b / 255.0;
 
   pPeopleSphereMsg->lifetime = ros::Duration(0.5);
-
 
   return true;
 }

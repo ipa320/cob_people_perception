@@ -6,8 +6,6 @@ Panels:
       Expanded:
         - /Marker1
         - /Marker1/Namespaces1
-        - /PointCloud1
-        - /PointCloud2
         - /PointCloud3
       Splitter Ratio: 0.5
     Tree Height: 563
@@ -53,9 +51,10 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /visualization_marker
+      Marker Topic: /leg_track_history
       Name: Marker
       Namespaces:
+        "": true
         matches: true
       Queue Size: 100
       Value: true
@@ -155,7 +154,7 @@ Visualization Manager:
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud
-      Color: 0; 170; 255
+      Color: 0; 0; 255
       Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
@@ -170,8 +169,8 @@ Visualization Manager:
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.2
-      Style: Flat Squares
-      Topic: /leg_features
+      Style: Boxes
+      Topic: /leg_measurements
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -208,11 +207,11 @@ Visualization Manager:
         Value: false
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 99.629
+      Scale: 105.01
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 0.708991
-      Y: -0.551295
+      X: 1.14031
+      Y: 1.02573
     Saved: ~
 Window Geometry:
   Displays:
