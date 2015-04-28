@@ -24,7 +24,6 @@ void getColor(int value, int &red, int &green, int &blue)
   green = (r * sin(2*M_PI*value/N)*0.5 + 0.5)*255;
   blue  = h*value * 255;
 
-  std::cout << value << " :" << red << " " << green << " " << blue << std::endl;
 }
 
 #endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_VISUALIZATION_COLOR_FUNCTIONS_H_ */
