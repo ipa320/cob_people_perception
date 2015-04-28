@@ -25,7 +25,8 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
     sys_sigma_(tf::Vector3(0.03, 0.03, 0.0), tf::Vector3(1.0, 1.0, 0.0)), // The initialized system noise
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
-    use_filter_(true)
+    use_filter_(true),
+    is_valid_(true) // On construction the leg feature is always valid
 {
   int_id_ = nextid++;
 
@@ -38,7 +39,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   object_id = "";
   time_ = loc.stamp_;
   meas_time_ = loc.stamp_;
-  other = NULL;
+  //other = NULL;
 
   try
   {
@@ -156,5 +157,20 @@ void LegFeature::updatePosition()
   point->setZ( est.pos_[2]);
 
   position_history_.push_back(point);
+}
+
+// TODO do this static
+/**
+ *  @brief The distance between two legs.
+ *
+ *  Calculates the euclidian distance between to features(legs)
+ */
+double LegFeature::distance(LegFeaturePtr leg0,  LegFeaturePtr leg1){
+    tf::Stamped<tf::Point> one = leg0->position_;
+    tf::Stamped<tf::Point> two = leg1->position_;
+
+    double distance = (one-two).length();
+
+    return distance;
 }
 

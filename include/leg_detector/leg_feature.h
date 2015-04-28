@@ -30,7 +30,8 @@
 // Default variables
 #define DEBUG_LEG_TRACKER 1
 
-
+class LegFeature; // Forward declaration
+typedef boost::shared_ptr<LegFeature> LegFeaturePtr;
 
 /**
  *  \brief The low level tracker to track each leg
@@ -51,6 +52,8 @@ public:
   ros::Time time_;
   ros::Time meas_time_;
 
+  bool is_valid_;
+
   double reliability, p;
 
   bool use_filter_; /**< Flag if the Filter should be used currently */
@@ -59,8 +62,8 @@ public:
 
   std::list<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_;
 
-  LegFeature* other;
-  float dist_to_person_;
+  //LegFeaturePtr other;
+  //float dist_to_person_;
 
 
   LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl);
@@ -81,8 +84,19 @@ public:
     return reliability;
   }
 
+  void setValidity(bool valid){
+    is_valid_ = valid;
+  }
+
+  bool isValid(){
+    return is_valid_;
+  }
+
+  static double distance(LegFeaturePtr leg0,  LegFeaturePtr leg1);
+
 private:
   void updatePosition();
 };
+
 
 #endif /* LEG_FEATURE_H_ */

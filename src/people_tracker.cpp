@@ -10,20 +10,24 @@
 
 #include <leg_detector/people_tracker.h>
 
-PeopleTracker::PeopleTracker(LegFeature* leg0, LegFeature* leg1){
+bool isValid(const PeopleTrackerPtr & o){
+  return !o->isValid();
+}
+
+PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1){
   this->addLeg(leg0);
   this->addLeg(leg1);
 }
 
-LegFeature* PeopleTracker::getLeg0(){
+LegFeaturePtr PeopleTracker::getLeg0(){
   return this->legs_[0];
 }
 
-LegFeature* PeopleTracker::getLeg1(){
+LegFeaturePtr PeopleTracker::getLeg1(){
   return this->legs_[1];
 }
 
-bool PeopleTracker::addLeg(LegFeature* leg){
+bool PeopleTracker::addLeg(LegFeaturePtr leg){
 
   // Return false if this tracker already has two legs
   if(legs_.size() >= 2) return false;
@@ -45,21 +49,42 @@ bool PeopleTracker::isTheSame (PeopleTrackerPtr peopleTracker){
   return false;
 }
 
+bool PeopleTracker::isValid(){
+  //std::cout << "Checking people tracker with the legs " << getLeg0()->id_ << "(" << getLeg0() << ")" << " - " << getLeg1()->id_ << "(" << getLeg1() << ")" << " for validity";
+  if(getLeg0()->isValid() && getLeg1()->isValid()){
+    //std::cout << " -> valid" << std::endl;
+    return true;
+  }
+  //std::cout << " -> invalid" << std::endl;
+  return false;
+}
+
+void PeopleTracker::updateProbabilities(){
+  // Calculate the leg_distance probability
+  double dist = LegFeature::distance(getLeg0(), getLeg1());
+  //dist_probability_ =
+}
+
+
+PeopleTrackerList::PeopleTrackerList():
+  list_(new std::vector<PeopleTrackerPtr>())
+  {
+
+  }
 
 /**
- * Check if the PeopleTracker allready exists in this list
+ * Check if the PeopleTracker already exists in this list
  * @param The People Tracker
  * @return True if the Tracker exists, false otherwise
  */
 bool PeopleTrackerList::exists(PeopleTrackerPtr peopleTracker){
   // Iterate through the People Tracker
-  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_.begin(); peopleTrackerIt != list_.end(); peopleTrackerIt++){
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
     if((*peopleTrackerIt)->isTheSame(peopleTracker))
       return true;
   }
 
   return false;
-
 }
 
 /**
@@ -68,8 +93,23 @@ bool PeopleTrackerList::exists(PeopleTrackerPtr peopleTracker){
  * @return true
  */
 bool PeopleTrackerList::addPeopleTracker(PeopleTrackerPtr peopleTrackerPtr){
-  list_.push_back(peopleTrackerPtr);
+  list_->push_back(peopleTrackerPtr);
   return true;
+}
+
+int PeopleTrackerList::removeInvalidTrackers(){
+  std::cout << "Removing invalid Trackers" << std::endl;
+
+  int counter = 0;
+  list_->erase(std::remove_if(list_->begin(), list_->end(), isValid),list_->end());
+
+}
+
+void PeopleTrackerList::printTrackerList(){
+  std::cout << "TrackerList:" << std::endl;
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
+    std::cout << "PeopleTracker: " << (*peopleTrackerIt)->getLeg0()->id_ << " - " << (*peopleTrackerIt)->getLeg1()->id_ << std::endl;
+  }
 }
 
 #endif /*PEOPLE_TRACKER_H_*/

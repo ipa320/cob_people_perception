@@ -23,18 +23,25 @@ typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr;
  */
 class PeopleTracker{
   private:
-    std::vector<LegFeature*> legs_; /**< the legs, should be maximum 2! */
+    std::vector<LegFeaturePtr> legs_; /**< the legs, should be maximum 2! */
 
-    bool addLeg(LegFeature* leg);/**< Add a leg two this tracker */
+    bool addLeg(LegFeaturePtr leg);/**< Add a leg two this tracker */
+
+    double total_probability_;/**< Overall probability in this tracker */
+    double dist_probability_;/**< Probability of this tracker based on the distance of the legs */
 
   public:
-    PeopleTracker(LegFeature*, LegFeature*);/**< Construct a People tracker based on this two legs */
+    PeopleTracker(LegFeaturePtr, LegFeaturePtr);/**< Construct a People tracker based on this two legs */
 
     bool isTheSame(PeopleTrackerPtr);
 
-    LegFeature* getLeg0();/**< Get Leg0 */
+    LegFeaturePtr getLeg0();/**< Get Leg0 */
 
-    LegFeature* getLeg1();/**< Get Leg1 */
+    LegFeaturePtr getLeg1();/**< Get Leg1 */
+
+    bool isValid();/**< Check if the people tracker is still valid */
+
+    void updateProbabilities();
 
 };
 
@@ -45,12 +52,24 @@ class PeopleTracker{
  */
 class PeopleTrackerList{
   private:
-    std::vector<PeopleTrackerPtr> list_; /**< the legs, should be maximum 2! */
+    boost::shared_ptr<std::vector<PeopleTrackerPtr> > list_; /**< the legs, should be maximum 2! */
 
   public:
+    PeopleTrackerList();
+
     bool addPeopleTracker(PeopleTrackerPtr);
 
     bool exists(PeopleTrackerPtr);
+
+    boost::shared_ptr<std::vector<PeopleTrackerPtr> > getList(){
+      return list_;
+    }
+
+    int removeInvalidTrackers();
+
+    void printTrackerList();
+
+
 
 
 };
