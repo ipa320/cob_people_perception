@@ -87,7 +87,8 @@ add_executable(dual_tracker
                src/laser_processor.cpp 
                src/dual_tracker.cpp 
                src/calc_leg_features.cpp 
-               src/leg_feature.cpp)
+               src/leg_feature.cpp
+               src/people_tracker.cpp)
 
 ## Add cmake target dependencies of the executable/library
 add_dependencies(dual_tracker people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})

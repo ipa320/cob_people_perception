@@ -140,11 +140,13 @@ public:
 
   char save_[100];
 
-  std::vector<PeopleTrackerPtr> people_tracker_;
+  //std::vector<PeopleTrackerPtr> people_tracker_;
 
   //list<SavedFeature*> saved_features_; /**< List of SavedFeatures that are currently tracked*/
 
   list<LegFeature*> saved_leg_features; /**< List of SavedFeatures(Legs) that are currently tracked*/
+
+  PeopleTrackerList people_trackers_; /**< Object to handle the people_trackers */
 
   boost::mutex saved_mutex_; /**< Mutex to handle the access to the Saved Features */
 
@@ -642,10 +644,11 @@ public:
     ROS_DEBUG("%sMatching Done! [Cycle %u]", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
-    //// Combination of saved features to people tracker
+    //// High level Association: Combination of saved features to people tracker
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sHigh Level Association [Cycle %u]", BOLDWHITE, cycle_);
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Starting to combine %lu leg_tracks to people tracker",__func__, saved_leg_features.size());
+    benchmarking::Timer hlAssociationTimer; hlAssociationTimer.start();
 
     // Do the combinations
     for (list<LegFeature*>::iterator legIt0 = saved_leg_features.begin();
@@ -657,17 +660,28 @@ public:
           legIt1 != saved_leg_features.end();
           legIt1++)
       {
+        // Create a people tracker testwise
+        PeopleTrackerPtr temp_people_tracker(new PeopleTracker(*legIt0, *legIt1));
+        std::cout << "New tracker " << (*legIt0)->int_id_ << " - " << (*legIt1)->int_id_;
 
-
+        // Add the tracker to the list if it is new
+        if(!this->people_trackers_.exists(temp_people_tracker)){
+          people_trackers_.addPeopleTracker(temp_people_tracker);
+          std::cout << " --> Added to list " << std::endl;
+        }else{
+          std::cout << " --> Allready exists " << std::endl;
+        }
 
         //std::cout << "Investigation of combination " << (*legIt0)->int_id_ << " - " << (*legIt1)->int_id_ << std::endl;
       }
     }
 
     // Evaluate the combinations (What is the probability for this people tracker
-    //assert(false);
+    // assert(false);
 
     //return;
+    hlAssociationTimer.stop();
+    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"High level association took %f ms", hlAssociationTimer.getElapsedTimeMs());
     ROS_DEBUG("%sHigh Level Association done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
     //// Update (Update the Trackers using the latest measurements
