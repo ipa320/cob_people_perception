@@ -70,7 +70,13 @@ AdvancedSysPdfPosVel::ProbabilityGet(const StatePosVel& state) const
   return 0;
 }
 
-
+/**
+ * Given a sample calculate the next state
+ * @param one_sample  The given sample
+ * @param method Not used ?
+ * @param args Not used
+ * @return
+ */
 bool
 AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void *args) const
 {
