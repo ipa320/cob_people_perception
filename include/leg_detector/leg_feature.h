@@ -19,6 +19,7 @@
 #include <people_tracking_filter/advanced_tracker_particle.h>
 #include <people_tracking_filter/state_pos_vel.h>
 #include <people_tracking_filter/rgb.h>
+//#include <leg_detector/people_tracker.h>
 
 //using namespace std;
 //using namespace ros;
@@ -29,6 +30,9 @@
 
 // Default variables
 #define DEBUG_LEG_TRACKER 1
+
+class PeopleTracker; // Forward declaration
+typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr; // Forward declaration
 
 class LegFeature; // Forward declaration
 typedef boost::shared_ptr<LegFeature> LegFeaturePtr;
@@ -42,6 +46,8 @@ public:
   static int nextid;
   tf::TransformListener& tfl_;
   std::string fixed_frame_;
+
+  std::vector<PeopleTrackerPtr> peopleTrackerList_; /**< List of associated people trackers */
 
   BFL::StatePosVel sys_sigma_;
   estimation::AdvancedTrackerParticle filter_;
@@ -59,6 +65,7 @@ public:
   bool use_filter_; /**< Flag if the Filter should be used currently */
 
   tf::Stamped<tf::Point> position_; /**< The currently estimated leg position */
+  BFL::StatePosVel pos_vel_; /**< The currently estimated pos_vel_ */
 
   std::list<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_;
 
@@ -92,7 +99,13 @@ public:
     return is_valid_;
   }
 
+  BFL::StatePosVel getEstimate(){
+    return pos_vel_;
+  }
+
   static double distance(LegFeaturePtr leg0,  LegFeaturePtr leg1);
+
+  void addPeopleTracker(PeopleTrackerPtr);
 
 private:
   void updatePosition();

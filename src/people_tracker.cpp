@@ -5,16 +5,24 @@
  *      Author: frm-ag
  */
 
-#ifndef PEOPLE_TRACKER_H_
-#define PEOPLE_TRACKER_H_
 
+// Own includes
 #include <leg_detector/people_tracker.h>
+#include <dual_people_leg_tracker/math/math_functions.h>
+#include <leg_detector/color_definitions.h>
+
+/////////////////////////////////////////////////////////////
+//// PeopleTracker Class Definitions
+/////////////////////////////////////////////////////////////
 
 bool isValid(const PeopleTrackerPtr & o){
   return !o->isValid();
 }
 
-PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1){
+PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time time):
+  creation_time_(time),
+  total_probability_(0.0) // Initialize the probability with zero
+{
   this->addLeg(leg0);
   this->addLeg(leg1);
 }
@@ -34,6 +42,18 @@ bool PeopleTracker::addLeg(LegFeaturePtr leg){
 
   legs_.push_back(leg);
   return true;
+}
+
+bool PeopleTracker::isTheSame(LegFeaturePtr legA, LegFeaturePtr legB){
+
+  if(this->getLeg0()->int_id_ == legA->int_id_ && this->getLeg1()->int_id_ == legB->int_id_){
+    return true;
+  }
+
+  if(this->getLeg1()->int_id_ == legA->int_id_ && this->getLeg0()->int_id_ == legB->int_id_){
+    return true;
+  }
+  return false;
 }
 
 bool PeopleTracker::isTheSame (PeopleTrackerPtr peopleTracker){
@@ -59,18 +79,70 @@ bool PeopleTracker::isValid(){
   return false;
 }
 
-void PeopleTracker::updateProbabilities(){
-  // Calculate the leg_distance probability
-  double dist = LegFeature::distance(getLeg0(), getLeg1());
-  //dist_probability_ =
+void PeopleTracker::update(ros::Time time){
+  // Update the probabilities
+  updateProbabilities(time);
 }
 
+void PeopleTracker::updateProbabilities(ros::Time time){
+  // Calculate the leg_distance probability
+  double dist = LegFeature::distance(getLeg0(), getLeg1());
+  ROS_ASSERT(dist > 0.0);
+
+  double leg_distance_threshold = 1.0;
+  dist_probability_ = 1.0-sigmoid(dist,5,leg_distance_threshold);
+  ROS_ASSERT(dist_probability_ >= 0.0 && dist_probability_ <= 1.0);
+
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s - Distance %f.3 Probability: %f.2",__func__, dist, dist_probability_);
+
+  // Calculate the existenz of both LegTrackers
+  double leg_time_threshold = 0.1;
+  double min_leg_time = min(getLeg0()->getLifetime(), getLeg1()->getLifetime());
+
+  leg_time_probability_ = sigmoid(min_leg_time,5,leg_time_threshold);
+
+  //std::cout << "Min LegTime: " << min_leg_time << " Probability: " << leg_time_probability_ << std::endl;
+
+  // Calculate the total probability
+
+  total_probability_ = dist_probability_ * leg_time_probability_;
+
+  // Print
+#ifdef DEBUG_PEOPLE_TRACKER
+  if(total_probability_ > 0.85){
+    ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"%sPeopleTracker::%s\n|dist %.3f prob: %.2f| leg_time: %.2f prob: %.2f|| total_p: %.2f|",BOLDMAGENTA,__func__, dist, dist_probability_,min_leg_time, leg_time_probability_, total_probability_);
+  }else{
+    ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s\n|dist %.3f prob: %.2f| leg_time: %.2f prob: %.2f|| total_p: %.2f|",__func__, dist, dist_probability_,min_leg_time, leg_time_probability_, total_probability_);
+  }
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////
+//// PeopleTrackerList Class Definitions
+/////////////////////////////////////////////////////////////
 
 PeopleTrackerList::PeopleTrackerList():
   list_(new std::vector<PeopleTrackerPtr>())
   {
 
   }
+
+/**
+ * Check if a People Tracker allready exists for these two legs
+ * @param legA The one leg
+ * @param legB The other leg
+ * @return True if it allready exists
+ */
+bool PeopleTrackerList::exists(LegFeaturePtr legA, LegFeaturePtr legB){
+  // Iterate through the People Tracker
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
+    if((*peopleTrackerIt)->isTheSame(legA,legB))
+      return true;
+  }
+
+  return false;
+}
 
 /**
  * Check if the PeopleTracker already exists in this list
@@ -98,10 +170,13 @@ bool PeopleTrackerList::addPeopleTracker(PeopleTrackerPtr peopleTrackerPtr){
 }
 
 int PeopleTrackerList::removeInvalidTrackers(){
-  std::cout << "Removing invalid Trackers" << std::endl;
+  //std::cout << "Removing invalid Trackers" << std::endl;
 
-  int counter = 0;
+  int size_before = list_->size();
+
   list_->erase(std::remove_if(list_->begin(), list_->end(), isValid),list_->end());
+
+  return size_before - list_->size();
 
 }
 
@@ -112,4 +187,9 @@ void PeopleTrackerList::printTrackerList(){
   }
 }
 
-#endif /*PEOPLE_TRACKER_H_*/
+void PeopleTrackerList::updateProbabilities(ros::Time time){
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
+    (*peopleTrackerIt)->updateProbabilities(time);
+  }
+}
+

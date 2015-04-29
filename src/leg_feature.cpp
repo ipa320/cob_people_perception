@@ -142,6 +142,8 @@ void LegFeature::updatePosition()
   BFL::StatePosVel est;
   filter_.getEstimate(est);
 
+  pos_vel_ = est;
+
   position_[0] = est.pos_[0];
   position_[1] = est.pos_[1];
   position_[2] = est.pos_[2];
@@ -174,3 +176,7 @@ double LegFeature::distance(LegFeaturePtr leg0,  LegFeaturePtr leg1){
     return distance;
 }
 
+
+void LegFeature::addPeopleTracker(PeopleTrackerPtr peopleTracker){
+  //if()
+}
