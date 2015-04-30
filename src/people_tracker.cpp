@@ -5,7 +5,7 @@
  *      Author: frm-ag
  */
 
-
+#include <ros/console.h>
 // Own includes
 #include <leg_detector/people_tracker.h>
 #include <dual_people_leg_tracker/math/math_functions.h>
@@ -23,15 +23,27 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
   creation_time_(time),
   total_probability_(0.0) // Initialize the probability with zero
 {
+  // Add the legs to this people tracker
   this->addLeg(leg0);
   this->addLeg(leg1);
+
+  // Add this people tracker to the legs
+
+//  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s Adding Tracker to the legs %s and %s",__func__,leg0->id_.c_str(), leg1->id_.c_str());
+//  leg0->addPeopleTracker( boost::shared_ptr<PeopleTracker>(this) );
+//  leg1->addPeopleTracker( boost::shared_ptr<PeopleTracker>(this) );
+
 }
 
-LegFeaturePtr PeopleTracker::getLeg0(){
+PeopleTracker::~PeopleTracker(){
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s",__func__);
+}
+
+LegFeaturePtr PeopleTracker::getLeg0() const{
   return this->legs_[0];
 }
 
-LegFeaturePtr PeopleTracker::getLeg1(){
+LegFeaturePtr PeopleTracker::getLeg1() const{
   return this->legs_[1];
 }
 
@@ -100,6 +112,18 @@ void PeopleTracker::updateProbabilities(ros::Time time){
   double min_leg_time = min(getLeg0()->getLifetime(), getLeg1()->getLifetime());
 
   leg_time_probability_ = sigmoid(min_leg_time,5,leg_time_threshold);
+
+  // Calculate the association to the legs
+  //std::vector<PeopleTrackerPtr> assoLeg0 = getLeg0()->getPeopleTracker();
+  //std::vector<PeopleTrackerPtr> assoLeg1 = getLeg1()->getPeopleTracker();
+
+/*  std::cout << "The Leg" << *getLeg0() << " is associated to: " << std::endl;
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt0 = assoLeg0.begin();
+      peopleTrackerIt0 != assoLeg0.end();
+      peopleTrackerIt0++)
+  {
+    std::cout << "\t" << **peopleTrackerIt0 << std::endl;
+  }*/
 
   //std::cout << "Min LegTime: " << min_leg_time << " Probability: " << leg_time_probability_ << std::endl;
 

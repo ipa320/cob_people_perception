@@ -13,6 +13,7 @@ Panels:
         - /Marker2
         - /Marker2/Namespaces1
         - /MarkerArray1
+        - /PointCloud4
       Splitter Ratio: 0.5
     Tree Height: 563
   - Class: rviz/Selection
@@ -195,6 +196,35 @@ Visualization Manager:
         leg_feature_arrows: true
       Queue Size: 100
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud
+      Color: 255; 255; 255
+      Color Transformer: ""
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud
+      Position Transformer: ""
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.01
+      Style: Spheres
+      Topic: /clusters
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 135; 135; 135
@@ -220,16 +250,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.93777
+      Distance: 18.1596
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.631862
-        Y: -1.21856
-        Z: 0.414856
+        X: 0.170279
+        Y: -1.27131
+        Z: 0.778547
       Name: Current View
       Near Clip Distance: 0.01
       Pitch: 0.785398
@@ -253,5 +283,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1680
-  X: 1670
-  Y: -14
+  X: 1680
+  Y: 24

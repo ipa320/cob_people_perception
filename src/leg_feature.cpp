@@ -17,22 +17,28 @@ static std::string fixed_frame              = "odom_combined";  // The fixed fra
 static double kal_p = 4, kal_q = .002, kal_r = 10;
 static bool use_filter = false;
 
-static int NumberOfParticles = 1000;
+static int NumberOfParticles = 1300;
 
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    sys_sigma_(tf::Vector3(0.03, 0.03, 0.0), tf::Vector3(1.0, 1.0, 0.0)), // The initialized system noise
+    sys_sigma_(tf::Vector3(0.02, 0.02, 0.0), tf::Vector3(1.0, 1.0, 0.0)), // The initialized system noise
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true),
-    is_valid_(true) // On construction the leg feature is always valid
+    is_valid_(true), // On construction the leg feature is always valid
+    update_cov_(0.0025) // The update Cov
 {
   int_id_ = nextid++;
 
   char id[100];
   snprintf(id, 100, "legtrack%d", int_id_);
   id_ = std::string(id);
+
+  // Configuration server
+  dynamic_reconfigure::Server<leg_detector::DualTrackerConfig>::CallbackType f;
+  f = boost::bind(&LegFeature::configure, this, _1, _2);
+  server_.setCallback(f);
 
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created <NEW_LEGFEATURE %s> at %f - %f - %f", __func__, id_.c_str(), loc.getX(), loc.getY(), loc.getZ());
 
@@ -74,6 +80,11 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
  */
 LegFeature::~LegFeature(){
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s <DELETE_LEGFEATURE %s>", __func__, id_.c_str());
+}
+
+
+void LegFeature::configure(leg_detector::DualTrackerConfig &config, uint32_t level){
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s", __func__);
 }
 
 /**
@@ -176,7 +187,11 @@ double LegFeature::distance(LegFeaturePtr leg0,  LegFeaturePtr leg1){
     return distance;
 }
 
-
+/**
+ * Add a People Tracker to associated with this leg, every leg holds its associated People Trackers
+ * @param peopleTracker
+ */
 void LegFeature::addPeopleTracker(PeopleTrackerPtr peopleTracker){
-  //if()
+  // Add this tracker to the list
+  this->peopleTrackerList_.push_back(peopleTracker);
 }

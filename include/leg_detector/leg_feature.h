@@ -11,6 +11,11 @@
 #include <ros/ros.h>
 
 // Own includes
+// Configuration
+#include <dynamic_reconfigure/server.h>
+#undef DEFAULT
+#include <leg_detector/DualTrackerConfig.h>
+#define DEFAULT 0
 
 // Transforms
 #include <tf/transform_listener.h>
@@ -19,6 +24,9 @@
 #include <people_tracking_filter/advanced_tracker_particle.h>
 #include <people_tracking_filter/state_pos_vel.h>
 #include <people_tracking_filter/rgb.h>
+
+
+
 //#include <leg_detector/people_tracker.h>
 
 //using namespace std;
@@ -58,6 +66,8 @@ public:
   ros::Time time_;
   ros::Time meas_time_;
 
+  double update_cov_;
+
   bool is_valid_;
 
   double reliability, p;
@@ -69,9 +79,10 @@ public:
 
   std::list<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_;
 
+  dynamic_reconfigure::Server<leg_detector::DualTrackerConfig> server_; /**< The configuration server*/
+  void configure(leg_detector::DualTrackerConfig &config, uint32_t level); /**< Configuration config */
   //LegFeaturePtr other;
   //float dist_to_person_;
-
 
   LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl);
 
@@ -106,6 +117,18 @@ public:
   static double distance(LegFeaturePtr leg0,  LegFeaturePtr leg1);
 
   void addPeopleTracker(PeopleTrackerPtr);
+
+  std::vector<PeopleTrackerPtr> getPeopleTracker(){
+    return peopleTrackerList_;
+  }
+
+  /// output stream
+  friend std::ostream& operator<< (std::ostream& os, const LegFeature& s)
+  {
+
+    os << "(" << s.id_ << ")";
+    return os;
+  };
 
 private:
   void updatePosition();

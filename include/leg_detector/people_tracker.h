@@ -17,7 +17,7 @@
 #include <boost/shared_ptr.hpp>
 #include <leg_detector/leg_feature.h>
 
-#define DEBUG_PEOPLE_TRACKER 0
+#define DEBUG_PEOPLE_TRACKER 1
 
 //class LegFeature; //Forward declaration
 //typedef boost::shared_ptr<LegFeature> LegFeaturePtr;
@@ -43,13 +43,15 @@ class PeopleTracker{
   public:
     PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time);/**< Construct a People tracker based on this two legs */
 
+    ~PeopleTracker();
+
     bool isTheSame(LegFeaturePtr, LegFeaturePtr); /**< Check if this People Tracker is the same as one that would be constructed of the two given legs */
 
     bool isTheSame(PeopleTrackerPtr);
 
-    LegFeaturePtr getLeg0();/**< Get Leg0 */
+    LegFeaturePtr getLeg0() const;/**< Get Leg0 */
 
-    LegFeaturePtr getLeg1();/**< Get Leg1 */
+    LegFeaturePtr getLeg1() const;/**< Get Leg1 */
 
     bool isValid();/**< Check if the people tracker is still valid */
 
@@ -70,6 +72,14 @@ class PeopleTracker{
     double getTotalProbability(){
       return this->total_probability_;
     }
+
+    /// output stream
+    friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
+    {
+
+      os << "[" << *(s.getLeg0()) << *(s.getLeg1()) << "]";
+      return os;
+    };
 
 };
 

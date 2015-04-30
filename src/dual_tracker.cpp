@@ -236,9 +236,6 @@ public:
     leg_features_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("leg_features", 0);
     //matches_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 0);
 
-
-
-
     if (use_seeds_)
     {
       //people_notifier_.registerCallback(boost::bind(&DualTracker::peopleCallback, this, _1));
@@ -249,6 +246,7 @@ public:
     laser_notifier_.registerCallback(boost::bind(&DualTracker::laserCallback, this, _1));
     laser_notifier_.setTolerance(ros::Duration(0.01));
 
+    // Configuration server
     dynamic_reconfigure::Server<leg_detector::DualTrackerConfig>::CallbackType f;
     f = boost::bind(&DualTracker::configure, this, _1, _2);
     server_.setCallback(f);
@@ -676,8 +674,10 @@ public:
 
         // Add the tracker to the list if it is new
         if(!this->people_trackers_.exists(*legIt0, *legIt1)){
-          // Create a people tracker testwise
+          // Create the people tracker
           PeopleTrackerPtr temp_people_tracker(new PeopleTracker(*legIt0, *legIt1, scan->header.stamp));
+          (*legIt0)->addPeopleTracker(temp_people_tracker);
+          (*legIt1)->addPeopleTracker(temp_people_tracker);
           people_trackers_.addPeopleTracker(temp_people_tracker);
         }
 
@@ -804,6 +804,28 @@ public:
     //////////////////////////////////////////////////////////////////////////
 
     ROS_DEBUG("%sPublishing [Cycle %u]", BOLDWHITE, cycle_);
+
+    std::cout << "Associations Leg->People" << std::endl;
+    for(list<LegFeaturePtr>::iterator legIt = saved_leg_features.begin();
+        legIt != saved_leg_features.end();
+        legIt++)
+    {
+      vector<PeopleTrackerPtr> peopleTrackerToThisLegList = (*legIt)->getPeopleTracker();
+
+      std::cout << "\t" << **legIt << std::endl;
+
+      for(vector<PeopleTrackerPtr>::iterator peopleIt = peopleTrackerToThisLegList.begin();
+          peopleIt != peopleTrackerToThisLegList.end();
+          peopleIt++)
+      {
+
+        std::cout << "\t\t" << **peopleIt << std::endl;
+
+      }
+    }
+
+
+
 
     // Publish the detections of legs
     if(publish_legs_){
