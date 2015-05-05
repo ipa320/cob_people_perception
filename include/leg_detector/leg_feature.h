@@ -70,14 +70,18 @@ public:
 
   bool is_valid_;
 
+  bool is_static_; /**< Flag that is set the true after a certain motion has been observed */
+
   double reliability, p;
 
   bool use_filter_; /**< Flag if the Filter should be used currently */
 
   tf::Stamped<tf::Point> position_; /**< The currently estimated leg position */
+  tf::Stamped<tf::Point> initial_position_; /**< The initial position */
+
   BFL::StatePosVel pos_vel_; /**< The currently estimated pos_vel_ */
 
-  std::list<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_;
+  std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_;
 
   dynamic_reconfigure::Server<leg_detector::DualTrackerConfig> server_; /**< The configuration server*/
   void configure(leg_detector::DualTrackerConfig &config, uint32_t level); /**< Configuration config */
@@ -110,8 +114,24 @@ public:
     return is_valid_;
   }
 
+  bool isStatic(){
+    return is_static_;
+  }
+
+  bool isDynamic(){
+    return !is_static_;
+  }
+
   BFL::StatePosVel getEstimate(){
     return pos_vel_;
+  }
+
+  unsigned int getHistorySize(){
+    return position_history_.size();
+  }
+
+  std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  getHistory(){
+    return position_history_;
   }
 
   static double distance(LegFeaturePtr leg0,  LegFeaturePtr leg1);

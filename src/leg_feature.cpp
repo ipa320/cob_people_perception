@@ -27,7 +27,8 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
     //reliability(-1.), p(4),
     use_filter_(true),
     is_valid_(true), // On construction the leg feature is always valid
-    update_cov_(0.0025) // The update Cov
+    update_cov_(0.0025), // The update Cov
+    is_static_(true) // At the beginning the leg feature is considered static
 {
   int_id_ = nextid++;
 
@@ -71,6 +72,11 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   // ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Evaluating first estimation %s", id_.c_str());
   BFL::StatePosVel est;
   filter_.getEstimate(est);
+
+  // Set the initial position
+  initial_position_[0] = loc.getX();
+  initial_position_[1] = loc.getY();
+  initial_position_[2] = loc.getZ();
 
   updatePosition();
 }
@@ -170,6 +176,12 @@ void LegFeature::updatePosition()
   point->setZ( est.pos_[2]);
 
   position_history_.push_back(point);
+
+  // Check if static
+  double static_threshold = 0.5;
+  if(isStatic() && (initial_position_-position_).length() > static_threshold){
+    this->is_static_ = false;
+  }
 }
 
 // TODO do this static

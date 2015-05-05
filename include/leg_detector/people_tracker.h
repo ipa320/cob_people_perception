@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/array.hpp>
 #include <leg_detector/leg_feature.h>
 
 #define DEBUG_PEOPLE_TRACKER 1
@@ -29,13 +30,28 @@ typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr;
  * High level People Tracker consisting of two low level leg tracks
  */
 class PeopleTracker{
+  public:
+    // State Variables
+    BFL::StatePosVel pos_vel_estimation_; /**< The currently estimated pos_vel_ of this people */
+
+    tf::Vector3 hip_vec_; /**< Vector orthogonal to the velocity vector, representing the hip direction pos_vel_estimation.vel_.dot(hip_vec_) = 0 should hold every time*/
+
+    tf::Vector3 hipPos0_, hipPos1_; /**< Vector of the endpoints of vector */
+
+    boost::array<int, 2> id_;
+
+    //std::id_[2];
+
   private:
+    bool is_static_;
+
     std::vector<LegFeaturePtr> legs_; /**< the legs, should be maximum 2! */
 
     bool addLeg(LegFeaturePtr leg);/**< Add a leg two this tracker */
 
     double total_probability_;/**< Overall probability in this tracker */
     double dist_probability_;/**< Probability of this tracker based on the distance of the legs */
+    double leg_association_probability_; /**< The probability that the associated legs belong to this tracker */
     double leg_time_probability_;/**< Probability considering the lifetime of both leg trackers */
 
     ros::Time creation_time_;/**< Time that this tracker was created */
@@ -61,6 +77,12 @@ class PeopleTracker{
     void update(ros::Time);
 
     /**
+     * Update the state of the Tracker
+     * @param The current Time
+     */
+    void updateTrackerState(ros::Time);
+
+    /**
      * Update the probabilities of this tracker
      */
     void updateProbabilities(ros::Time);
@@ -71,6 +93,18 @@ class PeopleTracker{
      */
     double getTotalProbability(){
       return this->total_probability_;
+    }
+
+    BFL::StatePosVel getEstimate(){
+      return pos_vel_estimation_;
+    }
+
+    bool isStatic(){
+      return is_static_;
+    }
+
+    bool isDynamic(){
+      return !is_static_;
     }
 
     /// output stream

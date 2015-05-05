@@ -4,16 +4,11 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Marker1
+        - /Marker1/Status1
         - /Marker1/Namespaces1
-        - /LaserScan1
-        - /PointCloud1
-        - /PointCloud2
-        - /PointCloud3
-        - /Marker2
         - /Marker2/Namespaces1
-        - /MarkerArray1
-        - /PointCloud4
+        - /MarkerArray2
+        - /MarkerArray3
       Splitter Ratio: 0.5
     Tree Height: 563
   - Class: rviz/Selection
@@ -105,7 +100,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -121,7 +116,7 @@ Visualization Manager:
       Topic: /particles
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -163,7 +158,7 @@ Visualization Manager:
       Color: 0; 0; 255
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -179,7 +174,7 @@ Visualization Manager:
       Topic: /leg_measurements
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /leg_track_history
@@ -190,10 +185,10 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: /leg_feature_arrow
+      Marker Topic: /people_velocity_arrow
       Name: MarkerArray
       Namespaces:
-        leg_feature_arrows: true
+        people_velocity_arrows: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -206,7 +201,7 @@ Visualization Manager:
       Channel Name: intensity
       Class: rviz/PointCloud
       Color: 255; 255; 255
-      Color Transformer: ""
+      Color Transformer: RGB8
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -215,16 +210,32 @@ Visualization Manager:
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud
-      Position Transformer: ""
+      Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.01
+      Size (m): 0.1
       Style: Spheres
       Topic: /clusters
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: visualization_marker_array
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: false
+      Marker Topic: /people_labels
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 135; 135; 135
@@ -250,22 +261,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 18.1596
+      Distance: 3.70377
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.170279
-        Y: -1.27131
-        Z: 0.778547
+        X: 1.50423
+        Y: -0.496827
+        Z: 0.507476
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.785398
+      Pitch: 1.5598
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.785398
+      Yaw: 3.14593
     Saved: ~
 Window Geometry:
   Displays:

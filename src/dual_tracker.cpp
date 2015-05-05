@@ -165,10 +165,13 @@ public:
   bool publish_leg_history_;
   bool publish_people_tracker_;
   bool publish_leg_feature_arrows_; /**< True if the estimation of the leg features are visualized as arrows */
+  bool publish_static_people_trackers_; /**< Set True if also static People Trackers(Trackers that never moved) should be displayed */
 
   int next_p_id_;
 
   double leg_reliability_limit_;
+
+  double people_probability_limit_; /**< Min Value for people to be considered true  */
 
   int min_points_per_group_;
 
@@ -189,6 +192,9 @@ public:
   ros::Publisher leg_features_history_vis_pub_;/**< Visualization of leg tracks */
   ros::Publisher matches_vis_pub_;/**< Visualization of the pairing leg_detection <-> leg_track */
   ros::Publisher particles_pub_;/**< Visualization of particles */
+  ros::Publisher people_velocity_pub_;/**< Visualization of the people velocities */
+  ros::Publisher people_track_label_pub_; /**< Publishes labels of people tracks */
+
   dynamic_reconfigure::Server<leg_detector::DualTrackerConfig> server_; /**< The configuration server*/
 
   message_filters::Subscriber<people_msgs::PositionMeasurement> people_sub_;
@@ -230,6 +236,8 @@ public:
     particles_pub_ = nh_.advertise<sensor_msgs::PointCloud>("particles", 0);
     people_track_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("people_tracker", 0);
     leg_features_array_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("leg_feature_arrow", 0);
+    people_velocity_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("people_velocity_arrow", 0);
+    people_track_label_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("people_labels", 0);
 
     // Visualization topics
     leg_measurements_vis_pub_= nh_.advertise<sensor_msgs::PointCloud>("leg_measurements", 0);
@@ -270,6 +278,8 @@ public:
     connected_thresh_       = config.connection_threshold;    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - connected_thresh_ %f", __func__, connected_thresh_ );
     min_points_per_group_    = config.min_points_per_group;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - min_points_per_group %i", __func__, min_points_per_group_ );
     leg_reliability_limit_  = config.leg_reliability_limit;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, leg_reliability_limit_ );
+    people_probability_limit_ = config.people_probability_limit; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, people_probability_limit_);
+
     publish_legs_           = config.publish_legs;            ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_legs_ %d", __func__, publish_legs_ );
     publish_people_         = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_ %d", __func__, publish_people_ );
     publish_leg_markers_    = config.publish_leg_markers;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_markers_ %d", __func__, publish_leg_markers_ );
@@ -280,6 +290,7 @@ public:
     publish_leg_history_    = config.publish_leg_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_history_ %d", __func__, publish_leg_history_ );
     publish_people_tracker_ = config.publish_people_tracker;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_tracker_ %d", __func__, publish_people_tracker_ );
     publish_leg_feature_arrows_ = config.publish_leg_feature_arrows; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_feature_arrows_ %d", __func__, publish_leg_feature_arrows_ );
+    publish_static_people_trackers_ = config.publish_static_people_trackers; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_static_people_trackers_ %d", __func__, publish_static_people_trackers_);
 
     no_observation_timeout_s = config.no_observation_timeout;
     max_second_leg_age_s     = config.max_second_leg_age;
@@ -796,7 +807,7 @@ public:
     ROS_DEBUG("%sHigh level update [Cycle %u]", BOLDWHITE, cycle_);
 
     // Update the probabilites of every people tracker
-    people_trackers_.updateProbabilities(scan->header.stamp);
+    people_trackers_.updateAllTrackers(scan->header.stamp);
 
     ROS_DEBUG("%sHigh level update done [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
@@ -805,7 +816,7 @@ public:
 
     ROS_DEBUG("%sPublishing [Cycle %u]", BOLDWHITE, cycle_);
 
-    std::cout << "Associations Leg->People" << std::endl;
+/*    std::cout << "Associations Leg->People" << std::endl;
     for(list<LegFeaturePtr>::iterator legIt = saved_leg_features.begin();
         legIt != saved_leg_features.end();
         legIt++)
@@ -818,11 +829,17 @@ public:
           peopleIt != peopleTrackerToThisLegList.end();
           peopleIt++)
       {
-
         std::cout << "\t\t" << **peopleIt << std::endl;
-
       }
     }
+
+    std::cout << "Associations People->Leg" << std::endl;
+    for(vector<PeopleTrackerPtr>::iterator peopleIt = people_trackers_.getList()->begin();
+        peopleIt != people_trackers_.getList()->end();
+        peopleIt++)
+    {
+      std::cout << "\t" << **peopleIt << std::endl;
+    }*/
 
 
 
@@ -861,6 +878,8 @@ public:
 
     if(publish_people_tracker_){
       publishPeopleTracker(scan->header.stamp);
+      publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
+      publishPeopleTrackerLabels(scan->header.stamp);
     }
 
     // Publish leg Measurements on
@@ -1029,7 +1048,7 @@ public:
     {
       BFL::StatePosVel est = (*legFeatureIt)->getEstimate();
 
-      std::cout <<  est << std::endl;
+      //std::cout <<  est << std::endl;
 
       visualization_msgs::Marker marker;
       marker.header.frame_id = fixed_frame;
@@ -1055,7 +1074,7 @@ public:
       marker.points.push_back(startPoint);
       marker.points.push_back(endPoint);
 
-      marker.scale.x = 0.07; //shaft diameter
+      marker.scale.x = 0.05; //shaft diameter
       marker.scale.y = 0.1; //head diameter
       marker.scale.z = 0; // head length (if other than zero)
       marker.color.a = 1.0; // Don't forget to set the alpha!
@@ -1068,6 +1087,63 @@ public:
       counter++;
     }
     leg_features_array_vis_pub_.publish(msgArray);
+
+  }
+
+  void publishPeopleVelocity(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
+
+    // Create the Visualization Message (a marker array)
+    visualization_msgs::MarkerArray msgArray;
+
+    int counter = 0;
+
+    for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
+        peopleIt != peopleTracker->end();
+        peopleIt++)
+    {
+      if((*peopleIt)->getTotalProbability() > people_probability_limit_ ){
+
+        BFL::StatePosVel est = (*peopleIt)->getEstimate();
+
+        //std::cout <<  est << std::endl;
+
+        visualization_msgs::Marker marker;
+        marker.header.frame_id = fixed_frame;
+        marker.header.stamp = time;
+        marker.ns = "people_velocity_arrows";
+        marker.id = counter;
+        marker.type = visualization_msgs::Marker::ARROW;
+        marker.action = visualization_msgs::Marker::ADD;
+
+        geometry_msgs::Point startPoint;
+        startPoint.x = est.pos_[0];
+        startPoint.y = est.pos_[1];
+        startPoint.z = est.pos_[2];
+
+        double factor = 1; // Control the arrow length
+
+        geometry_msgs::Point endPoint;
+        endPoint.x = est.pos_[0] + est.vel_[0]*factor;
+        endPoint.y = est.pos_[1] + est.vel_[1]*factor;
+        endPoint.z = est.pos_[2] + est.vel_[2]*factor;
+
+        marker.points.push_back(startPoint);
+        marker.points.push_back(endPoint);
+
+        marker.scale.x = 0.1; //shaft diameter
+        marker.scale.y = 0.1; //head diameter
+        marker.scale.z = 0; // head length (if other than zero)
+        marker.color.a = 1.0; // Don't forget to set the alpha!
+        marker.color.r = 0.0;
+        marker.color.g = 0.0;
+        marker.color.b = 1.0;
+
+        msgArray.markers.push_back(marker);
+
+        counter++;
+      }
+    }
+    people_velocity_pub_.publish(msgArray);
 
   }
 
@@ -1247,10 +1323,8 @@ public:
         line_list.color.b = b/255.0;
         line_list.color.a = 1.0;
 
-
-
-        std::list<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator prevPointIt;
-        std::list<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator nextPointIt;
+        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator prevPointIt;
+        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator nextPointIt;
 
         prevPointIt = (*legFeatureIt)->position_history_.begin();
         nextPointIt = (*legFeatureIt)->position_history_.begin();
@@ -1358,8 +1432,10 @@ public:
         peopleTrackerIt++){
 
 
-
-      if((*peopleTrackerIt)->isValid()){
+      if((*peopleTrackerIt)->isValid() // Tracker must be valid
+         && (*peopleTrackerIt)->getTotalProbability() > 0.5 // Tracker must have certain probability
+         && (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()) // Publish static Trackers
+         ){
 
         // The geometry message
         visualization_msgs::Marker line_list;
@@ -1373,17 +1449,48 @@ public:
         line_list.color.g = 255.0;
         line_list.color.a = 1.0;
 
-        geometry_msgs::Point point0, point1;
-        point0.x = (*peopleTrackerIt)->getLeg0()->position_[0];
-        point0.y = (*peopleTrackerIt)->getLeg0()->position_[1];
-        point0.z = 0;
+        geometry_msgs::Point pointLeg0, pointLeg1, pointHip0, pointHip1, pointCenter;
 
-        point1.x = (*peopleTrackerIt)->getLeg1()->position_[0];;
-        point1.y = (*peopleTrackerIt)->getLeg1()->position_[1];;
-        point1.z = 0;
+        // Leg 0
+        pointLeg0.x = (*peopleTrackerIt)->getLeg0()->position_[0];
+        pointLeg0.y = (*peopleTrackerIt)->getLeg0()->position_[1];
+        pointLeg0.z = 0;
 
-        line_list.points.push_back(point0);
-        line_list.points.push_back(point1);
+        // Hip 0
+        pointHip0.x = (*peopleTrackerIt)->hipPos0_[0];
+        pointHip0.y = (*peopleTrackerIt)->hipPos0_[1];
+        pointHip0.z = 0.0;
+
+        // Center of the Person
+        //pointCenter.x = (*peopleTrackerIt)->getEstimate().pos_[0];
+        //pointCenter.y = (*peopleTrackerIt)->getEstimate().pos_[1];
+        //pointCenter.z = 0.0;
+
+        // Hip 1
+        pointHip1.x = (*peopleTrackerIt)->hipPos1_[0];
+        pointHip1.y = (*peopleTrackerIt)->hipPos1_[1];
+        pointHip1.z = 0.0;
+
+        // Leg 1
+        pointLeg1.x = (*peopleTrackerIt)->getLeg1()->position_[0];;
+        pointLeg1.y = (*peopleTrackerIt)->getLeg1()->position_[1];;
+        pointLeg1.z = 0;
+
+        line_list.points.push_back(pointLeg0);
+
+        std::cout << (*peopleTrackerIt)->getEstimate().vel_.length() << std::endl;
+
+        // Publish intermediate points for the hips only if the person has some speed at least, otherwise only a straight line
+        if((*peopleTrackerIt)->getEstimate().vel_.length() > 0.4){
+          line_list.points.push_back(pointHip0);
+          line_list.points.push_back(pointHip0);
+        //line_list.points.push_back(pointCenter);
+
+        //line_list.points.push_back(pointCenter);
+          line_list.points.push_back(pointHip1);
+          line_list.points.push_back(pointHip1);
+        }
+        line_list.points.push_back(pointLeg1);
 
         // Publish the pointcloud
         people_track_vis_pub_.publish(line_list);
@@ -1393,6 +1500,45 @@ public:
     }
 
 
+  }
+
+  // Add Labels to the People Trackers
+  void publishPeopleTrackerLabels(ros::Time time){
+
+    // The marker Array
+    visualization_msgs::MarkerArray labelArray;
+
+    int counter = 0;
+    for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
+        peopleTrackerIt != people_trackers_.getList()->end();
+        peopleTrackerIt++){
+
+      if((*peopleTrackerIt)->getTotalProbability()>0.1){
+      visualization_msgs::Marker label;
+      label.header.stamp = time;
+      label.header.frame_id = fixed_frame;
+      label.ns = "PEOPLE_TRACKER_LABEL";
+      label.id = counter;
+      label.type = label.TEXT_VIEW_FACING;
+      label.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
+      label.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
+      label.pose.position.z = 0.3;
+      label.scale.z = .2;
+      label.color.a = 1;
+      label.lifetime = ros::Duration(0.5);
+
+      // Add text
+      char buf[100];
+      sprintf(buf, "#PT%d-%d", (*peopleTrackerIt)->id_[0], (*peopleTrackerIt)->id_[1]);
+      label.text = buf;
+
+      labelArray.markers.push_back(label);
+
+      counter++;
+      }
+    }
+    // Publish
+    people_track_label_pub_.publish(labelArray);
   }
 
 };
