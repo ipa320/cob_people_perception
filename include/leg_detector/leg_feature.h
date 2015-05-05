@@ -16,6 +16,7 @@
 #undef DEFAULT
 #include <leg_detector/DualTrackerConfig.h>
 #define DEFAULT 0
+#include <leg_detector/color_definitions.h>
 
 // Transforms
 #include <tf/transform_listener.h>
@@ -27,7 +28,7 @@
 
 
 
-//#include <leg_detector/people_tracker.h>
+#include <leg_detector/people_tracker.h>
 
 //using namespace std;
 //using namespace ros;
@@ -110,7 +111,7 @@ public:
     is_valid_ = valid;
   }
 
-  bool isValid(){
+  bool isValid() const{
     return is_valid_;
   }
 
@@ -142,11 +143,19 @@ public:
     return peopleTrackerList_;
   }
 
+  // Remove People Tracker that are invalid from the associations list
+  void removeInvalidAssociations();
+
   /// output stream
   friend std::ostream& operator<< (std::ostream& os, const LegFeature& s)
   {
 
-    os << "(" << s.id_ << ")";
+    os << "LegFeature: " << s.int_id_;
+
+    if(s.isValid())
+      os << BOLDGREEN << " [valid]" << RESET;
+    else
+      os << BOLDRED << " [invalid]" << RESET;
     return os;
   };
 

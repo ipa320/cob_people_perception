@@ -20,8 +20,10 @@
 
 #define DEBUG_PEOPLE_TRACKER 1
 
-//class LegFeature; //Forward declaration
-//typedef boost::shared_ptr<LegFeature> LegFeaturePtr;
+#define DEBUG_PEOPLETRACKERLIST 1
+
+class LegFeature; //Forward declaration
+typedef boost::shared_ptr<LegFeature> LegFeaturePtr;
 
 class PeopleTracker; //Forward declaration
 typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr;
@@ -69,7 +71,7 @@ class PeopleTracker{
 
     LegFeaturePtr getLeg1() const;/**< Get Leg1 */
 
-    bool isValid();/**< Check if the people tracker is still valid */
+    bool isValid() const;/**< Check if the people tracker is still valid */
 
     /**
      * Update everything of this tracker
@@ -91,7 +93,7 @@ class PeopleTracker{
      * Get the Total Probability
      * @return  The total probability
      */
-    double getTotalProbability(){
+    double getTotalProbability() const{
       return this->total_probability_;
     }
 
@@ -107,17 +109,28 @@ class PeopleTracker{
       return !is_static_;
     }
 
+    void removeLegs(){
+      legs_.clear();
+    }
+
     /// output stream
     friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
     {
 
-      os << "[" << *(s.getLeg0()) << *(s.getLeg1()) << "]";
+      os << "PeopleTracker: " << s.id_[0] << " - " << s.id_[1] << " p_t: " << s.getTotalProbability();
+
+      if(s.isValid())
+        os << BOLDGREEN << " [valid]" << RESET;
+      else
+        os << BOLDRED << " [invalid]" << RESET;
+
       return os;
+
     };
 
 };
 
-
+bool isValidPeopleTracker(const PeopleTrackerPtr & o);
 
 /**
  * List of all people trackers, checks that there are only unique assignments

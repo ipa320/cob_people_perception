@@ -120,6 +120,9 @@ struct LegDetectionProb {
     SampleSet* cluster;
 };
 
+bool isLegFeatureValid(const LegFeaturePtr & o){
+  return !o->isValid();
+}
 
 // actual legdetector node
 class DualTracker
@@ -487,39 +490,69 @@ public:
 
     benchmarking::Timer removeTimer; removeTimer.start();
     // Iterate through the saved features and remove those who havent been observed since (no_observation_timeout_s)
-    int deletionCounter = 0;
-    int numberOfSavedFeaturesBefore = saved_leg_features.size();
+
     list<LegFeaturePtr>::iterator sf_iter = saved_leg_features.begin();
-    while (sf_iter != saved_leg_features.end())
+    for(list<LegFeaturePtr>::iterator sf_iter = saved_leg_features.begin();
+        sf_iter != saved_leg_features.end();
+        sf_iter++)
     {
-      // If there was no measurement of this feature in the last 'no_observation_timeout_s' seconds-> removed it and clear the link of its partner
-      // IDEA_ make this dependent on the observation model
       if ((*sf_iter)->meas_time_ < purge)
       {
         (*sf_iter)->setValidity(false);
-
-        //if ((*sf_iter)->other) // If leg is paired
-        //  (*sf_iter)->other->other = NULL; //Remove link to itself from partner
-
-        //std::cout << "Removing " << (*sf_iter)->id_ << "(" << (*sf_iter) << ")" << std::endl;
-        // delete(*sf_iter);
-        //(*sf_iter) = NULL;
-        //std::cout << "NULL? " << "(" << (*sf_iter) << ")" << std::endl;
-        saved_leg_features.erase(sf_iter++);
-        ++deletionCounter;
       }
-      else
-        ++sf_iter;
+
+      //std::cout << **sf_iter << std::endl;
+      //std::cout << "ReferenceCount:" << (*sf_iter).use_count() << std::endl;
     }
-    removeTimer.stop();
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Removed %i of %i features because the havent been detected in the last %f seconds",__func__, deletionCounter, numberOfSavedFeaturesBefore, no_observation_timeout_s);
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Removing features took %f ms",__func__, removeTimer.getElapsedTimeMs());
 
-    //people_trackers_.printTrackerList();
-
+    // Remove invalid people tracker
     people_trackers_.removeInvalidTrackers();
 
+    // Remove invalid associations og the leg Features
+    for(list<LegFeaturePtr>::iterator leg_it = saved_leg_features.begin();
+        leg_it != saved_leg_features.end();
+        leg_it++){
+
+        (*leg_it)->removeInvalidAssociations();
+    }
+
+
+    // Remove the invalid legFeatures from saved_leg_features (Remember these are shared pointers!!)
+    int size_before = saved_leg_features.size();
+    saved_leg_features.erase(std::remove_if(saved_leg_features.begin(), saved_leg_features.end(), isLegFeatureValid), saved_leg_features.end());
+    int features_deleted = size_before - saved_leg_features.size();
+
+    removeTimer.stop();
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Removed %i features because the havent been detected in the last %f seconds",__func__, features_deleted, no_observation_timeout_s);
+    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Removing features took %f ms",__func__, removeTimer.getElapsedTimeMs());
+
+    people_trackers_.printTrackerList();
+
+
+/*
+    // Remove association to invalid trackers inside the leg_features
+    for(list<LegFeaturePtr>::iterator leg_it = saved_leg_features.begin();
+        leg_it != saved_leg_features.end();
+        leg_it++){
+
+        (*leg_it)->removeInvalidAssociations();
+
+        //Check that this feature is valid, invalid features should have been cleared before
+        ROS_ASSERT((*leg_it)->isValid());
+
+        // Check that in fact there are no more invalid Associations!
+        for(vector<PeopleTrackerPtr>::iterator ppl_it = (*leg_it)->peopleTrackerList_.begin(); //TODO Remove this later
+            ppl_it != (*leg_it)->peopleTrackerList_.end();
+            ppl_it++){
+          ROS_ASSERT((*ppl_it)->isValid());
+        }
+    }*/
+
+
+
     //people_trackers_.printTrackerList();
+
+    //assert(features_deleted < 1);
 
     ROS_DEBUG("%sRemoving old Trackers done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
@@ -1550,6 +1583,10 @@ int main(int argc, char **argv)
   g_argv = argv;
   ros::NodeHandle nh;
   DualTracker ld(nh);
+
+  std::cout << "DUAL TRACKER started!!!" << std::endl;
+  ROS_INFO("DUAL TRACKER started!");
+
   ros::spin();
 
   return 0;

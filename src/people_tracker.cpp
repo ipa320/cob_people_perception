@@ -15,9 +15,11 @@
 //// PeopleTracker Class Definitions
 /////////////////////////////////////////////////////////////
 
-bool isValid(const PeopleTrackerPtr & o){
+// Helper function to delete invalid People Tracker from container objects
+bool isValidPeopleTracker(const PeopleTrackerPtr & o){
   return !o->isValid();
 }
+
 
 PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time time):
   creation_time_(time),
@@ -42,10 +44,12 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
 //  leg0->addPeopleTracker( boost::shared_ptr<PeopleTracker>(this) );
 //  leg1->addPeopleTracker( boost::shared_ptr<PeopleTracker>(this) );
 
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s <NEW_PEOPLETRACKER %i-%i>", __func__, id_[0], id_[1]);
+
 }
 
 PeopleTracker::~PeopleTracker(){
-  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s",__func__);
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s <DELETE_PEOPLETRACKER %i-%i>", __func__, id_[0], id_[1]);
 }
 
 LegFeaturePtr PeopleTracker::getLeg0() const{
@@ -90,14 +94,12 @@ bool PeopleTracker::isTheSame (PeopleTrackerPtr peopleTracker){
   return false;
 }
 
-bool PeopleTracker::isValid(){
-  //std::cout << "Checking people tracker with the legs " << getLeg0()->id_ << "(" << getLeg0() << ")" << " - " << getLeg1()->id_ << "(" << getLeg1() << ")" << " for validity";
-  if(getLeg0()->isValid() && getLeg1()->isValid()){
-    //std::cout << " -> valid" << std::endl;
-    return true;
-  }
-  //std::cout << " -> invalid" << std::endl;
-  return false;
+/**
+ * Check if this People Tracker is valid. This is the case if both its associated leg trackers are valid.
+ * @return
+ */
+bool PeopleTracker::isValid() const{
+  return (getLeg0()->isValid() && getLeg1()->isValid());
 }
 
 void PeopleTracker::update(ros::Time time){
@@ -317,20 +319,26 @@ bool PeopleTrackerList::addPeopleTracker(PeopleTrackerPtr peopleTrackerPtr){
 }
 
 int PeopleTrackerList::removeInvalidTrackers(){
-  //std::cout << "Removing invalid Trackers" << std::endl;
+
+  ROS_DEBUG_COND(DEBUG_PEOPLETRACKERLIST,"PeopleTrackerList::%s",__func__);
+
+  // Delete the legs
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
+    (*peopleTrackerIt)->removeLegs();
+  }
 
   int size_before = list_->size();
-
-  list_->erase(std::remove_if(list_->begin(), list_->end(), isValid),list_->end());
-
+  list_->erase(std::remove_if(list_->begin(), list_->end(), isValidPeopleTracker),list_->end());
   return size_before - list_->size();
+
+  ROS_DEBUG_COND(DEBUG_PEOPLETRACKERLIST,"PeopleTrackerList::%s done",__func__);
 
 }
 
 void PeopleTrackerList::printTrackerList(){
   std::cout << "TrackerList:" << std::endl;
   for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
-    std::cout << "PeopleTracker: " << (*peopleTrackerIt)->getLeg0()->id_ << " - " << (*peopleTrackerIt)->getLeg1()->id_ << std::endl;
+    std::cout << **peopleTrackerIt << std::endl;
   }
 }
 

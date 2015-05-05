@@ -19,6 +19,7 @@ static bool use_filter = false;
 
 static int NumberOfParticles = 1300;
 
+
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
@@ -85,6 +86,8 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
  * Destructor
  */
 LegFeature::~LegFeature(){
+  //peopleTrackerList_.clear();
+
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s <DELETE_LEGFEATURE %s>", __func__, id_.c_str());
 }
 
@@ -197,6 +200,10 @@ double LegFeature::distance(LegFeaturePtr leg0,  LegFeaturePtr leg1){
     double distance = (one-two).length();
 
     return distance;
+}
+
+void LegFeature::removeInvalidAssociations(){
+  peopleTrackerList_.erase(std::remove_if(peopleTrackerList_.begin(),peopleTrackerList_.end(), isValidPeopleTracker),peopleTrackerList_.end());
 }
 
 /**
