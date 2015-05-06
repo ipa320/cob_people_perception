@@ -526,39 +526,22 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Removed %i features because the havent been detected in the last %f seconds",__func__, features_deleted, no_observation_timeout_s);
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Removing features took %f ms",__func__, removeTimer.getElapsedTimeMs());
 
-    people_trackers_.printTrackerList();
-
-
-/*
-    // Remove association to invalid trackers inside the leg_features
-    for(list<LegFeaturePtr>::iterator leg_it = saved_leg_features.begin();
-        leg_it != saved_leg_features.end();
-        leg_it++){
-
-        (*leg_it)->removeInvalidAssociations();
-
-        //Check that this feature is valid, invalid features should have been cleared before
-        ROS_ASSERT((*leg_it)->isValid());
-
-        // Check that in fact there are no more invalid Associations!
-        for(vector<PeopleTrackerPtr>::iterator ppl_it = (*leg_it)->peopleTrackerList_.begin(); //TODO Remove this later
-            ppl_it != (*leg_it)->peopleTrackerList_.end();
-            ppl_it++){
-          ROS_ASSERT((*ppl_it)->isValid());
-        }
-    }*/
-
-
-
-    //people_trackers_.printTrackerList();
-
-    //assert(features_deleted < 1);
-
     ROS_DEBUG("%sRemoving old Trackers done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
-    //// Propagation/Prediction using the motion model-
+    //// Propagation/Prediction using the motion model
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sPrediction [Cycle %u]", BOLDWHITE, cycle_);
+
+    // High level propagation
+    boost::shared_ptr<std::vector<PeopleTrackerPtr> > pplTrackers = people_trackers_.getList();
+    for(std::vector<PeopleTrackerPtr>::iterator pplTrackerIt = pplTrackers->begin();
+        pplTrackerIt != pplTrackers->end();
+        pplTrackerIt++)
+    {
+      (*pplTrackerIt)->propagate(scan->header.stamp);
+    }
+
+
 
     // System update of trackers, and copy updated ones in propagate list
     benchmarking::Timer propagationTimer; propagationTimer.start();
@@ -724,7 +707,6 @@ public:
           (*legIt1)->addPeopleTracker(temp_people_tracker);
           people_trackers_.addPeopleTracker(temp_people_tracker);
         }
-
 
         //std::cout << "Investigation of combination " << (*legIt0)->int_id_ << " - " << (*legIt1)->int_id_ << std::endl;
       }
@@ -1556,13 +1538,13 @@ public:
       label.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
       label.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
       label.pose.position.z = 0.3;
-      label.scale.z = .2;
+      label.scale.z = .17;
       label.color.a = 1;
       label.lifetime = ros::Duration(0.5);
 
       // Add text
       char buf[100];
-      sprintf(buf, "#PT%d-%d", (*peopleTrackerIt)->id_[0], (*peopleTrackerIt)->id_[1]);
+      sprintf(buf, "#PT%d-%d-p%.2f", (*peopleTrackerIt)->id_[0], (*peopleTrackerIt)->id_[1], (*peopleTrackerIt)->getTotalProbability());
       label.text = buf;
 
       labelArray.markers.push_back(label);
