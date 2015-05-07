@@ -85,6 +85,12 @@ class PeopleTracker{
     void updateTrackerState(ros::Time);
 
     /**
+     * Do a propagation of the two leg motion model
+     * @param time (Time of the scan)
+     */
+    void propagate(ros::Time time);
+
+    /**
      * Update the probabilities of this tracker
      */
     void updateProbabilities(ros::Time);
@@ -97,9 +103,20 @@ class PeopleTracker{
       return this->total_probability_;
     }
 
+    /**
+     * Get the estimation of the leg with id
+     * @param Id of the leg
+     * @return The estimation
+     */
+    BFL::StatePosVel getLegEstimate(int id);
+
     BFL::StatePosVel getEstimate(){
       return pos_vel_estimation_;
     }
+
+    //BFL::StatePosVel getLegEstimate(int id){
+    //  return pos_vel_estimation_;
+    //}
 
     bool isStatic(){
       return is_static_;
@@ -117,7 +134,11 @@ class PeopleTracker{
     friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
     {
 
-      os << "PeopleTracker: " << s.id_[0] << " - " << s.id_[1] << " p_t: " << s.getTotalProbability();
+      os << "PeopleTracker: " << s.id_[0] << " - " << s.id_[1];
+
+      if(s.getTotalProbability() > 0.5) // TODO make this dependend on some reliability limit
+        os << BOLDMAGENTA;
+      os  << " p_t: " << s.getTotalProbability();
 
       if(s.isValid())
         os << BOLDGREEN << " [valid]" << RESET;

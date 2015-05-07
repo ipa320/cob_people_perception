@@ -17,13 +17,13 @@ static std::string fixed_frame              = "odom_combined";  // The fixed fra
 static double kal_p = 4, kal_q = .002, kal_r = 10;
 static bool use_filter = false;
 
-static int NumberOfParticles = 1300;
+static int NumberOfParticles = 1500;
 
 
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    sys_sigma_(tf::Vector3(0.02, 0.02, 0.0), tf::Vector3(1.0, 1.0, 0.0)), // The initialized system noise
+    sys_sigma_(tf::Vector3(0.4, 0.4, 0.0), tf::Vector3(2.0, 2.0, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true),
@@ -31,6 +31,9 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
     update_cov_(0.0025), // The update Cov
     is_static_(true) // At the beginning the leg feature is considered static
 {
+
+
+
   int_id_ = nextid++;
 
   char id[100];
@@ -101,17 +104,54 @@ void LegFeature::configure(leg_detector::DualTrackerConfig &config, uint32_t lev
  */
 void LegFeature::propagate(ros::Time time)
 {
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i", __func__, int_id_);
+
+  // Update the time
   time_ = time;
 
+  // Get the associated people tracker with the highest probability
+  PeopleTrackerPtr mostProbableAssociatedPPL;
+  double max_prob = 0.0;
+
+  std::vector<PeopleTrackerPtr> associatedPT = this->getPeopleTracker();
+
+  for(std::vector<PeopleTrackerPtr>::iterator pplIt = associatedPT.begin();
+      pplIt != associatedPT.end();
+      pplIt++)
+  {
+    if((*pplIt)->getTotalProbability() > max_prob){
+      mostProbableAssociatedPPL = *pplIt;
+      max_prob = (*pplIt)->getTotalProbability();
+    }
+    std::cout << "\t" << **pplIt << std::endl;
+  }
+
+  // If there exists a relevant high level filter
+  if(mostProbableAssociatedPPL && mostProbableAssociatedPPL->getTotalProbability() > 0.5){ // TODO Make the configurable
+    std::cout << "\t Highest is:" << *mostProbableAssociatedPPL << std::endl;
+
+    // Get estimation for itself
+    StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
+
+  }
+  // If there is no relevant people tracker assigned-> Consider only the low level filter
+  else
+  {
+    std::cout << "\t There is now relevant high level filter" << std::endl;
+  }
+
+  // Do the Prediction in the filter
   filter_.updatePrediction(time.toSec());
 
+  //assert(false); // Continue work here: set the prediction from the current motion model
+  // update the Position
   updatePosition();
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Propagating leg_tracker with ID %s", __func__, id_.c_str());
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Done Propagating leg_tracker with ID %s", __func__, id_.c_str());
 
 }
 
-// TODO Rewrite this to accept all(!) measurements
+// Here the measurement is used to update the filter location
 void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 {
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
@@ -127,27 +167,27 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
   cov = 0.0;
-  cov(1, 1) = 0.0025;
-  cov(2, 2) = 0.0025;
-  cov(3, 3) = 0.0025;
+  cov(1, 1) = 0.00025;
+  cov(2, 2) = 0.00025;
+  cov(3, 3) = 0.00025;
 
   filter_.updateCorrection(loc, cov);
 
   // Update the position based on the latest measurements
   updatePosition();
 
-/*  if (reliability < 0 || !use_filter_)
-  {
-    reliability = probability;
-    p = kal_p;
-  }
-  else
-  {
-    p += kal_q;
-    double k = p / (p + kal_r);
-    reliability += k * (probability - reliability);
-    p *= (1 - k);
-  }*/
+  // Update history
+  BFL::StatePosVel est;
+  filter_.getEstimate(est);
+
+  boost::shared_ptr<tf::Stamped<tf::Point> > point(new tf::Stamped<tf::Point>());
+  point->setX( est.pos_[0]);
+  point->setY( est.pos_[1]);
+  point->setZ( est.pos_[2]);
+  point->stamp_ = time_;
+
+  position_history_.push_back(point);
+
 }
 
 // Update own position based on the Estimation of the Filter
@@ -172,17 +212,9 @@ void LegFeature::updatePosition()
   double nreliability = fmin(1.0, fmax(0.1, est.vel_.length() / 0.5)); //TODO ???????
   //reliability = fmax(reliability, nreliability);
 
-  // Update history
-  boost::shared_ptr<tf::Stamped<tf::Point> > point(new tf::Stamped<tf::Point>());
-  point->setX( est.pos_[0]);
-  point->setY( est.pos_[1]);
-  point->setZ( est.pos_[2]);
-
-  position_history_.push_back(point);
-
   // Check if static
-  double static_threshold = 0.5;
-  if(isStatic() && (initial_position_-position_).length() > static_threshold){
+  double static_threshold = 0.8; // TODO make this configurable
+  if((initial_position_-position_).length() > static_threshold){
     this->is_static_ = false;
   }
 }
@@ -198,7 +230,6 @@ double LegFeature::distance(LegFeaturePtr leg0,  LegFeaturePtr leg1){
     tf::Stamped<tf::Point> two = leg1->position_;
 
     double distance = (one-two).length();
-
     return distance;
 }
 

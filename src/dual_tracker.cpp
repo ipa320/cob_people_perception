@@ -158,7 +158,7 @@ public:
 
   bool use_seeds_;
 
-  bool publish_legs_;
+  bool publish_leg_measurements_;
   bool publish_people_;
   bool publish_leg_markers_;
   bool publish_people_markers_;
@@ -167,7 +167,7 @@ public:
   bool publish_matches_;
   bool publish_leg_history_;
   bool publish_people_tracker_;
-  bool publish_leg_feature_arrows_; /**< True if the estimation of the leg features are visualized as arrows */
+  bool publish_leg_velocity_; /**< True if the estimation of the leg features are visualized as arrows */
   bool publish_static_people_trackers_; /**< Set True if also static People Trackers(Trackers that never moved) should be displayed */
 
   int next_p_id_;
@@ -278,22 +278,34 @@ public:
 
   void configure(leg_detector::DualTrackerConfig &config, uint32_t level)
   {
-    connected_thresh_       = config.connection_threshold;    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - connected_thresh_ %f", __func__, connected_thresh_ );
-    min_points_per_group_    = config.min_points_per_group;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - min_points_per_group %i", __func__, min_points_per_group_ );
-    leg_reliability_limit_  = config.leg_reliability_limit;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, leg_reliability_limit_ );
-    people_probability_limit_ = config.people_probability_limit; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, people_probability_limit_);
+    // Clustering parameters
+    connected_thresh_           = config.connection_threshold;    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - connected_thresh_ %f", __func__, connected_thresh_ );
+    min_points_per_group_       = config.min_points_per_group;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - min_points_per_group %i", __func__, min_points_per_group_ );
 
-    publish_legs_           = config.publish_legs;            ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_legs_ %d", __func__, publish_legs_ );
-    publish_people_         = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_ %d", __func__, publish_people_ );
-    publish_leg_markers_    = config.publish_leg_markers;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_markers_ %d", __func__, publish_leg_markers_ );
-    publish_people_markers_ = config.publish_people_markers;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_markers_ %d", __func__, publish_people_markers_ );
-    publish_clusters_       = config.publish_clusters;        ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
-    publish_particles_      = config.publish_particles;       ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_particles_ %d", __func__, publish_particles_ );
-    publish_matches_        = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
-    publish_leg_history_    = config.publish_leg_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_history_ %d", __func__, publish_leg_history_ );
-    publish_people_tracker_ = config.publish_people_tracker;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_tracker_ %d", __func__, publish_people_tracker_ );
-    publish_leg_feature_arrows_ = config.publish_leg_feature_arrows; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_feature_arrows_ %d", __func__, publish_leg_feature_arrows_ );
+    // Leg Tracker Parameters
+    leg_reliability_limit_      = config.leg_reliability_limit;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, leg_reliability_limit_ );
+
+    // People Tracker Parameters
+    people_probability_limit_   = config.people_probability_limit; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, people_probability_limit_);
+
+    // Publish clustering
+    publish_clusters_           = config.publish_clusters;        ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
+
+    // Publish the leg trackers
+    publish_leg_measurements_   = config.publish_leg_measurements;            ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_measurements_ %d", __func__, publish_leg_measurements_ );
+    publish_leg_velocity_       = config.publish_leg_velocity; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_velocity_ %d", __func__, publish_leg_velocity_ );
+    publish_leg_markers_        = config.publish_leg_markers;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_markers_ %d", __func__, publish_leg_markers_ );
+    publish_leg_history_        = config.publish_leg_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_history_ %d", __func__, publish_leg_history_ );
+
+    // Publish the people tracker
+    publish_people_             = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_ %d", __func__, publish_people_ );
+    publish_people_markers_     = config.publish_people_markers;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_markers_ %d", __func__, publish_people_markers_ );
+    publish_people_tracker_     = config.publish_people_tracker;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_tracker_ %d", __func__, publish_people_tracker_ );
     publish_static_people_trackers_ = config.publish_static_people_trackers; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_static_people_trackers_ %d", __func__, publish_static_people_trackers_);
+
+    publish_particles_          = config.publish_particles;       ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_particles_ %d", __func__, publish_particles_ );
+    publish_matches_            = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
+
 
     no_observation_timeout_s = config.no_observation_timeout;
     max_second_leg_age_s     = config.max_second_leg_age;
@@ -859,19 +871,19 @@ public:
 
 
 
-    // Publish the detections of legs
-    if(publish_legs_){
+    // Publish the leg measurements
+    if(publish_leg_measurements_){
       publishLegMeasurements(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
     }
 
-
+    // Publish the clustering
     if(publish_clusters_){
       publishClusters(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
     }
 
     // Publish the detections of legs
-    if(publish_leg_feature_arrows_){
-      publishLegFeatureArrows(saved_leg_features, scan->header.stamp);
+    if(publish_leg_velocity_){
+      publishLegVelocities(saved_leg_features, scan->header.stamp);
     }
 
     if(publish_leg_markers_){
@@ -898,9 +910,9 @@ public:
     }
 
     // Publish leg Measurements on
-    if(publish_legs_){
+    //if(publish_leg_measurements_){
       //publishLegMeasurementArray(saved_leg_features);
-    }
+    //}
 
     ROS_DEBUG("%sPublishing done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
@@ -949,7 +961,7 @@ public:
       // reliability
       double reliability = (*sf_iter)->getReliability();
 
-      if ((*sf_iter)->getReliability() > leg_reliability_limit_ && publish_legs_)
+      if ((*sf_iter)->getReliability() > leg_reliability_limit_ && publish_leg_measurements_)
       {
         people_msgs::PositionMeasurement pos;
         pos.header.stamp = legFeatures.front()->meas_time_;
@@ -1050,7 +1062,12 @@ public:
     ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
   }
 
-  void publishLegFeatureArrows(list<LegFeaturePtr>& legFeatures, ros::Time time){
+  /**
+   * Publish
+   * @param legFeatures
+   * @param time
+   */
+  void publishLegVelocities(list<LegFeaturePtr>& legFeatures, ros::Time time){
 
     // Create the Visualization Message (a marker array)
     visualization_msgs::MarkerArray msgArray;
@@ -1272,29 +1289,31 @@ public:
         legFeatureIt != legFeatures.end();
         legFeatureIt++)
     {
-        // Create center Point
-        Stamped<tf::Point> center = (*legFeatureIt)->position_;
 
-        geometry_msgs::Point32 point;
-        point.x = center[0];
-        point.y = center[1];
-        point.z = 0;
+        if(publish_static_people_trackers_ || (*legFeatureIt)->isDynamic()){
+          // Create center Point
+          Stamped<tf::Point> center = (*legFeatureIt)->position_;
 
-        legPcl.points.push_back(point);
+          geometry_msgs::Point32 point;
+          point.x = center[0];
+          point.y = center[1];
+          point.z = 0;
 
-        // Set the color
-        int r,g,b;
-        //r = 255;
-        getColor((*legFeatureIt)->int_id_,r,g,b);
+          legPcl.points.push_back(point);
 
-        // Set the color according to the probability
-        float color_val = 0;
-        int rgb = (r << 16) | (g << 8) | b;
-        color_val = *(float*) & (rgb);
+          // Set the color
+          int r,g,b;
+          //r = 255;
+          getColor((*legFeatureIt)->int_id_,r,g,b);
 
-        if (legPcl.channels[0].name == "rgb")
-          legPcl.channels[0].values.push_back(color_val);
+          // Set the color according to the probability
+          float color_val = 0;
+          int rgb = (r << 16) | (g << 8) | b;
+          color_val = *(float*) & (rgb);
 
+          if (legPcl.channels[0].name == "rgb")
+            legPcl.channels[0].values.push_back(color_val);
+        }
     }
 
     // Publish the pointcloud
@@ -1528,7 +1547,9 @@ public:
         peopleTrackerIt != people_trackers_.getList()->end();
         peopleTrackerIt++){
 
-      if((*peopleTrackerIt)->getTotalProbability()>0.1){
+      if((*peopleTrackerIt)->getTotalProbability()>0.1 &&
+          (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()))
+      {
       visualization_msgs::Marker label;
       label.header.stamp = time;
       label.header.frame_id = fixed_frame;

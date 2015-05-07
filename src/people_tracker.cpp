@@ -110,10 +110,18 @@ void PeopleTracker::update(ros::Time time){
   updateProbabilities(time);
 }
 
+/**
+ * Update the state of this tracker
+ * @param time
+ */
 void PeopleTracker::updateTrackerState(ros::Time time){
   //ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s", __func__);
 
-  pos_vel_estimation_ = (getLeg0()->getEstimate() + (getLeg1()->getEstimate()));
+  // Calculate the velocity vectors
+  BFL::StatePosVel estLeg0 = getLeg0()->getEstimate();
+  BFL::StatePosVel estLeg1 = getLeg1()->getEstimate();
+
+  pos_vel_estimation_ =  (estLeg0+estLeg1);
   pos_vel_estimation_.pos_ = 0.5 * pos_vel_estimation_.pos_; // TODO ugly find a better way for this
   pos_vel_estimation_.vel_ = 0.5 * pos_vel_estimation_.vel_; // TODO ugly find a better way for this
 
@@ -121,8 +129,7 @@ void PeopleTracker::updateTrackerState(ros::Time time){
   //std::cout << "Estimation: " << pos_vel_estimation_ << std::endl << std::endl;
 
   // Calculate the hip width (only if some velocity exists)
-  if(pos_vel_estimation_.vel_.length() > 0.0001){
-    double d = distance(pos_vel_estimation_.pos_, getLeg0()->getEstimate().pos_, pos_vel_estimation_.vel_);
+  if(pos_vel_estimation_.vel_.length() > 0.01){
 
     // Set the hip vector
     hip_vec_[0] = -pos_vel_estimation_.vel_[1];
@@ -130,14 +137,53 @@ void PeopleTracker::updateTrackerState(ros::Time time){
     hip_vec_[2] =  0.0;
     hip_vec_ = hip_vec_.normalize(); //Normalize
 
+    std::cout << "pos_vel = [" << pos_vel_estimation_.vel_.getX() << ", " << pos_vel_estimation_.vel_.getY() << "," << pos_vel_estimation_.vel_.getZ() << "]" << std::endl;
+    std::cout << "hip_vec = [" << hip_vec_.getX() << ", " << hip_vec_.getY() << ", " << hip_vec_.getZ() << "]" << std::endl;
+
+    ROS_ASSERT(hip_vec_.dot(pos_vel_estimation_.vel_) < 0.000001);
+
+    // Calculate the hip distance
+    double d = distance(estLeg0.pos_, pos_vel_estimation_.pos_, pos_vel_estimation_.vel_);
     hipPos0_ = pos_vel_estimation_.pos_ + d * hip_vec_;
     hipPos1_ = pos_vel_estimation_.pos_ - d * hip_vec_;
 
-    //std::cout << "HipDistance: " << 2*d << std::endl;
+    std::cout << "d= " << d << std::endl;
 
     // Calculate the step width
-    double step_length_ = (hipPos0_ - getLeg0()->getEstimate().pos_).length();
+    //double step_length_ = (hipPos0_ - getLeg0()->getEstimate().pos_).length();
     //std::cout << "Step Length: " << step_length_ << std::endl;
+
+
+    // Test if the three points are on a triangle
+    tf::Vector3 a = pos_vel_estimation_.pos_ - hipPos0_;
+    tf::Vector3 b = estLeg0.pos_ - hipPos0_;
+
+    // Check if change necessary
+    if(a.dot(b) > 0.0001){
+      tf::Vector3 temp;
+      temp = hipPos0_;
+      hipPos0_ = hipPos1_;
+      hipPos1_ = temp;
+    }
+
+    a = pos_vel_estimation_.pos_ - hipPos0_;
+    b = estLeg0.pos_ - hipPos0_;
+
+    ROS_ASSERT(a.dot(b) < 0.0001);
+
+    std::cout << "ppl_pos = [" << pos_vel_estimation_.pos_.getX() << ", " << pos_vel_estimation_.pos_.getY() << "," << pos_vel_estimation_.pos_.getZ() << "]" << std::endl;
+
+    std::cout << "hip0_pos = [" << hipPos0_.getX() << ", " << hipPos0_.getY() << "," << hipPos0_.getZ() << "]" << std::endl;
+    std::cout << "hip1_pos = [" << hipPos1_.getX() << ", " << hipPos1_.getY() << "," << hipPos1_.getZ() << "]" << std::endl;
+
+    std::cout << "leg0_pos = [" << estLeg0.pos_.getX() << ", " << estLeg0.pos_.getY() << "," << estLeg0.pos_.getZ() << "]" << std::endl;
+    std::cout << "leg1_pos = [" << estLeg1.pos_.getX() << ", " << estLeg1.pos_.getY() << "," << estLeg1.pos_.getZ() << "]" << std::endl;
+
+
+    std::cout << a.length() << std::endl;
+    std::cout << b.length() << std::endl;
+
+    std::cout << "CrossProduct" << a.dot(b) << std::endl;
 
   }else{
     hipPos0_ = pos_vel_estimation_.pos_;
@@ -147,6 +193,11 @@ void PeopleTracker::updateTrackerState(ros::Time time){
   // Update static/dynamic
   is_static_ = !(getLeg0()->isDynamic() && getLeg1()->isDynamic());
 
+}
+
+void PeopleTracker::propagate(ros::Time time){
+  ROS_WARN("PeopleTracker::%s is NOT YET IMPLEMENTED",__func__);
+  //ROS_BREAK(); // TODO Implement this!
 }
 
 void PeopleTracker::updateProbabilities(ros::Time time){
@@ -224,29 +275,38 @@ void PeopleTracker::updateProbabilities(ros::Time time){
 
   // Update the probability based on the multiple assignments of its legs
 
-  // Calculate the two legged motion coefficient
+
+
+  // std::cout << "Average: " << sum/move_sum.size() << std::endl;
+  // Calculate the total probability
+  total_probability_ = dist_probability_ * leg_time_probability_ * leg_association_probability_;
+
+
+  /////////////////////////////////////////////////////////
+  //// Calculate the two legged motion coefficient
+  /////////////////////////////////////////////////////////
 
   std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > hist0 = getLeg0()->getHistory();
   std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > hist1 = getLeg1()->getHistory();
 
   int min_history = min(hist0.size(),hist1.size());
 
-  //std::cout << std::endl;
-  std::vector<double> move_sum;
+  if(total_probability_ > 0.5){
+    std::cout << *this << std::endl;
 
-  double sum = 0.0;
-  for(int i = 1; i < min_history; i++){
-    int idx = min_history-i;
-    double temp = (*hist0[idx]-*hist0[idx-1]).length() * (*hist1[idx]-*hist1[idx-1]).length();
-    sum += temp;
-    move_sum.push_back(temp);
+    std::vector<double> move_sum;
 
-    //std::cout << idx << " " << (*hist0[idx]-*hist0[idx-1]).length() << "   " << (*hist1[idx]-*hist1[idx-1]).length() << "->" << temp << std::endl;
+    double sum = 0.0;
+    for(int i = 1; i < min_history; i++){
+      int idx = min_history-i;
+      double temp = (*hist0[idx]-*hist0[idx-1]).length() * (*hist1[idx]-*hist1[idx-1]).length();
+      sum += temp;
+      move_sum.push_back(temp);
+
+      std::cout << (*hist0[idx]).stamp_ << "," << (*hist0[idx]-*hist0[idx-1]).length() << "," << (*hist1[idx]-*hist1[idx-1]).length() << std::endl;
+    }
   }
 
-  // std::cout << "Average: " << sum/move_sum.size() << std::endl;
-  // Calculate the total probability
-  total_probability_ = dist_probability_ * leg_time_probability_ * leg_association_probability_;
 
   // Print
 #ifdef DEBUG_PEOPLE_TRACKER
@@ -260,12 +320,20 @@ void PeopleTracker::updateProbabilities(ros::Time time){
     ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"%s#%i-%i|dist %.3f prob: %.2f| leg_time: %.2f prob: %.2f|leg_asso prob: %.2f|| total_p: %.2f|",color.c_str(), id_[0], id_[1], dist, dist_probability_,min_leg_time, leg_time_probability_,leg_association_probability_, total_probability_);
   }
 
-
-
 #endif
 
 }
 
+BFL::StatePosVel PeopleTracker::getLegEstimate(int id){
+  ROS_ASSERT_MSG(id == id_[0] || id == id_[1],"The estimate for a leg which is not part of this tracker was requested.");
+
+  // Return the estimate of the leg // TODO the is only a temporarly solution
+  if(id == id_[0])
+    return getLeg0()->getEstimate();
+  else
+    return getLeg1()->getEstimate();
+
+}
 
 /////////////////////////////////////////////////////////////
 //// PeopleTrackerList Class Definitions
