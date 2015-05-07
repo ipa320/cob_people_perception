@@ -92,6 +92,10 @@ class AdvancedSysModelPosVel
   : public SystemModel<StatePosVel>
 {
 public:
+    /**
+     * Constructor of the system Model
+     * @param sigma The system noise
+     */
     AdvancedSysModelPosVel(const StatePosVel& sigma)
     : SystemModel<StatePosVel>(new AdvancedSysPdfPosVel(sigma))
   {};

@@ -94,6 +94,7 @@ public:
 
   /// update tracker
   virtual bool updatePrediction(const double time);
+  virtual bool updatePrediction(const double time, StatePosVel highLevelPrediction);
   virtual bool updateCorrection(const tf::Vector3& meas,
                                 const MatrixWrapper::SymmetricMatrix& cov);
 

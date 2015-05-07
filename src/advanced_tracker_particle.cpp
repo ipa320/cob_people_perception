@@ -54,8 +54,8 @@ AdvancedTrackerParticle::AdvancedTrackerParticle(const string& name, unsigned in
   Tracker(name),
   prior_(num_particles),
   filter_(NULL),
-  sys_model_(sysnoise),
-  meas_model_(tf::Vector3(0.1, 0.1, 0.1)),
+  sys_model_(sysnoise), // System noise, sysnoise is the sigma(variance) of this noise
+  meas_model_(tf::Vector3(0.01, 0.01, 0.01)), // Measurement model variance
   tracker_initialized_(false),
   num_particles_(num_particles)
 {};
@@ -115,9 +115,6 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
 
 }
 
-
-
-
 // Perform prediction using the motion model
 bool AdvancedTrackerParticle::updatePrediction(const double time)
 {
@@ -146,6 +143,39 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
   return res;
 };
 
+/**
+ * @brief Do the prediction with the influence of the estimation of the high level filter
+ * @param time
+ * @return
+ */
+bool AdvancedTrackerParticle::updatePrediction(const double time, StatePosVel highLevelPrediction)
+{
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+  // Here the particles are the Particles before the Update
+  vector<WeightedSample<StatePosVel> > samples = prior_.ListOfSamplesGet();
+
+  // Prediction using
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s - Doing update prediction of %u particles",__func__, prior_.NumSamplesGet());
+
+
+  assert(0); // Careful! (This is not finished implementing!)
+
+  bool res = true;
+  if (time > filter_time_)
+  {
+    // set dt in sys model
+    sys_model_.SetDt(time - filter_time_);
+    filter_time_ = time;
+
+    // update filter
+    res = filter_->Update(&sys_model_); // TODO!! // Call Update internal of the particle Filter
+    if (!res) quality_ = 0;
+  }
+  return res;
+};
+
+
 
 // update filter correction based on measurement
 /**
@@ -163,7 +193,6 @@ bool AdvancedTrackerParticle::updateCorrection(const tf::Vector3&  meas, const M
 
 
   // set covariance
-  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
   //meas_model_.MeasurementPdfGet();
   ((AdvancedMeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
