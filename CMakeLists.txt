@@ -56,6 +56,7 @@ add_library(people_tracking_filter
             src/advanced_tracker_particle.cpp
             src/advanced_sysmodel_pos_vel.cpp
             src/advanced_measmodel_pos.cpp
+            src/occlusion_model.cpp
 )
 
 
