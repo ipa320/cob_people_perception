@@ -110,7 +110,6 @@ include_directories(
 add_executable(cob_body_tracker
 	ros/src/body_tracker.cpp
 )
-
 target_link_libraries(cob_body_tracker
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
@@ -121,14 +120,15 @@ target_link_libraries(cob_body_tracker
     ${PCL_COMMON_LIBRARIES}
     ${PCL_IO_LIBRARIES}
 )
+add_dependencies(cob_body_tracker ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 add_library(body_tracker_nodelet ros/src/body_tracker.cpp ros/src/body_tracker_nodelet.cpp )
-
 target_link_libraries(body_tracker_nodelet 
 	${catkin_LIBRARIES} 
 	${OpenNI2_LIBRARIES} 
 	${GLUT_LIBRARIES}
 )
+add_dependencies(body_tracker_nodelet ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 add_custom_command(
     TARGET cob_body_tracker

@@ -82,12 +82,8 @@ add_executable(leg_detection
                src/leg_detector.cpp 
                src/calc_leg_features.cpp)
                
-#add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
-
 ## Add cmake target dependencies of the executable/library
-#add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
-#add_dependencies(leg_detection cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(leg_detection ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 
 ## Specify libraries to link a library or executable target against

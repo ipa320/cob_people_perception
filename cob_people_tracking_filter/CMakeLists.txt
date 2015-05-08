@@ -80,21 +80,22 @@ target_link_libraries(cob_people_tracking_filter
    ${Boost_LIBRARIES}
    ${BFL_LIBRARIES}
 )
+add_dependencies(cob_people_tracking_filter ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 ## Declare a cpp executable
 add_executable(cob_people_tracker src/people_tracking_node.cpp)
-
-## Add cmake target dependencies of the executable/library
-add_dependencies(cob_people_tracker cob_perception_msgs_gencpp cob_people_tracking_filter)
-
-## Specify libraries to link a library or executable target against
 target_link_libraries(cob_people_tracker
    cob_people_tracking_filter
    ${catkin_LIBRARIES}
    ${Boost_LIBRARIES}
    ${BFL_LIBRARIES}
 )
+add_dependencies(cob_people_tracker ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)     #add_dependencies(cob_people_tracker cob_perception_msgs_gencpp cob_people_tracking_filter)
 
+
+#############
+## Install ##
+#############
 install(TARGETS cob_people_tracker cob_people_tracking_filter
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
