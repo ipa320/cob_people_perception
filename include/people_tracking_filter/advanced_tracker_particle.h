@@ -49,6 +49,7 @@
 #include <people_tracking_filter/people_particle_filter.h>
 #include <people_tracking_filter/advanced_sysmodel_pos_vel.h>
 #include <people_tracking_filter/advanced_measmodel_pos.h>
+#include <people_tracking_filter/occlusion_model.h>
 
 // TF
 #include <tf/tf.h>
@@ -86,6 +87,10 @@ public:
     return quality_;
   };
 
+  void setOcclusionModel(OcclusionModelPtr ocm){
+    occlusion_model_ = ocm;
+  }
+
   /// return the lifetime of the tracker
   virtual double getLifetime() const;
 
@@ -121,6 +126,7 @@ private:
 
   BFL::AdvancedSysModelPosVel                               sys_model_;
   BFL::AdvancedMeasModelPos                                 meas_model_;
+  OcclusionModelPtr                                         occlusion_model_;
 
   // vars
   bool tracker_initialized_;

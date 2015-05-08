@@ -43,4 +43,6 @@ class OcclusionModel{
     double getOcclusionProbability(tf::Stamped<tf::Point>);
 };
 
+typedef boost::shared_ptr<OcclusionModel> OcclusionModelPtr;
+
 #endif /* PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_OCCLUSION_MODEL_H_ */

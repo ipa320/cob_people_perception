@@ -45,6 +45,8 @@
 #include <wrappers/matrix/matrix_wrapper.h>
 #include <string>
 
+#include <people_tracking_filter/occlusion_model.h>
+
 #define DEBUG_ADVANCEDMEASMODELPOS 1
 
 namespace BFL
@@ -72,6 +74,8 @@ public:
 
 private:
   GaussianVector meas_noise_;
+
+  OcclusionModelPtr occlusion_model_;
 
 }; // class
 
