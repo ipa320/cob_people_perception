@@ -17,7 +17,7 @@ static std::string fixed_frame              = "odom_combined";  // The fixed fra
 static double kal_p = 4, kal_q = .002, kal_r = 10;
 static bool use_filter = false;
 
-static int NumberOfParticles = 1500;
+static int NumberOfParticles = 800;
 
 
 // The is the one leg tracker

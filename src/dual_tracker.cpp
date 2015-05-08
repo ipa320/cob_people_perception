@@ -68,6 +68,7 @@
 #include <people_tracking_filter/tracker_kalman.h>
 #include <people_tracking_filter/state_pos_vel.h>
 #include <people_tracking_filter/rgb.h>
+#include <people_tracking_filter/occlusion_model.h>
 
 // Configuration
 #include <dynamic_reconfigure/server.h>
@@ -134,6 +135,8 @@ public:
 
   ScanMask mask_; /**< A scan mask */
 
+  OcclusionModel occlusionModel_; /**< The occlusion model */
+
   int mask_count_;
 
   CvRTrees forest; /**< The forest classificator */
@@ -169,6 +172,7 @@ public:
   bool publish_people_tracker_;
   bool publish_leg_velocity_; /**< True if the estimation of the leg features are visualized as arrows */
   bool publish_static_people_trackers_; /**< Set True if also static People Trackers(Trackers that never moved) should be displayed */
+  bool publish_occlusion_model_; /**< Publish the probabilities of the particles (colorcoded) according to the occlusion model */
 
   int next_p_id_;
 
@@ -197,6 +201,7 @@ public:
   ros::Publisher particles_pub_;/**< Visualization of particles */
   ros::Publisher people_velocity_pub_;/**< Visualization of the people velocities */
   ros::Publisher people_track_label_pub_; /**< Publishes labels of people tracks */
+  ros::Publisher occlusion_model_pub_; /**< Published the occlusion probability */
 
   dynamic_reconfigure::Server<leg_detector::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -214,7 +219,8 @@ public:
     laser_sub_(nh_, "scan", 10),
     people_notifier_(people_sub_, tfl_, fixed_frame, 10),
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
-    cycle_(0)
+    cycle_(0),
+    occlusionModel_(tfl_)
   {
     if (g_argc > 1)
     {
@@ -241,11 +247,12 @@ public:
     leg_features_array_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("leg_feature_arrow", 0);
     people_velocity_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("people_velocity_arrow", 0);
     people_track_label_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("people_labels", 0);
+    occlusion_model_pub_ = nh_.advertise<sensor_msgs::PointCloud>("occlusion_model", 0);
 
     // Visualization topics
     leg_measurements_vis_pub_= nh_.advertise<sensor_msgs::PointCloud>("leg_measurements", 0);
     leg_features_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("leg_features", 0);
-    //matches_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 0);
+    matches_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("matches", 0);
 
     if (use_seeds_)
     {
@@ -306,6 +313,7 @@ public:
     publish_particles_          = config.publish_particles;       ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_particles_ %d", __func__, publish_particles_ );
     publish_matches_            = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
 
+    publish_occlusion_model_    = config.publish_occlusion_model;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_occlusion_model_ %d", __func__, publish_occlusion_model_ );
 
     no_observation_timeout_s = config.no_observation_timeout;
     max_second_leg_age_s     = config.max_second_leg_age;
@@ -479,6 +487,11 @@ public:
 
     // Start Cycle Timer
     cycleTimer.start();
+
+    //////////////////////////////////////////////////////////////////////////
+    //// Create occlusion model
+    //////////////////////////////////////////////////////////////////////////
+    occlusionModel_.updateScan(*scan);
 
     //////////////////////////////////////////////////////////////////////////
     //// Create clusters
@@ -909,6 +922,9 @@ public:
       publishPeopleTrackerLabels(scan->header.stamp);
     }
 
+    if(publish_occlusion_model_){
+      publishOcclusionModel(saved_leg_features, scan->header.stamp);
+    }
     // Publish leg Measurements on
     //if(publish_leg_measurements_){
       //publishLegMeasurementArray(saved_leg_features);
@@ -1398,6 +1414,8 @@ public:
   }
 
   void publishMatches(multiset<MatchedFeature> matches, ros::Time time, const sensor_msgs::LaserScan::ConstPtr& scan){
+
+
     // The pointcloud message
     visualization_msgs::Marker markerMsg;
 
@@ -1441,7 +1459,7 @@ public:
     }
 
     // Publish the pointcloud
-    markers_pub_.publish(markerMsg);
+    matches_vis_pub_.publish(markerMsg);
 
     ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
   }
@@ -1576,6 +1594,61 @@ public:
     // Publish
     people_track_label_pub_.publish(labelArray);
   }
+
+  // Publish the occlusion model for debugging purposes
+  void publishOcclusionModel(list<LegFeaturePtr>& legFeatures, ros::Time time){
+    // The pointcloud message
+    sensor_msgs::PointCloud pcl;
+
+    sensor_msgs::ChannelFloat32 rgb_channel;
+    rgb_channel.name="rgb";
+    pcl.channels.push_back(rgb_channel);
+
+    pcl.header.frame_id = fixed_frame;
+    pcl.header.stamp = time;
+
+    for (list<LegFeaturePtr>::iterator legFeatureIt = legFeatures.begin();
+        legFeatureIt != legFeatures.end();
+        legFeatureIt++)
+    {
+        MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+
+        vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
+
+        for(vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
+          geometry_msgs::Point32 point;
+          point.x = (*sampleIt).ValueGet().pos_[0];
+          point.y = (*sampleIt).ValueGet().pos_[1];
+          point.z = (*sampleIt).ValueGet().pos_[2];
+
+          tf::Vector3 p((*sampleIt).ValueGet().pos_[0],(*sampleIt).ValueGet().pos_[1],(*sampleIt).ValueGet().pos_[2]);
+
+          // Set the color according to the occlusion model
+          tf::Stamped<tf::Vector3>* p_stamp = new tf::Stamped<tf::Vector3>(p, time, fixed_frame);
+          double prob = occlusionModel_.getOcclusionProbability(*p_stamp);
+
+          int r,g,b;
+          redGreenGradient(prob,r,g,b);
+
+          // Set the color according to the probability
+          float color_val = 0;
+          int rgb = (r << 16) | (g << 8) | b;
+          color_val = *(float*) & (rgb);
+
+          if (pcl.channels[0].name == "rgb")
+            pcl.channels[0].values.push_back(color_val);
+
+          pcl.points.push_back(point);
+        }
+
+    }
+
+    // Publish the pointcloud
+    occlusion_model_pub_.publish(pcl);
+
+    ROS_DEBUG("DualTracker::%s Publishing Particles on %s", __func__, fixed_frame.c_str());
+  }
+
 
 };
 
