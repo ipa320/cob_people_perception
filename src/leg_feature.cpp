@@ -19,6 +19,12 @@ static bool use_filter = false;
 
 static int NumberOfParticles = 800;
 
+/*LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl, OcclusionModelPtr ocm)
+  :LegFeature(loc,tfl),
+   occlusion_model_(ocm)
+{
+
+}*/
 
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)

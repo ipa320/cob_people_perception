@@ -67,6 +67,8 @@ public:
   ros::Time time_; /**< Time of the last scan */
   ros::Time meas_time_;
 
+  OcclusionModelPtr occlusion_model_;
+
   double update_cov_;
 
   bool is_valid_;
@@ -141,6 +143,11 @@ public:
 
   std::vector<PeopleTrackerPtr> getPeopleTracker(){
     return peopleTrackerList_;
+  }
+
+  void setOcclusionModel(OcclusionModelPtr ocm){
+    occlusion_model_ = ocm;
+    this->filter_.setOcclusionModel(ocm);
   }
 
   // Remove People Tracker that are invalid from the associations list

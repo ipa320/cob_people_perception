@@ -135,7 +135,7 @@ public:
 
   ScanMask mask_; /**< A scan mask */
 
-  OcclusionModel occlusionModel_; /**< The occlusion model */
+  OcclusionModelPtr occlusionModel_; /**< The occlusion model */
 
   int mask_count_;
 
@@ -220,7 +220,7 @@ public:
     people_notifier_(people_sub_, tfl_, fixed_frame, 10),
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
     cycle_(0),
-    occlusionModel_(tfl_)
+    occlusionModel_(new OcclusionModel(tfl_))
   {
     if (g_argc > 1)
     {
@@ -491,7 +491,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
     //// Create occlusion model
     //////////////////////////////////////////////////////////////////////////
-    occlusionModel_.updateScan(*scan);
+    occlusionModel_->updateScan(*scan);
 
     //////////////////////////////////////////////////////////////////////////
     //// Create clusters
@@ -692,7 +692,9 @@ public:
       if (closest == propagated.end())
       {
         loc.setZ(0); // TODO ugly fix
-        list<LegFeaturePtr>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), boost::shared_ptr<LegFeature>(new LegFeature(loc, tfl_)));
+        LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(loc, tfl_));
+        newLegFeature->setOcclusionModel(occlusionModel_);
+        list<LegFeaturePtr>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), newLegFeature);
         ++newTrackCounter;
       }
       // Add the candidate, the tracker and the distance to a match list
@@ -1625,7 +1627,7 @@ public:
 
           // Set the color according to the occlusion model
           tf::Stamped<tf::Vector3>* p_stamp = new tf::Stamped<tf::Vector3>(p, time, fixed_frame);
-          double prob = occlusionModel_.getOcclusionProbability(*p_stamp);
+          double prob = occlusionModel_->getOcclusionProbability(*p_stamp);
 
           int r,g,b;
           redGreenGradient(prob,r,g,b);
