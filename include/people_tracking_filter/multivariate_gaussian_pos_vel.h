@@ -34,72 +34,60 @@
 
 /* Author: Wim Meeussen */
 
-#ifndef MEASMODEL_POS_H
-#define MEASMODEL_POS_H
 
+#ifndef MULTIVARIATE_GAUSSIAN_POS_VEL_H
+#define MULTIVARIATE_GAUSSIAN_POS_VEL_H
+
+#include <pdf/pdf.h>
 #include "state_pos_vel.h"
-#include "tf/tf.h"
 #include "gaussian_vector.h"
-#include <model/measurementmodel.h>
-#include <pdf/conditionalpdf.h>
-#include <wrappers/matrix/matrix_wrapper.h>
-#include <string>
-
-#include <people_tracking_filter/occlusion_model.h>
-
-#define DEBUG_ADVANCEDMEASMODELPOS 1
+#include <dual_people_leg_tracker/eigenmvn/eigenmvn.h>
 
 namespace BFL
 {
-
-class AdvancedMeasPdfPos
-  : public BFL::ConditionalPdf<tf::Vector3, StatePosVel> // First template argument: measurement, Second: State
+/// Class representing gaussian pos_vel
+class MultivariateGaussianPosVel: public Pdf<StatePosVel>
 {
+private:
+  Eigen::Matrix<double,6,6> sigma_; /**< Covariance */
+  Eigen::Matrix<double,6,1> mu_;  /**< Mean */
+  mutable double sqrt_; /**< Nominator of the density function, precalculated and stored for faster calculation */
+
+  //GaussianVector gauss_pos_, gauss_vel_;
+  mutable double dt_;
+  mutable bool sigma_changed_;
+
 public:
   /// Constructor
-    AdvancedMeasPdfPos(const tf::Vector3& sigma);
+  MultivariateGaussianPosVel(const Eigen::Matrix<double,6,1>& mu, const Eigen::Matrix<double,6,6>& sigma);
 
   /// Destructor
-  virtual ~AdvancedMeasPdfPos();
+  virtual ~MultivariateGaussianPosVel();
 
-  // set covariance
-  void CovarianceSet(const  MatrixWrapper::SymmetricMatrix& cov);
+  /// clone function
+  virtual MultivariateGaussianPosVel* Clone() const;
 
-  // Redefining pure virtual methods
-  virtual BFL::Probability ProbabilityGet(const tf::Vector3& input) const;
-  virtual bool SampleFrom(BFL::Sample<tf::Vector3>& one_sample, int method, void *args) const;   // Not applicable
-  virtual tf::Vector3 ExpectedValueGet() const; // Not applicable
-  virtual MatrixWrapper::SymmetricMatrix  CovarianceGet() const; // Not applicable
+  /// output stream for GaussianPosVel
+  friend std::ostream& operator<< (std::ostream& os, const MultivariateGaussianPosVel& g);
 
+  /// Set the covar
+  void sigmaSet(const Eigen::Matrix<double,6,6>& sigma);
 
-private:
-  GaussianVector meas_noise_;
-
-  OcclusionModelPtr occlusion_model_;
-
-}; // class
-
-
-class AdvancedMeasModelPos
-  : public BFL::MeasurementModel<tf::Vector3, StatePosVel>
-{
-public:
-  /// constructor
-    AdvancedMeasModelPos(const tf::Vector3& sigma)
-    : BFL::MeasurementModel<tf::Vector3, StatePosVel>(new AdvancedMeasPdfPos(sigma))
+  // set time
+  void SetDt(double dt) const
   {
-    ROS_DEBUG_COND(DEBUG_ADVANCEDMEASMODELPOS, "AdvancedMeasModelPos::%s", __func__);
+    dt_ = dt;
   };
 
-  /// destructor
-  ~AdvancedMeasModelPos()
-  {
-    delete MeasurementPdfGet();
-  };
+  // Redefinition of pure virtuals
+  virtual Probability ProbabilityGet(const StatePosVel& input) const;
+  bool SampleFrom(vector<Sample<StatePosVel> >& list_samples, const int num_samples, int method = DEFAULT, void * args = NULL) const;
+  virtual bool SampleFrom(Sample<StatePosVel>& one_sample, int method = DEFAULT, void * args = NULL) const;
 
-}; // class
+  virtual StatePosVel ExpectedValueGet() const;
+  virtual MatrixWrapper::SymmetricMatrix CovarianceGet() const;
 
-} //namespace
+};
 
-
+} // end namespace
 #endif

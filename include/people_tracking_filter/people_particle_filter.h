@@ -22,8 +22,8 @@ class PeopleParticleFilter
   public:
 
     // Constructor
-    PeopleParticleFilter(BFL::MCPdf<BFL::StatePosVel> * prior,
-        BFL::MCPdf<BFL::StatePosVel> * post,
+    PeopleParticleFilter(MCPdf<StatePosVel> * prior,
+        MCPdf<StatePosVel> * post,
         int resampleperiod,
         double resamplethreshold,
         int resamplescheme);
@@ -48,10 +48,11 @@ class PeopleParticleFilter
     }
 
     /**
-     *
-     * @param sysmodel
-     * @return
-     */
+    * Do a measurement Update
+    * @param measmodel
+    * @param meas
+    * @return
+    */
     bool
     Update(BFL::AdvancedMeasModelPos* const measmodel, const tf::Vector3& meas)
     {
@@ -76,6 +77,21 @@ class PeopleParticleFilter
      * @return
      */
     bool UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel,
+                 const StatePosVel& u,
+                 MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
+                 const tf::Vector3& z,
+                 const StatePosVel& s);
+
+    /**
+     * Update the weights using the measurement models
+     * @param sysmodel
+     * @param u
+     * @param measmodel
+     * @param z
+     * @param s
+     * @return
+     */
+    bool UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const sysmodel,
                  const StatePosVel& u,
                  MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
                  const tf::Vector3& z,

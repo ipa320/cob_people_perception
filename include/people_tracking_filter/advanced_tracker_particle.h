@@ -99,6 +99,7 @@ public:
 
   /// update tracker
   virtual bool updatePrediction(const double time);
+  virtual bool updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov);
   virtual bool updatePrediction(const double time, StatePosVel highLevelPrediction);
   virtual bool updateCorrection(const tf::Vector3& meas,
                                 const MatrixWrapper::SymmetricMatrix& cov);
@@ -120,13 +121,14 @@ public:
   }
 private:
   // pdf / model / filter
-  BFL::MCPdfPosVel                                          prior_; // The particles
+  BFL::MCPdfPosVel                                          prior_; // The particles pdf function
   //BFL::BootstrapFilter<BFL::StatePosVel, tf::Vector3>*      filter_;
-  PeopleParticleFilter*      filter_;
+  PeopleParticleFilter*      filter_; /**< The particle filter */
 
-  BFL::AdvancedSysModelPosVel                               sys_model_;
-  BFL::AdvancedMeasModelPos                                 meas_model_;
-  OcclusionModelPtr                                         occlusion_model_;
+  // Models
+  BFL::AdvancedSysModelPosVel                               sys_model_; /**< The system model */
+  BFL::AdvancedMeasModelPos                                 meas_model_;/**< The measurement model */
+  OcclusionModelPtr                                         occlusion_model_;/**< The occlusion model */
 
   // vars
   bool tracker_initialized_;

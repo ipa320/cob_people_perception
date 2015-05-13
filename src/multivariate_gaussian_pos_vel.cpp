@@ -35,40 +35,43 @@
 /* Author: Wim Meeussen */
 
 
-#include "people_tracking_filter/gaussian_pos_vel.h"
+#include <people_tracking_filter/multivariate_gaussian_pos_vel.h>
 #include <wrappers/rng/rng.h>
 #include <cmath>
 #include <cassert>
+
 
 using namespace tf;
 
 namespace BFL
 {
-GaussianPosVel::GaussianPosVel(const StatePosVel& mu, const StatePosVel& sigma)
+MultivariateGaussianPosVel::MultivariateGaussianPosVel(const Eigen::Matrix<double,6,1>& mu, const Eigen::Matrix<double,6,6>& sigma)
   : Pdf<StatePosVel> (1),
     mu_(mu),
-    sigma_(sigma),
-    gauss_pos_(mu.pos_, sigma.pos_),
-    gauss_vel_(mu.vel_, sigma.vel_)
-{}
-
-
-GaussianPosVel::~GaussianPosVel() {}
-
-GaussianPosVel* GaussianPosVel::Clone() const
+    sigma_(sigma)
+    //gauss_pos_(mu.pos_, sigma.pos_),
+    //gauss_vel_(mu.vel_, sigma.vel_)
 {
-  return new GaussianPosVel(mu_, sigma_);
+
 }
 
-std::ostream& operator<< (std::ostream& os, const GaussianPosVel& g)
+
+MultivariateGaussianPosVel::~MultivariateGaussianPosVel() {}
+
+MultivariateGaussianPosVel* MultivariateGaussianPosVel::Clone() const
 {
-  os << "\nMu pos :\n"    << g.ExpectedValueGet().pos_ << endl
-     << "\nMu vel :\n"    << g.ExpectedValueGet().vel_ << endl
-     << "\nSigma:\n" << g.CovarianceGet() << endl;
-  return os;
+  return new MultivariateGaussianPosVel(mu_, sigma_);
 }
 
-void GaussianPosVel::sigmaSet(const StatePosVel& sigma)
+std::ostream& operator<< (std::ostream& os, const MultivariateGaussianPosVel& g)
+{
+//  os << "\nMu pos :\n"    << g.ExpectedValueGet().pos_ << endl
+//     << "\nMu vel :\n"    << g.ExpectedValueGet().vel_ << endl
+//     << "\nSigma:\n" << g.CovarianceGet() << endl;
+//  return os;
+}
+
+void MultivariateGaussianPosVel::sigmaSet(const Eigen::Matrix<double,6,6>& sigma)
 {
   sigma_ = sigma;
   sigma_changed_ = true;
@@ -77,15 +80,34 @@ void GaussianPosVel::sigmaSet(const StatePosVel& sigma)
 }
 
 
-Probability GaussianPosVel::ProbabilityGet(const StatePosVel& input) const
+Probability MultivariateGaussianPosVel::ProbabilityGet(const StatePosVel& input) const
 {
-  return gauss_pos_.ProbabilityGet(input.pos_) * gauss_vel_.ProbabilityGet(input.vel_);
+  if (sigma_changed_)
+  {
+    sigma_changed_ = false;
+
+    sqrt_ = 1 / sqrt(pow(2*M_PI,6) * sigma_.determinant());
+  }
+
+  // Convert to Eigen
+  Eigen::Matrix<double,6,1> in_eig;
+  in_eig[0] = input.pos_.getX();// << input.pos_.getY() << input.pos_.getZ() << input.vel_.getX() << input.vel_.getY() << input.vel_.getZ();
+
+  // Calculate and return the probability
+  double exponent = -0.5 * ((in_eig-mu_).transpose() * sigma_.inverse() * (in_eig-mu_))(0);
+  return sqrt_ * exp(exponent);
+
 }
 
 
 bool
-GaussianPosVel::SampleFrom(vector<Sample<StatePosVel> >& list_samples, const int num_samples, int method, void * args) const
+MultivariateGaussianPosVel::SampleFrom(vector<Sample<StatePosVel> >& list_samples, const int num_samples, int method, void * args) const
 {
+  Eigen::EigenMultivariateNormal<double> normX_solver(this->mu_,this->sigma_);
+  std::cout << normX_solver.samples(500).transpose() << std::endl;
+
+  assert(false); // NOT TESTED
+
   list_samples.resize(num_samples);
   vector<Sample<StatePosVel> >::iterator sample_it = list_samples.begin();
   for (sample_it = list_samples.begin(); sample_it != list_samples.end(); sample_it++)
@@ -96,35 +118,40 @@ GaussianPosVel::SampleFrom(vector<Sample<StatePosVel> >& list_samples, const int
 
 
 bool
-GaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void * args) const
+MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void * args) const
 {
-  one_sample.ValueSet(StatePosVel(Vector3(rnorm(mu_.pos_[0], sigma_.pos_[0]*dt_),
-                                          rnorm(mu_.pos_[1], sigma_.pos_[1]*dt_),
-                                          rnorm(mu_.pos_[2], sigma_.pos_[2]*dt_)),
-                                  Vector3(rnorm(mu_.vel_[0], sigma_.vel_[0]*dt_),
-                                          rnorm(mu_.vel_[1], sigma_.vel_[1]*dt_),
-                                          rnorm(mu_.vel_[2], sigma_.vel_[2]*dt_))));
+  assert(false); // NOT YET IMPLEMENTED
   return true;
 }
 
 
 StatePosVel
-GaussianPosVel::ExpectedValueGet() const
+MultivariateGaussianPosVel::ExpectedValueGet() const
 {
-  return mu_;
+  StatePosVel expectedValue;
+  //expectedValue.pos_.setX(mu_(0,0));
+
+  assert(false);
+
+  return expectedValue;
 }
 
 SymmetricMatrix
-GaussianPosVel::CovarianceGet() const
+MultivariateGaussianPosVel::CovarianceGet() const
 {
   SymmetricMatrix sigma(6);
+
   sigma = 0;
-  for (unsigned int i = 0; i < 3; i++)
-  {
-    sigma(i + 1, i + 1) = pow(sigma_.pos_[i], 2);
-    sigma(i + 4, i + 4) = pow(sigma_.vel_[i], 2);
+  for (unsigned int i = 0; i < 6; i++){
+    for (unsigned int j = 0; j < 6; i++){
+      sigma(i + 1, j + 1) = sigma_(i,j);
+    }
   }
+  assert(false); // Test this!
   return sigma;
+
+  //return this->sigma_;
 }
+
 
 } // End namespace BFL

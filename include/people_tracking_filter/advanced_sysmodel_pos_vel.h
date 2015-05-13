@@ -39,7 +39,7 @@
 
 
 #include "state_pos_vel.h"
-#include "gaussian_pos_vel.h"
+#include <people_tracking_filter/gaussian_pos_vel.h>
 #include <model/systemmodel.h>
 #include <pdf/conditionalpdf.h>
 #include <wrappers/matrix/matrix_wrapper.h>
@@ -60,6 +60,9 @@ public:
 
   /// Destructor
   virtual ~AdvancedSysPdfPosVel();
+
+  // set covariance
+  void CovarianceSet(const  MatrixWrapper::SymmetricMatrix& cov);
 
   // set time
   void SetDt(double dt)

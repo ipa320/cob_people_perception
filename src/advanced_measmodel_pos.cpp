@@ -58,12 +58,14 @@ AdvancedMeasPdfPos::~AdvancedMeasPdfPos()
 
 /**
  * Calculate the probability of this measurement(particle)
- * @param measurement The measurement
+ * @param measurement The measurement to evaluate
  * @return Probability to measure this
+ * Note: ConditionalArgumentGet(0) can be acessed at this point to get the state estimate
  */
 Probability
 AdvancedMeasPdfPos::ProbabilityGet(const Vector3& measurement) const
 {
+  //ConditionalArgumentGet(0) is the state
 
   tf::Vector3 delta = measurement - ConditionalArgumentGet(0).pos_;
 

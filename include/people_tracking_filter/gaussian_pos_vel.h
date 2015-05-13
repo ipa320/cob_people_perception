@@ -51,6 +51,7 @@ private:
   StatePosVel mu_, sigma_;
   GaussianVector gauss_pos_, gauss_vel_;
   mutable double dt_;
+  mutable bool sigma_changed_;
 
 public:
   /// Constructor
@@ -64,6 +65,8 @@ public:
 
   /// output stream for GaussianPosVel
   friend std::ostream& operator<< (std::ostream& os, const GaussianPosVel& g);
+
+  void sigmaSet(const StatePosVel& sigma);
 
   // set time
   void SetDt(double dt) const

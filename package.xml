@@ -19,6 +19,9 @@
   <build_depend>message_filters</build_depend>
   <build_depend>people_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  <build_depend>dual_people_leg_tracker</build_depend>
+  
+  
 
   <run_depend>roscpp</run_depend>
   <run_depend>std_msgs</run_depend>
@@ -28,6 +31,8 @@
   <run_depend>message_filters</run_depend>
   <run_depend>people_msgs</run_depend>
   <run_depend>sensor_msgs</run_depend>
+  <run_depend>dual_people_leg_tracker</run_depend>
+  
 
 </package>
 

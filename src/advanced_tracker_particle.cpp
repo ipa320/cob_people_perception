@@ -114,20 +114,20 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
   cout << "Initialization done" << endl;
 
 }
+// Perform prediction using the motion model
+bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov){
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->CovarianceSet(cov);
+
+  return this->updatePrediction(time);
+}
+
 
 // Perform prediction using the motion model
 bool AdvancedTrackerParticle::updatePrediction(const double time)
 {
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
-
-  // Here the particles are the Particles before the Update
-  vector<WeightedSample<StatePosVel> > samples = prior_.ListOfSamplesGet();
-
-  // Prediction using
-  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s - Doing update prediction of %u particles",__func__, prior_.NumSamplesGet());
-
-
-  //assert(0);
 
   bool res = true;
   if (time > filter_time_)
@@ -195,10 +195,11 @@ bool AdvancedTrackerParticle::updateCorrection(const tf::Vector3&  meas, const M
   // set covariance
 
   //meas_model_.MeasurementPdfGet();
+  // Set the measurement noise
   ((AdvancedMeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
 
   // update filter
-  bool res = filter_->Update(&meas_model_, meas); // Old code
+  bool res = filter_->Update(&meas_model_, meas); // TODO Fit occlusion model in here
 
   // If update failed for some reason
   if (!res) quality_ = 0;

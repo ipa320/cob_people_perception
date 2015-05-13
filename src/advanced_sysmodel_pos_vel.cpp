@@ -60,7 +60,20 @@ AdvancedSysPdfPosVel::AdvancedSysPdfPosVel(const StatePosVel& sigma)
 AdvancedSysPdfPosVel::~AdvancedSysPdfPosVel()
 {}
 
+void
+AdvancedSysPdfPosVel::CovarianceSet(const MatrixWrapper::SymmetricMatrix& cov)
+{
 
+  StatePosVel sigma;
+  tf::Vector3 cov_vec_pos(sqrt(cov(1, 1)), sqrt(cov(2, 2)), sqrt(cov(3, 3)));
+  tf::Vector3 cov_vec_vel(sqrt(cov(4, 4)), sqrt(cov(5, 5)), sqrt(cov(6, 6)));
+
+  sigma.pos_ = cov_vec_pos;
+  sigma.vel_ = cov_vec_vel;
+
+  noise_.sigmaSet(sigma);
+
+}
 
 Probability
 AdvancedSysPdfPosVel::ProbabilityGet(const StatePosVel& state) const
@@ -82,8 +95,6 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
 {
   //ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"--------AdvancedSysPdfPosVel::%s",__func__);
 
-  //std::cout << "Input Sample: " << one_sample.ValueGet() << std::endl;
-
   StatePosVel& res = one_sample.ValueGet();
 
   // get conditional argument: state
@@ -97,8 +108,6 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   noise_.SetDt(dt_);
   noise_.SampleFrom(noise_sample, method, args);
   res += noise_sample.ValueGet();
-
-  //std::cout << "Output Sample: " << res << std::endl;
 
   return true;
 }
