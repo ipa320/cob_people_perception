@@ -18,7 +18,6 @@
   <build_depend>bfl</build_depend>
   <build_depend>visualization_msgs</build_depend>
   <build_depend>people_msgs</build_depend>
-  <build_depend>people_tracking_filter</build_depend>
   <build_depend>image_geometry</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>message_generation</build_depend>
@@ -34,7 +33,6 @@
   <run_depend>bfl</run_depend>
   <run_depend>visualization_msgs</run_depend>
   <run_depend>people_msgs</run_depend>
-  <run_depend>people_tracking_filter</run_depend>
   <run_depend>image_geometry</run_depend>
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>laser_filters</run_depend>

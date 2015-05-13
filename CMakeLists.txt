@@ -18,7 +18,12 @@ link_directories(${BFL_LIBRARY_DIRS})
 pkg_check_modules(BULLET bullet)
 include_directories(${BULLET_INCLUDE_DIRS})
 
+find_package(cmake_modules REQUIRED)
+find_package(Eigen REQUIRED)
+
+
 include_directories(.)
+include_directories(${Eigen_INCLUDE_DIRS})
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
@@ -31,7 +36,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   visualization_msgs
   people_msgs
-  people_tracking_filter
   image_geometry
   dynamic_reconfigure
   rosbag
@@ -40,15 +44,13 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Specify additional locations of header files
 include_directories(
-  include ${catkin_INCLUDE_DIRS}
-)
-
-generate_messages(
-   DEPENDENCIES
-   std_msgs
-   rosgraph_msgs
-   tf2_msgs
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${Eigen_INCLUDE_DIRS}
 )
 
 catkin_package(INCLUDE_DIRS include
   CATKIN_DEPENDS people_msgs sensor_msgs std_msgs geometry_msgs visualization_msgs message_runtime)
+  
+# Demo of the multivariate normal distribution
+add_executable(eigenmvn_demo src/eigenmvn_demo.cpp)
