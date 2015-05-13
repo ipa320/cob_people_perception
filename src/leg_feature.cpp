@@ -14,9 +14,6 @@ int LegFeature::nextid = 0;
 
 static std::string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
-static double kal_p = 4, kal_q = .002, kal_r = 10;
-static bool use_filter = false;
-
 static int NumberOfParticles = 800;
 
 /*LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl, OcclusionModelPtr ocm)
@@ -29,27 +26,29 @@ static int NumberOfParticles = 800;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    sys_sigma_(tf::Vector3(0.4, 0.4, 0.0), tf::Vector3(2.0, 2.0, 0.0)), // The initialized system noise(the variance)
+    leg_feature_predict_pos_cov_(0.1), // Around 0.05
+    leg_feature_predict_vel_cov_(1.0),  // Around 1.0 should be fine
+    sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true),
     is_valid_(true), // On construction the leg feature is always valid
-    update_cov_(0.0025), // The update Cov
+    leg_feature_update_cov_(0.0025), // The update measurement cov (should be around 0.0025)
     is_static_(true) // At the beginning the leg feature is considered static
 {
-
-
-
+  // Increase the id
   int_id_ = nextid++;
 
+  // Generate the string id
   char id[100];
   snprintf(id, 100, "legtrack%d", int_id_);
   id_ = std::string(id);
 
   // Configuration server
-  dynamic_reconfigure::Server<leg_detector::DualTrackerConfig>::CallbackType f;
-  f = boost::bind(&LegFeature::configure, this, _1, _2);
-  server_.setCallback(f);
+  // dynamic_reconfigure::Server<leg_detector::DualTrackerConfig>::CallbackType f;
+  // f = boost::bind(&LegFeature::configure, this, _1, _2);
+
+
 
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created <NEW_LEGFEATURE %s> at %f - %f - %f", __func__, id_.c_str(), loc.getX(), loc.getY(), loc.getZ());
 
@@ -67,19 +66,16 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
     ROS_WARN("TF exception spot 6.");
   }
 
-  // Create tranform to the tracker position
-  //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Created new TF for leg tracker %s", id_.c_str());
+  // Create transform to the tracker position
   tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
   tfl_.setTransform(pose);
 
-  // Initialize the filter
-  // ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Initializing filter of leg tracker %s", id_.c_str());
+  // Initialize the filter (Create the initial particles)
   BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(0.0000001, 0.0000001, 0.000000));
   BFL::StatePosVel mu(loc);
   filter_.initialize(mu, prior_sigma, time_.toSec());
 
   // Get the first estimation of the particle state
-  // ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"Evaluating first estimation %s", id_.c_str());
   BFL::StatePosVel est;
   filter_.getEstimate(est);
 
@@ -88,6 +84,12 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   initial_position_[1] = loc.getY();
   initial_position_[2] = loc.getZ();
 
+  //leg_feature_update_cov_    = config.leg_feature_update_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_update_cov_ %f", __func__, leg_feature_update_cov_ );
+  //leg_feature_predict_pos_cov_    = config.leg_feature_predict_pos_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_predict_pos_cov_ %f", __func__, leg_feature_predict_pos_cov_ );
+  //leg_feature_predict_vel_cov_    = config.leg_feature_predict_vel_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_predict_vel_cov_ %f", __func__, leg_feature_predict_vel_cov_ );
+
+
+  // Update the position of this leg feature
   updatePosition();
 }
 
@@ -98,11 +100,6 @@ LegFeature::~LegFeature(){
   //peopleTrackerList_.clear();
 
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s <DELETE_LEGFEATURE %s>", __func__, id_.c_str());
-}
-
-
-void LegFeature::configure(leg_detector::DualTrackerConfig &config, uint32_t level){
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s", __func__);
 }
 
 /**
@@ -129,12 +126,12 @@ void LegFeature::propagate(ros::Time time)
       mostProbableAssociatedPPL = *pplIt;
       max_prob = (*pplIt)->getTotalProbability();
     }
-    std::cout << "\t" << **pplIt << std::endl;
+    //std::cout << "\t" << **pplIt << std::endl;
   }
 
   // If there exists a relevant high level filter
   if(mostProbableAssociatedPPL && mostProbableAssociatedPPL->getTotalProbability() > 0.5){ // TODO Make the configurable
-    std::cout << "\t Highest is:" << *mostProbableAssociatedPPL << std::endl;
+    //std::cout << "\t Highest is:" << *mostProbableAssociatedPPL << std::endl;
 
     // Get estimation for itself
     StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
@@ -146,8 +143,25 @@ void LegFeature::propagate(ros::Time time)
     std::cout << "\t There is now relevant high level filter" << std::endl;
   }
 
+  // Covariance of the Measurement
+  MatrixWrapper::SymmetricMatrix cov(6);
+  cov = 0.0;
+  cov(1, 1) = leg_feature_predict_pos_cov_;//conf.leg_feature_predict_pos_cov;
+  cov(2, 2) = leg_feature_predict_pos_cov_;//conf.leg_feature_predict_pos_cov;
+  cov(3, 3) = 0.0;
+  cov(4, 4) = leg_feature_predict_vel_cov_;//conf.leg_feature_predict_vel_cov;
+  cov(5, 5) = leg_feature_predict_vel_cov_;//conf.leg_feature_predict_vel_cov;
+  cov(6, 6) = 0.0;
+
+  //server.updateConfig(conf);
+  //std::cout << "conf.leg_feature_predict_pos_cov " << conf.leg_feature_predict_pos_cov << std::endl;
+  //std::cout << "conf.leg_feature_predict_vel_cov " << conf.leg_feature_predict_vel_cov << std::endl;
+
+
   // Do the Prediction in the filter
-  filter_.updatePrediction(time.toSec());
+  //filter_.updatePrediction(time.toSec());
+
+  filter_.updatePrediction(time.toSec(),cov);
 
   //assert(false); // Continue work here: set the prediction from the current motion model
   // update the Position
@@ -173,9 +187,9 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
   cov = 0.0;
-  cov(1, 1) = 0.00025;
-  cov(2, 2) = 0.00025;
-  cov(3, 3) = 0.00025;
+  cov(1, 1) = leg_feature_update_cov_;
+  cov(2, 2) = leg_feature_update_cov_;
+  cov(3, 3) = leg_feature_update_cov_;
 
   filter_.updateCorrection(loc, cov);
 

@@ -60,6 +60,18 @@ LegFeaturePtr PeopleTracker::getLeg1() const{
   return this->legs_[1];
 }
 
+LegFeaturePtr PeopleTracker::getLeftLeg() const{
+  if(this->leftLeg_)
+    return this->leftLeg_;
+  return getLeg0();
+}
+
+LegFeaturePtr PeopleTracker::getRightLeg() const{
+  if(this->rightLeg_)
+    return this->rightLeg_;
+  return getLeg1();
+}
+
 bool PeopleTracker::addLeg(LegFeaturePtr leg){
 
   // Return false if this tracker already has two legs
@@ -137,17 +149,18 @@ void PeopleTracker::updateTrackerState(ros::Time time){
     hip_vec_[2] =  0.0;
     hip_vec_ = hip_vec_.normalize(); //Normalize
 
-    std::cout << "pos_vel = [" << pos_vel_estimation_.vel_.getX() << ", " << pos_vel_estimation_.vel_.getY() << "," << pos_vel_estimation_.vel_.getZ() << "]" << std::endl;
-    std::cout << "hip_vec = [" << hip_vec_.getX() << ", " << hip_vec_.getY() << ", " << hip_vec_.getZ() << "]" << std::endl;
+    //std::cout << "pos_vel = [" << pos_vel_estimation_.vel_.getX() << ", " << pos_vel_estimation_.vel_.getY() << "," << pos_vel_estimation_.vel_.getZ() << "]" << std::endl;
+    //std::cout << "hip_vec = [" << hip_vec_.getX() << ", " << hip_vec_.getY() << ", " << hip_vec_.getZ() << "]" << std::endl;
 
     ROS_ASSERT(hip_vec_.dot(pos_vel_estimation_.vel_) < 0.000001);
 
     // Calculate the hip distance
     double d = distance(estLeg0.pos_, pos_vel_estimation_.pos_, pos_vel_estimation_.vel_);
-    hipPos0_ = pos_vel_estimation_.pos_ + d * hip_vec_;
-    hipPos1_ = pos_vel_estimation_.pos_ - d * hip_vec_;
 
-    std::cout << "d= " << d << std::endl;
+    hipPosLeft_   = pos_vel_estimation_.pos_ + d * hip_vec_; // The left hip
+    hipPosRight_  = pos_vel_estimation_.pos_ - d * hip_vec_; // The right hip
+
+    //std::cout << "d= " << d << std::endl;
 
     // Calculate the step width
     //double step_length_ = (hipPos0_ - getLeg0()->getEstimate().pos_).length();
@@ -155,39 +168,50 @@ void PeopleTracker::updateTrackerState(ros::Time time){
 
 
     // Test if the three points are on a triangle
-    tf::Vector3 a = pos_vel_estimation_.pos_ - hipPos0_;
-    tf::Vector3 b = estLeg0.pos_ - hipPos0_;
+    tf::Vector3 posHipLeft = pos_vel_estimation_.pos_ - hipPosLeft_;
+    tf::Vector3 leg0hipPosLeft = estLeg0.pos_ - hipPosLeft_;
 
-    // Check if change necessary
-    if(a.dot(b) > 0.0001){
-      tf::Vector3 temp;
-      temp = hipPos0_;
-      hipPos0_ = hipPos1_;
-      hipPos1_ = temp;
+    // Is there a right angle between leg0 and the left hip
+    if(posHipLeft.dot(leg0hipPosLeft) < 0.0001){
+      leftLeg_  = getLeg0();
+      rightLeg_ = getLeg1();
+    }else{
+      leftLeg_  = getLeg1();
+      rightLeg_ = getLeg0();
     }
 
-    a = pos_vel_estimation_.pos_ - hipPos0_;
-    b = estLeg0.pos_ - hipPos0_;
 
-    ROS_ASSERT(a.dot(b) < 0.0001);
+    // DEBUG
+    tf::Vector3 a_vec = pos_vel_estimation_.pos_ - hipPosLeft_;
+    tf::Vector3 b_vec = leftLeg_->getEstimate().pos_ - hipPosLeft_;
+    ROS_ASSERT(a_vec.dot(b_vec) < 0.0001);
 
-    std::cout << "ppl_pos = [" << pos_vel_estimation_.pos_.getX() << ", " << pos_vel_estimation_.pos_.getY() << "," << pos_vel_estimation_.pos_.getZ() << "]" << std::endl;
-
-    std::cout << "hip0_pos = [" << hipPos0_.getX() << ", " << hipPos0_.getY() << "," << hipPos0_.getZ() << "]" << std::endl;
-    std::cout << "hip1_pos = [" << hipPos1_.getX() << ", " << hipPos1_.getY() << "," << hipPos1_.getZ() << "]" << std::endl;
-
-    std::cout << "leg0_pos = [" << estLeg0.pos_.getX() << ", " << estLeg0.pos_.getY() << "," << estLeg0.pos_.getZ() << "]" << std::endl;
-    std::cout << "leg1_pos = [" << estLeg1.pos_.getX() << ", " << estLeg1.pos_.getY() << "," << estLeg1.pos_.getZ() << "]" << std::endl;
+    tf::Vector3 c_vec = pos_vel_estimation_.pos_ - hipPosRight_;
+    tf::Vector3 d_vec = rightLeg_->getEstimate().pos_ - hipPosRight_;
+    ROS_ASSERT(c_vec.dot(d_vec) < 0.0001);
 
 
-    std::cout << a.length() << std::endl;
-    std::cout << b.length() << std::endl;
 
-    std::cout << "CrossProduct" << a.dot(b) << std::endl;
+    //std::cout << "ppl_pos = [" << pos_vel_estimation_.pos_.getX() << ", " << pos_vel_estimation_.pos_.getY() << "," << pos_vel_estimation_.pos_.getZ() << "]" << std::endl;
 
-  }else{
-    hipPos0_ = pos_vel_estimation_.pos_;
-    hipPos1_ = pos_vel_estimation_.pos_;
+    //std::cout << "hipLeft_pos = ["  << hipPosLeft_.getX() << ", " << hipPosLeft_.getY() << "," << hipPosLeft_.getZ() << "]" << std::endl;
+    //std::cout << "hipRight_pos = [" << hipPosRight_.getX() << ", " << hipPosRight_.getY() << "," << hipPosRight_.getZ() << "]" << std::endl;
+
+    //std::cout << "legLeft_pos = [" << leftLeg_->getEstimate().pos_.getX() << ", " << leftLeg_->getEstimate().pos_.getY() << "," << leftLeg_->getEstimate().pos_.getZ() << "]" << std::endl;
+    //std::cout << "legRight_pos = [" << rightLeg_->getEstimate().pos_.getX() << ", " << rightLeg_->getEstimate().pos_.getY() << "," << rightLeg_->getEstimate().pos_.getZ() << "]" << std::endl;
+
+    if(rightLeg_->getEstimate().vel_.length() > leftLeg_->getEstimate().vel_.length()){
+      std::cout << BOLDGREEN << "Right" << RESET << std::endl;
+    }else{
+      std::cout << BOLDRED << "Left" << RESET << std::endl;
+    }
+
+
+  }else{ // What to do if there is no real relevant speed
+    hipPos0_     = pos_vel_estimation_.pos_;
+    hipPos1_     = pos_vel_estimation_.pos_;
+    hipPosLeft_  = pos_vel_estimation_.pos_;
+    hipPosRight_ = pos_vel_estimation_.pos_;
   }
 
   // Update static/dynamic
@@ -303,7 +327,7 @@ void PeopleTracker::updateProbabilities(ros::Time time){
       sum += temp;
       move_sum.push_back(temp);
 
-      std::cout << (*hist0[idx]).stamp_ << "," << (*hist0[idx]-*hist0[idx-1]).length() << "," << (*hist1[idx]-*hist1[idx-1]).length() << std::endl;
+      //std::cout << (*hist0[idx]).stamp_ << "," << (*hist0[idx]-*hist0[idx-1]).length() << "," << (*hist1[idx]-*hist1[idx-1]).length() << std::endl;
     }
   }
 

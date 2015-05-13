@@ -39,6 +39,7 @@ class PeopleTracker{
     tf::Vector3 hip_vec_; /**< Vector orthogonal to the velocity vector, representing the hip direction pos_vel_estimation.vel_.dot(hip_vec_) = 0 should hold every time*/
 
     tf::Vector3 hipPos0_, hipPos1_; /**< Vector of the endpoints of vector */
+    tf::Vector3 hipPosLeft_, hipPosRight_; /**< Vector of the endpoints of vector */
 
     boost::array<int, 2> id_;
 
@@ -48,6 +49,9 @@ class PeopleTracker{
     bool is_static_;
 
     std::vector<LegFeaturePtr> legs_; /**< the legs, should be maximum 2! */
+
+    LegFeaturePtr leftLeg_; /**< The left leg */
+    LegFeaturePtr rightLeg_;/**< The right leg */
 
     bool addLeg(LegFeaturePtr leg);/**< Add a leg two this tracker */
 
@@ -70,6 +74,10 @@ class PeopleTracker{
     LegFeaturePtr getLeg0() const;/**< Get Leg0 */
 
     LegFeaturePtr getLeg1() const;/**< Get Leg1 */
+
+    LegFeaturePtr getLeftLeg() const; /**< Get left leg */
+
+    LegFeaturePtr getRightLeg() const; /**< Get right leg */
 
     bool isValid() const;/**< Check if the people tracker is still valid */
 

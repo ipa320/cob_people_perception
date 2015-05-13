@@ -161,6 +161,8 @@ public:
 
   bool use_seeds_;
 
+  //GlobalConfig* globalConfig;
+
   bool publish_leg_measurements_;
   bool publish_people_;
   bool publish_leg_markers_;
@@ -1503,17 +1505,17 @@ public:
         line_list.color.g = 255.0;
         line_list.color.a = 1.0;
 
-        geometry_msgs::Point pointLeg0, pointLeg1, pointHip0, pointHip1, pointCenter;
+        geometry_msgs::Point pointLeftLeg, pointLegRight, pointHipLeft, pointHipRight, pointCenter;
 
         // Leg 0
-        pointLeg0.x = (*peopleTrackerIt)->getLeg0()->position_[0];
-        pointLeg0.y = (*peopleTrackerIt)->getLeg0()->position_[1];
-        pointLeg0.z = 0;
+        pointLeftLeg.x = (*peopleTrackerIt)->getLeftLeg()->position_[0];
+        pointLeftLeg.y = (*peopleTrackerIt)->getLeftLeg()->position_[1];
+        pointLeftLeg.z = 0;
 
         // Hip 0
-        pointHip0.x = (*peopleTrackerIt)->hipPos0_[0];
-        pointHip0.y = (*peopleTrackerIt)->hipPos0_[1];
-        pointHip0.z = 0.0;
+        pointHipLeft.x = (*peopleTrackerIt)->hipPosLeft_[0];
+        pointHipLeft.y = (*peopleTrackerIt)->hipPosLeft_[1];
+        pointHipLeft.z = 0.0;
 
         // Center of the Person
         //pointCenter.x = (*peopleTrackerIt)->getEstimate().pos_[0];
@@ -1521,30 +1523,28 @@ public:
         //pointCenter.z = 0.0;
 
         // Hip 1
-        pointHip1.x = (*peopleTrackerIt)->hipPos1_[0];
-        pointHip1.y = (*peopleTrackerIt)->hipPos1_[1];
-        pointHip1.z = 0.0;
+        pointHipRight.x = (*peopleTrackerIt)->hipPosRight_[0];
+        pointHipRight.y = (*peopleTrackerIt)->hipPosRight_[1];
+        pointHipRight.z = 0.0;
 
         // Leg 1
-        pointLeg1.x = (*peopleTrackerIt)->getLeg1()->position_[0];;
-        pointLeg1.y = (*peopleTrackerIt)->getLeg1()->position_[1];;
-        pointLeg1.z = 0;
+        pointLegRight.x = (*peopleTrackerIt)->getRightLeg()->position_[0];;
+        pointLegRight.y = (*peopleTrackerIt)->getRightLeg()->position_[1];;
+        pointLegRight.z = 0;
 
-        line_list.points.push_back(pointLeg0);
-
-        std::cout << (*peopleTrackerIt)->getEstimate().vel_.length() << std::endl;
+        line_list.points.push_back(pointLeftLeg);
 
         // Publish intermediate points for the hips only if the person has some speed at least, otherwise only a straight line
         if((*peopleTrackerIt)->getEstimate().vel_.length() > 0.4){
-          line_list.points.push_back(pointHip0);
-          line_list.points.push_back(pointHip0);
+          line_list.points.push_back(pointHipLeft);
+          line_list.points.push_back(pointHipLeft);
         //line_list.points.push_back(pointCenter);
 
         //line_list.points.push_back(pointCenter);
-          line_list.points.push_back(pointHip1);
-          line_list.points.push_back(pointHip1);
+          line_list.points.push_back(pointHipRight);
+          line_list.points.push_back(pointHipRight);
         }
-        line_list.points.push_back(pointLeg1);
+        line_list.points.push_back(pointLegRight);
 
         // Publish the pointcloud
         people_track_vis_pub_.publish(line_list);

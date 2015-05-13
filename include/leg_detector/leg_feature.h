@@ -69,7 +69,9 @@ public:
 
   OcclusionModelPtr occlusion_model_;
 
-  double update_cov_;
+  double leg_feature_update_cov_; /**< The measurement update covariance */
+  double leg_feature_predict_pos_cov_; /**< The prediction position covariance */
+  double leg_feature_predict_vel_cov_; /**< The prediction velocity covariance */
 
   bool is_valid_;
 
@@ -87,9 +89,12 @@ public:
   std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_;
 
   dynamic_reconfigure::Server<leg_detector::DualTrackerConfig> server_; /**< The configuration server*/
-  void configure(leg_detector::DualTrackerConfig &config, uint32_t level); /**< Configuration config */
+  //void configure(leg_detector::DualTrackerConfig &config, uint32_t level); /**< Configuration config */
   //LegFeaturePtr other;
   //float dist_to_person_;
+
+  //dynamic_reconfigure::Server<leg_detector::DualTrackerConfig> server;
+  leg_detector::DualTrackerConfig conf;
 
   LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl);
 
