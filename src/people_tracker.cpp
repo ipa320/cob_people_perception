@@ -201,9 +201,9 @@ void PeopleTracker::updateTrackerState(ros::Time time){
     //std::cout << "legRight_pos = [" << rightLeg_->getEstimate().pos_.getX() << ", " << rightLeg_->getEstimate().pos_.getY() << "," << rightLeg_->getEstimate().pos_.getZ() << "]" << std::endl;
 
     if(rightLeg_->getEstimate().vel_.length() > leftLeg_->getEstimate().vel_.length()){
-      std::cout << BOLDGREEN << "Right" << RESET << std::endl;
+      //std::cout << BOLDGREEN << "Right" << RESET << std::endl;
     }else{
-      std::cout << BOLDRED << "Left" << RESET << std::endl;
+      //std::cout << BOLDRED << "Left" << RESET << std::endl;
     }
 
 
@@ -316,7 +316,7 @@ void PeopleTracker::updateProbabilities(ros::Time time){
   int min_history = min(hist0.size(),hist1.size());
 
   if(total_probability_ > 0.5){
-    std::cout << *this << std::endl;
+    //std::cout << *this << std::endl;
 
     std::vector<double> move_sum;
 
