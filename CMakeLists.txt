@@ -69,7 +69,6 @@ add_library(people_tracking_filter
             src/multivariate_gaussian_pos_vel.cpp
 )
 
-
 ## Declare a cpp executable
 add_executable(people_tracker src/people_tracking_node.cpp)
 

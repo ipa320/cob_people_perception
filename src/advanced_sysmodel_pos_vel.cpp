@@ -37,6 +37,7 @@
 #include <ros/console.h>
 
 #include "people_tracking_filter/advanced_sysmodel_pos_vel.h"
+#include <dual_people_leg_tracker/benchmarking/timer.h>
 
 using namespace std;
 using namespace BFL;
@@ -75,6 +76,14 @@ AdvancedSysPdfPosVel::CovarianceSet(const MatrixWrapper::SymmetricMatrix& cov)
 
 }
 
+void
+AdvancedSysPdfPosVel::MultivariateCovarianceSet(const MatrixWrapper::SymmetricMatrix& cov)
+{
+  ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"AdvancedSysPdfPosVel::%s",__func__);
+  noise_nl_.sigmaSet(cov);
+
+}
+
 Probability
 AdvancedSysPdfPosVel::ProbabilityGet(const StatePosVel& state) const
 {
@@ -103,11 +112,25 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   // apply system model
   res.pos_ += (res.vel_ * dt_);
 
-  // add noise
+  // add noise (Gaussian)
   Sample<StatePosVel> noise_sample;
   noise_.SetDt(dt_);
   noise_.SampleFrom(noise_sample, method, args);
   res += noise_sample.ValueGet();
+
+  // add noise (Based on nonlinear models)
+  //benchmarking::Timer timer;
+  //timer.start();
+
+  Sample<StatePosVel> noise_sample_nl;
+  noise_nl_.SetDt(dt_);
+  noise_nl_.SampleFrom(noise_sample_nl, method, args);
+
+  //std::cout << "Sampling took " << timer.stopAndGetTimeMs() << "ms" << std::endl;
+
+  //assert(false);
+  std::cout << noise_sample_nl.ValueGet() << std::endl;
+  res += noise_sample_nl.ValueGet();
 
   return true;
 }

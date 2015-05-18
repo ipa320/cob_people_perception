@@ -43,21 +43,34 @@
 #include "gaussian_vector.h"
 #include <dual_people_leg_tracker/eigenmvn/eigenmvn.h>
 
+#define DEBUG_MULTIVARIATEGAUSSIANPOSVEL 1
+
 namespace BFL
 {
 /// Class representing gaussian pos_vel
 class MultivariateGaussianPosVel: public Pdf<StatePosVel>
 {
+public:
+    Eigen::Matrix<double,6,6> sigma_; /**< Covariance */
+    Eigen::Matrix<double,6,1> mu_;  /**< Mean */
+
+    // The Random Generator
+    boost::shared_ptr<Eigen::EigenMultivariateNormal<double> > normX_solver_;
+
 private:
-  Eigen::Matrix<double,6,6> sigma_; /**< Covariance */
-  Eigen::Matrix<double,6,1> mu_;  /**< Mean */
+
   mutable double sqrt_; /**< Nominator of the density function, precalculated and stored for faster calculation */
+
+
 
   //GaussianVector gauss_pos_, gauss_vel_;
   mutable double dt_;
   mutable bool sigma_changed_;
 
 public:
+  /// Constructor
+  MultivariateGaussianPosVel();
+
   /// Constructor
   MultivariateGaussianPosVel(const Eigen::Matrix<double,6,1>& mu, const Eigen::Matrix<double,6,6>& sigma);
 
@@ -70,8 +83,21 @@ public:
   /// output stream for GaussianPosVel
   friend std::ostream& operator<< (std::ostream& os, const MultivariateGaussianPosVel& g);
 
-  /// Set the covar
+  /// Set the covar (as Eigen)
   void sigmaSet(const Eigen::Matrix<double,6,6>& sigma);
+
+  /// Set the covar (as SymmetricMatrix)
+  void sigmaSet(const MatrixWrapper::SymmetricMatrix& cov);
+
+  Eigen::Matrix<double,6,1>
+  getMu() const{
+    return this->mu_;
+  }
+
+  const Eigen::Matrix<double,6,6>
+  getSigma(){
+    return sigma_;
+  }
 
   // set time
   void SetDt(double dt) const

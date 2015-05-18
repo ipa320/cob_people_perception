@@ -118,7 +118,21 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
 bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov){
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
+
+  // Set the covariances of the System Model
   ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->CovarianceSet(cov);
+
+  MatrixWrapper::SymmetricMatrix debug_cov(6);
+  debug_cov(1,1) = 0.0001;
+  debug_cov(2,2) = 1.0;
+  debug_cov(4,4) = 1.0;
+  debug_cov(4,4) = 1.0;
+
+
+  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->MultivariateCovarianceSet(debug_cov); // TODO use here the nl covariance
+
+
+  //assert(false); // Not done implementing
 
   return this->updatePrediction(time);
 }

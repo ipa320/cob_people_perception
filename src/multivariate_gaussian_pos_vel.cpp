@@ -45,14 +45,33 @@ using namespace tf;
 
 namespace BFL
 {
+
+/// Constructor
+MultivariateGaussianPosVel::MultivariateGaussianPosVel():
+  sigma_(Eigen::Matrix<double,6,6>::Zero()),
+  mu_(Eigen::Matrix<double,6,1>::Zero()),
+  sigma_changed_(false),
+  dt_(0.0),
+  sqrt_(0.0)
+{
+  //assert(false);
+  normX_solver_ = boost::shared_ptr<Eigen::EigenMultivariateNormal<double> >( new Eigen::EigenMultivariateNormal<double>(mu_,sigma_));
+  // Initialize sigma with zeros
+  //sigma_ =
+  //mu_ = Eigen::Matrix<double,6,1>::Zero();
+}
+
 MultivariateGaussianPosVel::MultivariateGaussianPosVel(const Eigen::Matrix<double,6,1>& mu, const Eigen::Matrix<double,6,6>& sigma)
   : Pdf<StatePosVel> (1),
     mu_(mu),
-    sigma_(sigma)
+    sigma_(sigma),
+    sigma_changed_(false),
+    dt_(0.0),
+    sqrt_(0.0)
     //gauss_pos_(mu.pos_, sigma.pos_),
     //gauss_vel_(mu.vel_, sigma.vel_)
 {
-
+  normX_solver_ = boost::shared_ptr<Eigen::EigenMultivariateNormal<double> >( new Eigen::EigenMultivariateNormal<double>(mu_,sigma_));
 }
 
 
@@ -73,10 +92,32 @@ std::ostream& operator<< (std::ostream& os, const MultivariateGaussianPosVel& g)
 
 void MultivariateGaussianPosVel::sigmaSet(const Eigen::Matrix<double,6,6>& sigma)
 {
+
   sigma_ = sigma;
   sigma_changed_ = true;
 
-  //assert(false); // Never been here! Carefull!
+  normX_solver_->setCovar(sigma_);
+
+  assert(false); // Never been here! Carefull!
+}
+
+void MultivariateGaussianPosVel::sigmaSet(const MatrixWrapper::SymmetricMatrix& cov)
+{
+  // Transform the sigma into a eigen Matrix
+  // std::cout << "Sigma Before" << std::endl << sigma_ << std::endl;
+
+  for (unsigned int i = 0; i < 6; i++){
+    for (unsigned int j = 0; j < 6; j++){
+      sigma_(i,j) = cov(i + 1, j + 1);
+    }
+  }
+  // std::cout << "Sigma After" << std::endl << sigma_ << std::endl;
+
+  //sigma_ = sigma;
+  sigma_changed_ = true;
+
+  normX_solver_->setCovar(sigma_);
+
 }
 
 
@@ -103,6 +144,8 @@ Probability MultivariateGaussianPosVel::ProbabilityGet(const StatePosVel& input)
 bool
 MultivariateGaussianPosVel::SampleFrom(vector<Sample<StatePosVel> >& list_samples, const int num_samples, int method, void * args) const
 {
+  assert(false);
+
   Eigen::EigenMultivariateNormal<double> normX_solver(this->mu_,this->sigma_);
   std::cout << normX_solver.samples(500).transpose() << std::endl;
 
@@ -120,7 +163,20 @@ MultivariateGaussianPosVel::SampleFrom(vector<Sample<StatePosVel> >& list_sample
 bool
 MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void * args) const
 {
-  assert(false); // NOT YET IMPLEMENTED
+  //normX_solver_.setCovar(getSigma());
+
+  Eigen::Matrix<double,6,1> sample;
+  sample = normX_solver_->samples(1);
+
+  one_sample.ValueSet(StatePosVel(Vector3(sample[0],
+                                          sample[1],
+                                          sample[2]),
+                                  Vector3(sample[3]*dt_,
+                                          sample[4]*dt_,
+                                          sample[5]*dt_)));
+
+  //std::cout << sample << std::endl;
+  //assert(false); // NOT YET IMPLEMENTED
   return true;
 }
 
@@ -143,7 +199,7 @@ MultivariateGaussianPosVel::CovarianceGet() const
 
   sigma = 0;
   for (unsigned int i = 0; i < 6; i++){
-    for (unsigned int j = 0; j < 6; i++){
+    for (unsigned int j = 0; j < 6; j++){
       sigma(i + 1, j + 1) = sigma_(i,j);
     }
   }

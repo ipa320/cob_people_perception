@@ -40,6 +40,7 @@
 
 #include "state_pos_vel.h"
 #include <people_tracking_filter/gaussian_pos_vel.h>
+#include <people_tracking_filter/multivariate_gaussian_pos_vel.h>
 #include <model/systemmodel.h>
 #include <pdf/conditionalpdf.h>
 #include <wrappers/matrix/matrix_wrapper.h>
@@ -64,6 +65,9 @@ public:
   // set covariance
   void CovarianceSet(const  MatrixWrapper::SymmetricMatrix& cov);
 
+  // Set the multivariate Covariance
+  void MultivariateCovarianceSet(const MatrixWrapper::SymmetricMatrix& cov);
+
   // set time
   void SetDt(double dt)
   {
@@ -85,6 +89,7 @@ public:
 
 private:
   GaussianPosVel noise_;
+  MultivariateGaussianPosVel noise_nl_;
   double dt_;
 
 }; // class
