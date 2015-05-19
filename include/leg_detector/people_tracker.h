@@ -122,6 +122,10 @@ class PeopleTracker{
       return pos_vel_estimation_;
     }
 
+    tf::Vector3 getHipVec(){
+      return this->hip_vec_;
+    }
+
     //BFL::StatePosVel getLegEstimate(int id){
     //  return pos_vel_estimation_;
     //}

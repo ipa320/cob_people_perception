@@ -129,21 +129,7 @@ void LegFeature::propagate(ros::Time time)
     //std::cout << "\t" << **pplIt << std::endl;
   }
 
-  // If there exists a relevant high level filter
-  if(mostProbableAssociatedPPL && mostProbableAssociatedPPL->getTotalProbability() > 0.5){ // TODO Make the configurable
-    //std::cout << "\t Highest is:" << *mostProbableAssociatedPPL << std::endl;
 
-    // Get estimation for itself
-    StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
-
-  }
-  // If there is no relevant people tracker assigned-> Consider only the low level filter
-  else
-  {
-    std::cout << "\t There is now relevant high level filter" << std::endl;
-  }
-
-  // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(6);
   cov = 0.0;
   cov(1, 1) = leg_feature_predict_pos_cov_;//conf.leg_feature_predict_pos_cov;
@@ -153,6 +139,44 @@ void LegFeature::propagate(ros::Time time)
   cov(5, 5) = leg_feature_predict_vel_cov_;//conf.leg_feature_predict_vel_cov;
   cov(6, 6) = 0.0;
 
+
+
+  // If there exists a relevant high level filter
+  if(mostProbableAssociatedPPL && mostProbableAssociatedPPL->getTotalProbability() > 0.5){ // TODO Make the configurable
+    //std::cout << "\t Highest is:" << *mostProbableAssociatedPPL << std::endl;
+
+    // Get estimation for itself
+    // StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
+
+    // TODO THIS SHOULD DEPEND ON THE ESTIMATION OF THE LEG; NOT THE PERSON!!!
+    filter_.updatePrediction(time.toSec(), cov, mostProbableAssociatedPPL->getEstimate().vel_, mostProbableAssociatedPPL->getHipVec());
+
+  }
+  // If there is no relevant people tracker assigned-> Consider only the low level filter
+  else
+  {
+
+    filter_.updatePrediction(time.toSec(),cov);
+  }
+
+
+
+
+
+  Eigen::Matrix<double,3,3> pos_cov;
+
+
+
+
+
+  MatrixWrapper::SymmetricMatrix debug_cov(6);
+  debug_cov(1,1) = 0.0001;
+  debug_cov(2,2) = 0.01;
+  debug_cov(4,4) = 1.0;
+  debug_cov(5,5) = 1.0;
+
+  // Calculate the covariance of the
+
   //server.updateConfig(conf);
   //std::cout << "conf.leg_feature_predict_pos_cov " << conf.leg_feature_predict_pos_cov << std::endl;
   //std::cout << "conf.leg_feature_predict_vel_cov " << conf.leg_feature_predict_vel_cov << std::endl;
@@ -161,7 +185,7 @@ void LegFeature::propagate(ros::Time time)
   // Do the Prediction in the filter
   //filter_.updatePrediction(time.toSec());
 
-  filter_.updatePrediction(time.toSec(),cov);
+
 
   //assert(false); // Continue work here: set the prediction from the current motion model
   // update the Position
