@@ -78,15 +78,15 @@ namespace Eigen {
   template<typename Scalar>
     class EigenMultivariateNormal
   {
-    Matrix<Scalar,Dynamic,Dynamic> _covar;
-    Matrix<Scalar,Dynamic,Dynamic> _transform;
-    Matrix< Scalar, Dynamic, 1> _mean;
+    Matrix<Scalar,6,6> _covar;
+    Matrix<Scalar,6,6> _transform;
+    Matrix< Scalar, 6, 1> _mean;
     internal::scalar_normal_dist_op<Scalar> randN; // Gaussian functor
     bool _use_cholesky;
-    SelfAdjointEigenSolver<Matrix<Scalar,Dynamic,Dynamic> > _eigenSolver; // drawback: this creates a useless eigenSolver when using Cholesky decomposition, but it yields access to eigenvalues and vectors
+    SelfAdjointEigenSolver<Matrix<Scalar,6,6> > _eigenSolver; // drawback: this creates a useless eigenSolver when using Cholesky decomposition, but it yields access to eigenvalues and vectors
     
   public:
-    EigenMultivariateNormal(const Matrix<Scalar,Dynamic,1>& mean, const Matrix<Scalar,Dynamic,Dynamic>& covar,
+    EigenMultivariateNormal(const Matrix<Scalar,6,1>& mean, const Matrix<Scalar,6,6>& covar,
         //const bool use_cholesky=false,const uint64_t &seed=std::mt19937::default_seed)
         const bool use_cholesky=false,const uint64_t &seed=boost::random::mt19937::default_seed)
         :_use_cholesky(use_cholesky)
@@ -103,16 +103,12 @@ namespace Eigen {
       randN.seed(seed);
     }
 
-    void setMean(const Matrix<Scalar,Dynamic,1>& mean)
+    void setMean(const Matrix<Scalar,6,1>& mean)
     {
       _mean = mean;
     }
 
-    void setFoo(Matrix<Scalar,Dynamic,1> foo)
-    {
-    }
-
-    void setCovar(const Matrix<Scalar,Dynamic,Dynamic>& covar)
+    void setCovar(const Matrix<Scalar,6,6>& covar)
     {
       _covar = covar;
       
@@ -122,7 +118,7 @@ namespace Eigen {
       
       if (_use_cholesky)
       {
-        Eigen::LLT<Eigen::Matrix<Scalar,Dynamic,Dynamic> > cholSolver(_covar);
+        Eigen::LLT<Eigen::Matrix<Scalar,6,6> > cholSolver(_covar);
         // We can only use the cholesky decomposition if
         // the covariance matrix is symmetric, pos-definite.
         // But a covariance matrix might be pos-semi-definite.
@@ -139,7 +135,7 @@ namespace Eigen {
       }
       else
       {
-        _eigenSolver = SelfAdjointEigenSolver<Matrix<Scalar,Dynamic,Dynamic> >(_covar);
+        _eigenSolver = SelfAdjointEigenSolver<Matrix<Scalar,6,6> >(_covar);
         _transform = _eigenSolver.eigenvectors()*_eigenSolver.eigenvalues().cwiseMax(0).cwiseSqrt().asDiagonal();
       }
     }
@@ -148,7 +144,7 @@ namespace Eigen {
     /// as columns in a Dynamic by nn matrix
     Matrix<Scalar,Dynamic,-1> samples(int nn)
     {
-      return (_transform * Matrix<Scalar,Dynamic,-1>::NullaryExpr(_covar.rows(),nn,randN)).colwise() + _mean;
+      return (_transform * Matrix<Scalar,6,-1>::NullaryExpr(_covar.rows(),nn,randN)).colwise() + _mean;
     }
   }; // end class EigenMultivariateNormal
 } // end namespace Eigen

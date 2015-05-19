@@ -53,4 +53,4 @@ catkin_package(INCLUDE_DIRS include
   CATKIN_DEPENDS people_msgs sensor_msgs std_msgs geometry_msgs visualization_msgs message_runtime)
   
 # Demo of the multivariate normal distribution
-add_executable(eigenmvn_demo src/eigenmvn_demo.cpp)
+# add_executable(eigenmvn_demo src/eigenmvn_demo.cpp)
