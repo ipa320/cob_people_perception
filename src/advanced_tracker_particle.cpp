@@ -114,28 +114,7 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
   cout << "Initialization done" << endl;
 
 }
-// Perform prediction using the motion model
-bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov){
-  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
-
-  // Set the covariances of the System Model
-  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->CovarianceSet(cov);
-
-  MatrixWrapper::SymmetricMatrix debug_cov(6);
-  debug_cov(1,1) = 0.0001;
-  debug_cov(2,2) = 1.0;
-  debug_cov(4,4) = 1.0;
-  debug_cov(4,4) = 1.0;
-
-
-  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->MultivariateCovarianceSet(debug_cov); // TODO use here the nl covariance
-
-
-  //assert(false); // Not done implementing
-
-  return this->updatePrediction(time);
-}
 
 
 // Perform prediction using the motion model
@@ -158,37 +137,45 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
 };
 
 /**
- * @brief Do the prediction with the influence of the estimation of the high level filter
+ * @brief Do the prediction without the influence of the estimation of the high level filter
  * @param time
  * @return
  */
-bool AdvancedTrackerParticle::updatePrediction(const double time, StatePosVel highLevelPrediction)
+bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov)
 {
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
-  // Here the particles are the Particles before the Update
-  vector<WeightedSample<StatePosVel> > samples = prior_.ListOfSamplesGet();
 
-  // Prediction using
-  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s - Doing update prediction of %u particles",__func__, prior_.NumSamplesGet());
+  // Set the covariances of the System Model
+  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->CovarianceSet(cov);
 
+  // Turn off high level prediction
+  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->setUseHighlevelPrediction(false);
 
-  assert(0); // Careful! (This is not finished implementing!)
-
-  bool res = true;
-  if (time > filter_time_)
-  {
-    // set dt in sys model
-    sys_model_.SetDt(time - filter_time_);
-    filter_time_ = time;
-
-    // update filter
-    res = filter_->Update(&sys_model_); // TODO!! // Call Update internal of the particle Filter
-    if (!res) quality_ = 0;
-  }
-  return res;
+  return this->updatePrediction(time);
 };
 
+/**
+ * Do the prediction WITH the influence of the estimation of the high level filter
+ * @param time
+ * @param cov Covariance of the low level filters
+ * @param velVec Vectors for the high level prediction representing the current velocity of the associated person
+ * @param hipVec Vectors for the high level prediction representing the current hip vector of the associated person
+ * @return
+ */
+bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov, tf::Vector3 velVec, tf::Vector3 hipVec){
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+
+  // Set the covariances of the System Model
+  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->CovarianceSet(cov);
+
+  // Set the vectors for the high level prediction
+  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->HighLevelInformationSet(velVec,hipVec);
+  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->setUseHighlevelPrediction(true);
+
+  return this->updatePrediction(time);
+}
 
 
 // update filter correction based on measurement

@@ -99,8 +99,11 @@ public:
 
   /// update tracker
   virtual bool updatePrediction(const double time);
-  virtual bool updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov);
-  virtual bool updatePrediction(const double time, StatePosVel highLevelPrediction);
+  virtual bool updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov); /**< Update without high level prediction */
+  virtual bool updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov, tf::Vector3 velVec, tf::Vector3 hipVec); /**< Update with high level prediction */
+
+
+  //virtual bool updatePrediction(const double time, StatePosVel highLevelPrediction);
   virtual bool updateCorrection(const tf::Vector3& meas,
                                 const MatrixWrapper::SymmetricMatrix& cov);
 

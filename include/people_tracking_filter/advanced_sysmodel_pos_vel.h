@@ -68,6 +68,8 @@ public:
   // Set the multivariate Covariance
   void MultivariateCovarianceSet(const MatrixWrapper::SymmetricMatrix& cov);
 
+  void HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec);
+
   // set time
   void SetDt(double dt)
   {
@@ -80,6 +82,11 @@ public:
     return dt_;
   };
 
+  // Set wether high level prediction should be used
+  void setUseHighlevelPrediction(bool useHighLevelPrediction){
+    this->useHighLevelPrediction_ = useHighLevelPrediction;
+  }
+
   // Redefining pure virtual methodsw
   virtual bool SampleFrom(BFL::Sample<StatePosVel>& one_sample, int method, void *args) const;
   virtual StatePosVel ExpectedValueGet() const; // not applicable
@@ -91,6 +98,8 @@ private:
   GaussianPosVel noise_;
   MultivariateGaussianPosVel noise_nl_;
   double dt_;
+
+  bool useHighLevelPrediction_; /**< Update using the high level people tracker prediction */
 
 }; // class
 

@@ -54,6 +54,10 @@ public:
     Eigen::Matrix<double,6,6> sigma_; /**< Covariance */
     Eigen::Matrix<double,6,1> mu_;  /**< Mean */
 
+    // Eigenvalues
+    Eigen::Matrix<double,3,1> eigv1_;
+    Eigen::Matrix<double,3,1> eigv2_;
+
     // The Random Generator
     boost::shared_ptr<Eigen::EigenMultivariateNormal<double> > normX_solver_;
 
@@ -88,6 +92,8 @@ public:
 
   /// Set the covar (as SymmetricMatrix)
   void sigmaSet(const MatrixWrapper::SymmetricMatrix& cov);
+
+  void eigenvectorsSet(tf::Vector3 eigv1, tf::Vector3 eigv2);
 
   Eigen::Matrix<double,6,1>
   getMu() const{

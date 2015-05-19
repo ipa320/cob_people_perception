@@ -52,7 +52,8 @@ static const unsigned int DIM_SYS_POS_VEL           = 6;
 AdvancedSysPdfPosVel::AdvancedSysPdfPosVel(const StatePosVel& sigma)
   : ConditionalPdf<StatePosVel, StatePosVel>(DIM_SYS_POS_VEL, NUM_SYS_POS_VEL_COND_ARGS),
     noise_(StatePosVel(Vector3(0, 0, 0), Vector3(0, 0, 0)), sigma),
-    dt_(0.0)
+    dt_(0.0),
+    useHighLevelPrediction_(false)
 {}
 
 
@@ -61,6 +62,10 @@ AdvancedSysPdfPosVel::AdvancedSysPdfPosVel(const StatePosVel& sigma)
 AdvancedSysPdfPosVel::~AdvancedSysPdfPosVel()
 {}
 
+/**
+ * Set the covariance of the low level noise
+ * @param cov
+ */
 void
 AdvancedSysPdfPosVel::CovarianceSet(const MatrixWrapper::SymmetricMatrix& cov)
 {
@@ -73,15 +78,22 @@ AdvancedSysPdfPosVel::CovarianceSet(const MatrixWrapper::SymmetricMatrix& cov)
   sigma.vel_ = cov_vec_vel;
 
   noise_.sigmaSet(sigma);
-
+  //assert(false);
 }
 
 void
 AdvancedSysPdfPosVel::MultivariateCovarianceSet(const MatrixWrapper::SymmetricMatrix& cov)
 {
-  ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"AdvancedSysPdfPosVel::%s",__func__);
-  noise_nl_.sigmaSet(cov);
+  //ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"AdvancedSysPdfPosVel::%s",__func__);
+  //noise_nl_.sigmaSet(cov);
+  assert(false);
+}
 
+void
+AdvancedSysPdfPosVel::HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec)
+{
+  ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"AdvancedSysPdfPosVel::%s",__func__);
+  noise_nl_.eigenvectorsSet(vel, hipVec);
 }
 
 Probability
@@ -122,15 +134,16 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   //benchmarking::Timer timer;
   //timer.start();
 
-  Sample<StatePosVel> noise_sample_nl;
-  noise_nl_.SetDt(dt_);
-  noise_nl_.SampleFrom(noise_sample_nl, method, args);
+  // Only use the high level predicition if explicitly set true
+  if(useHighLevelPrediction_){
+    Sample<StatePosVel> noise_sample_nl;
+    noise_nl_.SetDt(dt_);
+    noise_nl_.SampleFrom(noise_sample_nl, method, args);
 
-  //std::cout << "Sampling took " << timer.stopAndGetTimeMs() << "ms" << std::endl;
+    res += noise_sample_nl.ValueGet();
 
-  //assert(false);
-  std::cout << noise_sample_nl.ValueGet() << std::endl;
-  res += noise_sample_nl.ValueGet();
+    //assert(false);
+  }
 
   return true;
 }
