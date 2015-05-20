@@ -53,6 +53,8 @@ include_directories(
 add_library(dual_people_leg_tracker
             src/models/occlusion_model.cpp
             src/models/advanced_measmodel_pos.cpp
+            src/models/advanced_sysmodel_pos_vel.cpp
+            src/distributions/multivariate_gaussian_pos_vel.cpp
             )
 
 catkin_package(INCLUDE_DIRS 
