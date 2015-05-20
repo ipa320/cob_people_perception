@@ -51,7 +51,9 @@ include_directories(
 
 ## Declare a cpp library
 add_library(dual_people_leg_tracker
-            src/models/occlusion_model.cpp)
+            src/models/occlusion_model.cpp
+            src/models/advanced_measmodel_pos.cpp
+            )
 
 catkin_package(INCLUDE_DIRS 
                   include # The exported include paths (i.e. cflags) for the package
