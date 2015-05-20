@@ -42,10 +42,10 @@
 #include "gaussian_vector.h"
 #include <model/measurementmodel.h>
 #include <pdf/conditionalpdf.h>
+#include <dual_people_leg_tracker/models/occlusion_model.h>
 #include <wrappers/matrix/matrix_wrapper.h>
 #include <string>
 
-#include <people_tracking_filter/occlusion_model.h>
 
 #define DEBUG_ADVANCEDMEASMODELPOS 1
 
