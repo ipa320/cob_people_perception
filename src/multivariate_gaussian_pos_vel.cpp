@@ -186,7 +186,7 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
   double beta = 0.01;  // With of the distribution
 
   double v1_factor = 3.0;
-  double v2_factor = 0.1;
+  double v2_factor = 0.07;
 
   // Get a fifty fifty chance
   if(rand() % 2 == 0){
