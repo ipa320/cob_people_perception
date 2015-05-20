@@ -63,8 +63,6 @@ add_library(people_tracking_filter
             src/detector_particle.cpp
             src/people_particle_filter.cpp
             src/advanced_tracker_particle.cpp
-            src/advanced_sysmodel_pos_vel.cpp
-            src/multivariate_gaussian_pos_vel.cpp
 )
 
 ## Declare a cpp executable

@@ -47,7 +47,7 @@
 //#include "measmodel_pos.h"
 
 #include <people_tracking_filter/people_particle_filter.h>
-#include <people_tracking_filter/advanced_sysmodel_pos_vel.h>
+#include <dual_people_leg_tracker/models/advanced_sysmodel_pos_vel.h>
 #include <dual_people_leg_tracker/models/advanced_measmodel_pos.h>
 #include <dual_people_leg_tracker/models/occlusion_model.h>
 #include <tf/tf.h>
