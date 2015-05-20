@@ -49,8 +49,14 @@ include_directories(
   ${Eigen_INCLUDE_DIRS}
 )
 
-catkin_package(INCLUDE_DIRS include
-  CATKIN_DEPENDS people_msgs sensor_msgs std_msgs geometry_msgs visualization_msgs message_runtime)
+## Declare a cpp library
+add_library(dual_people_leg_tracker
+            src/models/occlusion_model.cpp)
+
+catkin_package(INCLUDE_DIRS 
+                  include # The exported include paths (i.e. cflags) for the package
+               LIBRARIES dual_people_leg_tracker
+               CATKIN_DEPENDS people_msgs sensor_msgs std_msgs geometry_msgs visualization_msgs message_runtime)
   
 # Demo of the multivariate normal distribution
 # add_executable(eigenmvn_demo src/eigenmvn_demo.cpp)
