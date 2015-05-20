@@ -68,7 +68,7 @@
 #include <people_tracking_filter/tracker_kalman.h>
 #include <people_tracking_filter/state_pos_vel.h>
 #include <people_tracking_filter/rgb.h>
-#include <people_tracking_filter/occlusion_model.h>
+#include <dual_people_leg_tracker/models/occlusion_model.h>
 
 // Configuration
 #include <dynamic_reconfigure/server.h>
