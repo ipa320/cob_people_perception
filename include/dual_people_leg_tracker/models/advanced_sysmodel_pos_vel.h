@@ -39,7 +39,7 @@
 
 
 #include <people_tracking_filter/state_pos_vel.h>
-#include <people_tracking_filter/gaussian_pos_vel.h>
+#include <dual_people_leg_tracker/distributions/gaussian_pos_vel_mod.h>
 #include <dual_people_leg_tracker/distributions/multivariate_gaussian_pos_vel.h>
 #include <model/systemmodel.h>
 #include <pdf/conditionalpdf.h>
@@ -95,7 +95,7 @@ public:
 
 
 private:
-  GaussianPosVel noise_;
+  GaussianPosVelMod noise_;
   MultivariateGaussianPosVel noise_nl_;
   double dt_;
 

@@ -77,8 +77,8 @@ AdvancedSysPdfPosVel::CovarianceSet(const MatrixWrapper::SymmetricMatrix& cov)
   sigma.pos_ = cov_vec_pos;
   sigma.vel_ = cov_vec_vel;
 
-  //noise_.sigmaSet(sigma);
-  assert(false);
+  noise_.sigmaSet(sigma);
+  //assert(false);
 }
 
 void
