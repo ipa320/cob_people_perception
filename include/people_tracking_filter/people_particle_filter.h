@@ -6,7 +6,7 @@
 #include <filter/particlefilter.h>
 #include <people_tracking_filter/sysmodel_pos_vel.h>
 #include <people_tracking_filter/advanced_sysmodel_pos_vel.h>
-#include <people_tracking_filter/advanced_measmodel_pos.h>
+#include <dual_people_leg_tracker/models/advanced_measmodel_pos.h>
 
 #define DEBUG_PEOPLE_PARTICLE_FILTER 1
 

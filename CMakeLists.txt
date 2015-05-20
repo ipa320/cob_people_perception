@@ -64,7 +64,6 @@ add_library(people_tracking_filter
             src/people_particle_filter.cpp
             src/advanced_tracker_particle.cpp
             src/advanced_sysmodel_pos_vel.cpp
-            src/advanced_measmodel_pos.cpp
             src/multivariate_gaussian_pos_vel.cpp
 )
 
