@@ -24,22 +24,21 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   people_msgs
   sensor_msgs
-  dual_people_leg_tracker
 )
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread)
 
 ## Declare things to be passed to dependent projects
-catkin_package(
-INCLUDE_DIRS include
-CATKIN_DEPENDS
-    sensor_msgs
-    std_msgs
-    geometry_msgs
-    people_msgs
-    dual_people_leg_tracker
-LIBRARIES people_tracking_filter dual_people_tracking_filter
+catkin_package(INCLUDE_DIRS 
+                   include
+               CATKIN_DEPENDS
+                   sensor_msgs
+                   std_msgs
+                   geometry_msgs
+                   people_msgs
+               LIBRARIES                      # Exported libraries
+                   people_tracking_filter
 )
 
 ## Specify additional locations of header files
@@ -61,8 +60,6 @@ add_library(people_tracking_filter
             src/tracker_particle.cpp
             src/tracker_kalman.cpp 
             src/detector_particle.cpp
-            src/people_particle_filter.cpp
-            src/advanced_tracker_particle.cpp
 )
 
 ## Declare a cpp executable
