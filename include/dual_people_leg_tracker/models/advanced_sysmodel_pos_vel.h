@@ -37,14 +37,19 @@
 #ifndef ADVANCED_SYSMODEL_POS_VEL_H
 #define ADVANCED_SYSMODEL_POS_VEL_H
 
+// ROS includes
 
+// BFL includes
+#include <pdf/conditionalpdf.h>
+#include <model/systemmodel.h>
+#include <wrappers/matrix/matrix_wrapper.h>
+
+// People Stack includes
 #include <people_tracking_filter/state_pos_vel.h>
+
+// Own includes
 #include <dual_people_leg_tracker/distributions/gaussian_pos_vel_mod.h>
 #include <dual_people_leg_tracker/distributions/multivariate_gaussian_pos_vel.h>
-#include <model/systemmodel.h>
-#include <pdf/conditionalpdf.h>
-#include <wrappers/matrix/matrix_wrapper.h>
-#include <string>
 
 #define DEBUG_ADVANCEDSYSMODELPOSVEL 1
 

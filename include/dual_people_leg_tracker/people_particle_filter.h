@@ -1,0 +1,101 @@
+#ifndef PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_PEOPLE_PARTICLE_FILTER_H_
+#define PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_PEOPLE_PARTICLE_FILTER_H_
+
+//Own includes
+#include <dual_people_leg_tracker/models/advanced_sysmodel_pos_vel.h>
+#include <dual_people_leg_tracker/models/advanced_measmodel_pos.h>
+
+// People Stack includes
+#include <filter/particlefilter.h>
+
+#define DEBUG_PEOPLE_PARTICLE_FILTER 1
+
+using namespace BFL;
+
+/**
+ *  The Filter used for Tracking Legs and their People
+ */
+class PeopleParticleFilter
+  : public BFL::ParticleFilter<BFL::StatePosVel, tf::Vector3>
+{
+
+  public:
+
+    // Constructor
+    PeopleParticleFilter(MCPdf<StatePosVel> * prior,
+        MCPdf<StatePosVel> * post,
+        int resampleperiod,
+        double resamplethreshold,
+        int resamplescheme);
+
+    // Destructor
+    virtual ~PeopleParticleFilter();
+
+    /**
+     * Update(Prediction) using the system model
+     * @param sysmodel
+     * @return true on success
+     */
+    bool
+    Update(BFL::AdvancedSysModelPosVel* const sysmodel)
+    {
+      ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER,"----PeopleParticleFilter::%s -> System Model Update",__func__);
+
+      StatePosVel s; // Sensing Parameter ??!
+      tf::Vector3 z; // Measurement
+      StatePosVel u; // Input to the system
+      return this->UpdateInternal(sysmodel,u,NULL,z,s);
+    }
+
+    /**
+    * Do a measurement Update
+    * @param measmodel
+    * @param meas
+    * @return
+    */
+    bool
+    Update(BFL::AdvancedMeasModelPos* const measmodel, const tf::Vector3& meas)
+    {
+      ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER,"----PeopleParticleFilter::%s -> System Model Update",__func__);
+
+      StatePosVel s; // Sensing Parameter ??!
+      tf::Vector3 z; // Measurement
+      StatePosVel u; // Input to the system
+
+      z = meas;
+
+      return this->UpdateInternal(NULL,u,measmodel,z,s);
+    }
+
+    /**
+     * Do a internal update
+     * @param sysmodel pointer to the used system model
+     * @param u input param for proposal density
+     * @param measmodel pointer to the used measurementmodel
+     * @param z measurement param for proposal density
+     * @param s sensor param for proposal density
+     * @return
+     */
+    bool UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel,
+                 const StatePosVel& u,
+                 MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
+                 const tf::Vector3& z,
+                 const StatePosVel& s);
+
+    /**
+     * Update the weights using the measurement models
+     * @param sysmodel
+     * @param u
+     * @param measmodel
+     * @param z
+     * @param s
+     * @return
+     */
+    bool UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const sysmodel,
+                 const StatePosVel& u,
+                 MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
+                 const tf::Vector3& z,
+                 const StatePosVel& s);
+};
+
+#endif /* PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_PEOPLE_PARTICLE_FILTER_H_ */
