@@ -34,7 +34,6 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   people_msgs
   people_tracking_filter
-  dual_people_leg_tracker
   image_geometry
   dynamic_reconfigure
   rosbag
@@ -44,7 +43,6 @@ find_package(catkin REQUIRED COMPONENTS
 ## dynamic reconfigure config
 generate_dynamic_reconfigure_options(
   cfg/LegDetector.cfg
-  cfg/DualTracker.cfg
   cfg/TrainingSetCreator.cfg
 )
 
@@ -66,8 +64,18 @@ generate_messages(
    tf2_msgs
 )
 
-catkin_package(INCLUDE_DIRS include
-  CATKIN_DEPENDS people_msgs sensor_msgs std_msgs geometry_msgs visualization_msgs message_runtime)
+catkin_package(INCLUDE_DIRS 
+                  include
+               CATKIN_DEPENDS 
+                  people_msgs 
+                  sensor_msgs 
+                  std_msgs 
+                  geometry_msgs 
+                  visualization_msgs 
+                  message_runtime
+                LIBRARIES # Libraries exported from this package
+                  leg_detection 
+                  )
 
 ## The leg detector
 add_executable(leg_detector 
@@ -84,20 +92,14 @@ target_link_libraries(leg_detector
    ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
 )
 
-## The leg detector
-add_executable(dual_tracker 
-               src/laser_processor.cpp 
-               src/dual_tracker.cpp 
-               src/calc_leg_features.cpp 
-               src/leg_feature.cpp
-               src/people_tracker.cpp)
+## Make a library to export stuff
 
-## Add cmake target dependencies of the executable/library
-add_dependencies(dual_tracker people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(dual_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES})
-
+add_library(leg_detection
+              src/laser_processor.cpp
+              src/leg_detector.cpp 
+              src/calc_leg_features.cpp
+              src/saved_feature.cpp
+)
 
 
 install(TARGETS
@@ -121,43 +123,43 @@ install(DIRECTORY launch/
 
 
 ## The training set creator
-add_executable(training_set_creator 
-               src/laser_processor.cpp
-               src/training_set_creator.cpp 
-               src/calc_leg_features.cpp)
-               
+#add_executable(training_set_creator 
+#               src/laser_processor.cpp
+#               src/training_set_creator.cpp 
+#               src/calc_leg_features.cpp)
+#               
 ## Add cmake target dependencies of the executable/library
-add_dependencies(training_set_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+#add_dependencies(training_set_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(training_set_creator
-   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
-)
+#target_link_libraries(training_set_creator
+#   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+#)
 
 ## The training set converter
-add_executable(training_set_converter
-               src/laser_processor.cpp
-               src/training_set_converter.cpp 
-               src/calc_leg_features.cpp)
+#add_executable(training_set_converter
+#               src/laser_processor.cpp
+#               src/training_set_converter.cpp 
+#               src/calc_leg_features.cpp)
                
 ## Add cmake target dependencies of the executable/library
-add_dependencies(training_set_converter people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+#add_dependencies(training_set_converter people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(training_set_converter
-   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
-)
+#target_link_libraries(training_set_converter
+#   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+#)
 
 ## The leg train detector
-add_executable(train_leg_detector
-               src/laser_processor.cpp
-               src/train_leg_detector.cpp 
-               src/calc_leg_features.cpp)
+#add_executable(train_leg_detector
+#               src/laser_processor.cpp
+#               src/train_leg_detector.cpp 
+#               src/calc_leg_features.cpp)
                
 ## Add cmake target dependencies of the executable/library
-add_dependencies(train_leg_detector people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+#add_dependencies(train_leg_detector people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(train_leg_detector
-   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
-)
+#target_link_libraries(train_leg_detector
+#   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+#)

@@ -39,7 +39,7 @@
 #include <leg_detector/LegDetectorConfig.h>
 #include <leg_detector/laser_processor.h>
 #include <leg_detector/calc_leg_features.h>
-#include <leg_detector/visualization_conversions.h>
+//#include <leg_detector/visualization_conversions.h>
 #include <benchmarking/timer.h>
 #include <leg_detector/saved_feature.h>
 
@@ -223,7 +223,7 @@ public:
     publish_people_         = config.publish_people;
     publish_leg_markers_    = config.publish_leg_markers;
     publish_people_markers_ = config.publish_people_markers;
-    publish_clusters_       = config.publish_clusters;
+    publish_clusters_       = true;
 
     no_observation_timeout_s = config.no_observation_timeout;
     max_second_leg_age_s     = config.max_second_leg_age;
@@ -854,12 +854,12 @@ public:
       {
         // Publish the cluster as Sphere
         visualization_msgs::Marker::Ptr m(new visualization_msgs::Marker);
-        visualization::savedFeatureToSphereLegMarkerMsg((*sf_iter), m, fixed_frame, i);
+        //visualization::savedFeatureToSphereLegMarkerMsg((*sf_iter), m, fixed_frame, i);
         markers_pub_.publish(m);
 
         // Publish the cluster properties as text
         visualization_msgs::Marker::Ptr m_text(new visualization_msgs::Marker);
-        visualization::clusterToTextMarkerMsg((*sf_iter), m_text, fixed_frame, i);
+        //visualization::clusterToTextMarkerMsg((*sf_iter), m_text, fixed_frame, i);
         markers_pub_.publish(m_text);
       }
 
@@ -907,7 +907,7 @@ public:
           {
             visualization_msgs::Marker::Ptr pPeopleSphereMsg(new visualization_msgs::Marker);
             visualization_msgs::Marker::Ptr plegLineMsg(new visualization_msgs::Marker);
-            visualization::savedFeatureToPeopleMarkerMsg(leg1, leg2, pPeopleSphereMsg, plegLineMsg, fixed_frame, peoplePos, i);
+            //visualization::savedFeatureToPeopleMarkerMsg(leg1, leg2, pPeopleSphereMsg, plegLineMsg, fixed_frame, peoplePos, i);
             markers_pub_.publish(pPeopleSphereMsg);
             markers_pub_.publish(plegLineMsg);
 
