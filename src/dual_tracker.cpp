@@ -331,138 +331,8 @@ public:
       people_notifier_.setTargetFrame(fixed_frame);
     }
 
-    //kal_p                    = config.kalman_p;
-    //kal_q                    = config.kalman_q;
-    //kal_r                    = config.kalman_r;
-    //use_filter               = config.kalman_on == 0;
-
     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - Configuration done", __func__);
   }
-
-  /**
-   * Generate People Tracker based on the Pairing of legs
-   */
-  void pairLegsToPeopleTracker(){
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Pairing Legs",__func__);
-  }
-
-/*  *
-   *  @brief Pair the Saved Features
-   *
-   *  Pairs the features inside the member saved_features_(leg_trackers) with each other based on the distance.
-   *  //NEW Determine all possible pairs, neglect pairing based on previous observations
-
-  void pairLegs()
-  {
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Pairing Legs",__func__);
-    benchmarking::Timer pairLegsTimer; pairLegsTimer.start();
-
-    // Deal With legs that already have ids
-    list<LegFeaturePtr>::iterator begin = saved_leg_features.begin();
-    list<LegFeaturePtr>::iterator end = saved_leg_features.end();
-    list<LegFeaturePtr>::iterator leg1, leg2, best, it;
-
-    for (leg1 = begin; leg1 != end; ++leg1)
-    {
-      // If this leg has no id, skip
-      if ((*leg1)->object_id == "")
-        continue;
-
-      leg2 = end;
-      best = end;
-      double closest_dist = leg_pair_separation_m;
-      for (it = begin; it != end; ++it)
-      {
-        if (it == leg1) continue;
-
-        if ((*it)->object_id == (*leg1)->object_id)
-        {
-          leg2 = it;
-          break;
-        }
-
-        if ((*it)->object_id != "")
-          continue;
-
-        double d = distance(it, leg1);
-        if (((*it)->getLifetime() <= max_second_leg_age_s)
-            && (d < closest_dist))
-        {
-          closest_dist = d;
-          best = it;
-        }
-
-      }
-
-      if (leg2 != end)
-      {
-        double dist_between_legs = distance(leg1, leg2);
-        if (dist_between_legs > leg_pair_separation_m)
-        {
-          (*leg1)->object_id = "";
-          (*leg1)->other = NULL;
-          (*leg2)->object_id = "";
-          (*leg2)->other = NULL;
-        }
-        else
-        {
-          (*leg1)->other = *leg2;
-          (*leg2)->other = *leg1;
-        }
-      }
-      else if (best != end)
-      {
-        (*best)->object_id = (*leg1)->object_id;
-        (*leg1)->other = *best;
-        (*best)->other = *leg1;
-      }
-    }
-
-    // Attempt to pair up legs with no id
-    for (;;)
-    {
-      list<LegFeaturePtr>::iterator best1 = end, best2 = end;
-      double closest_dist = leg_pair_separation_m;
-
-      for (leg1 = begin; leg1 != end; ++leg1)
-      {
-        // If this leg has an id or low reliability, skip
-        if ((*leg1)->object_id != ""
-            || (*leg1)->getReliability() < leg_reliability_limit_)
-          continue;
-
-        for (leg2 = begin; leg2 != end; ++leg2)
-        {
-          if (((*leg2)->object_id != "") // has no id
-              || ((*leg2)->getReliability() < leg_reliability_limit_) // is below leg_reliability_limit_
-              || (leg1 == leg2)) continue; // is unequal with the other leg
-          double d = distance(leg1, leg2); // Calculate the distance
-          if (d < closest_dist)
-          {
-            best1 = leg1;
-            best2 = leg2;
-          }
-        }
-      }
-
-      if (best1 != end)
-      {
-        char id[100];
-        snprintf(id, 100, "Person%d", next_p_id_++);
-        (*best1)->object_id = std::string(id);
-        (*best2)->object_id = std::string(id);
-        (*best1)->other = *best2;
-        (*best2)->other = *best1;
-      }
-      else
-      {
-        break;
-      }
-    }
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Pairing Legs took %f ms",__func__, pairLegsTimer.stopAndGetTimeMs());
-
-
-  }*/
 
   /** @brief Called if a new laserscan arrives
    *
@@ -491,12 +361,12 @@ public:
     cycleTimer.start();
 
     //////////////////////////////////////////////////////////////////////////
-    //// Create occlusion model
+    //// Update the occlusion model with the current scan
     //////////////////////////////////////////////////////////////////////////
     occlusionModel_->updateScan(*scan);
 
     //////////////////////////////////////////////////////////////////////////
-    //// Create clusters
+    //// Create clusters (takes approx 0.8ms)
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sCreating Clusters [Cycle %u]", BOLDWHITE, cycle_);
     // Process the incoming scan
@@ -508,7 +378,7 @@ public:
 
     ROS_DEBUG("%sCreating Clusters done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
-    //// Remove the invalid Trackers
+    //// Remove the invalid Trackers (takes approx 0.1ms)
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sRemoving old Trackers [Cycle %u]", BOLDWHITE, cycle_);
 
@@ -711,7 +581,7 @@ public:
     ROS_DEBUG("%sMatching Done! [Cycle %u]", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
-    //// High level Association: Combination of saved features to people tracker
+    //// High level Association: Combination of saved features to people tracker (takes approx. 0.8ms)
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sHigh Level Association [Cycle %u]", BOLDWHITE, cycle_);
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Starting to combine %lu leg_tracks to people tracker",__func__, saved_leg_features.size());
@@ -860,34 +730,6 @@ public:
 
     ROS_DEBUG("%sPublishing [Cycle %u]", BOLDWHITE, cycle_);
 
-/*    std::cout << "Associations Leg->People" << std::endl;
-    for(list<LegFeaturePtr>::iterator legIt = saved_leg_features.begin();
-        legIt != saved_leg_features.end();
-        legIt++)
-    {
-      vector<PeopleTrackerPtr> peopleTrackerToThisLegList = (*legIt)->getPeopleTracker();
-
-      std::cout << "\t" << **legIt << std::endl;
-
-      for(vector<PeopleTrackerPtr>::iterator peopleIt = peopleTrackerToThisLegList.begin();
-          peopleIt != peopleTrackerToThisLegList.end();
-          peopleIt++)
-      {
-        std::cout << "\t\t" << **peopleIt << std::endl;
-      }
-    }
-
-    std::cout << "Associations People->Leg" << std::endl;
-    for(vector<PeopleTrackerPtr>::iterator peopleIt = people_trackers_.getList()->begin();
-        peopleIt != people_trackers_.getList()->end();
-        peopleIt++)
-    {
-      std::cout << "\t" << **peopleIt << std::endl;
-    }*/
-
-
-
-
     // Publish the leg measurements
     if(publish_leg_measurements_){
       publishLegMeasurements(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
@@ -940,9 +782,6 @@ public:
     //////////////////////////////////////////////////////////////////////////
     cvReleaseMat(&tmp_mat);
     tmp_mat = 0;
-    //if (use_seeds_)
-    //  pairLegs();
-
 
     //////////////////////////////////////////////////////////////////////////
     //// Finalize the Cycle
