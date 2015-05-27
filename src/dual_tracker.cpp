@@ -174,6 +174,7 @@ public:
   bool publish_people_tracker_;
   bool publish_leg_velocity_; /**< True if the estimation of the leg features are visualized as arrows */
   bool publish_static_people_trackers_; /**< Set True if also static People Trackers(Trackers that never moved) should be displayed */
+  bool publish_people_history_; /**< Publish the history of the person */
   bool publish_occlusion_model_; /**< Publish the probabilities of the particles (colorcoded) according to the occlusion model */
 
   int next_p_id_;
@@ -199,6 +200,7 @@ public:
   ros::Publisher leg_features_array_vis_pub_;/**< Visualization of leg estimation using arrows */
   ros::Publisher people_track_vis_pub_;/**< Visualization of people tracks */
   ros::Publisher leg_features_history_vis_pub_;/**< Visualization of leg tracks */
+  ros::Publisher people_history_vis_pub_;/**< Visualization of leg tracks */
   ros::Publisher matches_vis_pub_;/**< Visualization of the pairing leg_detection <-> leg_track */
   ros::Publisher particles_pub_;/**< Visualization of particles */
   ros::Publisher people_velocity_pub_;/**< Visualization of the people velocities */
@@ -255,6 +257,7 @@ public:
     leg_features_vis_pub_         = nh_.advertise<sensor_msgs::PointCloud>("leg_features", 0);
     matches_vis_pub_              = nh_.advertise<visualization_msgs::Marker>("matches", 0);
     people_track_vis_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("peoples", 0);
+    people_history_vis_pub_       = nh_.advertise<visualization_msgs::MarkerArray>("people_history", 0);
 
 
     if (use_seeds_)
@@ -312,9 +315,11 @@ public:
     publish_people_markers_     = config.publish_people_markers;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_markers_ %d", __func__, publish_people_markers_ );
     publish_people_tracker_     = config.publish_people_tracker;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_tracker_ %d", __func__, publish_people_tracker_ );
     publish_static_people_trackers_ = config.publish_static_people_trackers; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_static_people_trackers_ %d", __func__, publish_static_people_trackers_);
+    publish_people_history_     = config.publish_people_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_history_ %d", __func__, publish_people_history_ );
+
 
     publish_particles_          = config.publish_particles;       ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_particles_ %d", __func__, publish_particles_ );
-    publish_matches_            = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
+    publish_matches_            = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_matches_ %d", __func__, publish_matches_ );
 
     publish_occlusion_model_    = config.publish_occlusion_model;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_occlusion_model_ %d", __func__, publish_occlusion_model_ );
 
@@ -355,7 +360,7 @@ public:
       freeTimer.stop();
       ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"%sThere where %.2f ms left in the previous cycle(%u)", BOLDCYAN, freeTimer.stopAndGetTimeMs(), cycle_-1);
     }
-
+    ROS_DEBUG_STREAM(BOLDWHITE << "STARTING [Cycle "  << cycle_ << "] Time: " << scan->header.stamp << std::endl);
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Received Laserscan",__func__);
 
     // Start Cycle Timer
@@ -760,13 +765,18 @@ public:
     }
 
     if(publish_matches_){
-      publishMatches(matches, scan->header.stamp, scan);
+      publishMatches(saved_leg_features, scan->header.stamp);
     }
 
     if(publish_people_tracker_){
       publishPeopleTracker(scan->header.stamp);
       publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
       publishPeopleTrackerLabels(scan->header.stamp);
+    }
+
+    // Publish the history of the persons
+    if(publish_people_history_){
+      publishPeopleHistory(people_trackers_.getList(), scan->header.stamp);
     }
 
     if(publish_occlusion_model_){
@@ -1184,13 +1194,10 @@ public:
 
   void publishLegHistory(list<LegFeaturePtr>& legFeatures, ros::Time time){
 
-
     for (list<LegFeaturePtr>::iterator legFeatureIt = legFeatures.begin();
         legFeatureIt != legFeatures.end();
         legFeatureIt++)
     {
-
-
 
       if((*legFeatureIt)->position_history_.size() > 1){
 
@@ -1257,7 +1264,7 @@ public:
     ROS_DEBUG("DualTracker::%s Publishing Leg History on %s", __func__, fixed_frame.c_str());
   }
 
-  void publishMatches(multiset<MatchedFeature> matches, ros::Time time, const sensor_msgs::LaserScan::ConstPtr& scan){
+  void publishMatches(list<LegFeaturePtr>& legFeatures, ros::Time time){
 
 
     // The pointcloud message
@@ -1272,34 +1279,25 @@ public:
     markerMsg.color.r = 1.0;
     markerMsg.color.a = 1.0;
 
-    for(multiset<MatchedFeature>::iterator matched_iter = matches.begin(); matched_iter != matches.end(); ++matched_iter){
+    for (list<LegFeaturePtr>::iterator legFeatureIt = legFeatures.begin();
+        legFeatureIt != legFeatures.end();
+        legFeatureIt++)
+    {
 
-      geometry_msgs::Point p0;
-      p0.x = matched_iter->closest_->position_[0];
-      p0.y = matched_iter->closest_->position_[1];
-      p0.z = 0;
+      if(abs((time-(*legFeatureIt)->meas_loc_last_update_.stamp_).toSec()) < 0.01){
+        geometry_msgs::Point p0;
+        p0.x = (*legFeatureIt)->position_[0];
+        p0.y = (*legFeatureIt)->position_[1];
+        p0.z = 0;
 
+        geometry_msgs::Point p1;
+        p1.x = (*legFeatureIt)->meas_loc_last_update_[0];
+        p1.y = (*legFeatureIt)->meas_loc_last_update_[1];
+        p1.z = 0;
 
-
-      Stamped<tf::Point> detection(matched_iter->candidate_->center(), time, scan->header.frame_id);
-      // Transform the Point in the fixed frame
-      try
-      {
-        tfl_.transformPoint(fixed_frame, detection, detection);
+        markerMsg.points.push_back(p0);
+        markerMsg.points.push_back(p1);
       }
-      catch (...)
-      {
-        ROS_WARN("TF exception in publishClusters!");
-      }
-
-      geometry_msgs::Point p1;
-      p1.x = detection[0];
-      p1.y = detection[1];
-      p1.z = 0;
-
-      markerMsg.points.push_back(p0);
-      markerMsg.points.push_back(p1);
-
     }
 
     // Publish the pointcloud
@@ -1441,6 +1439,91 @@ public:
     }
     // Publish
     people_track_label_pub_.publish(labelArray);
+  }
+
+  // Add Labels to the People Trackers
+  void publishPeopleHistory(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
+
+    visualization_msgs::MarkerArray msgArray;
+
+    int counter = 0;
+    for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
+        peopleIt != peopleTracker->end();
+        peopleIt++)
+    {
+
+      if
+      (
+          (*peopleIt)->getHistorySize() > 1 &&
+          (*peopleIt)->getTotalProbability() > 0.5 &&
+          (*peopleIt)->isDynamic()
+      )
+      {
+
+        // The geometry message
+        visualization_msgs::Marker line_list;
+        line_list.type = visualization_msgs::Marker::LINE_LIST;
+        line_list.header.frame_id = fixed_frame;
+        line_list.header.stamp = time;
+        line_list.id = counter;
+        line_list.ns = "people_history";
+
+        // width
+        line_list.scale.x = 0.03;
+
+        // Set the color
+
+        int r,g,b;
+        //r = 255;
+        //getColor((*legFeatureIt)->int_id_,r,g,b);
+
+        line_list.color.r = 255.0;
+        line_list.color.g = 0;
+        line_list.color.b = 0;
+        line_list.color.a = 1.0;
+
+        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator prevPointIt;
+        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator nextPointIt;
+
+        prevPointIt = (*peopleIt)->position_history_.begin();
+        nextPointIt = (*peopleIt)->position_history_.begin();
+        nextPointIt++;
+
+        //std::cout << "Creating line!" << std::endl;
+
+
+
+        while(nextPointIt != (*peopleIt)->position_history_.end()){
+          geometry_msgs::Point point0, point1;
+          point0.x = (*prevPointIt)->getX();
+          point0.y = (*prevPointIt)->getY();
+          point0.z = 0;
+
+          point1.x = (*nextPointIt)->getX();
+          point1.y = (*nextPointIt)->getY();
+          point1.z = 0;
+
+          line_list.points.push_back(point0);
+          line_list.points.push_back(point1);
+
+          //std::cout << "[" << counter << "]" << point0.x << " " << point0.y << "---->" << point1.x << " " << point1.y << std::endl;
+
+          prevPointIt++;
+          nextPointIt++;
+
+        }
+        counter++;
+
+        // Publish the pointcloud
+        msgArray.markers.push_back(line_list);
+
+      }
+    }
+
+    people_history_vis_pub_.publish(msgArray);
+    //leg_features_history_vis_pub_.publish(line_list);
+
+    ROS_DEBUG("DualTracker::%s Publishing Leg History on %s", __func__, fixed_frame.c_str());
   }
 
   // Publish the occlusion model for debugging purposes

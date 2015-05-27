@@ -51,6 +51,7 @@ public:
   int int_id_;
   ros::Time time_; /**< Time of the last scan */
   ros::Time meas_time_;
+  tf::Stamped<tf::Point> meas_loc_last_update_; /**< The measurement used in the last update */
 
   OcclusionModelPtr occlusion_model_;
 

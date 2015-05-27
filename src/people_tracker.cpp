@@ -120,6 +120,9 @@ void PeopleTracker::update(ros::Time time){
 
   // Update the probabilities
   updateProbabilities(time);
+
+  // Update the history
+  // updateHistory(time);
 }
 
 /**
@@ -131,11 +134,9 @@ void PeopleTracker::updateTrackerState(ros::Time time){
 
   // Calculate the velocity vectors
   BFL::StatePosVel estLeg0 = getLeg0()->getEstimate();
-  BFL::StatePosVel estLeg1 = getLeg1()->getEstimate();
+  //BFL::StatePosVel estLeg1 = getLeg1()->getEstimate();
 
-  pos_vel_estimation_ =  (estLeg0+estLeg1);
-  pos_vel_estimation_.pos_ = 0.5 * pos_vel_estimation_.pos_; // TODO ugly find a better way for this
-  pos_vel_estimation_.vel_ = 0.5 * pos_vel_estimation_.vel_; // TODO ugly find a better way for this
+  pos_vel_estimation_ = getEstimate();
 
   //std::cout << "leg0: " << getLeg0()->getEstimate() << " leg1: " << getLeg1()->getEstimate() << std::endl;
   //std::cout << "Estimation: " << pos_vel_estimation_ << std::endl << std::endl;
@@ -348,6 +349,34 @@ void PeopleTracker::updateProbabilities(ros::Time time){
 
 }
 
+void PeopleTracker::updateHistory(ros::Time time){
+
+  BFL::StatePosVel est = getEstimate();
+
+  boost::shared_ptr<tf::Stamped<tf::Point> > point(new tf::Stamped<tf::Point>());
+  point->setX( est.pos_[0]);
+  point->setY( est.pos_[1]);
+  point->setZ( est.pos_[2]);
+  point->stamp_ = time;
+
+  position_history_.push_back(point);
+}
+
+BFL::StatePosVel PeopleTracker::getEstimate(){
+
+  // Calculate the velocity vectors
+  BFL::StatePosVel estLeg0 = getLeg0()->getEstimate();
+  BFL::StatePosVel estLeg1 = getLeg1()->getEstimate();
+
+  BFL::StatePosVel pos_vel_estimation;
+  pos_vel_estimation =  (estLeg0+estLeg1);
+  pos_vel_estimation.pos_ = 0.5 * pos_vel_estimation.pos_; // TODO ugly find a better way for this
+  pos_vel_estimation.vel_ = 0.5 * pos_vel_estimation.vel_; // TODO ugly find a better way for this
+
+
+  return pos_vel_estimation;
+}
+
 BFL::StatePosVel PeopleTracker::getLegEstimate(int id){
   ROS_ASSERT_MSG(id == id_[0] || id == id_[1],"The estimate for a leg which is not part of this tracker was requested.");
 
@@ -357,6 +386,14 @@ BFL::StatePosVel PeopleTracker::getLegEstimate(int id){
   else
     return getLeg1()->getEstimate();
 
+}
+
+unsigned int PeopleTracker::getHistorySize(){
+  return position_history_.size();
+}
+
+std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  PeopleTracker::getHistory(){
+  return position_history_;
 }
 
 /////////////////////////////////////////////////////////////
@@ -443,6 +480,8 @@ void PeopleTrackerList::updateProbabilities(ros::Time time){
 void PeopleTrackerList::updateAllTrackers(ros::Time time){
   for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
     (*peopleTrackerIt)->update(time);
+
+    (*peopleTrackerIt)->updateHistory(time);
   }
 }
 

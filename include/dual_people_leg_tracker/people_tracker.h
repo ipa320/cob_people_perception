@@ -45,6 +45,9 @@ class PeopleTracker{
 
     boost::array<int, 2> id_;
 
+    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_; /**< The position history of the people tracker */
+
+
     //std::id_[2];
 
   private:
@@ -63,6 +66,7 @@ class PeopleTracker{
     double leg_time_probability_;/**< Probability considering the lifetime of both leg trackers */
 
     ros::Time creation_time_;/**< Time that this tracker was created */
+
 
   public:
     PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time);/**< Construct a People tracker based on this two legs */
@@ -106,6 +110,12 @@ class PeopleTracker{
     void updateProbabilities(ros::Time);
 
     /**
+     * Update the history using the current position estimation
+     * @param time The current time
+     */
+    void updateHistory(ros::Time time);
+
+    /**
      * Get the Total Probability
      * @return  The total probability
      */
@@ -120,9 +130,23 @@ class PeopleTracker{
      */
     BFL::StatePosVel getLegEstimate(int id);
 
-    BFL::StatePosVel getEstimate(){
-      return pos_vel_estimation_;
-    }
+    /**
+     * Get the estimation of the People Tracker, this is calculated using the estimation of both legs
+     * @return The estimation
+     */
+    BFL::StatePosVel getEstimate();
+
+    /**
+     * Get the size of the people history
+     * @return Size of the History
+     */
+    unsigned int getHistorySize();
+
+    /**
+     * Get the history of this people tracker
+     * @return Vector of Shared Pointers of Stamped Points
+     */
+    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  getHistory();
 
     tf::Vector3 getHipVec(){
       return this->hip_vec_;

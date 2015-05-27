@@ -200,6 +200,8 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 {
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
 
+  meas_loc_last_update_ = loc;
+
   // Set the tf to represent this
   tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
   tfl_.setTransform(pose);
