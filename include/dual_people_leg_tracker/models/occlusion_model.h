@@ -42,7 +42,7 @@
 // ROS Messages
 #include <sensor_msgs/LaserScan.h>
 
-#define DEBUG_OCCLUSION_MODEL 1
+#define DEBUG_OCCLUSION_MODEL 0
 
 class OcclusionModel{
   public:

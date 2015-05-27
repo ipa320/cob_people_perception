@@ -239,22 +239,23 @@ public:
     nh_.param<bool>("use_seeds", use_seeds_, false); // TODO maybe remove later?
 
     // advertise topics
-    leg_measurements_pub_ = nh_.advertise<people_msgs::PositionMeasurementArray>("leg_tracker_measurements", 0);
-    people_measurements_pub_ = nh_.advertise<people_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
-    markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 0);
+    leg_measurements_pub_         = nh_.advertise<people_msgs::PositionMeasurementArray>("leg_tracker_measurements", 0);
+    people_measurements_pub_      = nh_.advertise<people_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
+    markers_pub_                  = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 0);
     leg_features_history_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("leg_track_history", 0);
-    clusters_pub_ = nh_.advertise<sensor_msgs::PointCloud>("clusters", 0);
-    particles_pub_ = nh_.advertise<sensor_msgs::PointCloud>("particles", 0);
-    people_track_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("people_tracker", 0);
-    leg_features_array_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("leg_feature_arrow", 0);
-    people_velocity_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("people_velocity_arrow", 0);
-    people_track_label_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("people_labels", 0);
-    occlusion_model_pub_ = nh_.advertise<sensor_msgs::PointCloud>("occlusion_model", 0);
+    clusters_pub_                 = nh_.advertise<sensor_msgs::PointCloud>("clusters", 0);
+    particles_pub_                = nh_.advertise<sensor_msgs::PointCloud>("particles", 0);
+    leg_features_array_vis_pub_   = nh_.advertise<visualization_msgs::MarkerArray>("leg_feature_arrow", 0);
+    people_velocity_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("people_velocity_arrow", 0);
+    people_track_label_pub_       = nh_.advertise<visualization_msgs::MarkerArray>("people_labels", 0);
+    occlusion_model_pub_          = nh_.advertise<sensor_msgs::PointCloud>("occlusion_model", 0);
 
     // Visualization topics
-    leg_measurements_vis_pub_= nh_.advertise<sensor_msgs::PointCloud>("leg_measurements", 0);
-    leg_features_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("leg_features", 0);
-    matches_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("matches", 0);
+    leg_measurements_vis_pub_     = nh_.advertise<sensor_msgs::PointCloud>("leg_measurements", 0);
+    leg_features_vis_pub_         = nh_.advertise<sensor_msgs::PointCloud>("leg_features", 0);
+    matches_vis_pub_              = nh_.advertise<visualization_msgs::Marker>("matches", 0);
+    people_track_vis_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("peoples", 0);
+
 
     if (use_seeds_)
     {
@@ -1309,6 +1310,9 @@ public:
 
   void publishPeopleTracker(ros::Time time){
 
+    // Create the Visualization Message (a marker array)
+    visualization_msgs::MarkerArray msgArray;
+
     // The geometry message
     visualization_msgs::Marker line_list;
     line_list.type = visualization_msgs::Marker::LINE_LIST;
@@ -1385,12 +1389,15 @@ public:
         }
         line_list.points.push_back(pointLegRight);
 
-        // Publish the pointcloud
-        people_track_vis_pub_.publish(line_list);
+        // Add the pointlist to the msgArray
+        msgArray.markers.push_back(line_list);
         counter++;
 
       }
     }
+
+    // Publish the marker Array
+    people_track_vis_pub_.publish(msgArray);
 
 
   }
