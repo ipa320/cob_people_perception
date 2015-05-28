@@ -50,6 +50,7 @@ public:
   std::string object_id;
   int int_id_;
   ros::Time time_; /**< Time of the last scan */
+  ros::Time time_prediction_; /**< The time the prediction was made to */
   ros::Time meas_time_;
   tf::Stamped<tf::Point> meas_loc_last_update_; /**< The measurement used in the last update */
 
@@ -68,6 +69,9 @@ public:
   bool use_filter_; /**< Flag if the Filter should be used currently */
 
   tf::Stamped<tf::Point> position_; /**< The currently estimated leg position */
+  tf::Stamped<tf::Point> position_predicted_; /**< The currently estimated leg position */
+  tf::Stamped<tf::Point> position_updated_; /**< The currently estimated leg position */
+
   tf::Stamped<tf::Point> initial_position_; /**< The initial position */
 
   BFL::StatePosVel pos_vel_; /**< The currently estimated pos_vel_ */

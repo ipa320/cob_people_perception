@@ -206,6 +206,7 @@ public:
   ros::Publisher people_velocity_pub_;/**< Visualization of the people velocities */
   ros::Publisher people_track_label_pub_; /**< Publishes labels of people tracks */
   ros::Publisher occlusion_model_pub_; /**< Published the occlusion probability */
+  ros::Publisher leg_predicted_pub_; /**< Published the occlusion probability */
 
   dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -258,7 +259,7 @@ public:
     matches_vis_pub_              = nh_.advertise<visualization_msgs::Marker>("matches", 0);
     people_track_vis_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("peoples", 0);
     people_history_vis_pub_       = nh_.advertise<visualization_msgs::MarkerArray>("people_history", 0);
-
+    leg_predicted_pub_            = nh_.advertise<visualization_msgs::MarkerArray>("leg_predicted_positions_", 0);
 
     if (use_seeds_)
     {
@@ -430,10 +431,12 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Removing features took %f ms",__func__, removeTimer.getElapsedTimeMs());
 
     ROS_DEBUG("%sRemoving old Trackers done! [Cycle %u]", BOLDWHITE, cycle_);
+
     //////////////////////////////////////////////////////////////////////////
     //// Propagation/Prediction using the motion model
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sPrediction [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer propagationTimer; propagationTimer.start();
 
     // High level propagation
     boost::shared_ptr<std::vector<PeopleTrackerPtr> > pplTrackers = people_trackers_.getList();
@@ -442,20 +445,22 @@ public:
         pplTrackerIt++)
     {
       (*pplTrackerIt)->propagate(scan->header.stamp);
+      // NOT YET IMPLEMENTED
+      // MAYBE HERE OUTPUT textfile containing person tracker history
     }
-
-
 
     // System update of trackers, and copy updated ones in propagate list
-    benchmarking::Timer propagationTimer; propagationTimer.start();
+
     list<LegFeaturePtr> propagated;
-    for (list<LegFeaturePtr>::iterator sf_iter = saved_leg_features.begin();
-         sf_iter != saved_leg_features.end();
-         sf_iter++)
+    for (list<LegFeaturePtr>::iterator legIt = saved_leg_features.begin();
+        legIt != saved_leg_features.end();
+        legIt++)
     {
-      (*sf_iter)->propagate(scan->header.stamp); // Propagate <-> Predict the filters
-      propagated.push_back(*sf_iter);
+      (*legIt)->propagate(scan->header.stamp); // Propagate <-> Predict the filters
+      propagated.push_back(*legIt);
     }
+
+
     propagationTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Propagated %i SavedFeatures",__func__, (int) propagated.size());
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Propagating took %f ms",__func__, propagationTimer.getElapsedTimeMs());
@@ -504,14 +509,13 @@ public:
         detection.point = loc;
         detection.cluster = (*clusterIt);
         detections.push_back(detection);
-
-        //std::cout << (*clusterIt)->center().getX() << " " << (*clusterIt)->center().getY() << " " << (*clusterIt)->center().getZ() << std::endl;
+        ROS_ASSERT(loc.getZ() == 0); //TODO Remove
       }
 
     }
-    // Create test data
 
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
+
     //////////////////////////////////////////////////////////////////////////
     //// Matching (Match Leg Detection to Trackers)
     //////////////////////////////////////////////////////////////////////////
@@ -523,22 +527,14 @@ public:
     // For each candidate, find the closest tracker (within threshold) and add to the match list
     // If no tracker is found, start a new one
     // Match = cluster <-> Saved Feature (LEG)
-    for (vector<LegDetectionProb>::iterator detectionIt = detections.begin();
-        detectionIt != detections.end();
-        detectionIt++)
-    {
-      assert(detectionIt->point.getZ() == 0);
-      //std::cout << detectionIt->point.getZ() << std::endl;
-    }
 
     unsigned int newTrackCounter = 0;
     unsigned int matchesCounter = 0;
 
+    // The found matches
     multiset<MatchedFeature> matches;
-//    for (list<SampleSet*>::iterator clusterIt = processor.getClusters().begin();
-//         clusterIt != processor.getClusters().end();
-//         clusterIt++)
-//    {
+
+    // Iterate through all detections
     for (vector<LegDetectionProb>::iterator detectionIt = detections.begin();
         detectionIt != detections.end();
         detectionIt++)
@@ -547,22 +543,22 @@ public:
       Stamped<Point> loc = detectionIt->point;
       SampleSet* cluster = detectionIt->cluster;
 
-      // Find the closest tracker (Note that the tracker has been updated using the kalman filter!)
+      // Find the closest tracker (Note that the tracker has been updated using the filter!)
       // Multiple measurements could be assigned to the same tracker! This problem is solved below. Better methods could be thought of.
       // IDEA_ Do this better! The closest is no necessarily the right one
       list<LegFeaturePtr>::iterator closest = propagated.end();
       float closest_dist = max_track_jump_m;
 
       // Iterate through the trackers
-      for (list<LegFeaturePtr>::iterator pf_iter = propagated.begin();
-           pf_iter != propagated.end();
-           pf_iter++)
+      for (list<LegFeaturePtr>::iterator legIt = propagated.begin();
+          legIt != propagated.end();
+          legIt++)
       {
         // find the closest distance between candidate and trackers
-        float dist = loc.distance((*pf_iter)->position_);
+        float dist = loc.distance((*legIt)->position_);
         if (dist < closest_dist)
         {
-          closest = pf_iter;
+          closest = legIt;
           closest_dist = dist;
         }
       }
@@ -576,7 +572,8 @@ public:
         ++newTrackCounter;
       }
       // Add the candidate, the tracker and the distance to a match list
-      else{
+      else
+      {
         matches.insert(MatchedFeature(cluster, *closest, closest_dist, cluster->getProbability()));
         ++matchesCounter;
       }
@@ -766,6 +763,10 @@ public:
 
     if(publish_matches_){
       publishMatches(saved_leg_features, scan->header.stamp);
+    }
+
+    if(true){
+      publishPredictedLegPositions(saved_leg_features, scan->header.stamp);
     }
 
     if(publish_people_tracker_){
@@ -1264,6 +1265,75 @@ public:
     ROS_DEBUG("DualTracker::%s Publishing Leg History on %s", __func__, fixed_frame.c_str());
   }
 
+  void publishPredictedLegPositions(list<LegFeaturePtr>& legFeatures, ros::Time time){
+
+    // Marker Array
+    visualization_msgs::MarkerArray markerArray;
+
+    int counter = 0;
+    for (list<LegFeaturePtr>::iterator legIt = legFeatures.begin();
+        legIt != legFeatures.end();
+        legIt++)
+    {
+
+      // Cylinder
+      visualization_msgs::Marker markerMsgCylinder;
+
+      markerMsgCylinder.header.frame_id = fixed_frame;
+      markerMsgCylinder.header.stamp = time;
+      markerMsgCylinder.ns = "predictions";
+      markerMsgCylinder.id = counter;
+      markerMsgCylinder.type = visualization_msgs::Marker::CYLINDER;
+      markerMsgCylinder.scale.x = 0.02;
+      markerMsgCylinder.scale.y = 0.02;
+      markerMsgCylinder.scale.z = 0.08; // height
+      markerMsgCylinder.color.r = 1.0;
+      markerMsgCylinder.color.a = 0.8;
+
+      markerMsgCylinder.pose.position.x = (*legIt)->position_predicted_.getX();
+      markerMsgCylinder.pose.position.y = (*legIt)->position_predicted_.getY();
+      markerMsgCylinder.pose.position.z = 0.0;
+
+      markerArray.markers.push_back(markerMsgCylinder);
+      counter++;
+
+
+      // Cylinder
+      visualization_msgs::Marker markerMsgArrow;
+
+      markerMsgArrow.header.frame_id = fixed_frame;
+      markerMsgArrow.header.stamp = time;
+      markerMsgArrow.ns = "arrow_pred_corr";
+      markerMsgArrow.id = counter;
+      markerMsgArrow.type = visualization_msgs::Marker::ARROW;
+      markerMsgArrow.scale.x = 0.005;
+      markerMsgArrow.scale.y = 0.02;
+      markerMsgArrow.color.r = 1.0;
+      markerMsgArrow.color.a = 0.8;
+
+      geometry_msgs::Point point0, point1;
+      point0.x = (*legIt)->position_predicted_.getX();
+      point0.y = (*legIt)->position_predicted_.getY();
+      point0.z = 0.0;
+
+      markerMsgArrow.points.push_back(point0);
+
+      point1.x = (*legIt)->position_.getX();
+      point1.y = (*legIt)->position_.getY();
+      point1.z = 0.0;
+
+      markerMsgArrow.points.push_back(point1);
+
+      markerArray.markers.push_back(markerMsgArrow);
+      counter++;
+
+    }
+
+    leg_predicted_pub_.publish(markerArray);
+
+  }
+
+
   void publishMatches(list<LegFeaturePtr>& legFeatures, ros::Time time){
 
 
@@ -1275,7 +1345,7 @@ public:
     markerMsg.ns = "matches";
     markerMsg.id = 0;
     markerMsg.type = visualization_msgs::Marker::LINE_LIST;
-    markerMsg.scale.x = 0.05;
+    markerMsg.scale.x = 0.01;
     markerMsg.color.r = 1.0;
     markerMsg.color.a = 1.0;
 

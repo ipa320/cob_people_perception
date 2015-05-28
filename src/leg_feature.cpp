@@ -111,6 +111,7 @@ void LegFeature::propagate(ros::Time time)
 
   // Update the time
   time_ = time;
+  time_prediction_ = time;
 
   // Get the associated people tracker with the highest probability
   PeopleTrackerPtr mostProbableAssociatedPPL;
@@ -155,41 +156,14 @@ void LegFeature::propagate(ros::Time time)
   // If there is no relevant people tracker assigned-> Consider only the low level filter
   else
   {
-
     filter_.updatePrediction(time.toSec(),cov);
   }
 
-
-
-
-
-  Eigen::Matrix<double,3,3> pos_cov;
-
-
-
-
-
-  MatrixWrapper::SymmetricMatrix debug_cov(6);
-  debug_cov(1,1) = 0.0001;
-  debug_cov(2,2) = 0.01;
-  debug_cov(4,4) = 1.0;
-  debug_cov(5,5) = 1.0;
-
-  // Calculate the covariance of the
-
-  //server.updateConfig(conf);
-  //std::cout << "conf.leg_feature_predict_pos_cov " << conf.leg_feature_predict_pos_cov << std::endl;
-  //std::cout << "conf.leg_feature_predict_vel_cov " << conf.leg_feature_predict_vel_cov << std::endl;
-
-
-  // Do the Prediction in the filter
-  //filter_.updatePrediction(time.toSec());
-
-
-
-  //assert(false); // Continue work here: set the prediction from the current motion model
-  // update the Position
+  // Update the Position after the prediction
   updatePosition();
+
+  // Set the predicted Position of this tracker, mainly for debugging purposes
+  position_predicted_ = position_;
 
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Done Propagating leg_tracker with ID %s", __func__, id_.c_str());
 
@@ -239,7 +213,7 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 // Update own position based on the Estimation of the Filter
 
 /**
- * Update the Position(position_) of the Leg Feature
+ * Update the Position(position_) of the Leg Feature using the latest estimate of the filter_
  */
 void LegFeature::updatePosition()
 {
