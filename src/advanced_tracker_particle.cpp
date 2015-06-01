@@ -102,7 +102,12 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
 
   //filter_ = new BootstrapFilter<StatePosVel, tf::Vector3>(&prior_, &prior_, 0, num_particles_ / 4.0);
 
-  filter_ = new PeopleParticleFilter(&prior_, &prior_, 0, num_particles_ / 4.0, 0);
+  filter_ = new PeopleParticleFilter(&prior_,
+                                     &prior_,
+                                     0,                     // resampleperiod
+                                     num_particles_ / 4.0,  // resamplethreshold (influence if it should be resampled) if this is unequal to 0 dynamic resampling will be used
+                                     0                      // resamplescheme
+                                     );
   // TODO input own filter here
 
   // tracker initialized

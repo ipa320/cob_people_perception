@@ -96,6 +96,19 @@ class PeopleParticleFilter
                  MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
                  const tf::Vector3& z,
                  const StatePosVel& s);
+    /**
+     * Do a dynamic resampling. Draw new samples if(!) there are a lot of samples with low weight.
+     * @return True on success.
+     */
+    bool
+    DynamicResampleStep();
+
+    /**
+     * Draw new sample from the posterior distribution.
+     * @return
+     */
+    bool
+    Resample();
 };
 
 #endif /* PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_PEOPLE_PARTICLE_FILTER_H_ */

@@ -136,7 +136,8 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     //result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(NULL,u,measmodel,z,s) && result;
 
     result = result && this->UpdateWeightsInternal(sysmodel,u,measmodel,z,s);
-    result = result && this->ParticleFilter<StatePosVel,tf::Vector3>::DynamicResampleStep();
+    //result = result && this->ParticleFilter<StatePosVel,tf::Vector3>::DynamicResampleStep();
+    result = result && this->DynamicResampleStep();
 
 /*    samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
     for(std::vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
@@ -185,5 +186,67 @@ PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const s
 
 }
 
+bool
+PeopleParticleFilter::DynamicResampleStep()
+{
 
+  // Resampling?
+  bool resampling = false;
+  double sum_sq_weigths = 0.0;
+
+  // Resampling if necessary
+  if ( this->_dynamicResampling)
+  {
+    // Check if sum of 1 / \sum{(wi_normalised)^2} < threshold
+    // This is the criterion proposed by Liu
+    // BUG  foresee other methods of approximation/calculating
+    // effective sample size.  Let the user implement this in !
+    _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
+    for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++)
+      {
+        sum_sq_weigths += pow(_ns_it->WeightGet(),2);
+      }
+    if ((1.0 / sum_sq_weigths) < _resampleThreshold)
+      {
+        resampling = true;
+      }
+  }
+    if (resampling == true)
+      return this->Resample();
+    else
+      return true;
+}
+
+/**
+ * This is the resample Function copied from the BFL resampling of the particle filter class.
+ * This is done the gain better access to this function without having to change the library.
+ * @return
+ */
+bool
+PeopleParticleFilter::Resample()
+{
+
+  int NumSamples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->NumSamplesGet();
+
+  // Note: At this time only one sampling method is implemented!
+  switch(_resampleScheme)
+    {
+    case MULTINOMIAL_RS:
+      {
+        (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->SampleFrom(_new_samples_unweighted, NumSamples,RIPLEY,NULL);
+        break;
+      }
+    case SYSTEMATIC_RS:{break;}
+    case STRATIFIED_RS:{break;}
+    case RESIDUAL_RS:{break;}
+    default:
+      {
+        cerr << "Sampling method not supported" << endl;
+        break;
+      }
+    }
+  bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples_unweighted);
+
+  return result;
+}
 
