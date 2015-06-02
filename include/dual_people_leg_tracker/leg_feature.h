@@ -161,6 +161,8 @@ public:
     return os;
   };
 
+  void updateHistory();
+
 private:
   void updatePosition();
 };

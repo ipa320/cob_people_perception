@@ -72,7 +72,8 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
              const StatePosVel& u,
              BFL::MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
              const tf::Vector3& z,
-             const StatePosVel& s)
+             const StatePosVel& s,
+             OcclusionModelPtr occlusionmodel)
 {
   ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
 
@@ -106,7 +107,7 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     assert(this->_dynamicResampling == true); // TODO
     //result = result && this->StaticResampleStep(); // TODO necessary?
 
-    result = result && this->ParticleFilter<StatePosVel,tf::Vector3>::ProposalStepInternal(sysmodel,u,measmodel,z,s);
+    result = result && this->ProposalStepInternal(sysmodel,u,measmodel,z,s);
 
     //result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(sysmodel,u,NULL,z,s) && result;
 
@@ -136,6 +137,11 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     //result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(NULL,u,measmodel,z,s) && result;
 
     result = result && this->UpdateWeightsInternal(sysmodel,u,measmodel,z,s);
+
+    // If a occlusion model is set
+    if(occlusionmodel){
+      //result = result && this->UpdateWeightsUsingOcclusionModel(occlusionmodel);
+    }
     //result = result && this->ParticleFilter<StatePosVel,tf::Vector3>::DynamicResampleStep();
     result = result && this->DynamicResampleStep();
 
@@ -150,7 +156,6 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
 
   return result;
 }
-
 
 bool
 PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const sysmodel,
@@ -183,7 +188,56 @@ PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const s
   }
 
   return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+}
 
+bool
+PeopleParticleFilter::UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusionmodel){
+  ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
+
+  //assert(false);
+
+  double weightfactor = 1.0;
+
+  unsigned int counter = 0;
+
+
+  tf::Stamped<tf::Point> point;
+  point.stamp_ = occlusionmodel->scan_.header.stamp; // TODO ugly!
+  point.frame_id_ = occlusionmodel->scan_.header.frame_id;
+
+  // Get a list of samples
+  _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
+
+  // Iterate through the samples
+  for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
+
+    // Get the value of this sample
+    const StatePosVel& x_new = _ns_it->ValueGet();
+    //const StatePosVel& x_old = _os_it->ValueGet();
+
+    point.setData(x_new.pos_);
+
+    weightfactor = occlusionmodel->getOcclusionProbability(point);
+    // TODO apply occlusion model here
+    weightfactor = min(0.8, weightfactor);
+    weightfactor = 0.0;
+
+
+    if(weightfactor != 1.0){
+      std::cout << "Update using occlusion model weightfactor: " << weightfactor << "  " << _ns_it->WeightGet() << "  -->  ";
+    }
+    //std::cout << "Weight Update: " << _ns_it->WeightGet() << "    -->     ";
+    _ns_it->WeightSet(_ns_it->WeightGet() * (1-weightfactor));
+    //std::cout << _ns_it->WeightGet() << std::endl;
+
+    if(weightfactor != 1.0){
+      std::cout << _ns_it->WeightGet() << std::endl;
+    }
+
+    counter++;
+  }
+
+  return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
 }
 
 bool
@@ -250,3 +304,34 @@ PeopleParticleFilter::Resample()
   return result;
 }
 
+
+bool
+PeopleParticleFilter::ProposalStepInternal(SystemModel<StatePosVel> * const sysmodel,
+              const StatePosVel & u,
+              MeasurementModel<tf::Vector3,StatePosVel> * const measmodel,
+              const tf::Vector3 & z,
+              const StatePosVel & s)
+{
+
+  // Get all samples from the current post through proposal density
+  _old_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
+
+  _ns_it = _new_samples.begin();
+  for ( _os_it=_old_samples.begin(); _os_it != _old_samples.end() ; _os_it++)
+    {
+      const StatePosVel& x_old = _os_it->ValueGet();
+      _proposal->ConditionalArgumentSet(0,x_old);
+
+      // Bug, make sampling method a parameter!
+      _proposal->SampleFrom(_sample, DEFAULT,NULL);
+      _ns_it->ValueSet(_sample.ValueGet());
+      _ns_it->WeightSet(_os_it->WeightGet());
+      _ns_it++;
+    }
+
+  (this->_timestep)++; // TODO needed?
+
+  // Update the list of samples
+  return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+
+}

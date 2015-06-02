@@ -44,7 +44,10 @@ class PeopleParticleFilter
       StatePosVel s; // Sensing Parameter ??!
       tf::Vector3 z; // Measurement
       StatePosVel u; // Input to the system
-      return this->UpdateInternal(sysmodel,u,NULL,z,s);
+
+      OcclusionModelPtr nullPtr; // TODO ugly!
+
+      return this->UpdateInternal(sysmodel,u,NULL,z,s,nullPtr);
     }
 
     /**
@@ -64,7 +67,24 @@ class PeopleParticleFilter
 
       z = meas;
 
-      return this->UpdateInternal(NULL,u,measmodel,z,s);
+      OcclusionModelPtr nullPtr; // TODO ugly!
+
+      return this->UpdateInternal(NULL,u,measmodel,z,s,nullPtr);
+    }
+
+
+    bool
+    Update(BFL::AdvancedMeasModelPos* const measmodel, const tf::Vector3& meas, OcclusionModelPtr occlusionmodel)
+    {
+      ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER,"----PeopleParticleFilter::%s -> System Model Update",__func__);
+
+      StatePosVel s; // Sensing Parameter ??!
+      tf::Vector3 z; // Measurement
+      StatePosVel u; // Input to the system
+
+      z = meas;
+
+      return this->UpdateInternal(NULL,u,measmodel,z,s,occlusionmodel);
     }
 
     /**
@@ -80,7 +100,8 @@ class PeopleParticleFilter
                  const StatePosVel& u,
                  MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
                  const tf::Vector3& z,
-                 const StatePosVel& s);
+                 const StatePosVel& s,
+                 OcclusionModelPtr occlusionmodel);
 
     /**
      * Update the weights using the measurement models
@@ -96,6 +117,11 @@ class PeopleParticleFilter
                  MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
                  const tf::Vector3& z,
                  const StatePosVel& s);
+
+    bool
+    UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusionmodel);
+
+
     /**
      * Do a dynamic resampling. Draw new samples if(!) there are a lot of samples with low weight.
      * @return True on success.
@@ -109,6 +135,14 @@ class PeopleParticleFilter
      */
     bool
     Resample();
+
+
+    bool
+    ProposalStepInternal(SystemModel<StatePosVel> * const sysmodel,
+                  const StatePosVel & u,
+                  MeasurementModel<tf::Vector3,StatePosVel> * const measmodel,
+                  const tf::Vector3 & z,
+                  const StatePosVel & s);
 };
 
 #endif /* PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_PEOPLE_PARTICLE_FILTER_H_ */

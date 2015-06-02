@@ -207,6 +207,7 @@ public:
   ros::Publisher people_track_label_pub_; /**< Publishes labels of people tracks */
   ros::Publisher occlusion_model_pub_; /**< Published the occlusion probability */
   ros::Publisher leg_predicted_pub_; /**< Published the occlusion probability */
+  ros::Publisher scan_lines_pub_; /**< Publish the laserscan as lines for debugging */
 
   dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -260,6 +261,8 @@ public:
     people_track_vis_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("peoples", 0);
     people_history_vis_pub_       = nh_.advertise<visualization_msgs::MarkerArray>("people_history", 0);
     leg_predicted_pub_            = nh_.advertise<visualization_msgs::MarkerArray>("leg_predicted_positions_", 0);
+    scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
+
 
     if (use_seeds_)
     {
@@ -769,6 +772,10 @@ public:
       publishPredictedLegPositions(saved_leg_features, scan->header.stamp);
     }
 
+    if(true){
+      publishScanLines(*scan);
+    }
+
     if(publish_people_tracker_){
       publishPeopleTracker(scan->header.stamp);
       publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
@@ -1088,6 +1095,55 @@ public:
         // Publish the clustering
         clusters_pub_.publish(clusterPCL);
   }
+
+/**
+ * Publish the laserscan as lines for debugging purposes (e.g. strange clustering), or to visualize shadows
+ * @param scan
+ * @param time
+ * @param frame
+ */
+void publishScanLines(const sensor_msgs::LaserScan & scan){
+
+  visualization_msgs::Marker linesMsg;
+  linesMsg.header.frame_id = scan.header.frame_id;
+  linesMsg.header.stamp = scan.header.stamp;
+  linesMsg.ns = "lines_ns";
+  linesMsg.id = 0;
+  linesMsg.type = visualization_msgs::Marker::LINE_LIST;
+  linesMsg.scale.x = 0.003;
+  linesMsg.scale.y = 0.01;
+  linesMsg.scale.z = 0.01;
+  linesMsg.color.a = 0.7; // Don't forget to set the alpha!
+  linesMsg.color.r = 0.0;
+  linesMsg.color.g = 1.0;
+  linesMsg.color.b = 0.0;
+
+  // Iterate the scan
+  for (uint32_t i = 0; i < scan.ranges.size(); i++)
+  {
+    laser_processor::Sample* s = laser_processor::Sample::Extract(i, scan);
+    if (s != NULL)
+    {
+
+
+      geometry_msgs::Point startPoint;
+      startPoint.x = 0.0;
+      startPoint.y = 0.0;
+      startPoint.z = 0.0;
+
+      geometry_msgs::Point endPoint;
+      startPoint.x = s->x;
+      startPoint.y = s->y;
+      startPoint.z = 0.0;
+
+      linesMsg.points.push_back(startPoint);
+      linesMsg.points.push_back(endPoint);
+    }
+  }
+
+  // Publish the clustering
+  scan_lines_pub_.publish(linesMsg);
+}
 
   /**
    * Publish the set Particles
@@ -1481,7 +1537,7 @@ public:
         peopleTrackerIt != people_trackers_.getList()->end();
         peopleTrackerIt++){
 
-      if((*peopleTrackerIt)->getTotalProbability()>0.1 &&
+      if((*peopleTrackerIt)->getTotalProbability() > 0.5 &&
           (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()))
       {
       visualization_msgs::Marker label;
@@ -1493,7 +1549,7 @@ public:
       label.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
       label.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
       label.pose.position.z = 0.3;
-      label.scale.z = .17;
+      label.scale.z = .1;
       label.color.a = 1;
       label.lifetime = ros::Duration(0.5);
 

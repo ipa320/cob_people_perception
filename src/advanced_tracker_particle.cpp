@@ -204,8 +204,13 @@ bool AdvancedTrackerParticle::updateCorrection(const tf::Vector3&  meas, const M
   // Set the measurement noise
   ((AdvancedMeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
 
+  // update filter (no occlusion model)
+  // bool res = filter_->Update(&meas_model_, meas); // TODO Fit occlusion model in here
+
+
   // update filter
-  bool res = filter_->Update(&meas_model_, meas); // TODO Fit occlusion model in here
+  bool res = filter_->Update(&meas_model_, meas, occlusion_model_);
+
 
   // If update failed for some reason
   if (!res) quality_ = 0;

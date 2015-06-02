@@ -197,17 +197,7 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   updatePosition();
 
   // Update history
-  BFL::StatePosVel est;
-  filter_.getEstimate(est);
-
-  boost::shared_ptr<tf::Stamped<tf::Point> > point(new tf::Stamped<tf::Point>());
-  point->setX( est.pos_[0]);
-  point->setY( est.pos_[1]);
-  point->setZ( est.pos_[2]);
-  point->stamp_ = time_;
-
-  position_history_.push_back(point);
-
+  updateHistory();
 }
 
 // Update own position based on the Estimation of the Filter
@@ -237,6 +227,23 @@ void LegFeature::updatePosition()
   if((initial_position_-position_).length() > static_threshold){
     this->is_static_ = false;
   }
+}
+
+void LegFeature::updateHistory()
+{
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
+
+  // Update history
+  BFL::StatePosVel est;
+  filter_.getEstimate(est);
+
+  boost::shared_ptr<tf::Stamped<tf::Point> > point(new tf::Stamped<tf::Point>());
+  point->setX( est.pos_[0]);
+  point->setY( est.pos_[1]);
+  point->setZ( est.pos_[2]);
+  point->stamp_ = time_;
+
+  position_history_.push_back(point);
 }
 
 // TODO do this static
