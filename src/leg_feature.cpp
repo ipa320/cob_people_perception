@@ -26,7 +26,7 @@ static int NumberOfParticles = 600;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    leg_feature_predict_pos_cov_(0.1), // Around 0.05
+    leg_feature_predict_pos_cov_(0.3), // Around 0.05 // Variance of the
     leg_feature_predict_vel_cov_(1.0),  // Around 1.0 should be fine
     sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise

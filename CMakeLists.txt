@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 2.8.4)
 project(dual_people_leg_tracker)
 
 # set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
@@ -20,9 +20,12 @@ include_directories(${BULLET_INCLUDE_DIRS})
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
 
-
 include_directories(.)
 include_directories(${Eigen_INCLUDE_DIRS})
+
+#DLIB include
+include(./libs/dlib/cmake)
+#include(./libs/dlib/CMakeLists.txt)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
@@ -46,6 +49,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Specify additional locations of header files
 include_directories(
   include
+  libs
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
 )
@@ -96,4 +100,4 @@ add_dependencies(dual_tracker people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARG
 message(STATUS "DUAL TRACKER_LIBS" ${catkin_LIBRARIES})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES})
+target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES} dlib)
