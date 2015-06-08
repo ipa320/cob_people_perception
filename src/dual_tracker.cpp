@@ -37,6 +37,7 @@
 //#include <leg_detector/constants.h>
 #include <dual_people_leg_tracker/dual_tracker.h>
 #include <dual_people_leg_tracker/DualTrackerConfig.h>
+#include <dual_people_leg_tracker/detection/detection.h>
 #include <leg_detector/laser_processor.h>
 #include <leg_detector/calc_leg_features.h>
 #include <dual_people_leg_tracker/visualization/visualization_conversions.h>
@@ -118,11 +119,6 @@ public:
 
 int g_argc;
 char** g_argv;
-
-struct LegDetectionProb {
-    Stamped<Point> point;
-    SampleSet* cluster;
-};
 
 bool isLegFeatureValid(const LegFeaturePtr & o){
   return !o->isValid();
@@ -477,7 +473,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sDetection [Cycle %u]", BOLDWHITE, cycle_);
 
-    std::vector<LegDetectionProb> detections; // vector of leg detections along with their probabilities
+    std::vector<DetectionPtr> detections; // vector of leg detections along with their probabilities
 
     // Matrix for the feature values
     CvMat* tmp_mat = cvCreateMat(1, feat_count_, CV_32FC1);
@@ -511,9 +507,11 @@ public:
 
 
       if((*clusterIt)->getProbability() > leg_reliability_limit_){
-        LegDetectionProb detection;
-        detection.point = loc;
-        detection.cluster = (*clusterIt);
+        DetectionPtr detection(new Detection);
+
+        //LegDetectionProb detection;
+        detection->point = loc;
+        detection->cluster = (*clusterIt);
         detections.push_back(detection);
         ROS_ASSERT(loc.getZ() == 0); //TODO Remove
       }
@@ -521,6 +519,53 @@ public:
     }
 
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
+
+    //////////////////////////////////////////////////////////////////////////
+    //// Joint Probability Data Association
+    //////////////////////////////////////////////////////////////////////////
+    ROS_DEBUG("%sJPDA [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer jpdaTimer; jpdaTimer.start();
+
+    int i, j;
+
+    int counter = 0;
+    int nObjects;
+    int nMeasurements;
+    nObjects = propagated.size();
+    nMeasurements = detections.size() + 1;
+
+
+    // Iterate through all detections
+    for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
+        detectionIt != detections.end();
+        detectionIt++)
+    {
+
+      // Iterate through the trackers
+      for (list<LegFeaturePtr>::iterator legIt = propagated.begin();
+          legIt != propagated.end();
+          legIt++)
+      {
+
+        Stamped<Point> loc = (*detectionIt)->point;
+        SampleSet* cluster = (*detectionIt)->cluster;
+
+        // find the closest distance between candidate and trackers
+        float dist = loc.distance((*legIt)->position_);
+
+        // Print the value
+        if(dist < max_track_jump_m) std::cout << BOLDRED;
+        std::cout << std::setw(4) << (int)(dist*100) << " " << RESET;
+
+      }
+      std::cout << std::endl;
+    }
+
+
+    jpdaTimer.stop();
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - JPDA",__func__);
+    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"DualTracker::%s - JPDA took %f ms",__func__, jpdaTimer.getElapsedTimeMs());
+    ROS_DEBUG("%sJPDA Done! [Cycle %u]", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
     //// Matching (Match Leg Detection to Trackers)
@@ -541,13 +586,13 @@ public:
     multiset<MatchedFeature> matches;
 
     // Iterate through all detections
-    for (vector<LegDetectionProb>::iterator detectionIt = detections.begin();
+    for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
         detectionIt != detections.end();
         detectionIt++)
     {
 
-      Stamped<Point> loc = detectionIt->point;
-      SampleSet* cluster = detectionIt->cluster;
+      Stamped<Point> loc = (*detectionIt)->point;
+      SampleSet* cluster = (*detectionIt)->cluster;
 
       // Find the closest tracker (Note that the tracker has been updated using the filter!)
       // Multiple measurements could be assigned to the same tracker! This problem is solved below. Better methods could be thought of.
