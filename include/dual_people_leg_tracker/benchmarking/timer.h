@@ -8,6 +8,8 @@
 #ifndef PEOPLE_LEG_DETECTOR_INCLUDE_BENCHMARKING_TIMER_H_
 #define PEOPLE_LEG_DETECTOR_INCLUDE_BENCHMARKING_TIMER_H_
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 namespace benchmarking{
 
 /**
