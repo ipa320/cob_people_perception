@@ -101,3 +101,20 @@ message(STATUS "DUAL TRACKER_LIBS" ${catkin_LIBRARIES})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES} dlib)
+
+########################################################
+## Demos
+########################################################
+
+## Create the hungarian lib
+add_library(hungarian
+              libs/libhungarian/hungarian.c
+            )
+
+## The leg detector
+add_executable(murty_demo
+                  src/jpda/murty_demo.cpp 
+               )
+
+target_link_libraries(murty_demo hungarian)
+
