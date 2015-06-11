@@ -200,6 +200,20 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   updateHistory();
 }
 
+double LegFeature::getMeasurementProbability(tf::Stamped<tf::Point> loc){
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
+
+
+  // Covariance of the Measurement
+  MatrixWrapper::SymmetricMatrix cov(3);
+  cov = 0.0;
+  cov(1, 1) = leg_feature_update_cov_;
+  cov(2, 2) = leg_feature_update_cov_;
+  cov(3, 3) = leg_feature_update_cov_;
+
+  return filter_.getMeasProbability(loc,cov);
+}
+
 // Update own position based on the Estimation of the Filter
 
 /**

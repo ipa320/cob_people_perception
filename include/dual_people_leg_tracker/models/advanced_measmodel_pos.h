@@ -67,6 +67,9 @@ public:
   // set covariance
   void CovarianceSet(const  MatrixWrapper::SymmetricMatrix& cov);
 
+  // get the "probability" at zero
+  BFL::Probability getZeroProbability();
+
   // Redefining pure virtual methods
   virtual BFL::Probability ProbabilityGet(const tf::Vector3& input) const;
   virtual bool SampleFrom(BFL::Sample<tf::Vector3>& one_sample, int method, void *args) const;   // Not applicable

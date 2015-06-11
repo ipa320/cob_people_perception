@@ -118,6 +118,15 @@ class PeopleParticleFilter
                  const tf::Vector3& z,
                  const StatePosVel& s);
 
+    /**
+     * Get the probability of a given measurement, this is needed for the JPDA filter
+     * @param measmodel
+     * @param z
+     * @return The probability
+     */
+    double
+    getMeasurementProbability(MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,const tf::Vector3& z);
+
     bool
     UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusionmodel);
 

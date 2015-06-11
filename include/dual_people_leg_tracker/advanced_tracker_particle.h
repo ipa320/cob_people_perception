@@ -105,6 +105,10 @@ public:
   virtual bool updateCorrection(const tf::Vector3& meas,
                                 const MatrixWrapper::SymmetricMatrix& cov);
 
+  /// Get probability for a certain measurement
+  double getMeasProbability(const tf::Vector3&  meas,
+                            const MatrixWrapper::SymmetricMatrix& cov);
+
   /// get filter posterior
   virtual void getEstimate(BFL::StatePosVel& est) const;
   virtual void getEstimate(people_msgs::PositionMeasurement& est) const;

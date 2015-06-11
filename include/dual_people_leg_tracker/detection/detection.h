@@ -13,8 +13,9 @@
 
 class Detection{
   public:
-    tf::Stamped<tf::Point> point;
-    laser_processor::SampleSet* cluster;
+    tf::Stamped<tf::Point> point_;
+    laser_processor::SampleSet* cluster_;
+    unsigned int id_;                       /**< Unique id (within cycle)*/
 };
 
 typedef boost::shared_ptr<Detection> DetectionPtr;

@@ -190,6 +190,49 @@ PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const s
   return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
 }
 
+double
+PeopleParticleFilter::getMeasurementProbability(
+    MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
+    const tf::Vector3& z)
+  {
+  ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
+
+  Probability weightfactor = 1;
+  Probability zeroProb = ((AdvancedMeasPdfPos*) measmodel->MeasurementPdfGet())->getZeroProbability();
+
+  double probability = 0;
+  double probability_sum = 0;
+
+  _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
+
+  // Iterate through the samples (posterior)
+  for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
+
+    const StatePosVel& x_new = _ns_it->ValueGet();
+
+    // Sum up the probability
+    Probability prop = measmodel->ProbabilityGet(z,x_new);
+
+    //std::cout << "prob " << prop.getValue() << std::endl;
+//
+//    assert(prop >= 0.0);
+//    assert(prop <= 1.0);
+
+    probability_sum += prop;
+
+  }
+
+  // Normalizing
+  probability_sum = probability_sum / zeroProb.getValue();
+
+  // Mean
+  probability = probability_sum/_new_samples.size();
+//
+//  std::cout << "Probability " << probability << " number of Samples" << _new_samples.size() << std::endl;
+
+  return probability;
+  }
+
 bool
 PeopleParticleFilter::UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusionmodel){
   ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);

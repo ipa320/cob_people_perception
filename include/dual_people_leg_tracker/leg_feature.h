@@ -23,7 +23,7 @@
 #include <people_tracking_filter/rgb.h>
 
 // Default variables
-#define DEBUG_LEG_TRACKER 0
+#define DEBUG_LEG_TRACKER 1
 
 class PeopleTracker; // Forward declaration
 typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr; // Forward declaration
@@ -93,6 +93,8 @@ public:
   void propagate(ros::Time time);
 
   void update(tf::Stamped<tf::Point> loc, double probability);
+
+  double getMeasurementProbability(tf::Stamped<tf::Point> loc);
 
   double getLifetime()
   {

@@ -197,25 +197,26 @@ bool AdvancedTrackerParticle::updateCorrection(const tf::Vector3&  meas, const M
 
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
-
-  // set covariance
-
-  //meas_model_.MeasurementPdfGet();
   // Set the measurement noise
   ((AdvancedMeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
 
-  // update filter (no occlusion model)
-  // bool res = filter_->Update(&meas_model_, meas); // TODO Fit occlusion model in here
-
-
   // update filter
   bool res = filter_->Update(&meas_model_, meas, occlusion_model_);
-
 
   // If update failed for some reason
   if (!res) quality_ = 0;
   return res;
 };
+
+double AdvancedTrackerParticle::getMeasProbability(const tf::Vector3&  meas, const MatrixWrapper::SymmetricMatrix& cov){
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+
+  // Set the measurement noise
+  ((AdvancedMeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
+
+  return filter_->getMeasurementProbability(&meas_model_, meas);
+}
 
 
 // get evenly spaced particle cloud

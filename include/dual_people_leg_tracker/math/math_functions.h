@@ -10,6 +10,13 @@
 
 #include <math.h>
 
+/**
+ * @brief Sigmoid
+ * @param x The point to evaluate the sigmoid at
+ * @param a Slope factor
+ * @param b Shift
+ * @return
+ */
 double sigmoid(double x, double a=1.0, double b=0.0)
 {
   return 1.0 / (1.0 + exp(-a*(x-b)));

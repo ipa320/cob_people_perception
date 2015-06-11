@@ -11,7 +11,7 @@ int main(int argc, char **argv)
   // Variables
   int nRows = 30;
   int nCols = 30;
-  int k     = 5; //k-th best solutions
+  int k     = 10; //k-th best solutions
 
 
   srand((unsigned int) time(0)); // Generate random
