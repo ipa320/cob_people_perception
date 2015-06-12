@@ -200,16 +200,29 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   updateHistory();
 }
 
+double LegFeature::getOcclusionProbability(OcclusionModelPtr occlusionModel){
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
+
+  // Check if occlusion model exists
+  ROS_ASSERT(occlusionModel);
+
+
+  return filter_.getOcclusionProbability(occlusionModel);
+  //return occlusion_model_->getOcclusionProbability(loc);
+}
+
 double LegFeature::getMeasurementProbability(tf::Stamped<tf::Point> loc){
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
 
 
+  double leg_feature_measurement_cov_ = 0.005;
+
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
   cov = 0.0;
-  cov(1, 1) = leg_feature_update_cov_;
-  cov(2, 2) = leg_feature_update_cov_;
-  cov(3, 3) = leg_feature_update_cov_;
+  cov(1, 1) = leg_feature_measurement_cov_;
+  cov(2, 2) = leg_feature_measurement_cov_;
+  cov(3, 3) = leg_feature_measurement_cov_;
 
   return filter_.getMeasProbability(loc,cov);
 }

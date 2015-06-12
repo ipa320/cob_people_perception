@@ -68,6 +68,8 @@ class OcclusionModel{
      */
     void updateScan(const sensor_msgs::LaserScan& scan);
 
+    double getOcclusionProbability(tf::Vector3 loc);
+
     double getOcclusionProbability(tf::Stamped<tf::Point>);
 };
 

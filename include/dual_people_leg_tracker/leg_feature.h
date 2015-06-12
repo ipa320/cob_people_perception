@@ -94,6 +94,8 @@ public:
 
   void update(tf::Stamped<tf::Point> loc, double probability);
 
+  double getOcclusionProbability(OcclusionModelPtr occlusionModel);
+
   double getMeasurementProbability(tf::Stamped<tf::Point> loc);
 
   double getLifetime()

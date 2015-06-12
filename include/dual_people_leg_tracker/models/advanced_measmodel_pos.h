@@ -32,10 +32,10 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen */
+/* Based on the work of: Wim Meeussen */
 
-#ifndef MEASMODEL_POS_H
-#define MEASMODEL_POS_H
+#ifndef ADVANCED_MEASMODEL_POS_H
+#define ADVANCED_MEASMODEL_POS_H
 
 // BFL includes
 #include <pdf/conditionalpdf.h>

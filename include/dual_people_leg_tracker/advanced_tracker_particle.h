@@ -109,6 +109,9 @@ public:
   double getMeasProbability(const tf::Vector3&  meas,
                             const MatrixWrapper::SymmetricMatrix& cov);
 
+  /// Calculate the occlusion probability
+  double getOcclusionProbability(OcclusionModelPtr occlusionModel);
+
   /// get filter posterior
   virtual void getEstimate(BFL::StatePosVel& est) const;
   virtual void getEstimate(people_msgs::PositionMeasurement& est) const;

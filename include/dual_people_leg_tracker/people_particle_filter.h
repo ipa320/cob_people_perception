@@ -127,6 +127,9 @@ class PeopleParticleFilter
     double
     getMeasurementProbability(MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,const tf::Vector3& z);
 
+    double
+    getOcclusionProbability(OcclusionModelPtr occlusionModel);
+
     bool
     UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusionmodel);
 

@@ -190,6 +190,37 @@ PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const s
   return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
 }
 
+/*// Update the weights according to the assignment probabilities
+bool
+PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
+             const tf::Vector3& z,
+             const StatePosVel& s){
+
+  ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
+
+
+  Probability weightfactor = 1;
+
+  _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
+  _os_it = _old_samples.begin();
+
+  // Iterate through the samples
+  for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
+
+    const StatePosVel& x_new = _ns_it->ValueGet();
+    //const StatePosVel& x_old = _os_it->ValueGet();
+
+    weightfactor = measmodel->ProbabilityGet(z,x_new);
+    // TODO apply occlusion model here
+
+    //std::cout << "Weight Update: " << _ns_it->WeightGet() << "    -->     ";
+    _ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);
+    //std::cout << _ns_it->WeightGet() << std::endl;
+  }
+
+  return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+}*/
+
 double
 PeopleParticleFilter::getMeasurementProbability(
     MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
@@ -210,7 +241,7 @@ PeopleParticleFilter::getMeasurementProbability(
 
     const StatePosVel& x_new = _ns_it->ValueGet();
 
-    // Sum up the probability
+    // Get the probability of this particle
     Probability prop = measmodel->ProbabilityGet(z,x_new);
 
     //std::cout << "prob " << prop.getValue() << std::endl;
@@ -231,6 +262,32 @@ PeopleParticleFilter::getMeasurementProbability(
 //  std::cout << "Probability " << probability << " number of Samples" << _new_samples.size() << std::endl;
 
   return probability;
+  }
+
+double
+PeopleParticleFilter::getOcclusionProbability(OcclusionModelPtr occlusionModel)
+  {
+  ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
+
+  Probability weightfactor = 1;
+
+  double probability = 0;
+  double probability_sum = 0;
+
+  _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
+
+  // Iterate through the samples (posterior)
+  for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
+
+    const StatePosVel& x_new = _ns_it->ValueGet();
+
+    Probability prop = occlusionModel->getOcclusionProbability(x_new.pos_);
+
+    probability_sum += prop;
+
+  }
+
+  return probability_sum/_new_samples.size();;
   }
 
 bool
@@ -294,7 +351,7 @@ PeopleParticleFilter::DynamicResampleStep()
   // Resampling if necessary
   if ( this->_dynamicResampling)
   {
-    // Check if sum of 1 / \sum{(wi_normalised)^2} < threshold
+    // Check if sum of 1 / \sum{(wi_normalised)^2} < threshold (Name: Effective sample size)
     // This is the criterion proposed by Liu
     // BUG  foresee other methods of approximation/calculating
     // effective sample size.  Let the user implement this in !

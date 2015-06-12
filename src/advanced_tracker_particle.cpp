@@ -218,6 +218,11 @@ double AdvancedTrackerParticle::getMeasProbability(const tf::Vector3&  meas, con
   return filter_->getMeasurementProbability(&meas_model_, meas);
 }
 
+double AdvancedTrackerParticle::getOcclusionProbability(OcclusionModelPtr occlusionModel){
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+  return filter_->getOcclusionProbability(occlusionModel);
+}
 
 // get evenly spaced particle cloud
 void AdvancedTrackerParticle::getParticleCloud(const tf::Vector3& step, double threshold, sensor_msgs::PointCloud& cloud) const

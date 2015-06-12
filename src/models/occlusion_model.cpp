@@ -1,4 +1,5 @@
 #include <dual_people_leg_tracker/models/occlusion_model.h>
+#include <leg_detector/constants.h>
 #include <cmath>
 
 OcclusionModel::OcclusionModel( tf::TransformListener& tfl)
@@ -10,6 +11,12 @@ OcclusionModel::OcclusionModel( tf::TransformListener& tfl)
 void OcclusionModel::updateScan(const sensor_msgs::LaserScan& scan){
   ROS_DEBUG_COND(DEBUG_OCCLUSION_MODEL,"OcclusionModel::%s",__func__);
   scan_ = scan;
+}
+
+double OcclusionModel::getOcclusionProbability(tf::Vector3 loc){
+  tf::Stamped<tf::Point> point(loc, scan_.header.stamp, fixed_frame);
+
+  return getOcclusionProbability(point);
 }
 
 double OcclusionModel::getOcclusionProbability(tf::Stamped<tf::Point> point){

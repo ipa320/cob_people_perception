@@ -180,6 +180,7 @@ public:
   bool publish_static_people_trackers_; /**< Set True if also static People Trackers(Trackers that never moved) should be displayed */
   bool publish_people_history_; /**< Publish the history of the person */
   bool publish_occlusion_model_; /**< Publish the probabilities of the particles (colorcoded) according to the occlusion model */
+  bool publish_leg_labels_; /**<Publish the leg labels */
 
   int next_p_id_;
 
@@ -212,6 +213,7 @@ public:
   ros::Publisher occlusion_model_pub_; /**< Published the occlusion probability */
   ros::Publisher leg_predicted_pub_; /**< Published the occlusion probability */
   ros::Publisher scan_lines_pub_; /**< Publish the laserscan as lines for debugging */
+  ros::Publisher leg_label_pub_; /**< Publish leg labels */
 
   dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -266,7 +268,7 @@ public:
     people_history_vis_pub_       = nh_.advertise<visualization_msgs::MarkerArray>("people_history", 0);
     leg_predicted_pub_            = nh_.advertise<visualization_msgs::MarkerArray>("leg_predicted_positions_", 0);
     scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
-
+    leg_label_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("leg_labels", 0);
 
     if (use_seeds_)
     {
@@ -317,6 +319,7 @@ public:
     publish_leg_velocity_       = config.publish_leg_velocity; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_velocity_ %d", __func__, publish_leg_velocity_ );
     publish_leg_markers_        = config.publish_leg_markers;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_markers_ %d", __func__, publish_leg_markers_ );
     publish_leg_history_        = config.publish_leg_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_history_ %d", __func__, publish_leg_history_ );
+    publish_leg_labels_         = config.publish_leg_labels;      ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_labels_ %d", __func__, publish_leg_labels_ );
 
     // Publish the people tracker
     publish_people_             = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_ %d", __func__, publish_people_ );
@@ -532,8 +535,8 @@ public:
     ROS_DEBUG("%sJPDA [Cycle %u]", BOLDWHITE, cycle_);
     benchmarking::Timer jpdaTimer; jpdaTimer.start();
 
-    int i=0;
-    int j=0;
+    int i=0; // Object indice
+    int j=1; // Measurement indice
 
     int counter = 0;
     int nObjects;
@@ -542,15 +545,9 @@ public:
     nMeasurements = detections.size() + 1;
 
     // Generate Matrix
-    std::cout << "There are currently " << nObjects << " objects and " << nMeasurements << " measurements" << std::endl;
+    std::cout << "There are currently " << nObjects << " objects and " << nMeasurements << " measurements(occlusion included)" << std::endl;
     Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> costMatrix;
-    costMatrix.resize(nMeasurements,nObjects);
     costMatrix = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nObjects,nMeasurements);
-
-    // Fill dummy data for occluded objects
-    for(int i = 0; i<nObjects;i++){
-      costMatrix(i,0) = -60;
-    }
 
     // Iterate through all detections
     for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
@@ -558,7 +555,7 @@ public:
         detectionIt++)
     {
 
-      i=1;
+      i=0;
 
       // Iterate through the trackers
       for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
@@ -587,12 +584,29 @@ public:
       j++;
     }
 
+    // Fill dummy data for occluded objects
+    for(int i = 0; i<nObjects;i++){
+      costMatrix(i,0) = -60; // TODO make this better
+    }
+
+    // Store the object indices
+    Eigen::VectorXi indices = Eigen::VectorXi::Zero(nObjects,1);
+    int indices_counter = 0;
+    for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
+        legIt != propagated.end();
+        legIt++)
+    {
+      indices(indices_counter) = (*legIt)->int_id_;
+      indices_counter++;
+    }
+
 
     std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
 
     std::vector<Solution> solutions;
 
-    int k = 20;
+    // TODO depend this on the number of measurements
+    int k = nObjects*4;
 
     solutions = murty(costMatrix,k);
 
@@ -602,9 +616,6 @@ public:
       //color_print_solution(costMatrix,solIt->assignmentMatrix);
       //std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
     }
-
-
-
 
     // DEBUG OUTPUT
     std::cout << std::endl << "Assignment Matrix:" << std::endl  << costMatrix << std::endl;
@@ -636,7 +647,8 @@ public:
           // Calculate Occlusion Probability
           if(j == 0){
             // TODO Implenent the calculation of the occlusion probability
-            prob = 0.2;
+
+            prob = propagated[i]->getOcclusionProbability(occlusionModel_); // TODO
           }
 
           else{
@@ -650,6 +662,7 @@ public:
       }
     }
     std::cout << "measurement probabilities" << std::endl << probabilities << std::endl;
+
 
 
     // Fill the assignment probability matrix
@@ -940,6 +953,10 @@ public:
       publishMatches(saved_leg_features, scan->header.stamp);
     }
 
+    if(publish_leg_labels_){
+      publishLegLabels(saved_leg_features, scan->header.stamp);
+    }
+
     if(true){
       publishPredictedLegPositions(saved_leg_features, scan->header.stamp);
     }
@@ -966,6 +983,16 @@ public:
     //if(publish_leg_measurements_){
       //publishLegMeasurementArray(saved_leg_features);
     //}
+
+    //////////////////////////////////////////////////////////////////////////
+    //// Print debug information (Should happen after visual publications)
+    //////////////////////////////////////////////////////////////////////////
+
+    // Print Occlusion Probabilities
+    std::cout << "Occlusion Probabilities" << std::endl;
+    for(int i = 0; i < probabilities.rows(); i++)
+      std::cout << "[" << indices[i] << "] " <<  probabilities(i,0) << std::endl;
+
 
     ROS_DEBUG("%sPublishing done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
@@ -1602,6 +1629,45 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     matches_vis_pub_.publish(markerMsg);
 
     ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
+  }
+
+  // Add Labels to the People Trackers
+  void publishLegLabels(vector<LegFeaturePtr>& legFeatures, ros::Time time){
+
+    // The marker Array
+    visualization_msgs::MarkerArray labelArray;
+
+    int counter = 0;
+    for (vector<LegFeaturePtr>::iterator legFeatureIt = legFeatures.begin();
+        legFeatureIt != legFeatures.end();
+        legFeatureIt++)
+    {
+
+      visualization_msgs::Marker label;
+      label.header.stamp = time;
+      label.header.frame_id = fixed_frame;
+      label.ns = "PEOPLE_TRACKER_LABEL";
+      label.id = counter;
+      label.type = label.TEXT_VIEW_FACING;
+      label.pose.position.x = (*legFeatureIt)->getEstimate().pos_[0];
+      label.pose.position.y = (*legFeatureIt)->getEstimate().pos_[1];
+      label.pose.position.z = 0.3;
+      label.scale.z = .1;
+      label.color.a = 1;
+      label.lifetime = ros::Duration(0.5);
+
+      // Add text
+      char buf[100];
+      sprintf(buf, "#%d", (*legFeatureIt)->int_id_);
+      label.text = buf;
+
+      labelArray.markers.push_back(label);
+
+      counter++;
+
+    }
+    // Publish
+    leg_label_pub_.publish(labelArray);
   }
 
   void publishPeopleTracker(ros::Time time){
