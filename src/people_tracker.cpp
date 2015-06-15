@@ -230,8 +230,8 @@ void PeopleTracker::updateProbabilities(ros::Time time){
   double dist = LegFeature::distance(getLeg0(), getLeg1());
   ROS_ASSERT(dist > 0.0);
 
-  double leg_distance_threshold = 0.7;
-  dist_probability_ = 1.0-sigmoid(dist,5,leg_distance_threshold);
+  double leg_distance_threshold = 0.8;
+  dist_probability_ = 1.0-sigmoid(dist,20,leg_distance_threshold);
   ROS_ASSERT(dist_probability_ >= 0.0 && dist_probability_ <= 1.0);
 
   //ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s - Distance %f.3 Probability: %f.2",__func__, dist, dist_probability_);

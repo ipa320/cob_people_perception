@@ -170,8 +170,9 @@ PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const s
 
   Probability weightfactor = 1;
 
+  // Get the posterior samples
   _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
-  _os_it = _old_samples.begin();
+  //_os_it = _old_samples.begin();
 
   // Iterate through the samples
   for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
@@ -183,10 +184,12 @@ PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const s
     // TODO apply occlusion model here
 
     //std::cout << "Weight Update: " << _ns_it->WeightGet() << "    -->     ";
-    _ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);
+    _ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);// <-- See Thrun "Probabilistic Robotics", p 99-100 eq (4.24) this method is inferior...
+    //_ns_it->WeightSet(weightfactor);
     //std::cout << _ns_it->WeightGet() << std::endl;
   }
 
+  // Update the posterior
   return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
 }
 
@@ -305,10 +308,10 @@ PeopleParticleFilter::UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusi
   point.stamp_ = occlusionmodel->scan_.header.stamp; // TODO ugly!
   point.frame_id_ = occlusionmodel->scan_.header.frame_id;
 
-  // Get a list of samples
+  // Get the list of current posterior
   _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
 
-  // Iterate through the samples
+  // Iterate through the samples to assign weights
   for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
 
     // Get the value of this sample
@@ -404,7 +407,15 @@ PeopleParticleFilter::Resample()
   return result;
 }
 
-
+/**
+ * Generate New Samples using the proposal
+ * @param sysmodel
+ * @param u
+ * @param measmodel
+ * @param z
+ * @param s
+ * @return
+ */
 bool
 PeopleParticleFilter::ProposalStepInternal(SystemModel<StatePosVel> * const sysmodel,
               const StatePosVel & u,
@@ -413,25 +424,38 @@ PeopleParticleFilter::ProposalStepInternal(SystemModel<StatePosVel> * const sysm
               const StatePosVel & s)
 {
 
-  // Get all samples from the current post through proposal density
+  // Set old samples to the posterior of the previous run
   _old_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
 
+  // Get pointer to the new samples
   _ns_it = _new_samples.begin();
+
+  // Iteratively update the new samples by sampling from the proposal
   for ( _os_it=_old_samples.begin(); _os_it != _old_samples.end() ; _os_it++)
     {
+
+      // Get old value
       const StatePosVel& x_old = _os_it->ValueGet();
+
+      // Set the proposal as conditional argument
       _proposal->ConditionalArgumentSet(0,x_old);
 
-      // Bug, make sampling method a parameter!
+      // Generate sample from the proposal
       _proposal->SampleFrom(_sample, DEFAULT,NULL);
+
+      // Set the Value from the
       _ns_it->ValueSet(_sample.ValueGet());
+
+      // Set the weight from the old sample
       _ns_it->WeightSet(_os_it->WeightGet());
+
+      // Go to the next iterator
       _ns_it++;
     }
 
   (this->_timestep)++; // TODO needed?
 
-  // Update the list of samples
+  // Update the posterior
   return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
 
 }

@@ -181,6 +181,8 @@ public:
   bool publish_people_history_; /**< Publish the history of the person */
   bool publish_occlusion_model_; /**< Publish the probabilities of the particles (colorcoded) according to the occlusion model */
   bool publish_leg_labels_; /**<Publish the leg labels */
+  bool publish_jpda_associations_;/**< Publish the JPDA association probabilities */
+  bool publish_measurement_labels_; /**< Publish labels of measurements */
 
   int next_p_id_;
 
@@ -214,6 +216,8 @@ public:
   ros::Publisher leg_predicted_pub_; /**< Published the occlusion probability */
   ros::Publisher scan_lines_pub_; /**< Publish the laserscan as lines for debugging */
   ros::Publisher leg_label_pub_; /**< Publish leg labels */
+  ros::Publisher jpda_association_pub_; /**< Publish the jpda association probability for debugging purposes */
+  ros::Publisher measurement_label_pub_; /**< Publish measurements */
 
   dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -269,6 +273,8 @@ public:
     leg_predicted_pub_            = nh_.advertise<visualization_msgs::MarkerArray>("leg_predicted_positions_", 0);
     scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
     leg_label_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("leg_labels", 0);
+    jpda_association_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("jpda_association", 0);
+    measurement_label_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("measurement_label", 0);
 
     if (use_seeds_)
     {
@@ -320,6 +326,8 @@ public:
     publish_leg_markers_        = config.publish_leg_markers;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_markers_ %d", __func__, publish_leg_markers_ );
     publish_leg_history_        = config.publish_leg_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_history_ %d", __func__, publish_leg_history_ );
     publish_leg_labels_         = config.publish_leg_labels;      ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_labels_ %d", __func__, publish_leg_labels_ );
+    publish_measurement_labels_ = config.publish_measurement_labels; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_measurement_labels_ %d", __func__, publish_measurement_labels_);
+
 
     // Publish the people tracker
     publish_people_             = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_ %d", __func__, publish_people_ );
@@ -333,6 +341,9 @@ public:
     publish_matches_            = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_matches_ %d", __func__, publish_matches_ );
 
     publish_occlusion_model_    = config.publish_occlusion_model;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_occlusion_model_ %d", __func__, publish_occlusion_model_ );
+
+    // JPDA Publications
+    publish_jpda_associations_  = config.publish_jpda_associations;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_jpda_associations_ %d", __func__, publish_jpda_associations_ );
 
     no_observation_timeout_s = config.no_observation_timeout;
     max_second_leg_age_s     = config.max_second_leg_age;
@@ -502,6 +513,8 @@ public:
       float probability = forest.predict_prob(tmp_mat);  // Predict the probability using the forest
       (*clusterIt)->setProbability(probability); // Assign the probability to the clusters
 
+
+      // Transform the point into the fixed frame
       Stamped<Point> loc((*clusterIt)->center(), scan->header.stamp, scan->header.frame_id);
       try
       {
@@ -600,15 +613,19 @@ public:
       indices_counter++;
     }
 
+    // Calculate the k-best assignments
 
     std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
-
     std::vector<Solution> solutions;
 
     // TODO depend this on the number of measurements
     int k = nObjects*4;
-
     solutions = murty(costMatrix,k);
+
+    // TODO Filter the solution regarding several parameters using the leg tracker information
+
+
+
 
 
     std::cout << "Solutions are:" << std::endl;
@@ -694,6 +711,7 @@ public:
       }
     }
 
+    // The assignment probability matrix indicates which measurements influences which tracker to what degree.
     std::cout << "Assignment Probabilities Matrix" << std::endl << assignmentProbabilityMatrix << std::endl;
 
 
@@ -965,6 +983,10 @@ public:
       publishScanLines(*scan);
     }
 
+    if(publish_jpda_associations_){
+      publishJPDAAssociations(saved_leg_features, detections, indices, assignmentProbabilityMatrix, scan->header.stamp);
+    }
+
     if(publish_people_tracker_){
       publishPeopleTracker(scan->header.stamp);
       publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
@@ -983,6 +1005,10 @@ public:
     //if(publish_leg_measurements_){
       //publishLegMeasurementArray(saved_leg_features);
     //}
+
+    if(publish_measurement_labels_){
+      publishMeasurementsLabels(detections, scan->header.stamp);
+    }
 
     //////////////////////////////////////////////////////////////////////////
     //// Print debug information (Should happen after visual publications)
@@ -1075,7 +1101,7 @@ public:
   }
 
   /**
-   * Publish the detected Clusters for debugging and illustration purposes
+   * Publish the measurements for debugging and illustration purposes
    * @param set
    * @param frame // Frame the clusters are in
    */
@@ -1378,7 +1404,12 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
           //
           int r,g,b;
-          redGreenGradient((*sampleIt).WeightGet()*200,r,g,b);
+
+          double weight = (*sampleIt).WeightGet();
+
+          double normalizeWeight = min(1.0,weight*200);
+
+          redGreenGradient(normalizeWeight,r,g,b);
 
           // Set the color according to the probability
           float color_val = 0;
@@ -1890,6 +1921,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     ROS_DEBUG("DualTracker::%s Publishing Leg History on %s", __func__, fixed_frame.c_str());
   }
 
+
+
   // Publish the occlusion model for debugging purposes
   void publishOcclusionModel(vector<LegFeaturePtr>& legFeatures, ros::Time time){
     // The pointcloud message
@@ -1942,6 +1975,125 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     occlusion_model_pub_.publish(pcl);
 
     ROS_DEBUG("DualTracker::%s Publishing Particles on %s", __func__, fixed_frame.c_str());
+  }
+
+  /**
+   * Publish the data associations using lines with variable width indicating the association probability
+   * @param legFeatures  The currently tracked leg features
+   * @param detections   The detections at this time
+   * @param indices      The indices relating the rows of the assignmentProbabilityMatrix to the legfeatures
+   * @param assignmentProbabilityMatrix The assignment probability matrix
+   * @param time  The current time
+   */
+  void publishJPDAAssociations(vector<LegFeaturePtr>& legFeatures, vector<DetectionPtr>& detections, Eigen::VectorXi indices, Eigen::Matrix<double, -1,-1> assignmentProbabilityMatrix,  ros::Time time){
+
+
+    // The marker array
+    visualization_msgs::MarkerArray markerArray;
+
+
+
+    // Get the number of rows and columns
+    unsigned int nRows = assignmentProbabilityMatrix.rows();
+    unsigned int nCols = assignmentProbabilityMatrix.cols();
+
+    int counter = 0;
+
+    // Iterate the objects(rows)
+    for(int row = 0; row < nRows; row++){
+      for(int col = 1; col < nCols; col++){ // Start at 1 because 0 is the occlusion prob
+
+        double assigmentProbability = assignmentProbabilityMatrix(row,col);
+
+        // If there is an assignment probability
+        if(assigmentProbability > 0){
+
+          std::cout << "leg[" << indices[row] << "] measurement [" << col << "] prob: " << assigmentProbability << std::endl;
+
+          LegFeaturePtr leg = legFeatures[row];
+          DetectionPtr  detection = detections[col-1];
+
+          // Add the points to create a line
+          visualization_msgs::Marker markerMsg;
+
+          markerMsg.header.frame_id = fixed_frame;
+          markerMsg.header.stamp = time;
+          markerMsg.ns = "jpda_associations";
+          markerMsg.id = counter;
+          markerMsg.type = visualization_msgs::Marker::LINE_LIST;
+          markerMsg.scale.x = assigmentProbability/(100.0*10);
+          markerMsg.color.b = 1.0;
+          markerMsg.color.r = 1.0;
+          markerMsg.color.a = 1.0;
+
+          geometry_msgs::Point p0;
+          p0.x = leg->position_predicted_.getX();
+          p0.y = leg->position_predicted_.getY();
+          p0.z = 0;
+
+          geometry_msgs::Point p1;
+          p1.x = detection->point_[0];
+          p1.y = detection->point_[1];
+          p1.z = 0;
+
+          markerMsg.points.push_back(p0);
+          markerMsg.points.push_back(p1);
+
+          //std::cout << "drawing ling from " << p0.x << "   " << p0.y << "   " << p0.z << "    -->    " << p1.x << "   "  << p1.y << "   " << p1.z << std::endl;
+
+          // Add to the marker array
+          markerArray.markers.push_back(markerMsg);
+          counter++;
+
+        }
+
+      }
+    }
+
+    jpda_association_pub_.publish(markerArray);
+
+    ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
+  }
+
+  void publishMeasurementsLabels(vector<DetectionPtr>& detections, ros::Time time){
+
+    // The marker Array
+    visualization_msgs::MarkerArray labelArray;
+
+    int counter = 0;
+    for (vector<DetectionPtr>::iterator detectionsIt = detections.begin();
+        detectionsIt != detections.end();
+        detectionsIt++)
+    {
+
+      visualization_msgs::Marker label;
+      label.header.stamp = time;
+      label.header.frame_id = fixed_frame;
+      label.ns = "meas_label";
+      label.id = counter;
+      label.type = label.TEXT_VIEW_FACING;
+      label.pose.position.x = (*detectionsIt)->point_[0];
+      label.pose.position.y = (*detectionsIt)->point_[1];
+      label.pose.position.z = 0.3;
+      label.scale.z = .1;
+      label.color.b = 1;
+      label.color.a = 1.0;
+      //label.lifetime = ros::Duration(0.5);
+
+      // Add text
+      char buf[100];
+      sprintf(buf, "#%i", counter);
+      label.text = buf;
+
+      labelArray.markers.push_back(label);
+
+      counter++;
+
+    }
+    // Publish
+    measurement_label_pub_.publish(labelArray);
+
+    ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
   }
 
 
