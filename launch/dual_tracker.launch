@@ -1,4 +1,0 @@
-<launch>
-  <node pkg="leg_detector" type="dual_tracker" required="true" name="dual_tracker" args=" $(find leg_detector)/trained_classificators/forestClassificator.yaml" output="screen"/>
-</launch>
-
