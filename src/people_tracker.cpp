@@ -23,13 +23,17 @@ bool isValidPeopleTracker(const PeopleTrackerPtr & o){
 
 PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time time):
   creation_time_(time),
-  total_probability_(0.0) // Initialize the probability with zero
+  total_probability_(0.0), // Initialize the probability with zero
+  propagation_time_(time),
+  maxStepWidth(1.0), // TODO make this a parameter
+  stepWidth_(-1.0),
+  hipWidth_(-1.0)
 {
   // Add the legs to this people tracker
   this->addLeg(leg0);
   this->addLeg(leg1);
 
-  // Set the id
+  // Set the id of the tracker
   if(leg0->int_id_ < leg1->int_id_){
     id_[0] = leg0->int_id_;
     id_[1] = leg1->int_id_;
@@ -38,14 +42,7 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
     id_[0] = leg1->int_id_;
   }
 
-  // Add this people tracker to the legs
-
-//  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s Adding Tracker to the legs %s and %s",__func__,leg0->id_.c_str(), leg1->id_.c_str());
-//  leg0->addPeopleTracker( boost::shared_ptr<PeopleTracker>(this) );
-//  leg1->addPeopleTracker( boost::shared_ptr<PeopleTracker>(this) );
-
   ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s <NEW_PEOPLETRACKER %i-%i>", __func__, id_[0], id_[1]);
-
 }
 
 PeopleTracker::~PeopleTracker(){
@@ -134,12 +131,8 @@ void PeopleTracker::updateTrackerState(ros::Time time){
 
   // Calculate the velocity vectors
   BFL::StatePosVel estLeg0 = getLeg0()->getEstimate();
-  //BFL::StatePosVel estLeg1 = getLeg1()->getEstimate();
 
   pos_vel_estimation_ = getEstimate();
-
-  //std::cout << "leg0: " << getLeg0()->getEstimate() << " leg1: " << getLeg1()->getEstimate() << std::endl;
-  //std::cout << "Estimation: " << pos_vel_estimation_ << std::endl << std::endl;
 
   // Calculate the hip width (only if some velocity exists)
   if(pos_vel_estimation_.vel_.length() > 0.01){
@@ -207,13 +200,19 @@ void PeopleTracker::updateTrackerState(ros::Time time){
       //std::cout << BOLDRED << "Left" << RESET << std::endl;
     }
 
+    hipWidth_ = (hipPosLeft_ - hipPosRight_).length();
+    stepWidth_ = (hipPosLeft_ - leftLeg_->getEstimate().pos_).length();
 
-  }else{ // What to do if there is no real relevant speed
+  }else{ // If there is no speed there is no left or right
     hipPos0_     = pos_vel_estimation_.pos_;
     hipPos1_     = pos_vel_estimation_.pos_;
     hipPosLeft_  = pos_vel_estimation_.pos_;
     hipPosRight_ = pos_vel_estimation_.pos_;
+
+    stepWidth_ = 0.0; // No Step
+    hipWidth_ = (getLeg0()->getEstimate().pos_ - getLeg1()->getEstimate().pos_).length();
   }
+
 
   // Update static/dynamic
   is_static_ = !(getLeg0()->isDynamic() && getLeg1()->isDynamic());
@@ -221,7 +220,137 @@ void PeopleTracker::updateTrackerState(ros::Time time){
 }
 
 void PeopleTracker::propagate(ros::Time time){
-  ROS_WARN("PeopleTracker::%s is NOT YET IMPLEMENTED",__func__);
+  //ROS_WARN("PeopleTracker::%s is NOT YET IMPLEMENTED",__func__);
+
+  if(this->getTotalProbability() > 0.8){
+
+    std::cout << *this << " is now propagated" << std::endl;
+
+    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > leftLegHistory = this->getLeftLeg()->getHistory();
+    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > rightLegHistory = this->getRightLeg()->getHistory();
+
+    // Find the minimal history
+    unsigned int shortestHistSize = min(leftLegHistory.size(), rightLegHistory.size());
+
+    if(shortestHistSize > 1 && this->isDynamic()){
+
+      std::cout << "Left: L" << getLeftLeg()->int_id_ << " Right: L" << getRightLeg()->int_id_ << std::endl;
+
+
+      // Reverse iterate the history (left)
+      for(unsigned int i = shortestHistSize-1; i>0; i--){
+        double jumpLeft = (*leftLegHistory[i]-*leftLegHistory[i-1]).length();
+        double jumpRight = (*rightLegHistory[i]-*rightLegHistory[i-1]).length();
+
+        if(jumpLeft > jumpRight){
+          std::cout << RED << jumpLeft << RESET << "   " << jumpRight << std::endl;
+        }else{
+          std::cout << jumpLeft << "   " << RED << jumpRight << RESET << std::endl;
+        }
+      }
+
+      // Print for python debugging
+      std::cout << "left_leg = [";
+      for(unsigned int i = shortestHistSize-1; i>0; i--){
+        double jumpLeft = (*leftLegHistory[i]-*leftLegHistory[i-1]).length();
+
+        std::cout << jumpLeft;
+        if(i!=1) std::cout << ",";
+      }
+      std::cout << "]" << std::endl;
+
+      std::cout << "right_leg = [";
+      for(unsigned int i = shortestHistSize-1; i>0; i--){
+        double jumpRight = (*rightLegHistory[i]-*rightLegHistory[i-1]).length();
+        std::cout << jumpRight;
+
+        if(i!=1) std::cout << ",";
+      }
+      std::cout << "]" << std::endl;
+
+
+
+      // Estimate the positions of the legs
+      double deltaT = time.toSec() - this->propagation_time_.toSec();
+
+      // Define the moving leg by the one with the last most movement
+
+      if(deltaT > 0){
+
+        // Differentiate between the moving and the static leg
+        double lastStepWidthLeftLeg;
+        double lastStepWidthRightLeg;
+        getLeftLeg()->getLastStepWidth(lastStepWidthLeftLeg);
+        getRightLeg()->getLastStepWidth(lastStepWidthRightLeg);
+
+        //return;
+        if(getLeftLeg()->getLastStepWidth(lastStepWidthLeftLeg) && getRightLeg()->getLastStepWidth(lastStepWidthRightLeg)){
+
+          // Set the fixed leg
+          LegFeaturePtr movLeg;
+          LegFeaturePtr statLeg;
+
+          if(lastStepWidthLeftLeg > lastStepWidthRightLeg){
+            movLeg = getLeftLeg();
+            statLeg = getRightLeg();
+
+            std::cout << "The left leg is moving" << std::endl;
+          }else{
+            movLeg = getRightLeg();
+            statLeg = getLeftLeg();
+
+            std::cout << "The right leg is moving" << std::endl;
+          }
+
+          double alpha = cos(this->getStepWidth());
+
+          BFL::StatePosVel LegStatEstimation;
+          BFL::StatePosVel LegMovEstimation;
+
+          tf::Vector3 vMov = movLeg->getEstimate().vel_;   // Estimate Speed of the moving Leg
+          tf::Vector3 vStat = statLeg->getEstimate().vel_;  // Estimated Speed of the constant Leg
+
+          // First calculate the positions
+          LegStatEstimation.pos_ =  vStat*deltaT + statLeg->getEstimate().pos_;
+          LegMovEstimation.pos_ =  vMov*deltaT + movLeg->getEstimate().pos_;
+        }
+        // Then calculate the speeds
+
+      }
+
+    }
+
+
+
+
+
+/*
+    // Reverse iterate the history
+    for(unsigned int i = shortestHistSize-1; i>0; i--){
+
+    }
+
+
+    std::cout << "The history (size " << this->getLeftLeg()->getHistorySize() << ") of the left leg(L"<< this->getLeftLeg()->int_id_ << ") is" << std::endl;
+    for(std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator histLeftIt = leftLegHistory.begin();
+        histLeftIt != leftLegHistory.end();
+        histLeftIt++){
+      std::cout << (*histLeftIt)->getX() << " " << (*histLeftIt)->getY() << std::endl;
+    }
+
+    std::cout << "The history (size " << this->getRightLeg()->getHistorySize() << ") of the right leg(L" << this->getRightLeg()->int_id_<< ") is" << std::endl;
+    for(std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator histRightIt = rightLegHistory.begin();
+        histRightIt != rightLegHistory.end();
+        histRightIt++){
+      std::cout << (*histRightIt)->getX() << " " << (*histRightIt)->getY() << std::endl;
+    }*/
+
+
+  }
+
+
+
+
   //ROS_BREAK(); // TODO Implement this!
 }
 
@@ -340,7 +469,7 @@ void PeopleTracker::updateProbabilities(ros::Time time){
   if(total_probability_ > 0.6){
     color = BOLDMAGENTA;
     ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"%s#%i-%i|dist %.3f prob: %.2f| leg_time: %.2f prob: %.2f|leg_asso prob: %.2f|| total_p: %.2f|",color.c_str(), id_[0], id_[1], dist, dist_probability_,min_leg_time, leg_time_probability_,leg_association_probability_, total_probability_);
-  }else if(isDynamic()){
+  }else if(isDynamic() && total_probability_ > 0.6){
     color = BOLDYELLOW;
     ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"%s#%i-%i|dist %.3f prob: %.2f| leg_time: %.2f prob: %.2f|leg_asso prob: %.2f|| total_p: %.2f|",color.c_str(), id_[0], id_[1], dist, dist_probability_,min_leg_time, leg_time_probability_,leg_association_probability_, total_probability_);
   }

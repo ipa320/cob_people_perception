@@ -383,7 +383,50 @@ bool
 PeopleParticleFilter::Resample()
 {
 
+  // Update the weights of the posterior!
+
   int NumSamples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->NumSamplesGet();
+
+  // Low Variance Sampling
+
+  // Set old samples to the posterior of the previous run
+  _old_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
+
+  // Get pointer to the new samples
+  _ns_it = _new_samples.begin();
+
+  // Calculate the total weight
+  double r = (static_cast <double> (rand()) / static_cast <double> (RAND_MAX)) * (1.0/NumSamples);
+  double c = _old_samples[0].WeightGet(); // Set to the weight of the first sample
+
+  unsigned int i = 0;
+
+  double invM =  1.0/NumSamples;
+
+  double U = 0.0;
+  for(int m = 0; m < NumSamples; m++){
+    U = r + (m - 1) * invM;
+
+    while(U > c){
+      i++;
+      c += _old_samples[i].WeightGet();
+    }
+    // Set the weight from the old sample
+    _ns_it->ValueSet(_old_samples[i].ValueGet());
+    _ns_it->WeightSet(invM);
+
+    // Go to the next iterator
+    _ns_it++;
+
+  }
+
+  std::cout << "LOW VARIANCE RESAMPLING!!!" << std::endl;
+
+
+
+/*  std::cout << "r: " << r << std::endl;
+
+  assert(false);
 
   // Note: At this time only one sampling method is implemented!
   switch(_resampleScheme)
@@ -401,8 +444,10 @@ PeopleParticleFilter::Resample()
         cerr << "Sampling method not supported" << endl;
         break;
       }
-    }
-  bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples_unweighted);
+    }*/
+  //bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples_unweighted);
+
+  bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
 
   return result;
 }

@@ -143,9 +143,9 @@ void LegFeature::propagate(ros::Time time)
 
 
   // If there exists a relevant high level filter
-  if(mostProbableAssociatedPPL && mostProbableAssociatedPPL->getTotalProbability() > 0.5){ // TODO Make the configurable
-    //std::cout << "\t Highest is:" << *mostProbableAssociatedPPL << std::endl;
-
+  if(mostProbableAssociatedPPL && mostProbableAssociatedPPL->getTotalProbability() > 0.6){ // TODO Make the configurable
+    //std::cout << RED << "Updating L" << this->int_id_ << " most probable associatet people tracker is" << *mostProbableAssociatedPPL << RESET << std::endl;
+    ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i considers a high level filter for its update", __func__, int_id_);
     // Get estimation for itself
     // StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
 
@@ -271,6 +271,19 @@ void LegFeature::updateHistory()
   point->stamp_ = time_;
 
   position_history_.push_back(point);
+}
+
+bool LegFeature::getLastStepWidth(double& width){
+
+  if(getHistorySize()<1)
+    return false;
+
+  unsigned int histSize = getHistorySize();
+
+  width = (*getHistory()[histSize-1] - *getHistory()[histSize-2]).length();
+
+  return true;
+
 }
 
 // TODO do this static

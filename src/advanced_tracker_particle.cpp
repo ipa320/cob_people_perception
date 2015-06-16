@@ -43,8 +43,8 @@ using namespace tf;
 using namespace std;
 using namespace ros;
 
-#define DEBUG_ADVANCEDTRACKERPARTICLE 1
-#define DEBUG_ADVANCEDTRACKERPARTICLE_TIME 1
+#define DEBUG_ADVANCEDTRACKERPARTICLE 0
+#define DEBUG_ADVANCEDTRACKERPARTICLE_TIME 0
 
 
 namespace estimation

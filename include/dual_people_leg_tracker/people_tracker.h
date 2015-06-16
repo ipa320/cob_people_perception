@@ -47,7 +47,8 @@ class PeopleTracker{
 
     std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_; /**< The position history of the people tracker */
 
-
+    double hipWidth_;
+    double stepWidth_;
     //std::id_[2];
 
   private:
@@ -66,6 +67,10 @@ class PeopleTracker{
     double leg_time_probability_;/**< Probability considering the lifetime of both leg trackers */
 
     ros::Time creation_time_;/**< Time that this tracker was created */
+    ros::Time propagation_time_; /**< Time the propagation is towards */
+
+    double maxStepWidth; /**< Maximal Step Width */
+
 
 
   public:
@@ -168,6 +173,14 @@ class PeopleTracker{
       legs_.clear();
     }
 
+    double getStepWidth() const{
+      return this->stepWidth_;
+    }
+
+    double getHipWidth() const{
+      return this->hipWidth_;
+    }
+
     /// output stream
     friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
     {
@@ -182,6 +195,9 @@ class PeopleTracker{
         os << BOLDGREEN << " [valid]" << RESET;
       else
         os << BOLDRED << " [invalid]" << RESET;
+
+      // Print Parameters
+      os << " | hipWidth: " << s.hipWidth_ << " | stepWidth:" << s.getStepWidth();
 
       return os;
 

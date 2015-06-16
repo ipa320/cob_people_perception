@@ -459,6 +459,7 @@ public:
     ROS_DEBUG("%sPrediction [Cycle %u]", BOLDWHITE, cycle_);
     benchmarking::Timer propagationTimer; propagationTimer.start();
 
+    /// People Tracker Propagation
     // High level propagation
     boost::shared_ptr<std::vector<PeopleTrackerPtr> > pplTrackers = people_trackers_.getList();
     for(std::vector<PeopleTrackerPtr>::iterator pplTrackerIt = pplTrackers->begin();
@@ -471,7 +472,7 @@ public:
     }
 
     // System update of trackers, and copy updated ones in propagate list
-
+    /// Leg Tracker propagation
     vector<LegFeaturePtr> propagated;
     for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin();
         legIt != saved_leg_features.end();
@@ -480,7 +481,6 @@ public:
       (*legIt)->propagate(scan->header.stamp); // Propagate <-> Predict the filters
       propagated.push_back(*legIt);
     }
-
 
     propagationTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Propagated %i SavedFeatures",__func__, (int) propagated.size());
@@ -558,7 +558,7 @@ public:
     nMeasurements = detections.size() + 1;
 
     // Generate Matrix
-    std::cout << "There are currently " << nObjects << " objects and " << nMeasurements << " measurements(occlusion included)" << std::endl;
+    //std::cout << "There are currently " << nObjects << " objects and " << nMeasurements << " measurements(occlusion included)" << std::endl;
     Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> costMatrix;
     costMatrix = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nObjects,nMeasurements);
 
@@ -615,7 +615,7 @@ public:
 
     // Calculate the k-best assignments
 
-    std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
+    //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
     std::vector<Solution> solutions;
 
     // TODO depend this on the number of measurements
@@ -626,16 +626,14 @@ public:
 
 
 
-
-
-    std::cout << "Solutions are:" << std::endl;
+    //std::cout << "Solutions are:" << std::endl;
     for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
       //color_print_solution(costMatrix,solIt->assignmentMatrix);
       //std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
     }
 
     // DEBUG OUTPUT
-    std::cout << std::endl << "Assignment Matrix:" << std::endl  << costMatrix << std::endl;
+    //std::cout << std::endl << "Assignment Matrix:" << std::endl  << costMatrix << std::endl;
 
     // Calculate needed measurement probabilities
     Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> neededUpdateMat = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nObjects,nMeasurements);
@@ -647,8 +645,8 @@ public:
     // Each entry represents 1/N \sum_{n=1}^N p(z_j(k)|x_{i,n}^n)
     Eigen::Matrix< double, Eigen::Dynamic, Eigen::Dynamic> probabilities = Eigen::Matrix< double, Eigen::Dynamic, Eigen::Dynamic>::Constant(nObjects,nMeasurements,-1);
 
-    std::cout << "propagated.size() " << propagated.size() << std::endl;
-    std::cout << "probabilities.rows() " << probabilities.rows() << std::endl;
+    //std::cout << "propagated.size() " << propagated.size() << std::endl;
+    //std::cout << "probabilities.rows() " << probabilities.rows() << std::endl;
 
     ROS_ASSERT(propagated.size() == probabilities.rows());
     ROS_ASSERT(detections.size() == probabilities.cols());
@@ -678,7 +676,7 @@ public:
 
       }
     }
-    std::cout << "measurement probabilities" << std::endl << probabilities << std::endl;
+    //std::cout << "measurement probabilities" << std::endl << probabilities << std::endl;
 
 
 
@@ -1689,7 +1687,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
       // Add text
       char buf[100];
-      sprintf(buf, "#%d", (*legFeatureIt)->int_id_);
+      sprintf(buf, "L%d", (*legFeatureIt)->int_id_);
       label.text = buf;
 
       labelArray.markers.push_back(label);
@@ -1817,7 +1815,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       label.type = label.TEXT_VIEW_FACING;
       label.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
       label.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
-      label.pose.position.z = 0.3;
+      label.pose.position.z = 0.5;
       label.scale.z = .1;
       label.color.a = 1;
       label.lifetime = ros::Duration(0.5);
@@ -2008,7 +2006,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         // If there is an assignment probability
         if(assigmentProbability > 0){
 
-          std::cout << "leg[" << indices[row] << "] measurement [" << col << "] prob: " << assigmentProbability << std::endl;
+          //std::cout << "leg[" << indices[row] << "] measurement [" << col << "] prob: " << assigmentProbability << std::endl;
 
           LegFeaturePtr leg = legFeatures[row];
           DetectionPtr  detection = detections[col-1];

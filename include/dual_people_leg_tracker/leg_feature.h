@@ -23,13 +23,15 @@
 #include <people_tracking_filter/rgb.h>
 
 // Default variables
-#define DEBUG_LEG_TRACKER 1
+#define DEBUG_LEG_TRACKER 0
 
 class PeopleTracker; // Forward declaration
 typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr; // Forward declaration
 
 class LegFeature; // Forward declaration
 typedef boost::shared_ptr<LegFeature> LegFeaturePtr;
+
+typedef std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > LegHistory;
 
 /**
  *  \brief The low level tracker to track each leg
@@ -166,6 +168,8 @@ public:
   };
 
   void updateHistory();
+
+  bool getLastStepWidth(double& width);
 
 private:
   void updatePosition();
