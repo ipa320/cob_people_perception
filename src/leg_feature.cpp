@@ -14,7 +14,7 @@ int LegFeature::nextid = 0;
 
 static std::string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
-static int NumberOfParticles = 700;
+static int NumberOfParticles = 500;
 
 /*LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl, OcclusionModelPtr ocm)
   :LegFeature(loc,tfl),
@@ -146,11 +146,22 @@ void LegFeature::propagate(ros::Time time)
   if(mostProbableAssociatedPPL && mostProbableAssociatedPPL->getTotalProbability() > 0.6){ // TODO Make the configurable
     //std::cout << RED << "Updating L" << this->int_id_ << " most probable associatet people tracker is" << *mostProbableAssociatedPPL << RESET << std::endl;
     ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i considers a high level filter for its update", __func__, int_id_);
-    // Get estimation for itself
-    // StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
+
+    // Check that the high level filter was propagated to this time
+    ROS_ASSERT((mostProbableAssociatedPPL->propagation_time_  - time).isZero());
+
+    std::cout << "Time Difference: " << (mostProbableAssociatedPPL->propagation_time_  - time) << std::endl;
+
+    // Get the estimation for itself
+    StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
+
+
+
+
 
     // TODO THIS SHOULD DEPEND ON THE ESTIMATION OF THE LEG; NOT THE PERSON!!!
-    filter_.updatePrediction(time.toSec(), cov, mostProbableAssociatedPPL->getEstimate().vel_, mostProbableAssociatedPPL->getHipVec());
+    //filter_.updatePrediction(time.toSec(), cov, mostProbableAssociatedPPL->getEstimate().vel_, mostProbableAssociatedPPL->getHipVec());
+    filter_.updatePrediction(time.toSec(), cov, est.vel_, mostProbableAssociatedPPL->getHipVec(), mostProbableAssociatedPPL->getTotalProbability());
 
   }
   // If there is no relevant people tracker assigned-> Consider only the low level filter
@@ -237,7 +248,12 @@ void LegFeature::updatePosition()
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
 
   BFL::StatePosVel est;
+
+  // Estimate using the weighted mean
   filter_.getEstimate(est);
+
+  // Estimate using the most likely particle
+  // filter_.getMostLikelyPosition(est);
 
   pos_vel_ = est;
 

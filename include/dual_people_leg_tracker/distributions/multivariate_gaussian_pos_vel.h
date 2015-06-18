@@ -60,14 +60,15 @@ public:
     Eigen::Matrix<double,3,1> eigv1_;
     Eigen::Matrix<double,3,1> eigv2_;
 
+    // High level probability
+    double highLevelProbability_;
+
     // The Random Generator
     boost::shared_ptr<Eigen::EigenMultivariateNormal<double> > normX_solver_;
 
 private:
 
   mutable double sqrt_; /**< Nominator of the density function, precalculated and stored for faster calculation */
-
-
 
   //GaussianVector gauss_pos_, gauss_vel_;
   mutable double dt_;
@@ -96,6 +97,12 @@ public:
   void sigmaSet(const MatrixWrapper::SymmetricMatrix& cov);
 
   void eigenvectorsSet(tf::Vector3 eigv1, tf::Vector3 eigv2);
+
+  /**
+   * Set the probability of the high level filter
+   * @param highLevelProbability
+   */
+  void highLevelProbabilitySet(double highLevelProbability);
 
   Eigen::Matrix<double,6,1>
   getMu() const{

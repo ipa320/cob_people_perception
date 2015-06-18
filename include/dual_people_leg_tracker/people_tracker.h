@@ -49,7 +49,11 @@ class PeopleTracker{
 
     double hipWidth_;
     double stepWidth_;
-    //std::id_[2];
+
+    BFL::StatePosVel leg0Prediction_;
+    BFL::StatePosVel leg1Prediction_;
+
+    ros::Time propagation_time_; /**< Time the propagation is towards */
 
   private:
     bool is_static_;
@@ -67,9 +71,8 @@ class PeopleTracker{
     double leg_time_probability_;/**< Probability considering the lifetime of both leg trackers */
 
     ros::Time creation_time_;/**< Time that this tracker was created */
-    ros::Time propagation_time_; /**< Time the propagation is towards */
 
-    double maxStepWidth; /**< Maximal Step Width */
+    double maxStepWidth_; /**< Maximal Step Width */
 
 
 

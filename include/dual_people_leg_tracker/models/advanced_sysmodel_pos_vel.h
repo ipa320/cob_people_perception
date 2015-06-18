@@ -73,7 +73,13 @@ public:
   // Set the multivariate Covariance
   void MultivariateCovarianceSet(const MatrixWrapper::SymmetricMatrix& cov);
 
-  void HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec);
+  /**
+   * Set high level (peopleTracker) Information
+   * @param vel (By the People Tracker estimated velocity for this leg)
+   * @param hipVec (By the hip Vector)
+   * @param pplTrackerProbability (The probability of the people Tracker)
+   */
+  void HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec, double pplTrackerProbability);
 
   // set time
   void SetDt(double dt)

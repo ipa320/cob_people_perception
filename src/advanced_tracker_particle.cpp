@@ -168,7 +168,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWr
  * @param hipVec Vectors for the high level prediction representing the current hip vector of the associated person
  * @return
  */
-bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov, tf::Vector3 velVec, tf::Vector3 hipVec){
+bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov, tf::Vector3 velVec, tf::Vector3 hipVec, double pplTrackerProbability){
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
 
@@ -176,7 +176,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWr
   ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->CovarianceSet(cov);
 
   // Set the vectors for the high level prediction
-  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->HighLevelInformationSet(velVec,hipVec);
+  ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->HighLevelInformationSet(velVec,hipVec, pplTrackerProbability);
   ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->setUseHighlevelPrediction(true);
 
   return this->updatePrediction(time);
@@ -233,7 +233,7 @@ void AdvancedTrackerParticle::getParticleCloud(const tf::Vector3& step, double t
 
 // Get the Filter Posterior
 /**
- * Get the current Tracker estimation
+ * Get the current Tracker estimation based on the weighted mean of every particle
  * @param est
  */
 void AdvancedTrackerParticle::getEstimate(StatePosVel& est) const
@@ -273,10 +273,6 @@ void AdvancedTrackerParticle::getEstimate(people_msgs::PositionMeasurement& est)
   est.header.stamp.fromSec(filter_time_);
   est.object_id = getName();
 }
-
-
-
-
 
 /// Get histogram from certain area
 Matrix AdvancedTrackerParticle::getHistogramPos(const tf::Vector3& min, const tf::Vector3& max, const tf::Vector3& step) const

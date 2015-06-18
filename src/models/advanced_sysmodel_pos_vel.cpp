@@ -90,10 +90,11 @@ AdvancedSysPdfPosVel::MultivariateCovarianceSet(const MatrixWrapper::SymmetricMa
 }
 
 void
-AdvancedSysPdfPosVel::HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec)
+AdvancedSysPdfPosVel::HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec, double pplTrackerProbability)
 {
   ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"AdvancedSysPdfPosVel::%s",__func__);
   noise_nl_.eigenvectorsSet(vel, hipVec);
+  noise_nl_.highLevelProbabilitySet(pplTrackerProbability);
 }
 
 Probability
@@ -134,8 +135,10 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   //benchmarking::Timer timer;
   //timer.start();
 
-  // Only use the high level predicition if explicitly set true
+  // Only use the high level prediction if explicitly set true
   if(useHighLevelPrediction_){
+
+
     Sample<StatePosVel> noise_sample_nl;
     noise_nl_.SetDt(dt_);
     noise_nl_.SampleFrom(noise_sample_nl, method, args);

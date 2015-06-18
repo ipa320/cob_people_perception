@@ -369,7 +369,7 @@ PeopleParticleFilter::DynamicResampleStep()
       }
   }
     if (resampling == true)
-      return this->Resample();
+      return this->LowVarianceResample();
     else
       return true;
 }
@@ -380,7 +380,7 @@ PeopleParticleFilter::DynamicResampleStep()
  * @return
  */
 bool
-PeopleParticleFilter::Resample()
+PeopleParticleFilter::LowVarianceResample()
 {
 
   // Update the weights of the posterior!

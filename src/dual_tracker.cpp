@@ -187,6 +187,7 @@ public:
   int next_p_id_;
 
   double leg_reliability_limit_;
+  double new_track_min_probability_; /**< Probability a detection needs to initialize a new leg tracker, this reduces clutter creating false tracks */
 
   double people_probability_limit_; /**< Min Value for people to be considered true  */
 
@@ -310,6 +311,7 @@ public:
     // Clustering parameters
     connected_thresh_           = config.connection_threshold;    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - connected_thresh_ %f", __func__, connected_thresh_ );
     min_points_per_group_       = config.min_points_per_group;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - min_points_per_group %i", __func__, min_points_per_group_ );
+    new_track_min_probability_  = config.new_track_min_probability; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - new_track_min_probability %f", __func__, new_track_min_probability_ );
 
     // Leg Tracker Parameters
     leg_reliability_limit_      = config.leg_reliability_limit;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, leg_reliability_limit_ );
@@ -738,6 +740,8 @@ public:
     // The found matches
     multiset<MatchedFeature> matches;
 
+    assert(false);
+
     // Iterate through all detections
     for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
         detectionIt != detections.end();
@@ -766,14 +770,24 @@ public:
           closest_dist = dist;
         }
       }
-      // Nothing close to it, start a new track
+      // Nothing close to it, start a new track // TODO only create if the probability is high
       if (closest == propagated.end())
       {
-        loc.setZ(0); // TODO ugly fix
-        LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(loc, tfl_));
-        newLegFeature->setOcclusionModel(occlusionModel_);
-        vector<LegFeaturePtr>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), newLegFeature);
-        ++newTrackCounter;
+        std::cout << "Meas. Prob." << (*detectionIt)->cluster_->probability_ << std::endl;
+        std::cout << "#########################################################################################################" << std::endl;
+        ROS_ASSERT(false);
+
+
+        assert(false);
+
+        if(cluster->getProbability( )> new_track_min_probability_){
+          loc.setZ(0); // TODO ugly fix
+          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(loc, tfl_));
+          newLegFeature->setOcclusionModel(occlusionModel_);
+          vector<LegFeaturePtr>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), newLegFeature);
+          ++newTrackCounter;
+        }
+
       }
       // Add the candidate, the tracker and the distance to a match list
       else
@@ -1234,7 +1248,7 @@ public:
         peopleIt != peopleTracker->end();
         peopleIt++)
     {
-      if((*peopleIt)->getTotalProbability() > people_probability_limit_ ){
+      if((*peopleIt)->getTotalProbability() > new_track_min_probability_ ){
 
         BFL::StatePosVel est = (*peopleIt)->getEstimate();
 
@@ -1704,18 +1718,6 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     // Create the Visualization Message (a marker array)
     visualization_msgs::MarkerArray msgArray;
 
-    // The geometry message
-    visualization_msgs::Marker line_list;
-    line_list.type = visualization_msgs::Marker::LINE_LIST;
-    line_list.header.frame_id = fixed_frame;
-    line_list.header.stamp = time;
-    line_list.id = 0;
-    line_list.ns = "people_tracker";
-    line_list.scale.x = 0.05;
-
-    line_list.color.g = 255.0;
-    line_list.color.a = 1.0;
-
     int counter = 0;
     for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
         peopleTrackerIt != people_trackers_.getList()->end();
@@ -1727,17 +1729,35 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
          && (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()) // Publish static Trackers
          ){
 
-        // The geometry message
-        visualization_msgs::Marker line_list;
-        line_list.type = visualization_msgs::Marker::LINE_LIST;
-        line_list.header.frame_id = fixed_frame;
-        line_list.header.stamp = time;
-        line_list.id = counter;
-        line_list.ns = "people_tracker";
-        line_list.scale.x = 0.05*(*peopleTrackerIt)->getTotalProbability();
+        std::cout << BOLDRED << "Publishing people tracker" << (**peopleTrackerIt) << RESET << std::endl;
 
-        line_list.color.g = 255.0;
-        line_list.color.a = 1.0;
+        // The geometry message
+        visualization_msgs::Marker line_list0;
+        visualization_msgs::Marker line_list1;
+        line_list0.type = visualization_msgs::Marker::LINE_LIST;
+        line_list1.type = visualization_msgs::Marker::LINE_LIST;
+        line_list0.header.frame_id = fixed_frame;
+        line_list1.header.frame_id = fixed_frame;
+        line_list0.header.stamp = time;
+        line_list1.header.stamp = time;
+        line_list0.id = counter++;
+        line_list1.id = counter++;
+        line_list0.ns = "people_tracker";
+        line_list1.ns = "people_tracker";
+
+        line_list0.scale.x = 0.05*(*peopleTrackerIt)->getTotalProbability();
+        line_list1.scale.x = 0.05*(*peopleTrackerIt)->getTotalProbability();
+
+        line_list0.color.r = 0.0;
+        line_list0.color.g = 1.0;
+        line_list0.color.b = 0.0;
+
+        line_list1.color.r = 1.0;
+        line_list1.color.g = 0.0;
+        line_list1.color.b = 0.0;
+
+        line_list0.color.a = 1.0;
+        line_list1.color.a = 1.0;
 
         geometry_msgs::Point pointLeftLeg, pointLegRight, pointHipLeft, pointHipRight, pointCenter;
 
@@ -1752,9 +1772,9 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         pointHipLeft.z = 0.0;
 
         // Center of the Person
-        //pointCenter.x = (*peopleTrackerIt)->getEstimate().pos_[0];
-        //pointCenter.y = (*peopleTrackerIt)->getEstimate().pos_[1];
-        //pointCenter.z = 0.0;
+        pointCenter.x = (*peopleTrackerIt)->getEstimate().pos_[0];
+        pointCenter.y = (*peopleTrackerIt)->getEstimate().pos_[1];
+        pointCenter.z = 0.0;
 
         // Hip 1
         pointHipRight.x = (*peopleTrackerIt)->hipPosRight_[0];
@@ -1762,27 +1782,88 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         pointHipRight.z = 0.0;
 
         // Leg 1
-        pointLegRight.x = (*peopleTrackerIt)->getRightLeg()->position_[0];;
-        pointLegRight.y = (*peopleTrackerIt)->getRightLeg()->position_[1];;
+        pointLegRight.x = (*peopleTrackerIt)->getRightLeg()->position_[0];
+        pointLegRight.y = (*peopleTrackerIt)->getRightLeg()->position_[1];
         pointLegRight.z = 0;
 
-        line_list.points.push_back(pointLeftLeg);
+        if((*peopleTrackerIt)->getEstimate().vel_.length() > 0.2){
 
-        // Publish intermediate points for the hips only if the person has some speed at least, otherwise only a straight line
-        if((*peopleTrackerIt)->getEstimate().vel_.length() > 0.4){
-          line_list.points.push_back(pointHipLeft);
-          line_list.points.push_back(pointHipLeft);
-        //line_list.points.push_back(pointCenter);
+          //Line
+          line_list0.points.push_back(pointLeftLeg);
+          line_list0.points.push_back(pointHipLeft);
 
-        //line_list.points.push_back(pointCenter);
-          line_list.points.push_back(pointHipRight);
-          line_list.points.push_back(pointHipRight);
+          // Line between these
+          line_list0.points.push_back(pointHipLeft);
+          line_list0.points.push_back(pointCenter);
+
+          // Line between these
+          line_list1.points.push_back(pointCenter);
+          line_list1.points.push_back(pointHipRight);
+
+          // Line
+          line_list1.points.push_back(pointHipRight);
+          line_list1.points.push_back(pointLegRight);
+
+          // Add Visualizations for the leg estimations
+          visualization_msgs::Marker leg_mov_marker;
+          visualization_msgs::Marker leg_stat_marker;
+          leg_mov_marker.type  = visualization_msgs::Marker::SPHERE;
+          leg_stat_marker.type = visualization_msgs::Marker::SPHERE;
+          leg_mov_marker.header.frame_id  = fixed_frame;
+          leg_stat_marker.header.frame_id = fixed_frame;
+          leg_mov_marker.header.stamp = time;
+          leg_stat_marker.header.stamp = time;
+          leg_mov_marker.id = 0;
+          leg_stat_marker.id = 1;
+          leg_mov_marker.ns = "people_leg_estimation";
+          leg_stat_marker.ns = "people_leg_estimation";
+
+          leg_mov_marker.color.r = 0.0;
+          leg_mov_marker.color.g = 1.0;
+          leg_mov_marker.color.b = 1.0;
+          leg_mov_marker.color.a = 1.0;
+
+          leg_stat_marker.color.r = 0.0;
+          leg_stat_marker.color.g = 1.0;
+          leg_stat_marker.color.b = 1.0;
+          leg_stat_marker.color.a = 1.0;
+
+          double sphereSize = 0.05;
+
+          leg_mov_marker.scale.x = sphereSize;
+          leg_mov_marker.scale.y = sphereSize;
+          leg_mov_marker.scale.z = sphereSize;
+          leg_stat_marker.scale.x = sphereSize;
+          leg_stat_marker.scale.y = sphereSize;
+          leg_stat_marker.scale.z = sphereSize;
+
+          leg_mov_marker.pose.position.x = (*peopleTrackerIt)->leg0Prediction_.pos_[0];
+          leg_mov_marker.pose.position.y = (*peopleTrackerIt)->leg0Prediction_.pos_[1];
+          leg_mov_marker.pose.position.z = 0.0;
+
+          leg_stat_marker.pose.position.x = (*peopleTrackerIt)->leg1Prediction_.pos_[0];
+          leg_stat_marker.pose.position.y = (*peopleTrackerIt)->leg1Prediction_.pos_[1];
+          leg_stat_marker.pose.position.z = 0.0;
+
+          msgArray.markers.push_back(leg_mov_marker);
+          msgArray.markers.push_back(leg_stat_marker);
+
+          std::cout << "Leg0 Prediction" << (*peopleTrackerIt)->leg0Prediction_.pos_[0] << " " << (*peopleTrackerIt)->leg0Prediction_.pos_[1] << std::endl;
+          std::cout << "Leg1 Prediction" << (*peopleTrackerIt)->leg1Prediction_.pos_[0] << " " << (*peopleTrackerIt)->leg1Prediction_.pos_[1] << std::endl;
+
+        }else{
+          // End line
+          line_list0.color.r = 0.0;
+          line_list0.color.g = 0.0;
+          line_list0.color.b = 0.0;
+
+          line_list0.points.push_back(pointLeftLeg);
+          line_list0.points.push_back(pointLegRight);
         }
-        line_list.points.push_back(pointLegRight);
 
-        // Add the pointlist to the msgArray
-        msgArray.markers.push_back(line_list);
-        counter++;
+        // Add the lines to the msgArray
+        msgArray.markers.push_back(line_list0);
+        msgArray.markers.push_back(line_list1);
 
       }
     }
@@ -2080,7 +2161,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
       // Add text
       char buf[100];
-      sprintf(buf, "#%i", counter);
+      sprintf(buf, "#%i-%g", counter, (*detectionsIt)->cluster_->probability_);
       label.text = buf;
 
       labelArray.markers.push_back(label);

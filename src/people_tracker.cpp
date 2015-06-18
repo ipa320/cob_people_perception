@@ -25,7 +25,7 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
   creation_time_(time),
   total_probability_(0.0), // Initialize the probability with zero
   propagation_time_(time),
-  maxStepWidth(1.0), // TODO make this a parameter
+  maxStepWidth_(0.20), // TODO make this a parameter
   stepWidth_(-1.0),
   hipWidth_(-1.0)
 {
@@ -220,12 +220,17 @@ void PeopleTracker::updateTrackerState(ros::Time time){
 }
 
 void PeopleTracker::propagate(ros::Time time){
-  //ROS_WARN("PeopleTracker::%s is NOT YET IMPLEMENTED",__func__);
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s", __func__);
+
+  // Get the time delta (time since last propagation)
+  double deltaT = time.toSec() - this->propagation_time_.toSec();
+
 
   if(this->getTotalProbability() > 0.8){
 
     std::cout << *this << " is now propagated" << std::endl;
 
+    // Get the history of both assigned leg trackers
     std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > leftLegHistory = this->getLeftLeg()->getHistory();
     std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > rightLegHistory = this->getRightLeg()->getHistory();
 
@@ -249,6 +254,7 @@ void PeopleTracker::propagate(ros::Time time){
         }
       }
 
+
       // Print for python debugging
       std::cout << "left_leg = [";
       for(unsigned int i = shortestHistSize-1; i>0; i--){
@@ -270,8 +276,7 @@ void PeopleTracker::propagate(ros::Time time){
 
 
 
-      // Estimate the positions of the legs
-      double deltaT = time.toSec() - this->propagation_time_.toSec();
+
 
       // Define the moving leg by the one with the last most movement
 
@@ -302,19 +307,43 @@ void PeopleTracker::propagate(ros::Time time){
             std::cout << "The right leg is moving" << std::endl;
           }
 
-          double alpha = cos(this->getStepWidth());
+          double alpha = cos(min(this->getStepWidth()/this->maxStepWidth_,1.0) * M_PI)/2.0 + 0.5;
 
-          BFL::StatePosVel LegStatEstimation;
-          BFL::StatePosVel LegMovEstimation;
+          std::cout << "ALPHA" << alpha << std::endl;
 
-          tf::Vector3 vMov = movLeg->getEstimate().vel_;   // Estimate Speed of the moving Leg
-          tf::Vector3 vStat = statLeg->getEstimate().vel_;  // Estimated Speed of the constant Leg
+          assert(alpha >= 0.0);
+          assert(alpha <= 1.0);
+
+          // StdCOUT propagation information
+          std::cout << "PROPAGATION____________________" << std::endl;
+          std::cout << "ALPHA" << alpha << std::endl;
+          std::cout << "LEG MOVING: " << movLeg->int_id_ << std::endl;
+          std::cout << "LEG STATIC: " << statLeg->int_id_ << std::endl;
+
+          BFL::StatePosVel LegMovPrediction;
+          BFL::StatePosVel LegStatPrediction;
+
+          BFL::StatePosVel people_pos_vel_estimation_ = this->getEstimate();
+
+          // Estimate the velocity
+          LegMovPrediction.vel_   = 5 * people_pos_vel_estimation_.vel_ * alpha;   // Estimate Speed of the moving Leg
+          LegStatPrediction.vel_  = 5 * people_pos_vel_estimation_.vel_ * (1-alpha);  // Estimated Speed of the constant Leg
 
           // First calculate the positions
-          LegStatEstimation.pos_ =  vStat*deltaT + statLeg->getEstimate().pos_;
-          LegMovEstimation.pos_ =  vMov*deltaT + movLeg->getEstimate().pos_;
+          LegStatPrediction.pos_ =  LegStatPrediction.vel_*deltaT + statLeg->getEstimate().pos_;
+          LegMovPrediction.pos_ =  LegMovPrediction.vel_*deltaT + movLeg->getEstimate().pos_;
+
+          // Set the Estimates
+          if(movLeg->int_id_ == getLeg0()->int_id_ && statLeg->int_id_ == getLeg1()->int_id_){
+            leg0Prediction_ = LegMovPrediction;
+            leg1Prediction_ = LegStatPrediction;
+          }else{
+            leg0Prediction_ = LegStatPrediction;
+            leg1Prediction_ = LegMovPrediction;
+          }
+
         }
-        // Then calculate the speeds
+
 
       }
 
@@ -348,10 +377,9 @@ void PeopleTracker::propagate(ros::Time time){
 
   }
 
+  // Set the propagation time to this time after the propagation is done
+  this->propagation_time_ = time;
 
-
-
-  //ROS_BREAK(); // TODO Implement this!
 }
 
 void PeopleTracker::updateProbabilities(ros::Time time){
@@ -491,6 +519,10 @@ void PeopleTracker::updateHistory(ros::Time time){
   position_history_.push_back(point);
 }
 
+/**
+ * Get the current estimation of this tracker, the speed and position is calculated using the speed and position of both legs
+ * @return
+ */
 BFL::StatePosVel PeopleTracker::getEstimate(){
 
   // Calculate the velocity vectors
@@ -502,18 +534,21 @@ BFL::StatePosVel PeopleTracker::getEstimate(){
   pos_vel_estimation.pos_ = 0.5 * pos_vel_estimation.pos_; // TODO ugly find a better way for this
   pos_vel_estimation.vel_ = 0.5 * pos_vel_estimation.vel_; // TODO ugly find a better way for this
 
-
   return pos_vel_estimation;
 }
 
 BFL::StatePosVel PeopleTracker::getLegEstimate(int id){
   ROS_ASSERT_MSG(id == id_[0] || id == id_[1],"The estimate for a leg which is not part of this tracker was requested.");
 
-  // Return the estimate of the leg // TODO the is only a temporarly solution
-  if(id == id_[0])
-    return getLeg0()->getEstimate();
-  else
-    return getLeg1()->getEstimate();
+  // Check if there is a Estimation for this leg
+  if(id == id_[0]){
+    return leg0Prediction_;
+  }
+
+  if(id == id_[1]){
+    return leg1Prediction_;
+  }
+
 
 }
 

@@ -53,7 +53,8 @@ MultivariateGaussianPosVel::MultivariateGaussianPosVel():
   eigv2_(Eigen::Matrix<double,3,1>::Zero()),
   sigma_changed_(false),
   dt_(0.0),
-  sqrt_(0.0)
+  sqrt_(0.0),
+  highLevelProbability_(0.0)
 {
   //assert(false);
   //normX_solver_ = boost::shared_ptr<Eigen::EigenMultivariateNormal<double> >( new Eigen::EigenMultivariateNormal<double>(mu_,sigma_));
@@ -68,7 +69,8 @@ MultivariateGaussianPosVel::MultivariateGaussianPosVel(const Eigen::Matrix<doubl
     sigma_(sigma),
     sigma_changed_(false),
     dt_(0.0),
-    sqrt_(0.0)
+    sqrt_(0.0),
+    highLevelProbability_(0.0)
     //gauss_pos_(mu.pos_, sigma.pos_),
     //gauss_vel_(mu.vel_, sigma.vel_)
 {
@@ -131,6 +133,10 @@ void MultivariateGaussianPosVel::eigenvectorsSet(tf::Vector3 eigv1, tf::Vector3 
   eigv2_(1) = eigv2.getY();
   eigv2_(2) = eigv1.getZ();
 
+}
+
+void MultivariateGaussianPosVel::highLevelProbabilitySet(double highLevelProbability){
+  highLevelProbability_ = highLevelProbability;
 }
 
 

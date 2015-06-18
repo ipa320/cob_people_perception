@@ -146,7 +146,7 @@ class PeopleParticleFilter
      * @return
      */
     bool
-    Resample();
+    LowVarianceResample();
 
 
     bool
