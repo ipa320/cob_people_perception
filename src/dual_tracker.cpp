@@ -557,10 +557,9 @@ public:
     int j=1; // Measurement indice
 
     int counter = 0;
-    int nObjects;
-    int nMeasurements;
-    nObjects = propagated.size();
-    nMeasurements = detections.size() + 1;
+
+    int nObjects = propagated.size();
+    int nMeasurements = detections.size() + 1; // One extra for the occlusion probability
 
     // Generate Matrix
     //std::cout << "There are currently " << nObjects << " objects and " << nMeasurements << " measurements(occlusion included)" << std::endl;
@@ -586,9 +585,10 @@ public:
 
         // find the closest distance between candidate and trackers
         float dist = loc.distance((*legIt)->position_);
+        // TODO: Where exactly is loc to be expected? Should it be calculated based on particles?
 
         // Calculate assignment probability
-        float assignmentProbability = 1.0-sigmoid(dist, 5, max_track_jump_m);
+        float assignmentProbability = 1.0-sigmoid(dist, 0.01, max_track_jump_m);
         // TODO investigate this parameters
 
         //costMatrix(i,j) = min((int)-log(assignmentProbability),1000);
@@ -602,12 +602,13 @@ public:
       j++;
     }
 
-    // Fill dummy data for occluded objects
+    // Fill the first column of the cost matrix with dummy data for occluded objects
+    int occlusionCostValue = -60; // TODO, make the dependend on something else
     for(int i = 0; i<nObjects;i++){
-      costMatrix(i,0) = -60; // TODO make this better
+      costMatrix(i,0) = occlusionCostValue;
     }
 
-    // Store the object indices
+    // Store the object indices, this is needed since the Leg Feature IDs will change with time due to creation and deletion of tracks
     Eigen::VectorXi indices = Eigen::VectorXi::Zero(nObjects,1);
     int indices_counter = 0;
     for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
@@ -618,29 +619,30 @@ public:
       indices_counter++;
     }
 
-    // Calculate the k-best assignments
+    // Calculate the k-best assignments using murtys algorithm
+    ////////////////////////////////////////////////////////////////////////////////////
 
     //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
     std::vector<Solution> solutions;
 
     // TODO depend this on the number of measurements
-    int k = nObjects*4;
+    int k = nObjects*2;
     solutions = murty(costMatrix,k);
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
-
+    // TODO Calculate the crossing value of the solutions in order to reject obvious unrealistic solutions
 
 
     //std::cout << "Solutions are:" << std::endl;
     for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
-      //color_print_solution(costMatrix,solIt->assignmentMatrix);
-      //std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
+      color_print_solution(costMatrix,solIt->assignmentMatrix);
+      std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
     }
 
     // DEBUG OUTPUT
     //std::cout << std::endl << "Assignment Matrix:" << std::endl  << costMatrix << std::endl;
 
-    // Calculate needed measurement probabilities
+    // Precaculate which measurements will be required
     Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> neededUpdateMat = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nObjects,nMeasurements);
     for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
       neededUpdateMat += solIt->assignmentMatrix;
@@ -671,7 +673,9 @@ public:
             prob = propagated[i]->getOcclusionProbability(occlusionModel_); // TODO
           }
 
-          else{
+          // Calculate the measurement probability
+          else
+          {
             prob = propagated[i]->getMeasurementProbability(detections[j-1]->point_);
           }
 
@@ -685,7 +689,7 @@ public:
 
 
 
-    // Fill the assignment probability matrix
+    // Fill the assignment probability matrix (contains \beta_ij)
     Eigen::Matrix<double, -1,-1> assignmentProbabilityMatrix = Eigen::Matrix< double, -1, -1>::Zero(nObjects,nMeasurements);
 
     for(int j = 0; j < nMeasurements; j++){
@@ -714,9 +718,39 @@ public:
       }
     }
 
-    // The assignment probability matrix indicates which measurements influences which tracker to what degree.
-    std::cout << "Assignment Probabilities Matrix" << std::endl << assignmentProbabilityMatrix << std::endl;
+    // Normalize the Assignment Probability Matrix
+    Eigen::Matrix<double, -1,-1> assignmentProbabilityMatrixNormalized = Eigen::Matrix< double, -1, -1>::Zero(nObjects,nMeasurements);
+    for(int i = 0; i < assignmentProbabilityMatrixNormalized.rows(); i++){
 
+    	double rowSum = assignmentProbabilityMatrix.row(i).sum();
+    	if(rowSum > 0.0){
+    		assignmentProbabilityMatrixNormalized.row(i) = assignmentProbabilityMatrix.row(i)/rowSum;
+    	}
+
+    }
+
+
+    // Print the assignment probability matrix
+    std::cout << "Assignment Probability Matrix:____" << std::endl;
+    std::cout << "     |Occ  |";
+    for(int j = 0; j < nMeasurements-1; j++)
+    	std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
+    std::cout << RESET << std::endl;
+
+    for(int i = 0; i < nObjects; i++){
+    	std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indices(i) << RESET <<"|";
+    	for(int j = 0; j < nMeasurements; j++)
+    		if(assignmentProbabilityMatrixNormalized(i,j) > 0.0)
+    			std::cout << std::setw(5) << std::fixed << std::setprecision(3) << assignmentProbabilityMatrixNormalized(i,j) << "|";
+    		else
+    			std::cout << "     |";
+    	std::cout << std::endl;
+    }
+    // The assignment probability matrix indicates which measurements influences which tracker to what degree.
+    //std::cout << "Assignment Probabilities Matrix" << std::endl << assignmentProbabilityMatrix << std::endl;
+
+
+    //std::cout << "Normalized version: " << std::endl << assignmentProbabilityMatrixNormalized << std::endl;
 
     jpdaTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - JPDA",__func__);
@@ -1698,10 +1732,10 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       label.type = label.TEXT_VIEW_FACING;
       label.pose.position.x = (*legFeatureIt)->getEstimate().pos_[0];
       label.pose.position.y = (*legFeatureIt)->getEstimate().pos_[1];
-      label.pose.position.z = 0.3;
+      label.pose.position.z = 0.4;
       label.scale.z = .1;
       label.color.a = 1;
-      label.lifetime = ros::Duration(0.5);
+      //label.lifetime = ros::Duration(0.5);
 
       // Add text
       char buf[100];
