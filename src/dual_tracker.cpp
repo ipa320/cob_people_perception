@@ -183,6 +183,8 @@ public:
   bool publish_leg_labels_; /**<Publish the leg labels */
   bool publish_jpda_associations_;/**< Publish the JPDA association probabilities */
   bool publish_measurement_labels_; /**< Publish labels of measurements */
+  bool publish_predicted_leg_positions_; /**< Publish the estimated position of the legs due to the prediction of the associated people tracker */
+  bool publish_scans_lines_; /**< Publish visualizations of the scan lines */
 
   int next_p_id_;
 
@@ -329,7 +331,8 @@ public:
     publish_leg_history_        = config.publish_leg_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_history_ %d", __func__, publish_leg_history_ );
     publish_leg_labels_         = config.publish_leg_labels;      ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_labels_ %d", __func__, publish_leg_labels_ );
     publish_measurement_labels_ = config.publish_measurement_labels; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_measurement_labels_ %d", __func__, publish_measurement_labels_);
-
+    publish_predicted_leg_positions_ = config.publish_predicted_leg_positions; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_predicted_leg_positions_ %d", __func__, publish_predicted_leg_positions_);
+    publish_scans_lines_ 		= config.publish_scans_lines; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_scans_lines_ %d", __func__, publish_scans_lines_);
 
     // Publish the people tracker
     publish_people_             = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_ %d", __func__, publish_people_ );
@@ -945,6 +948,7 @@ public:
     people_trackers_.updateAllTrackers(scan->header.stamp);
 
     ROS_DEBUG("%sHigh level update done [Cycle %u]", BOLDWHITE, cycle_);
+
     //////////////////////////////////////////////////////////////////////////
     //// Publish data
     //////////////////////////////////////////////////////////////////////////
@@ -987,11 +991,11 @@ public:
       publishLegLabels(saved_leg_features, scan->header.stamp);
     }
 
-    if(true){
+    if(publish_predicted_leg_positions_){
       publishPredictedLegPositions(saved_leg_features, scan->header.stamp);
     }
 
-    if(true){
+    if(publish_scans_lines_){
       publishScanLines(*scan);
     }
 
