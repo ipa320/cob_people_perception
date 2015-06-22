@@ -208,6 +208,34 @@ bool AdvancedTrackerParticle::updateCorrection(const tf::Vector3&  meas, const M
   return res;
 };
 
+/**
+ * Perform a update of the particles using the information of the joint probabilistic data association
+ * @param cov
+ * @param detections
+ * @param assignmentProbabilities
+ * @return
+ */
+bool AdvancedTrackerParticle::updateJPDA(const MatrixWrapper::SymmetricMatrix& cov, const std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities)
+{
+
+  std::cout << "AdvancedTrackerParticle::updateJPDA" << std::endl;
+  assert(cov.columns() == 3);
+
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+  // Set the measurement noise
+  ((AdvancedMeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
+
+  // update filter
+  bool res = filter_->UpdateWeightsJPDA(&meas_model_, detections, assignmentProbabilities);
+  //bool res = filter_->Update(&meas_model_, meas, occlusion_model_);
+
+  // If update failed for some reason
+  if (!res) quality_ = 0;
+  return res;
+};
+
+
 double AdvancedTrackerParticle::getMeasProbability(const tf::Vector3&  meas, const MatrixWrapper::SymmetricMatrix& cov){
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 

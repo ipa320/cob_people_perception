@@ -210,6 +210,26 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   // Update history
   updateHistory();
 }
+/**
+ * Perform a update using the probabilities calculated by the JPDA
+ * @param detections    // The current detections
+ * @param probabilities // The assignment probabilities (The first entry is the occlusion probability!)
+ */
+void LegFeature::JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities){
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
+  std::cout << "LT" << this->int_id_ << " - JPDAUpdate" << std::endl;
+  std::cout << "Probabilities" << std::endl << assignmentProbabilities << std::endl;
+
+  // Covariance of the Measurement
+  MatrixWrapper::SymmetricMatrix cov(3);
+  cov = 0.0;
+  cov(1, 1) = leg_feature_update_cov_;
+  cov(2, 2) = leg_feature_update_cov_;
+  cov(3, 3) = leg_feature_update_cov_;
+
+  filter_.updateJPDA(cov,detections,assignmentProbabilities);
+  //filter_.updateCorrection()
+}
 
 double LegFeature::getOcclusionProbability(OcclusionModelPtr occlusionModel){
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);

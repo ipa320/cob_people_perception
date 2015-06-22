@@ -4,6 +4,7 @@
 //Own includes
 #include <dual_people_leg_tracker/models/advanced_sysmodel_pos_vel.h>
 #include <dual_people_leg_tracker/models/advanced_measmodel_pos.h>
+#include <dual_people_leg_tracker/detection/detection.h>
 
 // People Stack includes
 #include <filter/particlefilter.h>
@@ -117,6 +118,18 @@ class PeopleParticleFilter
                  MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
                  const tf::Vector3& z,
                  const StatePosVel& s);
+
+    /**
+     * Update the weights using the information obtained using JPDA
+     * @param measmodel
+     * @param z
+     * @param assignmentProbabilities
+     * @return
+     */
+    bool
+    UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
+                 const std::vector<DetectionPtr> z,
+                 Eigen::VectorXd assignmentProbabilities);
 
     /**
      * Get the probability of a given measurement, this is needed for the JPDA filter

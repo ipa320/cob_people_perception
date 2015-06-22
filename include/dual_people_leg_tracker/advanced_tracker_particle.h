@@ -105,6 +105,8 @@ public:
   virtual bool updateCorrection(const tf::Vector3& meas,
                                 const MatrixWrapper::SymmetricMatrix& cov);
 
+  bool updateJPDA(const MatrixWrapper::SymmetricMatrix& cov, const std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities);
+
   /// Get probability for a certain measurement
   double getMeasProbability(const tf::Vector3&  meas,
                             const MatrixWrapper::SymmetricMatrix& cov);

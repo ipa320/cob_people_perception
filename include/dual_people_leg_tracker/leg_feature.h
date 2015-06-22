@@ -17,13 +17,14 @@
 #include <dual_people_leg_tracker/advanced_tracker_particle.h>
 #include <dual_people_leg_tracker/visualization/color_definitions.h>
 #include <dual_people_leg_tracker/people_tracker.h>
+#include <dual_people_leg_tracker/detection/detection.h>
 
 // People Stack
 #include <people_tracking_filter/state_pos_vel.h>
 #include <people_tracking_filter/rgb.h>
 
 // Default variables
-#define DEBUG_LEG_TRACKER 0
+#define DEBUG_LEG_TRACKER 1
 
 class PeopleTracker; // Forward declaration
 typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr; // Forward declaration
@@ -95,6 +96,8 @@ public:
   void propagate(ros::Time time);
 
   void update(tf::Stamped<tf::Point> loc, double probability);
+
+  void JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& probabilities);
 
   double getOcclusionProbability(OcclusionModelPtr occlusionModel);
 

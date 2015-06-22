@@ -525,6 +525,7 @@ public:
       {
         tfl_.transformPoint(fixed_frame, loc, loc); //Transform using odometry information into the fixed frame
         loc.setZ(0); // Ugly //TODO
+        loc.frame_id_ = fixed_frame;
       }
       catch (...)
       {
@@ -539,6 +540,8 @@ public:
         detection->point_ = loc;
         detection->cluster_ = (*clusterIt);
         detection->id_ = detections.size();
+
+        // Add to the detections
         detections.push_back(detection);
         ROS_ASSERT(loc.getZ() == 0); //TODO Remove
       }
@@ -757,12 +760,42 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"DualTracker::%s - JPDA took %f ms",__func__, jpdaTimer.getElapsedTimeMs());
     ROS_DEBUG("%sJPDA Done! [Cycle %u]", BOLDWHITE, cycle_);
 
+    //////////////////////////////////////////////////////////////////////////
+    //// JPDA Update (Use the results of the JPDA to update the leg trackers
+    //////////////////////////////////////////////////////////////////////////
+
+    // Iterate through the trackers
+    std::cout << "Doing the JPDA Update Size of Leg Features: " << propagated.size() << std::endl;
+    for (unsigned int i = 0; i < propagated.size(); i++)
+    {
+      // Get the probabilities concerning this tracker
+      Eigen::VectorXd probs;
+      probs = assignmentProbabilityMatrixNormalized.row(i);
+
+      propagated[i]->JPDAUpdate(detections, probs);
+    }
+
+    // Iterate through the assignment probabilities of each measurement, create a new LT for each LM not assigned to any LT
+    for (unsigned int j = 1; j < nMeasurements; j++){
+
+      if(nObjects > 0){
+        // Get the maximum likelihood
+        double maxLikelihood = assignmentProbabilityMatrixNormalized.col(j).maxCoeff();
+      }
+
+      // No objects are yet tracked at all
+      else
+      {
+        std::cout << "No object found for measurement LM" << j << " ... Creating new LT" << std::endl;
+      }
+
+    }
 
     //std::cout << "Second" << possibleAssignments(1,1) << std::endl;
     //////////////////////////////////////////////////////////////////////////
     //// Matching (Match Leg Detection to Trackers)
     //////////////////////////////////////////////////////////////////////////
-    ROS_DEBUG("%sMatching [Cycle %u]", BOLDWHITE, cycle_);
+/*    ROS_DEBUG("%sMatching [Cycle %u]", BOLDWHITE, cycle_);
 
     // Input: The propagated and new trackers, the leg detections
 
@@ -836,7 +869,9 @@ public:
     }// end iterate the clusters
 
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Associated tracks to legs - %i matches - %i new tracks",__func__, matchesCounter, newTrackCounter);
-    ROS_DEBUG("%sMatching Done! [Cycle %u]", BOLDWHITE, cycle_);
+    ROS_DEBUG("%sMatching Done! [Cycle %u]", BOLDWHITE, cycle_);*/
+
+
 
     //////////////////////////////////////////////////////////////////////////
     //// High level Association: Combination of saved features to people tracker (takes approx. 0.8ms)
@@ -876,9 +911,14 @@ public:
     hlAssociationTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"High level association took %f ms", hlAssociationTimer.getElapsedTimeMs());
     ROS_DEBUG("%sHigh Level Association done! [Cycle %u]", BOLDWHITE, cycle_);
+
+
     //////////////////////////////////////////////////////////////////////////
-    //// Update (Update the Trackers using the latest measurements
+    //// Update (Update the Trackers using the latest measurements (GNN)
     //////////////////////////////////////////////////////////////////////////
+
+    /*
+
     ROS_DEBUG("%sUpdate [Cycle %u]", BOLDWHITE, cycle_);
 
     // IDEA_ The next step contains one flaw, it is random which closest tracker get choosen and update the tracker, this unacceptable
@@ -972,6 +1012,8 @@ public:
       }
     }
     ROS_DEBUG("%sUpdate done! [Cycle %u]", BOLDWHITE, cycle_);
+
+    */
 
     //////////////////////////////////////////////////////////////////////////
     //// High level Update (Update of the people trackers

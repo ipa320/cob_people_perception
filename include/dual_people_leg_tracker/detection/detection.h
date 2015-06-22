@@ -13,7 +13,7 @@
 
 class Detection{
   public:
-    tf::Stamped<tf::Point> point_;
+    tf::Stamped<tf::Point> point_;          /**< Location of the detection, given within fixed frame */
     laser_processor::SampleSet* cluster_;
     unsigned int id_;                       /**< Unique id (within cycle)*/
 };

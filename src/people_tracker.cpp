@@ -549,7 +549,6 @@ BFL::StatePosVel PeopleTracker::getLegEstimate(int id){
     return leg1Prediction_;
   }
 
-
 }
 
 unsigned int PeopleTracker::getHistorySize(){

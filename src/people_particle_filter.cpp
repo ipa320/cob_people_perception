@@ -158,6 +158,55 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
 }
 
 bool
+PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
+             const std::vector<DetectionPtr> z,
+             Eigen::VectorXd assignmentProbabilities){
+
+  ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
+
+  std::cout << " #### Update Weights JPDA" << std::endl;
+
+  // Number of measurements
+  unsigned int m_k = z.size();
+
+  double weightfactor = 0;
+
+  // Get the posterior samples
+  _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
+  //_os_it = _old_samples.begin();
+
+  // Iterate through the samples
+  for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
+
+    // Get the value of this sample
+    const StatePosVel& x_new = _ns_it->ValueGet();
+
+    // TODO! Occlusion!!!
+
+
+    // Sum the weight over this sample using all measurement probabilities
+    for(unsigned int j = 1; j < m_k; j++){
+      if(assignmentProbabilities[j] > 0.0){
+          weightfactor += assignmentProbabilities[j]*measmodel->ProbabilityGet(z[j]->point_,x_new);
+      }
+    }
+
+    // This //TODO
+    _ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);
+
+    // OR //TODO
+    _ns_it->WeightSet(weightfactor);
+  }
+
+  // Normalize the weight
+  //_new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->NormalizeWeights();
+
+  // Update the posterior
+  return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+}
+
+
+bool
 PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const sysmodel,
              const StatePosVel& u,
              MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
@@ -290,7 +339,7 @@ PeopleParticleFilter::getOcclusionProbability(OcclusionModelPtr occlusionModel)
 
   }
 
-  return probability_sum/_new_samples.size();;
+  return probability_sum/_new_samples.size();
   }
 
 bool
