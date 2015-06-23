@@ -49,7 +49,7 @@ using namespace MatrixWrapper;
 
 static double no_observation_timeout_s = 0.5;
 static double max_second_leg_age_s     = 2.0;
-static double max_track_jump_m         = 1.0; //Maximale jump distance for a track
+static double max_track_jump_m         = 0.8; //Maximale jump distance for a track
 static double max_meas_jump_m          = 0.75; // 1.0
 static double leg_pair_separation_m    = 1.0;
 
