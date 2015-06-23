@@ -125,9 +125,13 @@ public:
 int g_argc;
 char** g_argv;
 
+// Helper Functions
 bool isLegFeatureValid(const LegFeaturePtr & o){
   return !o->isValid();
 }
+
+bool sampleWeightCompare(WeightedSample<StatePosVel> i, WeightedSample<StatePosVel> j) { return i.WeightGet()<j.WeightGet(); }
+
 
 // actual legdetector node
 class DualTracker
@@ -188,8 +192,9 @@ public:
 
   int next_p_id_;
 
-  double leg_reliability_limit_;
+  double leg_reliability_limit_;     /** Probability for a leg detection to be considered a leg */
   double new_track_min_probability_; /**< Probability a detection needs to initialize a new leg tracker, this reduces clutter creating false tracks */
+  double new_track_creation_likelihood_; /** If a measurement */
 
   double people_probability_limit_; /**< Min Value for people to be considered true  */
 
@@ -239,7 +244,8 @@ public:
     people_notifier_(people_sub_, tfl_, fixed_frame, 10),
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
     cycle_(0),
-    occlusionModel_(new OcclusionModel(tfl_))
+    occlusionModel_(new OcclusionModel(tfl_)),
+    new_track_creation_likelihood_(0.35)
   {
     if (g_argc > 1)
     {
@@ -394,7 +400,7 @@ public:
     cycleTimer.start();
 
     //////////////////////////////////////////////////////////////////////////
-    //// Update the occlusion model with the current scan
+    //// Update the occlusion model(this model is hold by every tracker!) with the current scan
     //////////////////////////////////////////////////////////////////////////
     occlusionModel_->updateScan(*scan);
 
@@ -438,7 +444,7 @@ public:
     // Remove invalid people tracker
     people_trackers_.removeInvalidTrackers();
 
-    // Remove invalid associations og the leg Features
+    // Remove invalid associations of the leg Features
     for(vector<LegFeaturePtr>::iterator leg_it = saved_leg_features.begin();
         leg_it != saved_leg_features.end();
         leg_it++){
@@ -472,7 +478,6 @@ public:
         pplTrackerIt++)
     {
       (*pplTrackerIt)->propagate(scan->header.stamp);
-      // NOT YET IMPLEMENTED
       // MAYBE HERE OUTPUT textfile containing person tracker history
     }
 
@@ -499,11 +504,13 @@ public:
 
     std::vector<DetectionPtr> detections; // vector of leg detections along with their probabilities
 
-    // Matrix for the feature values
+    // OpenCV Matrix for the feature values
     CvMat* tmp_mat = cvCreateMat(1, feat_count_, CV_32FC1);
 
-    for (list<SampleSet*>::iterator clusterIt = processor.getClusters().begin();
-         clusterIt != processor.getClusters().end();
+    std::list<SampleSet *> clusters = processor.getClusters();
+
+    for (list<SampleSet*>::iterator clusterIt = clusters.begin();
+         clusterIt != clusters.end();
          clusterIt++)
     {
       // Calculate the features of the clusters
@@ -548,6 +555,24 @@ public:
 
     }
 
+/*    // Create a Fake Detection
+    DetectionPtr detection(new Detection);
+
+    // Create a Fake Point
+    Stamped<Point> fake_loc(tf::Point(1,1,0), scan->header.stamp, scan->header.frame_id);
+
+    // Create a Fake cluster
+    SampleSet* fakeCluster = new SampleSet();
+    fakeCluster->probability_ = 1.0;
+
+    // Create a Fake Clusters
+    detection->point_ = fake_loc;
+    detection->id_    = 0;
+    detection->cluster_ = fakeCluster;
+
+    detections.push_back(detection);*/
+
+
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
@@ -591,7 +616,7 @@ public:
         // TODO: Where exactly is loc to be expected? Should it be calculated based on particles?
 
         // Calculate assignment probability
-        float assignmentProbability = 1.0-sigmoid(dist, 0.01, max_track_jump_m);
+        float assignmentProbability = 1.0-sigmoid(dist, 5, max_track_jump_m);
         // TODO investigate this parameters
 
         //costMatrix(i,j) = min((int)-log(assignmentProbability),1000);
@@ -629,7 +654,7 @@ public:
     std::vector<Solution> solutions;
 
     // TODO depend this on the number of measurements
-    int k = nObjects*2;
+    int k = nObjects*4;
     solutions = murty(costMatrix,k);
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
@@ -638,8 +663,8 @@ public:
 
     //std::cout << "Solutions are:" << std::endl;
     for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
-      color_print_solution(costMatrix,solIt->assignmentMatrix);
-      std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
+      //color_print_solution(costMatrix,solIt->assignmentMatrix);
+      //std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
     }
 
     // DEBUG OUTPUT
@@ -772,24 +797,66 @@ public:
       Eigen::VectorXd probs;
       probs = assignmentProbabilityMatrixNormalized.row(i);
 
-      propagated[i]->JPDAUpdate(detections, probs);
+      propagated[i]->JPDAUpdate(detections, probs, occlusionModel_);
     }
 
+    /// Create new trackers if needed
     // Iterate through the assignment probabilities of each measurement, create a new LT for each LM not assigned to any LT
+    unsigned int newTrackCounter = 0;
+
     for (unsigned int j = 1; j < nMeasurements; j++){
 
+      // There should be at least some objects, this is not the case on the first run
       if(nObjects > 0){
         // Get the maximum likelihood
         double maxLikelihood = assignmentProbabilityMatrixNormalized.col(j).maxCoeff();
+
+        if(maxLikelihood < new_track_creation_likelihood_){
+
+          std::cout << "The maximum likelihood for LM" << j-1 << " is " << maxLikelihood;
+
+          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[j-1]->point_, tfl_));
+
+          // Set the occlusion model
+          newLegFeature->setOcclusionModel(occlusionModel_);
+
+          // Insert the leg feature into the propagated list
+          saved_leg_features.push_back(newLegFeature);
+
+          // Increase the new track counter
+          ++newTrackCounter;
+
+          std::cout << BOLDRED << " -> Creating new Tracker LT" << newLegFeature->int_id_ << RESET << std::endl;
+
+        }
+
+
       }
 
       // No objects are yet tracked at all
       else
       {
-        std::cout << "No object found for measurement LM" << j << " ... Creating new LT" << std::endl;
+        std::cout << "No object found for measurement LM" << j-1 << " ... Creating new LT" << std::endl;
+        if(detections[j-1]->cluster_->getProbability( )> new_track_min_probability_){
+
+          std::cout << "New object is to be created for measurement " << j-1 << " at " << detections[j-1]->point_[0] << "   " << detections[j-1]->point_[1] << std::endl;
+
+          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[j-1]->point_, tfl_));
+
+          // Set the occlusion model
+          newLegFeature->setOcclusionModel(occlusionModel_);
+
+          // Insert the leg feature into the propagated list
+          saved_leg_features.push_back(newLegFeature);
+
+          // Increase the new track counter
+          ++newTrackCounter;
+        }
       }
 
     }
+
+    std::cout << "Created " << newTrackCounter << " LTs" << std::endl;
 
     //std::cout << "Second" << possibleAssignments(1,1) << std::endl;
     //////////////////////////////////////////////////////////////////////////
@@ -1463,7 +1530,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 }
 
   /**
-   * Publish the set Particles
+   * Publish the posterior particles
    * @param legFeatures List of Leg Features(Leg Tracker)
    * @param time The current time
    */
@@ -1486,22 +1553,35 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
         vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
 
+
+        WeightedSample<StatePosVel> maxSample = *std::max_element(samples.begin(), samples.end(), sampleWeightCompare);
+        double maxSampleWeight = maxSample.WeightGet();
+
+
         for(vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
           geometry_msgs::Point32 point;
           point.x = (*sampleIt).ValueGet().pos_[0];
           point.y = (*sampleIt).ValueGet().pos_[1];
-          point.z = (*sampleIt).ValueGet().pos_[2];
-
-          //std::cout << (*sampleIt).WeightGet() << std::endl;
+          point.z = (*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
 
           //
           int r,g,b;
 
-          double weight = (*sampleIt).WeightGet();
+          // If there is no sample with weight at all, make the particles blue
+          if(maxSampleWeight == 0.0){
+            r=0;
+            g=0;
+            b=255;
+          }
 
-          double normalizeWeight = min(1.0,weight*200);
+          else
+          {
+            double weight = (*sampleIt).WeightGet();
+            double normalizeWeight = weight / maxSampleWeight;
+            redGreenGradient(normalizeWeight,r,g,b);
+            //std::cout << normalizeWeight << " r:" << r << " g:" << g << " b:" << b << std::endl;
+          }
 
-          redGreenGradient(normalizeWeight,r,g,b);
 
           // Set the color according to the probability
           float color_val = 0;
@@ -1662,9 +1742,9 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       markerMsgCylinder.ns = "predictions";
       markerMsgCylinder.id = counter;
       markerMsgCylinder.type = visualization_msgs::Marker::CYLINDER;
-      markerMsgCylinder.scale.x = 0.02;
-      markerMsgCylinder.scale.y = 0.02;
-      markerMsgCylinder.scale.z = 0.08; // height
+      markerMsgCylinder.scale.x = 0.1;
+      markerMsgCylinder.scale.y = 0.1;
+      markerMsgCylinder.scale.z = 0.3; // height
       markerMsgCylinder.color.r = 1.0;
       markerMsgCylinder.color.a = 0.8;
 

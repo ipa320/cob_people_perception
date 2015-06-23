@@ -79,12 +79,7 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
 {
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
-  //cout << "Initializing tracker with " << num_particles_ << " particles, with covariance " << sigma << " around " << mu << endl;
-
-  // This is the initialization of the tracker, particles are choosen as gaussian
-
-  // Create the Gaussian
-//  std::cout << "Mu: " << mu << "Sigma: " << sigma << std::endl;
+  // Initialization of gaussian pos vel
   GaussianPosVelMod gauss_pos_vel(mu, sigma);
 
   // Prepare vector to store the particles
@@ -116,7 +111,7 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
   filter_time_ = time;
   init_time_ = time;
 
-  cout << "Initialization done" << endl;
+  //cout << "Initialization done" << endl;
 
 }
 
@@ -215,10 +210,10 @@ bool AdvancedTrackerParticle::updateCorrection(const tf::Vector3&  meas, const M
  * @param assignmentProbabilities
  * @return
  */
-bool AdvancedTrackerParticle::updateJPDA(const MatrixWrapper::SymmetricMatrix& cov, const std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities)
+bool AdvancedTrackerParticle::updateJPDA(const MatrixWrapper::SymmetricMatrix& cov, const std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities, OcclusionModelPtr occlusionModel)
 {
 
-  std::cout << "AdvancedTrackerParticle::updateJPDA" << std::endl;
+  //std::cout << "AdvancedTrackerParticle::updateJPDA" << std::endl;
   assert(cov.columns() == 3);
 
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
@@ -227,7 +222,7 @@ bool AdvancedTrackerParticle::updateJPDA(const MatrixWrapper::SymmetricMatrix& c
   ((AdvancedMeasPdfPos*)(meas_model_.MeasurementPdfGet()))->CovarianceSet(cov);
 
   // update filter
-  bool res = filter_->UpdateWeightsJPDA(&meas_model_, detections, assignmentProbabilities);
+  bool res = filter_->UpdateWeightsJPDA(&meas_model_, detections, assignmentProbabilities, occlusionModel);
   //bool res = filter_->Update(&meas_model_, meas, occlusion_model_);
 
   // If update failed for some reason

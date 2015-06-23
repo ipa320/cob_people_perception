@@ -49,7 +49,7 @@
 // Own includes
 #include <dual_people_leg_tracker/models/occlusion_model.h>
 
-#define DEBUG_ADVANCEDMEASMODELPOS 1
+#define DEBUG_ADVANCEDMEASMODELPOS 0
 
 namespace BFL
 {

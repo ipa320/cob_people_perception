@@ -51,7 +51,7 @@
 #include <dual_people_leg_tracker/distributions/gaussian_pos_vel_mod.h>
 #include <dual_people_leg_tracker/distributions/multivariate_gaussian_pos_vel.h>
 
-#define DEBUG_ADVANCEDSYSMODELPOSVEL 1
+#define DEBUG_ADVANCEDSYSMODELPOSVEL 0
 
 namespace BFL
 {

@@ -21,8 +21,8 @@
 // Own includes
 #include <dual_people_leg_tracker/leg_feature.h>
 
-#define DEBUG_PEOPLE_TRACKER 1
-#define DEBUG_PEOPLETRACKERLIST 1
+#define DEBUG_PEOPLE_TRACKER 0
+#define DEBUG_PEOPLETRACKERLIST 0
 
 class LegFeature; //Forward declaration
 typedef boost::shared_ptr<LegFeature> LegFeaturePtr;

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.4)
 project(dual_people_leg_tracker)
 
 # set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+# set(CMAKE_CXX_FLAGS "-march=native -O3 ${CMAKE_CXX_FLAGS}")
 
 # OpenCV
 find_package( OpenCV REQUIRED )

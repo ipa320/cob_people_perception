@@ -26,14 +26,14 @@ static int NumberOfParticles = 500;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    leg_feature_predict_pos_cov_(0.3), // Around 0.05 // Variance of the
-    leg_feature_predict_vel_cov_(1.0),  // Around 1.0 should be fine
+    leg_feature_predict_pos_cov_(0.5), // Around 0.05 // Variance of the
+    leg_feature_predict_vel_cov_(3.0),  // Around 1.0 should be fine
     sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true),
     is_valid_(true), // On construction the leg feature is always valid
-    leg_feature_update_cov_(0.0025), // The update measurement cov (should be around 0.0025)
+    leg_feature_update_cov_(0.01), // The update measurement cov (should be around 0.0025)
     is_static_(true) // At the beginning the leg feature is considered static
 {
   // Increase the id
@@ -71,7 +71,9 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   tfl_.setTransform(pose);
 
   // Initialize the filter (Create the initial particles)
+  //BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(0.0000001, 0.0000001, 0.000000));
   BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(0.0000001, 0.0000001, 0.000000));
+
   BFL::StatePosVel mu(loc);
   filter_.initialize(mu, prior_sigma, time_.toSec());
 
@@ -83,6 +85,10 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   initial_position_[0] = loc.getX();
   initial_position_[1] = loc.getY();
   initial_position_[2] = loc.getZ();
+
+  position_predicted_[0] = loc.getX();
+  position_predicted_[1] = loc.getY();
+  position_predicted_[2] = loc.getZ();
 
   //leg_feature_update_cov_    = config.leg_feature_update_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_update_cov_ %f", __func__, leg_feature_update_cov_ );
   //leg_feature_predict_pos_cov_    = config.leg_feature_predict_pos_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_predict_pos_cov_ %f", __func__, leg_feature_predict_pos_cov_ );
@@ -215,19 +221,18 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
  * @param detections    // The current detections
  * @param probabilities // The assignment probabilities (The first entry is the occlusion probability!)
  */
-void LegFeature::JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities){
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
-  std::cout << "LT" << this->int_id_ << " - JPDAUpdate" << std::endl;
-  std::cout << "Probabilities" << std::endl << assignmentProbabilities << std::endl;
+void LegFeature::JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities, OcclusionModelPtr occlusionModel){
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s [%i]",__func__, int_id_);
+  //std::cout << "LT" << this->int_id_ << " - JPDAUpdate" << std::endl;
+  //std::cout << "Probabilities" << std::endl << assignmentProbabilities << std::endl;
 
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
-  cov = 0.0;
   cov(1, 1) = leg_feature_update_cov_;
   cov(2, 2) = leg_feature_update_cov_;
   cov(3, 3) = leg_feature_update_cov_;
 
-  filter_.updateJPDA(cov,detections,assignmentProbabilities);
+  filter_.updateJPDA(cov,detections,assignmentProbabilities, occlusionModel);
   //filter_.updateCorrection()
 }
 

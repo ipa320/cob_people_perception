@@ -97,7 +97,7 @@ public:
 
   void update(tf::Stamped<tf::Point> loc, double probability);
 
-  void JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& probabilities);
+  void JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& probabilities, OcclusionModelPtr occlusionModel);
 
   double getOcclusionProbability(OcclusionModelPtr occlusionModel);
 

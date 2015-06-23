@@ -160,16 +160,24 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
 bool
 PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
              const std::vector<DetectionPtr> z,
-             Eigen::VectorXd assignmentProbabilities){
+             Eigen::VectorXd assignmentProbabilities,
+             OcclusionModelPtr occlusionModel){
 
   ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
 
-  std::cout << " #### Update Weights JPDA" << std::endl;
+  //std::cout << " #### Update Weights JPDA" << std::endl;
+  //std::cout << "Assignment Probabilities" << std::endl << assignmentProbabilities << std::endl;
+
 
   // Number of measurements
   unsigned int m_k = z.size();
 
-  double weightfactor = 0;
+  for(unsigned int j = 1; j < m_k; j++){
+    if(assignmentProbabilities[j] > 0.0)
+      std::cout << "Update is done with measurement " << j-1 << " at " << z[j]->point_[0] << "   " << z[j]->point_[1] << " with meas prob:" << assignmentProbabilities[j] << std::endl;
+  }
+
+  double weightfactor = 1;
 
   // Get the posterior samples
   _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
@@ -181,28 +189,42 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
     // Get the value of this sample
     const StatePosVel& x_new = _ns_it->ValueGet();
 
-    // TODO! Occlusion!!!
+    // Handle occlusion probability
+    if(assignmentProbabilities[0] > 0.0){
 
+    }
 
+    double weightSum = 0;
     // Sum the weight over this sample using all measurement probabilities
     for(unsigned int j = 1; j < m_k; j++){
       if(assignmentProbabilities[j] > 0.0){
-          weightfactor += assignmentProbabilities[j]*measmodel->ProbabilityGet(z[j]->point_,x_new);
+
+
+          double measProb = measmodel->ProbabilityGet(z[j-1]->point_,x_new);
+          //std::cout << "assignmentProbability=" << assignmentProbabilities[j] << "  meas Prob=" << measProb;
+          weightSum += assignmentProbabilities[j] * measProb;
+          //std::cout << " weightSum=" << weightSum << std::endl;
       }
     }
 
-    // This //TODO
-    _ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);
+    //std::cout << "Weight Update: " << _ns_it->WeightGet() << "    -->    ";
+    //_ns_it->WeightSet(_ns_it->WeightGet() * weightSum);// <-- See Thrun "Probabilistic Robotics", p 99-100 eq (4.24) this method is inferior...
+    _ns_it->WeightSet(weightSum);
+    //std::cout << _ns_it->WeightGet() << std::endl;
+
+    // _ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);
 
     // OR //TODO
-    _ns_it->WeightSet(weightfactor);
+    //_ns_it->WeightSet(weightfactor);
   }
 
   // Normalize the weight
   //_new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->NormalizeWeights();
 
-  // Update the posterior
-  return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+  // Update the posterior (Automatic Normalization is included)
+  bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+
+  return result;
 }
 
 

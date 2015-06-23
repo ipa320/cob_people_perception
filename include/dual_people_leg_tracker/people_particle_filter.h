@@ -129,7 +129,8 @@ class PeopleParticleFilter
     bool
     UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel>* const measmodel,
                  const std::vector<DetectionPtr> z,
-                 Eigen::VectorXd assignmentProbabilities);
+                 Eigen::VectorXd assignmentProbabilities,
+                 OcclusionModelPtr occlusionModel);
 
     /**
      * Get the probability of a given measurement, this is needed for the JPDA filter
