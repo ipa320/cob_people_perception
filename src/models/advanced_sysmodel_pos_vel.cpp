@@ -117,33 +117,46 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
 {
   //ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"--------AdvancedSysPdfPosVel::%s",__func__);
 
+  // Get the current sample state
   StatePosVel& res = one_sample.ValueGet();
-
-  // get conditional argument: state
   res = this->ConditionalArgumentGet(0);
 
-  // apply system model
+  // apply its current velocity to itself, this is the prediction
   res.pos_ += (res.vel_ * dt_);
 
-  // add noise (Gaussian)
+
+/*
+  if(res.vel_.length() > 0.1)
+    std::cout << "Particle Velocity on update" << res.vel_[0] << "|" << res.vel_[1] << std::endl;
+*/
+
+  // add noise (Gaussian, scaled by the passed time!!!)
   Sample<StatePosVel> noise_sample;
   noise_.SetDt(dt_);
   noise_.SampleFrom(noise_sample, method, args);
   res += noise_sample.ValueGet();
 
+  //std::cout << "Noise from system Model:" << noise_sample.ValueGet() << std::endl;
+
+
   // add noise (Based on nonlinear models)
   //benchmarking::Timer timer;
   //timer.start();
+
+
+
+
+  // TODO This can be done better!!!
 
   // Only use the high level prediction if explicitly set true
   if(useHighLevelPrediction_){
 
 
-    Sample<StatePosVel> noise_sample_nl;
-    noise_nl_.SetDt(dt_);
-    noise_nl_.SampleFrom(noise_sample_nl, method, args);
+    //Sample<StatePosVel> noise_sample_nl;
+    //noise_nl_.SetDt(dt_);
+    //noise_nl_.SampleFrom(noise_sample_nl, method, args);
 
-    res += noise_sample_nl.ValueGet();
+    // res += noise_sample_nl.ValueGet();
 
     //assert(false);
   }

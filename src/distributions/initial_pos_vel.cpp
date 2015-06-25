@@ -34,7 +34,7 @@
 
 /* Author: Wim Meeussen */
 
-#include <dual_people_leg_tracker/distributions/gaussian_pos_vel_mod.h>
+#include <dual_people_leg_tracker/distributions/uniform_pos_vel.h>
 #include <wrappers/rng/rng.h>
 #include <cmath>
 #include <cassert>
@@ -43,24 +43,23 @@ using namespace tf;
 
 namespace BFL
 {
-GaussianPosVelMod::GaussianPosVelMod(const StatePosVel& mu, const StatePosVel& sigma)
+InitialPosVel::InitialPosVel(const StatePosVel& mu, const StatePosVel& sigma)
   : Pdf<StatePosVel> (1),
     mu_(mu),
     sigma_(sigma),
     gauss_pos_(mu.pos_, sigma.pos_),
-    gauss_vel_(mu.vel_, sigma.vel_),
-    dt_(1.0) // Important
+    gauss_vel_(mu.vel_, sigma.vel_)
 {}
 
 
-GaussianPosVelMod::~GaussianPosVelMod() {}
+InitialPosVel::~InitialPosVel() {}
 
-GaussianPosVelMod* GaussianPosVelMod::Clone() const
+InitialPosVel* InitialPosVel::Clone() const
 {
-  return new GaussianPosVelMod(mu_, sigma_);
+  return new InitialPosVel(mu_, sigma_);
 }
 
-std::ostream& operator<< (std::ostream& os, const GaussianPosVelMod& g)
+std::ostream& operator<< (std::ostream& os, const InitialPosVel& g)
 {
   os << "\nMu pos :\n"    << g.ExpectedValueGet().pos_ << endl
      << "\nMu vel :\n"    << g.ExpectedValueGet().vel_ << endl
@@ -68,7 +67,7 @@ std::ostream& operator<< (std::ostream& os, const GaussianPosVelMod& g)
   return os;
 }
 
-void GaussianPosVelMod::sigmaSet(const StatePosVel& sigma)
+void InitialPosVel::sigmaSet(const StatePosVel& sigma)
 {
   sigma_ = sigma;
   sigma_changed_ = true;
@@ -77,14 +76,14 @@ void GaussianPosVelMod::sigmaSet(const StatePosVel& sigma)
 }
 
 
-Probability GaussianPosVelMod::ProbabilityGet(const StatePosVel& input) const
+Probability InitialPosVel::ProbabilityGet(const StatePosVel& input) const
 {
   return gauss_pos_.ProbabilityGet(input.pos_) * gauss_vel_.ProbabilityGet(input.vel_);
 }
 
 
 bool
-GaussianPosVelMod::SampleFrom(vector<Sample<StatePosVel> >& list_samples, const int num_samples, int method, void * args) const
+InitialPosVel::SampleFrom(vector<Sample<StatePosVel> >& list_samples, const int num_samples, int method, void * args) const
 {
   list_samples.resize(num_samples);
   vector<Sample<StatePosVel> >::iterator sample_it = list_samples.begin();
@@ -96,31 +95,26 @@ GaussianPosVelMod::SampleFrom(vector<Sample<StatePosVel> >& list_samples, const 
 
 
 bool
-GaussianPosVelMod::SampleFrom(Sample<StatePosVel>& one_sample, int method, void * args) const
+InitialPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void * args) const
 {
-  //std::cout << "GaussianPosVelMod::SampleFrom sigma_.vel_[0]: " << sigma_.vel_[0] << "  " << "sigma_.vel_[1]:" << sigma_.vel_[1] << std::endl;
-
   one_sample.ValueSet(StatePosVel(Vector3(rnorm(mu_.pos_[0], sigma_.pos_[0]*dt_),
                                           rnorm(mu_.pos_[1], sigma_.pos_[1]*dt_),
                                           rnorm(mu_.pos_[2], sigma_.pos_[2]*dt_)),
                                   Vector3(rnorm(mu_.vel_[0], sigma_.vel_[0]*dt_),
                                           rnorm(mu_.vel_[1], sigma_.vel_[1]*dt_),
                                           rnorm(mu_.vel_[2], sigma_.vel_[2]*dt_))));
-
-  //std::cout << "dt_ " << dt_ << std::endl;
-  //std::cout << "Generated sample " << one_sample.ValueGet() << std::endl;
   return true;
 }
 
 
 StatePosVel
-GaussianPosVelMod::ExpectedValueGet() const
+InitialPosVel::ExpectedValueGet() const
 {
   return mu_;
 }
 
 SymmetricMatrix
-GaussianPosVelMod::CovarianceGet() const
+InitialPosVel::CovarianceGet() const
 {
   SymmetricMatrix sigma(6);
   sigma = 0;

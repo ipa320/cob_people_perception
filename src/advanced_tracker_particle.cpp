@@ -81,6 +81,8 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
 
   // Initialization of gaussian pos vel
   GaussianPosVelMod gauss_pos_vel(mu, sigma);
+  gauss_pos_vel.SetDt(1.0); // Important!!!
+
 
   // Prepare vector to store the particles
   vector<Sample<StatePosVel> > prior_samples(num_particles_);
@@ -89,11 +91,15 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
   gauss_pos_vel.SampleFrom(prior_samples, num_particles_, CHOLESKY, NULL); // TODO Check if the CHOLESKY can be NULL
   prior_.ListOfSamplesSet(prior_samples);
 
-  //Output the Samples
-//  std::cout << "Prior Samples:" << std::endl;
-//  for(vector<Sample<StatePosVel> >::iterator sampleIt = prior_samples.begin(); sampleIt != prior_samples.end(); sampleIt++){
-//    std::cout << (*sampleIt) << std::endl;
-//  }
+  //Output the first 10 samples
+  //std::cout << "Initial Samples with sigma_vel " << sigma.vel_[0] << "  ~  " << sigma.vel_[1] << "(first 10):" << std::endl;
+
+/*  vector<Sample<StatePosVel> > samples = prior_samples;
+  for(int i=0;i<10;i++){
+    std::cout << prior_samples[i] << " --> abs speed " << prior_samples[i].ValueGet().vel_.length() << std::endl;
+  }*/
+
+  //TODO sample from gaussian!!!
 
   //filter_ = new BootstrapFilter<StatePosVel, tf::Vector3>(&prior_, &prior_, 0, num_particles_ / 4.0);
 
@@ -131,6 +137,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
 
     // update filter
     res = filter_->Update(&sys_model_); // TODO!! // Call Update internal of the particle Filter
+
     if (!res) quality_ = 0;
   }
   return res;
@@ -229,6 +236,11 @@ bool AdvancedTrackerParticle::updateJPDA(const MatrixWrapper::SymmetricMatrix& c
   if (!res) quality_ = 0;
   return res;
 };
+
+bool AdvancedTrackerParticle::dynamicResample(){
+  // Resampling
+  return filter_->DynamicResampleStep();
+}
 
 
 double AdvancedTrackerParticle::getMeasProbability(const tf::Vector3&  meas, const MatrixWrapper::SymmetricMatrix& cov){

@@ -26,14 +26,14 @@ static int NumberOfParticles = 500;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    leg_feature_predict_pos_cov_(0.5), // Around 0.05 // Variance of the
-    leg_feature_predict_vel_cov_(3.0),  // Around 1.0 should be fine
+    leg_feature_predict_pos_cov_(0.1), // Around 0.05 // Variance of the
+    leg_feature_predict_vel_cov_(7.0),  // Around 1.0 should be fine, the bigger the more spread
     sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true),
     is_valid_(true), // On construction the leg feature is always valid
-    leg_feature_update_cov_(0.01), // The update measurement cov (should be around 0.0025)
+    leg_feature_update_cov_(0.004), // The update measurement cov (should be around 0.0025, the smaller the peakier)
     is_static_(true) // At the beginning the leg feature is considered static
 {
   // Increase the id
@@ -72,8 +72,14 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
 
   // Initialize the filter (Create the initial particles)
   //BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(0.0000001, 0.0000001, 0.000000));
-  BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(0.0000001, 0.0000001, 0.000000));
 
+  double maxSpeed = 0.3; // [m/T] T = Period
+
+  double sigmaSpeed = maxSpeed / 2.0; // Because we want the two sigma area
+
+  BFL::StatePosVel prior_sigma(tf::Vector3(0.001, 0.001, 0.0), tf::Vector3(sigmaSpeed, sigmaSpeed, 0.000000));
+
+  // Initialization is around the measurement which initialized this leg feature using a uniform distribution
   BFL::StatePosVel mu(loc);
   filter_.initialize(mu, prior_sigma, time_.toSec());
 
@@ -173,6 +179,8 @@ void LegFeature::propagate(ros::Time time)
   // If there is no relevant people tracker assigned-> Consider only the low level filter
   else
   {
+    ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i does a simple update", __func__, int_id_);
+
     filter_.updatePrediction(time.toSec(),cov);
   }
 
@@ -221,10 +229,13 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
  * @param detections    // The current detections
  * @param probabilities // The assignment probabilities (The first entry is the occlusion probability!)
  */
-void LegFeature::JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities, OcclusionModelPtr occlusionModel){
+void LegFeature::JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities, OcclusionModelPtr occlusionModel, ros::Time measTime){
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s [%i]",__func__, int_id_);
   //std::cout << "LT" << this->int_id_ << " - JPDAUpdate" << std::endl;
   //std::cout << "Probabilities" << std::endl << assignmentProbabilities << std::endl;
+
+  meas_time_ = measTime;
+  time_ = measTime;
 
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
@@ -234,6 +245,16 @@ void LegFeature::JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::Vector
 
   filter_.updateJPDA(cov,detections,assignmentProbabilities, occlusionModel);
   //filter_.updateCorrection()
+
+  // Update the position based on the latest measurements
+  updatePosition();
+
+  // Resample if necessary
+  //filter_.dynamicResample();
+
+  // Update history
+  updateHistory();
+
 }
 
 double LegFeature::getOcclusionProbability(OcclusionModelPtr occlusionModel){

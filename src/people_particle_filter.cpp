@@ -31,6 +31,7 @@
 
 // Own includes
 #include <dual_people_leg_tracker/people_particle_filter.h>
+#include <dual_people_leg_tracker/visualization/color_definitions.h>
 #include <sample/weightedsample.h>
 
 
@@ -96,16 +97,19 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     assert(this->_proposal != NULL);
     assert(this->_post != NULL);
 
-/*    samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
+    std::vector<WeightedSample<StatePosVel> > samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
 
-    for(std::vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
-      StatePosVel sample = (*sampleIt).ValueGet();
-      double weight = (*sampleIt).WeightGet();
-      //std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
-    }*/
+    std::cout << "Samples before update" << std::endl;
+    for(int i = 0; i<10; i++){
+      StatePosVel sample = samples[i].ValueGet();
+      double weight = samples[i].WeightGet();
+      std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
+    }
 
     assert(this->_dynamicResampling == true); // TODO
     //result = result && this->StaticResampleStep(); // TODO necessary?
+
+    result = result && this->DynamicResampleStep();
 
     result = result && this->ProposalStepInternal(sysmodel,u,measmodel,z,s);
 
@@ -170,11 +174,11 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
 
 
   // Number of measurements
-  unsigned int m_k = z.size();
+  unsigned int m_k = assignmentProbabilities.rows();
 
   for(unsigned int j = 1; j < m_k; j++){
     if(assignmentProbabilities[j] > 0.0)
-      std::cout << "Update is done with measurement " << j-1 << " at " << z[j]->point_[0] << "   " << z[j]->point_[1] << " with meas prob:" << assignmentProbabilities[j] << std::endl;
+      std::cout << "Update is done with measurement " << j-1 << " at " << z[j-1]->point_[0] << "   " << z[j-1]->point_[1] << " with meas prob:" << assignmentProbabilities[j] << std::endl;
   }
 
   double weightfactor = 1;
@@ -189,12 +193,14 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
     // Get the value of this sample
     const StatePosVel& x_new = _ns_it->ValueGet();
 
+    double weightSum = 0;
+
     // Handle occlusion probability
     if(assignmentProbabilities[0] > 0.0){
-
+      double occProb = occlusionModel->getOcclusionProbability(x_new.pos_);
+      weightSum += assignmentProbabilities[0] * occProb;
     }
 
-    double weightSum = 0;
     // Sum the weight over this sample using all measurement probabilities
     for(unsigned int j = 1; j < m_k; j++){
       if(assignmentProbabilities[j] > 0.0){
@@ -221,8 +227,12 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
   // Normalize the weight
   //_new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->NormalizeWeights();
 
+
   // Update the posterior (Automatic Normalization is included)
   bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+
+  // Resampling
+  //result = result && this->DynamicResampleStep();
 
   return result;
 }
@@ -425,6 +435,8 @@ PeopleParticleFilter::DynamicResampleStep()
   // Resampling if necessary
   if ( this->_dynamicResampling)
   {
+
+    std::cout << RED << "RESAMPLE!" << RESET << std::endl;
     // Check if sum of 1 / \sum{(wi_normalised)^2} < threshold (Name: Effective sample size)
     // This is the criterion proposed by Liu
     // BUG  foresee other methods of approximation/calculating
@@ -440,7 +452,8 @@ PeopleParticleFilter::DynamicResampleStep()
       }
   }
     if (resampling == true)
-      return this->LowVarianceResample();
+      //return this->LowVarianceResample();
+      return this->Resample();
     else
       return true;
 }

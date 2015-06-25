@@ -96,6 +96,7 @@ using namespace MatrixWrapper;
 // Default variables
 static string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
+static int maxCosts = 10000;
 
 // Defines
 #define DUALTRACKER_DEBUG 1         // Debug the leg detector
@@ -245,7 +246,7 @@ public:
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
     cycle_(0),
     occlusionModel_(new OcclusionModel(tfl_)),
-    new_track_creation_likelihood_(0.35)
+    new_track_creation_likelihood_(0.41)
   {
     if (g_argc > 1)
     {
@@ -416,6 +417,8 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Process scan(clustering) took %f ms",__func__, processTimer.stopAndGetTimeMs());
 
     ROS_DEBUG("%sCreating Clusters done! [Cycle %u]", BOLDWHITE, cycle_);
+
+
     //////////////////////////////////////////////////////////////////////////
     //// Remove the invalid Trackers (takes approx 0.1ms)
     //////////////////////////////////////////////////////////////////////////
@@ -572,6 +575,14 @@ public:
 
     detections.push_back(detection);*/
 
+    // Iterate through all detections
+    for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
+        detectionIt != detections.end();
+        detectionIt++)
+    {
+      std::cout << "LM " << std::setw(2) << (*detectionIt)->id_ << std::setw(3) << " x:" << (*detectionIt)->point_[0] << " y:" << (*detectionIt)->point_[1] << " prob:" << (*detectionIt)->cluster_->getProbability() << std::endl;
+    }
+
 
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
 
@@ -580,6 +591,21 @@ public:
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sJPDA [Cycle %u]", BOLDWHITE, cycle_);
     benchmarking::Timer jpdaTimer; jpdaTimer.start();
+
+
+    // Precheck for new tracks
+
+
+
+
+
+
+
+
+
+
+
+
 
     int i=0; // Object indice
     int j=1; // Measurement indice
@@ -616,7 +642,17 @@ public:
         // TODO: Where exactly is loc to be expected? Should it be calculated based on particles?
 
         // Calculate assignment probability
-        float assignmentProbability = 1.0-sigmoid(dist, 5, max_track_jump_m);
+        float assignmentProbability;
+
+
+/*        if(dist > max_track_jump_m){
+          assignmentProbability = maxCosts; // Then dont use this assignment
+        }
+        else{
+
+        }*/
+        assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
+
         // TODO investigate this parameters
 
         //costMatrix(i,j) = min((int)-log(assignmentProbability),1000);
@@ -654,7 +690,7 @@ public:
     std::vector<Solution> solutions;
 
     // TODO depend this on the number of measurements
-    int k = nObjects*4;
+    int k = nObjects*1;
     solutions = murty(costMatrix,k);
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
@@ -662,13 +698,13 @@ public:
 
 
     //std::cout << "Solutions are:" << std::endl;
-    for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
-      //color_print_solution(costMatrix,solIt->assignmentMatrix);
-      //std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
-    }
+/*    for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
+      color_print_solution(costMatrix,solIt->assignmentMatrix);
+      std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
+    }*/
 
     // DEBUG OUTPUT
-    //std::cout << std::endl << "Assignment Matrix:" << std::endl  << costMatrix << std::endl;
+    std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
 
     // Precaculate which measurements will be required
     Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> neededUpdateMat = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nObjects,nMeasurements);
@@ -797,8 +833,10 @@ public:
       Eigen::VectorXd probs;
       probs = assignmentProbabilityMatrixNormalized.row(i);
 
-      propagated[i]->JPDAUpdate(detections, probs, occlusionModel_);
+      propagated[i]->JPDAUpdate(detections, probs, occlusionModel_, scan->header.stamp);
     }
+
+
 
     /// Create new trackers if needed
     // Iterate through the assignment probabilities of each measurement, create a new LT for each LM not assigned to any LT
@@ -1742,9 +1780,9 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       markerMsgCylinder.ns = "predictions";
       markerMsgCylinder.id = counter;
       markerMsgCylinder.type = visualization_msgs::Marker::CYLINDER;
-      markerMsgCylinder.scale.x = 0.1;
-      markerMsgCylinder.scale.y = 0.1;
-      markerMsgCylinder.scale.z = 0.3; // height
+      markerMsgCylinder.scale.x = 0.05; // diameter x
+      markerMsgCylinder.scale.y = 0.05; // diameter y
+      markerMsgCylinder.scale.z = 0.3;  // height
       markerMsgCylinder.color.r = 1.0;
       markerMsgCylinder.color.a = 0.8;
 
@@ -2051,7 +2089,13 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       visualization_msgs::Marker label;
       label.header.stamp = time;
       label.header.frame_id = fixed_frame;
-      label.ns = "PEOPLE_TRACKER_LABEL";
+      if((*peopleTrackerIt)->isDynamic()){
+        label.ns = "dynamic";
+      }
+      else{
+        label.ns = "static";
+      }
+
       label.id = counter;
       label.type = label.TEXT_VIEW_FACING;
       label.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
@@ -2062,8 +2106,16 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       label.lifetime = ros::Duration(0.5);
 
       // Add text
+      string state;
+
+      if((*peopleTrackerIt)->isDynamic()){
+        state = "dynamic";
+      }
+      else{
+        state = "static";
+      }
       char buf[100];
-      sprintf(buf, "#PT%d-%d-p%.2f", (*peopleTrackerIt)->id_[0], (*peopleTrackerIt)->id_[1], (*peopleTrackerIt)->getTotalProbability());
+      sprintf(buf, "#PT%d-%d-p%.2f(%s)", (*peopleTrackerIt)->id_[0], (*peopleTrackerIt)->id_[1], (*peopleTrackerIt)->getTotalProbability(), state.c_str());
       label.text = buf;
 
       labelArray.markers.push_back(label);

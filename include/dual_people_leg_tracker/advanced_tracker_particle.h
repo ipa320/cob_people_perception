@@ -107,6 +107,8 @@ public:
 
   bool updateJPDA(const MatrixWrapper::SymmetricMatrix& cov, const std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities, OcclusionModelPtr occlusionModel);
 
+  bool dynamicResample();
+
   /// Get probability for a certain measurement
   double getMeasProbability(const tf::Vector3&  meas,
                             const MatrixWrapper::SymmetricMatrix& cov);
