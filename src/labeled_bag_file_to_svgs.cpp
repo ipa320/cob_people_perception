@@ -70,6 +70,12 @@ namespace po = boost::program_options;
 int g_argc;
 char** g_argv;
 
+// THIS TOOL CREATE PNG FILES FROM BAG FILES WITH TRAINED DATA
+
+/**
+ *
+ * @param input_file
+ */
 void TrainingSetConverter::convertTrainingSet(const char* input_file) {
     printf("Input file: %s\n", input_file);
 
@@ -121,7 +127,10 @@ void TrainingSetConverter::convertTrainingSet(const char* input_file) {
     // Create a sampleSetList
     list<SampleSet*> clusterList;
 
+    // Counter
+    int counter = 0;
 
+    // Iterate through the messages
     foreach(rosbag::MessageInstance const m, view)
     {
 
@@ -163,7 +172,42 @@ void TrainingSetConverter::convertTrainingSet(const char* input_file) {
                     }
 
                     clusterList.push_back(pCluster);
-                    pCluster->saveAsSVG((pCluster->label.append(".svg")).c_str());
+
+                    // Create the filename
+                    char filename[50];
+                    sprintf(filename, "%s%i.svg", pCluster->label.c_str(), counter);
+
+                    std::cout << "Storing as " << filename << std::endl;
+                    counter++;
+
+
+
+                    // Create the svg file
+                    ofstream myfile (filename);
+                    if (myfile.is_open())
+                    {
+                        myfile << "<?xml version='1.0' standalone='no'?>" << endl;
+                        myfile << "<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>" << endl;
+                        myfile << "<svg width='12cm' height='12cm' viewBox='-3 -3 6 6' xmlns='http://www.w3.org/2000/svg' version='1.1'>" << endl;
+                        myfile << "<desc>Example circle01 - circle filled with red and stroked with blue</desc>" << endl;
+
+                        myfile << "<!-- Show outline of canvas using 'rect' element -->" << endl;
+                        //myfile << "<rect x='1' y='1' width='1198' height='398' fill='none' stroke='blue' stroke-width='2'/>" << endl;
+
+                        // Iterate through the points
+                        for (std::set<Sample*, CompareSample>::iterator sample_iter = pCluster->begin();
+                             sample_iter != pCluster->end();
+                             sample_iter++)
+                        {
+                            myfile << "<circle cx='"<< (*sample_iter)->x << "' cy='"<< (*sample_iter)->y <<"' r='0.02' fill='red' stroke='blue' stroke-width='0.005'  />" << endl;
+                        }
+                        myfile << "</svg>" << endl;
+                        myfile.close();
+                    }
+                    else cout << "Unable to open file";
+
+
+                    //pCluster->saveAsSVG();
                 }
 
                 labeledScanList.push_back(new LabeledScanData(pLaserScan,pLabeledRangeScanMsg));

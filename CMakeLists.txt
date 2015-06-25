@@ -123,43 +123,43 @@ install(DIRECTORY launch/
 
 
 ## The training set creator
-#add_executable(training_set_creator 
-#               src/laser_processor.cpp
-#               src/training_set_creator.cpp 
-#               src/calc_leg_features.cpp)
+add_executable(training_set_creator 
+               src/laser_processor.cpp
+               src/training_set_creator.cpp 
+               src/calc_leg_features.cpp)
 #               
 ## Add cmake target dependencies of the executable/library
-#add_dependencies(training_set_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(training_set_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-#target_link_libraries(training_set_creator
-#   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
-#)
+target_link_libraries(training_set_creator
+   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+)
 
-## The training set converter
-#add_executable(training_set_converter
-#               src/laser_processor.cpp
-#               src/training_set_converter.cpp 
-#               src/calc_leg_features.cpp)
+## Tool to convert a labeled bag file into svgs for visual verification
+add_executable(labeled_bag_file_to_svgs
+               src/laser_processor.cpp
+               src/calc_leg_features.cpp
+               src/labeled_bag_file_to_svgs.cpp)
                
 ## Add cmake target dependencies of the executable/library
-#add_dependencies(training_set_converter people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(labeled_bag_file_to_svgs people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-#target_link_libraries(training_set_converter
-#   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
-#)
+target_link_libraries(labeled_bag_file_to_svgs
+   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+)
 
 ## The leg train detector
-#add_executable(train_leg_detector
-#               src/laser_processor.cpp
-#               src/train_leg_detector.cpp 
-#               src/calc_leg_features.cpp)
+add_executable(train_leg_detector
+               src/laser_processor.cpp
+               src/train_leg_detector.cpp 
+               src/calc_leg_features.cpp)
                
 ## Add cmake target dependencies of the executable/library
-#add_dependencies(train_leg_detector people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(train_leg_detector people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-#target_link_libraries(train_leg_detector
-#   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
-#)
+target_link_libraries(train_leg_detector
+   ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES}
+)

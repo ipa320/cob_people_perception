@@ -466,7 +466,7 @@ public:
           strncat(outputfile,(("_" + classificatorIt->desc + ".yaml").c_str()),100);
           cout << "Saving: " << outputfile << endl;
 
-          //classificatorIt->pClassificator->save(outputfile);
+          classificatorIt->pClassificator->save(outputfile);
       }
     //forest.save(file);
   }

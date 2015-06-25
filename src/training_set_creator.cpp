@@ -147,7 +147,7 @@ public:
         nh_(nh), feat_count_(0), next_p_id_(0) {
 
         // advertise topics
-        markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 20);
+        markers_pub_ = nh_.advertise<visualization_msgs::Marker>("cluster_labels", 20);
         clusters_pub_ = nh_.advertise<sensor_msgs::PointCloud>("clusters", 20);
         scan_pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 20);
         clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("clock", 20);
@@ -263,13 +263,13 @@ public:
             rosgraph_msgs::Clock::Ptr simTime(new rosgraph_msgs::Clock());
             simTime->clock = m.getTime();
             clock_pub_.publish(simTime);
-            cout << "Publishing time" << simTime <<  endl;
+            //cout << "Publishing time" << simTime->clock <<  endl;
 
 
             // Check if tf Message -> these should be 'forwarded'
             tf2_msgs::TFMessagePtr tfMsgPtr = m.instantiate<tf2_msgs::TFMessage>();
             if (tfMsgPtr != NULL) {
-                cout << "Publish tf: " << tfMsgPtr->transforms[0].header.stamp << endl;
+                //cout << "Publish tf: " << tfMsgPtr->transforms[0].header.stamp << endl;
                 tf_pub_.publish(tfMsgPtr);
                 ++viewIt;
             }

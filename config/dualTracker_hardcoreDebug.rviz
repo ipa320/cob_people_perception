@@ -9,6 +9,7 @@ Panels:
         - /Marker1/Namespaces1
         - /LaserScan1
         - /PointCloud1
+        - /PointCloud2
         - /PointCloud3
         - /Marker2
         - /Marker2/Namespaces1
@@ -19,6 +20,9 @@ Panels:
         - /Marker3
         - /MarkerArray2
         - /MarkerArray3
+        - /Marker4
+        - /MarkerArray4
+        - /MarkerArray5
       Splitter Ratio: 0.5
     Tree Height: 563
   - Class: rviz/Selection
@@ -39,7 +43,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: LaserScan
 Visualization Manager:
   Class: ""
   Displays:
@@ -120,7 +124,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 1
+      Size (Pixels): 6
       Size (m): 1
       Style: Points
       Topic: /particles
@@ -156,7 +160,7 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
-    - Alpha: 1
+    - Alpha: 0.4
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 0
@@ -178,9 +182,9 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 3
+      Size (Pixels): 40
       Size (m): 0.2
-      Style: Boxes
+      Style: Points
       Topic: /leg_measurements
       Use Fixed Frame: true
       Use rainbow: true
@@ -190,7 +194,7 @@ Visualization Manager:
       Marker Topic: /matches
       Name: Marker
       Namespaces:
-        {}
+        matches: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -198,10 +202,11 @@ Visualization Manager:
       Marker Topic: /leg_predicted_positions_
       Name: MarkerArray
       Namespaces:
-        {}
+        arrow_pred_corr: true
+        predictions: true
       Queue Size: 100
       Value: true
-    - Alpha: 1
+    - Alpha: 0.8
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 10
@@ -224,8 +229,8 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.09
-      Style: Flat Squares
+      Size (m): 0.05
+      Style: Spheres
       Topic: /clusters
       Use Fixed Frame: true
       Use rainbow: true
@@ -254,6 +259,30 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /scan_lines
+      Name: Marker
+      Namespaces:
+        lines_ns: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /measurement_label
+      Name: MarkerArray
+      Namespaces:
+        meas_label: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /leg_labels
+      Name: MarkerArray
+      Namespaces:
+        PEOPLE_TRACKER_LABEL: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 135; 135; 135
@@ -278,7 +307,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -15.1601
+      Angle: 0
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
@@ -287,11 +316,11 @@ Visualization Manager:
         Value: false
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 63.2893
+      Scale: 256.109
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 0.516608
-      Y: -0.956981
+      X: 1.76612
+      Y: 1.52014
     Saved: ~
 Window Geometry:
   Displays:
