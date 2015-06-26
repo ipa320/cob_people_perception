@@ -227,6 +227,7 @@ public:
   ros::Publisher leg_label_pub_; /**< Publish leg labels */
   ros::Publisher jpda_association_pub_; /**< Publish the jpda association probability for debugging purposes */
   ros::Publisher measurement_label_pub_; /**< Publish measurements */
+  ros::Publisher particles_arrow_pub_; /** < Publish some particles velocity */
 
   dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -246,7 +247,7 @@ public:
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
     cycle_(0),
     occlusionModel_(new OcclusionModel(tfl_)),
-    new_track_creation_likelihood_(0.41)
+    new_track_creation_likelihood_(0.5)
   {
     if (g_argc > 1)
     {
@@ -285,6 +286,8 @@ public:
     leg_label_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("leg_labels", 0);
     jpda_association_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("jpda_association", 0);
     measurement_label_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("measurement_label", 0);
+    particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
+
 
     if (use_seeds_)
     {
@@ -643,26 +646,14 @@ public:
 
         // Calculate assignment probability
         float assignmentProbability;
-
-
-/*        if(dist > max_track_jump_m){
-          assignmentProbability = maxCosts; // Then dont use this assignment
-        }
-        else{
-
-        }*/
         assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
-
         // TODO investigate this parameters
-
         //costMatrix(i,j) = min((int)-log(assignmentProbability),1000);
-
         costMatrix(i,j) = -assignmentProbability*100;
 
         i++;
       }
       //std::cout << std::endl;
-
       j++;
     }
 
@@ -690,18 +681,17 @@ public:
     std::vector<Solution> solutions;
 
     // TODO depend this on the number of measurements
-    int k = nObjects*1;
+    int k = nObjects;
     solutions = murty(costMatrix,k);
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
     // TODO Calculate the crossing value of the solutions in order to reject obvious unrealistic solutions
 
-
-    //std::cout << "Solutions are:" << std::endl;
-/*    for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
+    std::cout << "Solutions are:" << std::endl;
+    for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
       color_print_solution(costMatrix,solIt->assignmentMatrix);
       std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
-    }*/
+    }
 
     // DEBUG OUTPUT
     std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
@@ -732,7 +722,7 @@ public:
 
           // Calculate Occlusion Probability
           if(j == 0){
-            // TODO Implenent the calculation of the occlusion probability
+            // TODO Implement the calculation of the occlusion probability
 
             prob = propagated[i]->getOcclusionProbability(occlusionModel_); // TODO
           }
@@ -749,8 +739,7 @@ public:
 
       }
     }
-    //std::cout << "measurement probabilities" << std::endl << probabilities << std::endl;
-
+    std::cout << "measurement probabilities" << std::endl << probabilities << std::endl;
 
 
     // Fill the assignment probability matrix (contains \beta_ij)
@@ -758,8 +747,6 @@ public:
 
     for(int j = 0; j < nMeasurements; j++){
       for(int i = 0; i < nObjects; i++){
-
-        //assignmentProbabilityMatrix(i,j) +=
 
         double prob = 0.0;
 
@@ -774,11 +761,8 @@ public:
 
             assignmentProbabilityMatrix(i,j) = prob;
             //TODO Remember the occlusion probabilities
-
           }
-
         }
-
       }
     }
 
@@ -790,7 +774,23 @@ public:
     	if(rowSum > 0.0){
     		assignmentProbabilityMatrixNormalized.row(i) = assignmentProbabilityMatrix.row(i)/rowSum;
     	}
+    }
 
+    // Print the probability matrix
+    std::cout << "Probability Matrix:____" << std::endl;
+    std::cout << "     |Occ  |";
+    for(int j = 0; j < nMeasurements-1; j++)
+      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
+    std::cout << RESET << std::endl;
+
+    for(int i = 0; i < nObjects; i++){
+      std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indices(i) << RESET <<"|";
+      for(int j = 0; j < nMeasurements; j++)
+        if(probabilities(i,j) > 0.0)
+          std::cout << std::setw(5) << std::fixed << std::setprecision(3) << probabilities(i,j) << "|";
+        else
+          std::cout << "     |";
+      std::cout << std::endl;
     }
 
 
@@ -810,11 +810,41 @@ public:
     			std::cout << "     |";
     	std::cout << std::endl;
     }
+
+    Eigen::Matrix<double, -1,-1> combinedMat = Eigen::Matrix< double, -1, -1>::Zero(nObjects,nMeasurements);
+    combinedMat = (probabilities.array() * assignmentProbabilityMatrixNormalized.array()).matrix();
+
+
+    // Print the assignment probability matrix
+    std::cout << "Combined Probability Matrix:____" << std::endl;
+    std::cout << "     |Occ  |";
+    for(int j = 0; j < nMeasurements-1; j++)
+      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
+    std::cout << RESET << std::endl;
+
+    for(int i = 0; i < nObjects; i++){
+      std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indices(i) << RESET <<"|";
+      for(int j = 0; j < nMeasurements; j++)
+        if(combinedMat(i,j) > 0.0)
+          std::cout << std::setw(5) << std::fixed << std::setprecision(3) << combinedMat(i,j) << "|";
+        else
+          std::cout << "     |";
+      std::cout << std::endl;
+    }
+
+
     // The assignment probability matrix indicates which measurements influences which tracker to what degree.
     //std::cout << "Assignment Probabilities Matrix" << std::endl << assignmentProbabilityMatrix << std::endl;
 
 
     //std::cout << "Normalized version: " << std::endl << assignmentProbabilityMatrixNormalized << std::endl;
+
+//    /// Invalidate Leg Trackers in necessary
+//    for(int i = 0; i < nObjects; i++){
+//      if(combinedMat.row(i).sum())
+//      propagated[i]->setValidity(false);
+//    }
+
 
     jpdaTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - JPDA",__func__);
@@ -825,21 +855,36 @@ public:
     //// JPDA Update (Use the results of the JPDA to update the leg trackers
     //////////////////////////////////////////////////////////////////////////
 
+    bool useJPDA = false;
+
+    if(useJPDA){
+
+    /// Avoid updates of trackers with low probability
     // Iterate through the trackers
-    std::cout << "Doing the JPDA Update Size of Leg Features: " << propagated.size() << std::endl;
+    std::cout << BOLDYELLOW << "Doing the JPDA Update: " << RESET << std::endl;
     for (unsigned int i = 0; i < propagated.size(); i++)
     {
       // Get the probabilities concerning this tracker
       Eigen::VectorXd probs;
       probs = assignmentProbabilityMatrixNormalized.row(i);
 
-      propagated[i]->JPDAUpdate(detections, probs, occlusionModel_, scan->header.stamp);
+      if(probabilities.row(i).maxCoeff() > 0.03 && probabilities(i,0) < 0.5){
+        std::cout << "LT" << propagated[i]->int_id_ << " is updated" << std::endl;
+        propagated[i]->JPDAUpdate(detections, probs, occlusionModel_, scan->header.stamp);
+      }
+      // Avoid updates of bad leg trackers
+      else
+      {
+        std::cout << "LT" << i << " is NOT updated because no reliable association is found" << std::endl;
+      }
     }
 
 
 
     /// Create new trackers if needed
     // Iterate through the assignment probabilities of each measurement, create a new LT for each LM not assigned to any LT
+    std::cout << "";
+
     unsigned int newTrackCounter = 0;
 
     for (unsigned int j = 1; j < nMeasurements; j++){
@@ -847,11 +892,12 @@ public:
       // There should be at least some objects, this is not the case on the first run
       if(nObjects > 0){
         // Get the maximum likelihood
-        double maxLikelihood = assignmentProbabilityMatrixNormalized.col(j).maxCoeff();
+        double maxLikelihood = probabilities.col(j).maxCoeff();
+        double minCreationLikelihood = 0.05;
 
-        if(maxLikelihood < new_track_creation_likelihood_){
+        if(maxLikelihood < 0.01){
 
-          std::cout << "The maximum likelihood for LM" << j-1 << " is " << maxLikelihood;
+          std::cout << "max. Likelihood for LM" << j-1 << " is " << maxLikelihood;
 
           LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[j-1]->point_, tfl_));
 
@@ -874,10 +920,13 @@ public:
       // No objects are yet tracked at all
       else
       {
-        std::cout << "No object found for measurement LM" << j-1 << " ... Creating new LT" << std::endl;
-        if(detections[j-1]->cluster_->getProbability( )> new_track_min_probability_){
 
-          std::cout << "New object is to be created for measurement " << j-1 << " at " << detections[j-1]->point_[0] << "   " << detections[j-1]->point_[1] << std::endl;
+        //double newTrackProbability = (1 - combinedMat.row())
+
+        std::cout << "No object found for measurement LM" << j-1 << " ... Creating new LT" << std::endl;
+        if(detections[j-1]->cluster_->getProbability( ) > new_track_min_probability_){
+
+          std::cout << "New object is to be created for measurement " << j-1 << "(prob "<< detections[j-1]->cluster_->getProbability( ) << " at " << detections[j-1]->point_[0] << "   " << detections[j-1]->point_[1] << std::endl;
 
           LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[j-1]->point_, tfl_));
 
@@ -895,12 +944,20 @@ public:
     }
 
     std::cout << "Created " << newTrackCounter << " LTs" << std::endl;
-
+    }
     //std::cout << "Second" << possibleAssignments(1,1) << std::endl;
     //////////////////////////////////////////////////////////////////////////
     //// Matching (Match Leg Detection to Trackers)
     //////////////////////////////////////////////////////////////////////////
-/*    ROS_DEBUG("%sMatching [Cycle %u]", BOLDWHITE, cycle_);
+
+
+    // The found matches
+    multiset<MatchedFeature> matches;
+    if(!useJPDA){
+
+
+
+    ROS_DEBUG("%sMatching [Cycle %u]", BOLDWHITE, cycle_);
 
     // Input: The propagated and new trackers, the leg detections
 
@@ -912,8 +969,7 @@ public:
     unsigned int newTrackCounter = 0;
     unsigned int matchesCounter = 0;
 
-    // The found matches
-    multiset<MatchedFeature> matches;
+
 
     assert(false);
 
@@ -974,8 +1030,9 @@ public:
     }// end iterate the clusters
 
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Associated tracks to legs - %i matches - %i new tracks",__func__, matchesCounter, newTrackCounter);
-    ROS_DEBUG("%sMatching Done! [Cycle %u]", BOLDWHITE, cycle_);*/
+    ROS_DEBUG("%sMatching Done! [Cycle %u]", BOLDWHITE, cycle_);
 
+    }
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -1022,7 +1079,7 @@ public:
     //// Update (Update the Trackers using the latest measurements (GNN)
     //////////////////////////////////////////////////////////////////////////
 
-    /*
+    if(!useJPDA){
 
     ROS_DEBUG("%sUpdate [Cycle %u]", BOLDWHITE, cycle_);
 
@@ -1117,8 +1174,8 @@ public:
       }
     }
     ROS_DEBUG("%sUpdate done! [Cycle %u]", BOLDWHITE, cycle_);
+    }
 
-    */
 
     //////////////////////////////////////////////////////////////////////////
     //// High level Update (Update of the people trackers
@@ -1133,6 +1190,9 @@ public:
     //////////////////////////////////////////////////////////////////////////
     //// Publish data
     //////////////////////////////////////////////////////////////////////////
+
+
+
 
     ROS_DEBUG("%sPublishing [Cycle %u]", BOLDWHITE, cycle_);
 
@@ -1198,6 +1258,8 @@ public:
     if(publish_occlusion_model_){
       publishOcclusionModel(saved_leg_features, scan->header.stamp);
     }
+
+    publishParticlesArrows(saved_leg_features, scan->header.stamp);
     // Publish leg Measurements on
     //if(publish_leg_measurements_){
       //publishLegMeasurementArray(saved_leg_features);
@@ -2385,6 +2447,73 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     measurement_label_pub_.publish(labelArray);
 
     ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
+  }
+
+  void publishParticlesArrows(vector<LegFeaturePtr>& legFeatures, ros::Time time){
+    // Marker Array
+    visualization_msgs::MarkerArray markerArray;
+
+    int id_counter = 0;
+
+    for (vector<LegFeaturePtr>::iterator legFeatureIt = legFeatures.begin();
+        legFeatureIt != legFeatures.end();
+        legFeatureIt++)
+    {
+        MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+
+        vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
+
+
+        WeightedSample<StatePosVel> maxSample = *std::max_element(samples.begin(), samples.end(), sampleWeightCompare);
+        double maxSampleWeight = maxSample.WeightGet();
+
+        int counter=0;
+
+        for(vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
+
+          // Not a arrow for every particle
+          counter++;
+
+          if(counter % 5 != 0) continue;
+
+          geometry_msgs::Point point_start;
+          point_start.x = (*sampleIt).ValueGet().pos_[0];
+          point_start.y = (*sampleIt).ValueGet().pos_[1];
+          point_start.z = (*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
+
+          geometry_msgs::Point point_end;
+          point_end.x = (*sampleIt).ValueGet().pos_[0] + (*sampleIt).ValueGet().vel_[0] * 1.0/12;
+          point_end.y = (*sampleIt).ValueGet().pos_[1] + (*sampleIt).ValueGet().vel_[1] * 1.0/12;
+          point_end.z = (*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
+
+
+          // Arrow
+          visualization_msgs::Marker markerMsgArrow;
+
+          markerMsgArrow.header.frame_id = fixed_frame;
+          markerMsgArrow.header.stamp = time;
+          markerMsgArrow.ns = "arrow_pred_corr";
+          markerMsgArrow.id = id_counter;
+          markerMsgArrow.type = visualization_msgs::Marker::ARROW;
+          markerMsgArrow.scale.x = 0.005;
+          markerMsgArrow.scale.y = 0.02;
+          markerMsgArrow.color.r = 1.0;
+          markerMsgArrow.color.a = 0.8;
+
+          markerMsgArrow.points.push_back(point_start);
+
+          markerMsgArrow.points.push_back(point_end);
+
+          markerArray.markers.push_back(markerMsgArrow);
+          id_counter++;
+        }
+
+    }
+
+    // Publish the pointcloud
+    particles_arrow_pub_.publish(markerArray);
+
+    ROS_DEBUG("DualTracker::%s Publishing Particles Arrows on %s", __func__, fixed_frame.c_str());
   }
 
 

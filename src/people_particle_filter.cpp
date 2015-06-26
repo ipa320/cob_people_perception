@@ -436,7 +436,6 @@ PeopleParticleFilter::DynamicResampleStep()
   if ( this->_dynamicResampling)
   {
 
-    std::cout << RED << "RESAMPLE!" << RESET << std::endl;
     // Check if sum of 1 / \sum{(wi_normalised)^2} < threshold (Name: Effective sample size)
     // This is the criterion proposed by Liu
     // BUG  foresee other methods of approximation/calculating
@@ -446,14 +445,21 @@ PeopleParticleFilter::DynamicResampleStep()
       {
         sum_sq_weigths += pow(_ns_it->WeightGet(),2);
       }
-    if ((1.0 / sum_sq_weigths) < _resampleThreshold)
+
+    double effectiveSampleSize = 1.0 / sum_sq_weigths;
+    std::cout << "effectiveSampleSize " << effectiveSampleSize << " threshold(" << _resampleThreshold << ")" << std::endl;
+
+    if (effectiveSampleSize < _resampleThreshold)
       {
+
         resampling = true;
       }
   }
-    if (resampling == true)
-      //return this->LowVarianceResample();
-      return this->Resample();
+    if (resampling == true){
+      std::cout << RED << "RESAMPLE! " << RESET << std::endl;
+      return this->LowVarianceResample();
+    }
+      //return this->Resample();
     else
       return true;
 }
@@ -480,8 +486,11 @@ PeopleParticleFilter::LowVarianceResample()
   _ns_it = _new_samples.begin();
 
   // Calculate the total weight
+
   double r = (static_cast <double> (rand()) / static_cast <double> (RAND_MAX)) * (1.0/NumSamples);
   double c = _old_samples[0].WeightGet(); // Set to the weight of the first sample
+
+  std::cout << "random " << r << std::endl;
 
   unsigned int i = 0;
 

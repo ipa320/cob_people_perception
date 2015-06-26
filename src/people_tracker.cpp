@@ -394,7 +394,7 @@ void PeopleTracker::updateProbabilities(ros::Time time){
   //ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s - Distance %f.3 Probability: %f.2",__func__, dist, dist_probability_);
 
   // Calculate the existenz of both LegTrackers
-  double leg_time_threshold = 0.1;
+  double leg_time_threshold = 0.06;
   double min_leg_time = min(getLeg0()->getLifetime(), getLeg1()->getLifetime());
 
   leg_time_probability_ = sigmoid(min_leg_time,5,leg_time_threshold);
