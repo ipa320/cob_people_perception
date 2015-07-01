@@ -170,6 +170,8 @@ public:
 
   bool use_seeds_;
 
+  Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> costMatrixMAP;
+
   //GlobalConfig* globalConfig;
 
   bool publish_leg_measurements_;
@@ -221,6 +223,7 @@ public:
   ros::Publisher particles_pub_;/**< Visualization of particles */
   ros::Publisher people_velocity_pub_;/**< Visualization of the people velocities */
   ros::Publisher people_track_label_pub_; /**< Publishes labels of people tracks */
+  ros::Publisher map_pub_; /**< Publishes labels of people tracks */
   ros::Publisher occlusion_model_pub_; /**< Published the occlusion probability */
   ros::Publisher leg_predicted_pub_; /**< Published the occlusion probability */
   ros::Publisher scan_lines_pub_; /**< Publish the laserscan as lines for debugging */
@@ -287,7 +290,7 @@ public:
     jpda_association_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("jpda_association", 0);
     measurement_label_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("measurement_label", 0);
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
-
+    map_pub_ 					  = nh_.advertise<visualization_msgs::MarkerArray>("fake_measurements", 0);
 
     if (use_seeds_)
     {
@@ -402,6 +405,11 @@ public:
 
     // Start Cycle Timer
     cycleTimer.start();
+
+    // Get the zero point of the scan
+    tf::Stamped<tf::Point> sensorCoord(tf::Point(0,0,0), scan->header.stamp, scan->header.frame_id);
+    tfl_.transformPoint(fixed_frame, sensorCoord, sensorCoord); //Transform using odometry information into the fixed frame
+    sensorCoord.setZ(0);
 
     //////////////////////////////////////////////////////////////////////////
     //// Update the occlusion model(this model is hold by every tracker!) with the current scan
@@ -588,6 +596,178 @@ public:
 
 
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
+
+
+    //////////////////////////////////////////////////////////////////////////
+    //// MAP
+    //////////////////////////////////////////////////////////////////////////
+
+    int nMeasurementsReal = detections.size();
+    int nLegsTracked = propagated.size();
+
+
+    vector<DetectionPtr> fakeDetections;
+    // Calculate the fake measurements
+    boost::shared_ptr<std::vector<PeopleTrackerPtr> > ppls = people_trackers_.getList();
+
+    for(std::vector<PeopleTrackerPtr>::iterator pplIt = ppls->begin(); pplIt != ppls->end(); pplIt++){
+
+    	std::cout << "Counting number of measurements" << std::endl;
+    	if((*pplIt)->getTotalProbability() > 0.4){
+
+    		int numberOfMeasurementsWithinRange = 0;
+    		double rangeThres = 1;
+    	    for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
+    	        detectionIt != detections.end();
+    	        detectionIt++)
+    	    {
+    	    	Stamped<Point> loc = (*detectionIt)->point_;
+    	    	double dist = loc.distance((*pplIt)->pos_vel_estimation_.pos_);
+
+    	    	if(dist < rangeThres){
+    	    		numberOfMeasurementsWithinRange++;
+    	    	}
+
+    	    }
+    		std::cout << **pplIt << std::endl;
+    		std::cout << numberOfMeasurementsWithinRange << std::endl;
+
+        	// Partial occlusion
+        	if(numberOfMeasurementsWithinRange < 1){
+        		// Calculate a fake detection
+        		tf::Vector3 pplPos((*pplIt)->pos_vel_estimation_.pos_);
+        		tf::Vector3 widthVec = pplPos - sensorCoord;
+
+        		tf::Vector3 fakeMeasPos = pplPos + widthVec;
+
+        		// Create the detection
+        		DetectionPtr fakeDetection(new Detection);
+
+        		fakeDetection->id_ = fakeDetections.size() + detections.size();
+        		fakeDetection->point_ = tf::Stamped<tf::Vector3>(fakeMeasPos, scan->header.stamp, scan->header.frame_id);
+
+        		fakeDetections.push_back(fakeDetection);
+        	}
+    	}
+
+    }
+
+    int nMeasurementsFake = fakeDetections.size();
+
+
+
+    costMatrixMAP = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nLegsTracked,nMeasurementsReal + nMeasurementsFake);
+    costMatrixMAP.resize(nLegsTracked, nMeasurementsReal + nMeasurementsFake);
+
+
+
+    // Fill the real detections
+    if(nLegsTracked > 0 && nMeasurementsReal + nMeasurementsFake > 0){
+    int twodim[nLegsTracked][nMeasurementsReal + nMeasurementsFake];
+
+    for(size_t col = 0; col < nMeasurementsReal + nMeasurementsFake; col++){
+    	for(size_t row = 0; row < nLegsTracked; row++){
+    		costMatrixMAP(row,col)=1;
+
+    	}
+    }
+    /*
+    int col = 0;
+    for (vector<LegFeaturePtr>::iterator legIt = propagated.begin(); legIt != propagated.end(); legIt++)
+    {
+    	int row = 0;
+    	for (vector<DetectionPtr>::iterator detectionIt = detections.begin(); detectionIt != detections.end(); detectionIt++)
+    	{
+        Stamped<Point> loc = (*detectionIt)->point_;
+
+        double prob = (*legIt)->getMeasurementProbability(loc);
+        double negLogLike = -log(prob);
+
+
+        // find the closest distance between candidate and trackers
+        // float dist = loc.distance((*legIt)->position_);
+        // TODO: Where exactly is loc to be expected? Should it be calculated based on particles?
+
+        // Calculate assignment probability
+        //float assignmentProbability;
+        //assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
+        // TODO investigate this parameters
+        std::cout << "row " << row << "col " << col << std::endl;
+        //costMatrixMAP(row,col) = 20;// min((int) (negLogLike),1000); <------                Hier Segfault
+        // costMatrix(i,j) = -assignmentProbability*100;
+
+        //std::cout << BOLDCYAN << "prob: " << prob << " negLogLikelihood: " << negLogLike << " matrixValue " << costMatrixMAP(row,col) << RESET << std::endl;
+        row++;
+      }
+
+      col++;
+    }
+
+
+    // Fill the fake detections
+    for (vector<LegFeaturePtr>::iterator legIt = propagated.begin(); legIt != propagated.end(); legIt++)
+    {
+    	int row = 0;
+    	for (vector<DetectionPtr>::iterator detectionIt = fakeDetections.begin(); detectionIt != fakeDetections.end(); detectionIt++)
+    	{
+        Stamped<Point> loc = (*detectionIt)->point_;
+
+        double fakeProbCorr;
+        double prob = (*legIt)->getMeasurementProbability(loc) * fakeProbCorr;
+        double negLogLike = -log(prob);
+
+
+
+        // find the closest distance between candidate and trackers
+        // float dist = loc.distance((*legIt)->position_);
+        // TODO: Where exactly is loc to be expected? Should it be calculated based on particles?
+
+        // Calculate assignment probability
+        //float assignmentProbability;
+        //assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
+        // TODO investigate this parameters
+        costMatrixMAP(row,col) = min((int) (negLogLike),1000);
+
+        std::cout << BOLDCYAN << "prob: " << prob << " negLogLikelihood: " << negLogLike << " matrixValue " << costMatrixMAP(row,col) << RESET << std::endl;
+        // costMatrix(i,j) = -assignmentProbability*100;
+        row++;
+      }
+      col++;
+
+    }
+
+
+    // Store the object indices, this is needed since the Leg Feature IDs will change with time due to creation and deletion of tracks
+    Eigen::VectorXi indicesMAP = Eigen::VectorXi::Zero(nLegsTracked,1);
+    int indices_counter_map = 0;
+    for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
+        legIt != propagated.end();
+        legIt++)
+    {
+      indicesMAP(indices_counter_map) = (*legIt)->int_id_;
+      indices_counter_map++;
+    }
+
+    std::cout << costMatrixMAP << std::endl;
+
+    // Print the probability matrix
+    std::cout << "costMatrixMAP :____" << std::endl;
+    for(int j = 0; j < nMeasurementsReal; j++)
+      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
+    std::cout << RESET << std::endl;
+
+    for(int j = 0; j < nMeasurementsFake; j++)
+      std::cout << BOLDYELLOW << "LM" << std::setw(2) << j<< " |";
+    std::cout << RESET << std::endl;
+
+    for(int i = 0; i < nLegsTracked; i++){
+      std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indicesMAP(i) << RESET <<"|";
+      for(int j = 0; j < nMeasurementsReal + nMeasurementsFake; j++)
+          std::cout << std::setw(5) << std::fixed << std::setprecision(3) << costMatrixMAP(i,j) << "|";
+
+      std::cout << std::endl;
+    }*/
+    }
 
     //////////////////////////////////////////////////////////////////////////
     //// Joint Probability Data Association
@@ -1268,6 +1448,8 @@ public:
     if(publish_measurement_labels_){
       publishMeasurementsLabels(detections, scan->header.stamp);
     }
+
+    publishFakeMeasPos(people_trackers_.getList(), scan->header.stamp, sensorCoord);
 
     //////////////////////////////////////////////////////////////////////////
     //// Print debug information (Should happen after visual publications)
@@ -2187,6 +2369,81 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     }
     // Publish
     people_track_label_pub_.publish(labelArray);
+  }
+
+  // Add Labels to the People Trackers
+  void publishFakeMeasPos(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time, tf::Stamped<tf::Point> sensorCoord){
+
+    visualization_msgs::MarkerArray msgArray;
+
+    int counter = 0;
+    for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
+        peopleIt != peopleTracker->end();
+        peopleIt++)
+    {
+
+      if
+      (
+          (*peopleIt)->getTotalProbability() > 0.25 &&
+          (*peopleIt)->isDynamic()
+      )
+      {
+
+        // The geometry message
+        visualization_msgs::Marker line_list;
+        line_list.type = visualization_msgs::Marker::LINE_LIST;
+        line_list.header.frame_id = fixed_frame;
+        line_list.header.stamp = time;
+        line_list.id = counter;
+        line_list.ns = "FakeMeasurements";
+
+        // width
+        line_list.scale.x = 0.1;
+
+        // Set the color
+
+        int r,g,b;
+        //r = 255;
+        //getColor((*legFeatureIt)->int_id_,r,g,b);
+
+
+
+        // Calculate the precise position
+        tf::Vector3 vec;
+
+        tf::Vector3 fake((*peopleIt)->getEstimate().pos_[0],(*peopleIt)->getEstimate().pos_[1],0);
+        vec = fake - sensorCoord;
+
+        line_list.color.r = 255.0;
+        line_list.color.g = 0;
+        line_list.color.b = 100;
+        line_list.color.a = 1.0;
+
+        geometry_msgs::Point point0, point1;
+        point0.x = sensorCoord.getX();
+        point0.y = sensorCoord.getY();
+        point0.z = 0;
+
+        point1.x = (*peopleIt)->getEstimate().pos_[0] + vec[0];
+        point1.y = (*peopleIt)->getEstimate().pos_[1] + vec[1];
+        point1.z = 0;
+
+        line_list.points.push_back(point0);
+        line_list.points.push_back(point1);
+
+
+        counter++;
+
+        // Publish the pointcloud
+        msgArray.markers.push_back(line_list);
+
+      }
+    }
+
+    map_pub_.publish(msgArray);
+    //leg_features_history_vis_pub_.publish(line_list);
+
+
   }
 
   // Add Labels to the People Trackers
