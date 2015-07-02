@@ -31,7 +31,9 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
+#undef NDEBUG
 #include <ros/ros.h>
+#include <limits>
 
 // Own includes
 //#include <leg_detector/constants.h>
@@ -633,7 +635,7 @@ public:
     		std::cout << numberOfMeasurementsWithinRange << std::endl;
 
         	// Partial occlusion
-        	if(numberOfMeasurementsWithinRange < 1){
+        	if(numberOfMeasurementsWithinRange == 1){
         		// Calculate a fake detection
         		tf::Vector3 pplPos((*pplIt)->pos_vel_estimation_.pos_);
         		tf::Vector3 widthVec = pplPos - sensorCoord;
@@ -653,6 +655,7 @@ public:
     }
 
     int nMeasurementsFake = fakeDetections.size();
+    std::cout << RED << "nMeasurementsFake" << nMeasurementsFake << RESET << std::endl;
 
 
 
@@ -667,15 +670,15 @@ public:
 
     for(size_t col = 0; col < nMeasurementsReal + nMeasurementsFake; col++){
     	for(size_t row = 0; row < nLegsTracked; row++){
-    		costMatrixMAP(row,col)=1;
+    		costMatrixMAP(row,col)=1234;
 
     	}
     }
-    /*
-    int col = 0;
+
+    int row = 0;
     for (vector<LegFeaturePtr>::iterator legIt = propagated.begin(); legIt != propagated.end(); legIt++)
     {
-    	int row = 0;
+    	int col = 0;
     	for (vector<DetectionPtr>::iterator detectionIt = detections.begin(); detectionIt != detections.end(); detectionIt++)
     	{
         Stamped<Point> loc = (*detectionIt)->point_;
@@ -692,49 +695,56 @@ public:
         //float assignmentProbability;
         //assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
         // TODO investigate this parameters
-        std::cout << "row " << row << "col " << col << std::endl;
-        //costMatrixMAP(row,col) = 20;// min((int) (negLogLike),1000); <------                Hier Segfault
+        //std::cout << "row " << row << "col " << col << std::endl;
+        if(negLogLike > 1000)
+        	negLogLike = 1000;
+
+        if(std::numeric_limits<double>::has_infinity ==negLogLike){
+        	negLogLike = 1000;
+        }
+        costMatrixMAP(row,col) = (int) (negLogLike);
         // costMatrix(i,j) = -assignmentProbability*100;
-
-        //std::cout << BOLDCYAN << "prob: " << prob << " negLogLikelihood: " << negLogLike << " matrixValue " << costMatrixMAP(row,col) << RESET << std::endl;
-        row++;
-      }
-
-      col++;
-    }
-
-
-    // Fill the fake detections
-    for (vector<LegFeaturePtr>::iterator legIt = propagated.begin(); legIt != propagated.end(); legIt++)
-    {
-    	int row = 0;
-    	for (vector<DetectionPtr>::iterator detectionIt = fakeDetections.begin(); detectionIt != fakeDetections.end(); detectionIt++)
-    	{
-        Stamped<Point> loc = (*detectionIt)->point_;
-
-        double fakeProbCorr;
-        double prob = (*legIt)->getMeasurementProbability(loc) * fakeProbCorr;
-        double negLogLike = -log(prob);
-
-
-
-        // find the closest distance between candidate and trackers
-        // float dist = loc.distance((*legIt)->position_);
-        // TODO: Where exactly is loc to be expected? Should it be calculated based on particles?
-
-        // Calculate assignment probability
-        //float assignmentProbability;
-        //assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
-        // TODO investigate this parameters
-        costMatrixMAP(row,col) = min((int) (negLogLike),1000);
 
         std::cout << BOLDCYAN << "prob: " << prob << " negLogLikelihood: " << negLogLike << " matrixValue " << costMatrixMAP(row,col) << RESET << std::endl;
-        // costMatrix(i,j) = -assignmentProbability*100;
-        row++;
+        col++;
       }
-      col++;
 
+      row++;
     }
+
+    for(size_t col_f = 0; col_f < nMeasurementsFake; col_f++){
+        for(size_t row_f = 0; row_f < nLegsTracked; row_f++){
+        	 Stamped<Point> loc = fakeDetections[col_f]->point_;
+
+            double fakeProbCorr = 0.8;
+            double prob = propagated[row_f]->getMeasurementProbability(loc) * fakeProbCorr;
+            double negLogLike = -log(prob);
+
+
+
+            // find the closest distance between candidate and trackers
+            // float dist = loc.distance((*legIt)->position_);
+            // TODO: Where exactly is loc to be expected? Should it be calculated based on particles?
+
+            // Calculate assignment probability
+            //float assignmentProbability;
+            //assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
+            // TODO investigate this parameters
+            if(negLogLike > 1000)
+            	negLogLike = 1000;
+
+            if(std::numeric_limits<double>::has_infinity ==negLogLike){
+            	negLogLike = 1000;
+            }
+
+            std::cout << "row " << row_f << " col " << col_f << std::endl;
+
+            costMatrixMAP(row_f,col_f  + nMeasurementsReal) = (int) (negLogLike);
+
+            std::cout << BOLDCYAN << "prob: " << prob << " negLogLikelihood: " << negLogLike << " matrixValue " << costMatrixMAP(row_f,col_f  + nMeasurementsReal) << RESET << std::endl;
+        }
+    }
+
 
 
     // Store the object indices, this is needed since the Leg Feature IDs will change with time due to creation and deletion of tracks
@@ -754,10 +764,10 @@ public:
     std::cout << "costMatrixMAP :____" << std::endl;
     for(int j = 0; j < nMeasurementsReal; j++)
       std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
-    std::cout << RESET << std::endl;
+    std::cout << RESET;
 
     for(int j = 0; j < nMeasurementsFake; j++)
-      std::cout << BOLDYELLOW << "LM" << std::setw(2) << j<< " |";
+      std::cout << BOLDYELLOW << "LMF" << std::setw(2) << j<< " |";
     std::cout << RESET << std::endl;
 
     for(int i = 0; i < nLegsTracked; i++){
@@ -766,8 +776,11 @@ public:
           std::cout << std::setw(5) << std::fixed << std::setprecision(3) << costMatrixMAP(i,j) << "|";
 
       std::cout << std::endl;
-    }*/
     }
+    }
+
+    ROS_ASSERT(nMeasurementsFake == 0);
+    assert(nMeasurementsFake == 0);
 
     //////////////////////////////////////////////////////////////////////////
     //// Joint Probability Data Association
@@ -889,8 +902,7 @@ public:
     //std::cout << "propagated.size() " << propagated.size() << std::endl;
     //std::cout << "probabilities.rows() " << probabilities.rows() << std::endl;
 
-    ROS_ASSERT(propagated.size() == probabilities.rows());
-    ROS_ASSERT(detections.size() == probabilities.cols());
+
 
     for(int j = 0; j < probabilities.cols(); j++){
       for(int i = 0; i < probabilities.rows(); i++){
@@ -1151,7 +1163,7 @@ public:
 
 
 
-    assert(false);
+    //assert(false);
 
     // Iterate through all detections
     for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
@@ -1186,10 +1198,7 @@ public:
       {
         std::cout << "Meas. Prob." << (*detectionIt)->cluster_->probability_ << std::endl;
         std::cout << "#########################################################################################################" << std::endl;
-        ROS_ASSERT(false);
 
-
-        assert(false);
 
         if(cluster->getProbability( )> new_track_min_probability_){
           loc.setZ(0); // TODO ugly fix
