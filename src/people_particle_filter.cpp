@@ -457,7 +457,8 @@ PeopleParticleFilter::DynamicResampleStep()
   }
     if (resampling == true){
       std::cout << RED << "RESAMPLE! " << RESET << std::endl;
-      return this->LowVarianceResample();
+      //return this->LowVarianceResample();
+      return this->Resample();
     }
       //return this->Resample();
     else

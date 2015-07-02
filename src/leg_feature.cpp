@@ -14,7 +14,7 @@ int LegFeature::nextid = 0;
 
 static std::string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
-static int NumberOfParticles = 750;
+static int NumberOfParticles = 500;
 
 /*LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl, OcclusionModelPtr ocm)
   :LegFeature(loc,tfl),
@@ -26,8 +26,8 @@ static int NumberOfParticles = 750;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    leg_feature_predict_pos_cov_(1), // Around 0.05 // Variance of the
-    leg_feature_predict_vel_cov_(2),  // Around 1.0 should be fine, the bigger the more spread
+    leg_feature_predict_pos_cov_(0.4), // Around 0.05 // Variance of the
+    leg_feature_predict_vel_cov_(1.8),  // Around 1.0 should be fine, the bigger the more spread
     sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
@@ -312,7 +312,7 @@ void LegFeature::updatePosition()
   //reliability = fmax(reliability, nreliability);
 
   // Check if static
-  double static_threshold = 0.8; // TODO make this configurable
+  double static_threshold = 0.4; // TODO make this configurable
   if((initial_position_-position_).length() > static_threshold){
     this->is_static_ = false;
   }

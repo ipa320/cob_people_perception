@@ -173,6 +173,7 @@ public:
   bool use_seeds_;
 
   Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> costMatrixMAP;
+  Eigen::Matrix< double, Eigen::Dynamic, Eigen::Dynamic> probMAPMat;
 
   //GlobalConfig* globalConfig;
 
@@ -640,6 +641,9 @@ public:
     costMatrixMAP = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nLegsTracked,nMeasurementsReal + nMeasurementsFake);
     costMatrixMAP.resize(nLegsTracked, nMeasurementsReal + nMeasurementsFake);
 
+    probMAPMat = Eigen::Matrix< double, Eigen::Dynamic, Eigen::Dynamic>::Zero(nLegsTracked,nMeasurementsReal + nMeasurementsFake);
+    probMAPMat.resize(nLegsTracked, nMeasurementsReal + nMeasurementsFake);
+
     int row = 0;
     for (vector<LegFeaturePtr>::iterator legIt = propagated.begin(); legIt != propagated.end(); legIt++)
     {
@@ -667,7 +671,8 @@ public:
         if(std::numeric_limits<double>::has_infinity ==negLogLike){
         	negLogLike = 1000;
         }
-        costMatrixMAP(row,col) = (int) (negLogLike);
+        costMatrixMAP(row,col) = (int) (negLogLike) * 100;
+        probMAPMat(row,col) = prob;
         // costMatrix(i,j) = -assignmentProbability*100;
 
         //std::cout << BOLDCYAN << "prob: " << prob << " negLogLikelihood: " << negLogLike << " matrixValue " << costMatrixMAP(row,col) << RESET << std::endl;
@@ -705,7 +710,8 @@ public:
             	negLogLike = 1000;
             }
 
-            costMatrixMAP(row_f,col_f  + nMeasurementsReal) = (int) (negLogLike);
+            costMatrixMAP(row_f,col_f  + nMeasurementsReal) = (int) (negLogLike) * 1000;
+            probMAPMat(row_f,col_f  + nMeasurementsReal) = prob;
 
            }
     }
@@ -738,11 +744,12 @@ public:
 
     for(int i = 0; i < nLegsTracked; i++){
       std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indicesMAP(i) << RESET <<"|";
-      for(int j = 0; j < nMeasurementsReal + nMeasurementsFake; j++)
+      for(int j = 0; j < nMeasurementsReal + nMeasurementsFake; j++){
           std::cout << std::setw(5) << std::fixed << std::setprecision(3) << costMatrixMAP(i,j) << "|";
-
+      }
       std::cout << std::endl;
     }
+
 
 
 
@@ -751,6 +758,7 @@ public:
 
     // TODO depend this on the number of measurements
     solutionsMAP = murty(costMatrixMAP,1);
+    ROS_ASSERT(solutionsMAP.size() == 1);
 
     // TODO Filter the solution regarding several parameters using the leg tracker information
     // TODO Calculate the crossing value of the solutions in order to reject obvious unrealistic solutions
@@ -761,7 +769,36 @@ public:
       std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
     }
 
-    ROS_ASSERT(solutionsMAP.size() == 1);
+
+    // Print the probability matrix
+    std::cout << "probabilities :____" << std::endl;
+    std::cout << "      ";
+    for(int j = 0; j < nMeasurementsReal; j++)
+      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
+    std::cout << RESET;
+
+    for(int j = 0; j < nMeasurementsFake; j++)
+      std::cout << BOLDYELLOW << "LMF" << std::setw(2) << j<< " |";
+    std::cout << RESET << std::endl;
+
+    for(int i = 0; i < nLegsTracked; i++){
+      std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indicesMAP(i) << RESET <<"|";
+      for(int j = 0; j < nMeasurementsReal + nMeasurementsFake; j++){
+          if(solutionsMAP[0].assignmentMatrix(i,j) == 1)
+            std::cout << YELLOW;
+
+          std::cout << std::setw(5) << std::fixed << std::setprecision(3) << probMAPMat(i,j) << RESET "|";
+      }
+      std::cout << std::endl;
+    }
+
+
+
+
+
+
+
+
 
     //////////////////////////////////////////////////////////////
     /// Update leg measurements based on the assigned measurements
@@ -771,6 +808,9 @@ public:
 
     // Get the best solution
     Eigen::Matrix<int,-1,-1> assignmentMat;
+
+    ROS_ASSERT(solutionsMAP.size() == 1);
+
     assignmentMat = solutionsMAP[0].assignmentMatrix;
 
     if(nLegsTracked > 0 && nMeasurementsReal + nMeasurementsFake > 0){
@@ -798,7 +838,7 @@ public:
             // Fake updates
             }else{
 
-              ROS_ASSERT(lm-nMeasurementsReal < detections.size());
+              ROS_ASSERT(lm-nMeasurementsReal < fakeDetections.size());
 
               loc = fakeDetections[lm-nMeasurementsReal]->point_;
               std::cout << loc.frame_id_ << " " << fixed_frame << std::endl;
@@ -810,10 +850,17 @@ public:
             double prob = 1.0; // TODO implement
             int idx = (int) indicesMAP(lt);
 
-            std::cout << "idx " << idx << std::endl;
+            std::cout << "Updating LT[" << idx << "]" << " currently there are"<< std::endl;
 
-            ROS_ASSERT(lt < propagated.size());
-            propagated[idx]->update(loc,prob);
+            ROS_ASSERT_MSG(lt < propagated.size(), "Size propagated is %i", (int) propagated.size());
+
+
+            // Calculate the distance
+            tf::Vector3 leg_pos = propagated[lt]->getEstimate().pos_;
+            double dist = (leg_pos - loc).length();
+
+            if(probMAPMat(lt,lm) > 0.001 && dist < max_meas_jump_m)
+            propagated[lt]->update(loc,prob);
 
           }
 
@@ -1389,7 +1436,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         WeightedSample<StatePosVel> maxSample = *std::max_element(samples.begin(), samples.end(), sampleWeightCompare);
         double maxSampleWeight = maxSample.WeightGet();
 
-
+        int printFirstN = 10; int n = 0;
         for(vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
           geometry_msgs::Point32 point;
           point.x = (*sampleIt).ValueGet().pos_[0];
@@ -1398,7 +1445,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
           //
           int r,g,b;
-
+          double weight;
           // If there is no sample with weight at all, make the particles blue
           if(maxSampleWeight == 0.0){
             r=0;
@@ -1408,9 +1455,10 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
           else
           {
-            double weight = (*sampleIt).WeightGet();
+            weight = (*sampleIt).WeightGet();
             double normalizeWeight = weight / maxSampleWeight;
             redGreenGradient(normalizeWeight,r,g,b);
+
             //std::cout << normalizeWeight << " r:" << r << " g:" << g << " b:" << b << std::endl;
           }
 
@@ -1424,7 +1472,18 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
             particlesPCL.channels[0].values.push_back(color_val);
 
           particlesPCL.points.push_back(point);
+
+
+          if(n < printFirstN){
+            //std::cout << "w: " << weight;
+          }
+          //std::cout << std::endl;
+          n++;
         }
+
+
+
+
 
     }
 
