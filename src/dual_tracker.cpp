@@ -233,6 +233,7 @@ public:
   ros::Publisher jpda_association_pub_; /**< Publish the jpda association probability for debugging purposes */
   ros::Publisher measurement_label_pub_; /**< Publish measurements */
   ros::Publisher particles_arrow_pub_; /** < Publish some particles velocity */
+  ros::Publisher people_3d_pub_; /**< Publish persons in 3d */
 
   dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -292,7 +293,8 @@ public:
     jpda_association_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("jpda_association", 0);
     measurement_label_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("measurement_label", 0);
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
-    map_pub_ 					  = nh_.advertise<visualization_msgs::MarkerArray>("fake_measurements", 0);
+    map_pub_                      = nh_.advertise<visualization_msgs::MarkerArray>("fake_measurements", 0);
+    people_3d_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("persons3d", 0);
 
     if (use_seeds_)
     {
@@ -986,6 +988,8 @@ public:
       publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
       publishPeopleTrackerLabels(scan->header.stamp);
     }
+    // TODO parameter
+    publishPeople3d(scan->header.stamp);
 
     // Publish the history of the persons
     if(publish_people_history_){
@@ -1915,6 +1919,77 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     }
     // Publish
     people_track_label_pub_.publish(labelArray);
+  }
+
+  // Add Labels to the People Trackers
+  void publishPeople3d(ros::Time time){
+
+    // The marker Array
+    visualization_msgs::MarkerArray personsArray;
+
+    int counter = 0;
+    for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
+        peopleTrackerIt != people_trackers_.getList()->end();
+        peopleTrackerIt++){
+
+      if((*peopleTrackerIt)->getTotalProbability() > 0.5 &&
+          (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()))
+      {
+      visualization_msgs::Marker person3d;
+      person3d.header.stamp = time;
+      person3d.header.frame_id = fixed_frame;
+      if((*peopleTrackerIt)->isDynamic()){
+        person3d.ns = "dynamic";
+      }
+      else{
+        person3d.ns = "static";
+      }
+
+      double personHeight = 1;
+      double personWidth = 0.25;
+
+      person3d.id = counter;
+      person3d.type = visualization_msgs::Marker::CYLINDER;
+      person3d.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
+      person3d.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
+      person3d.pose.position.z = personHeight/4;
+      person3d.ns = "person3d";
+      person3d.scale.x = personWidth;
+      person3d.scale.y = personWidth;
+      person3d.scale.z = personHeight/2;
+      person3d.color.a = 0.75;
+      person3d.color.r = 0;
+      person3d.color.g = 0;
+      person3d.color.b = 1;
+      personsArray.markers.push_back(person3d);
+
+      counter++;
+
+      visualization_msgs::Marker personHead;
+      personHead.header.stamp = time;
+      personHead.header.frame_id = fixed_frame;
+      personHead.id = counter;
+      personHead.ns = "person3d_head";
+      personHead.type = visualization_msgs::Marker::SPHERE;
+      personHead.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
+      personHead.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
+      personHead.pose.position.z = personHeight/2 * 1.2;
+      personHead.scale.x = personWidth*1.1;
+      personHead.scale.y = personWidth*1.1;
+      personHead.scale.z = personWidth*1.1;
+      personHead.color.a = 1;
+      personHead.color.r = 0;
+      personHead.color.g = 1;
+      personHead.color.b = 0;
+
+
+      personsArray.markers.push_back(personHead);
+
+      counter++;
+      }
+    }
+    // Publish
+    people_3d_pub_.publish(personsArray);
   }
 
   // Add Labels to the People Trackers
