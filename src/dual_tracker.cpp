@@ -557,12 +557,12 @@ public:
 
 
       if((*clusterIt)->getProbability() > leg_reliability_limit_){
-        DetectionPtr detection(new Detection);
+        DetectionPtr detection(new Detection(detections.size(),loc,(*clusterIt)));
 
         //LegDetectionProb detection;
-        detection->point_ = loc;
-        detection->cluster_ = (*clusterIt);
-        detection->id_ = detections.size();
+        //detection->point_ = loc;
+        //detection->cluster_ = (*clusterIt);
+        //detection->id_ = detections.size();
 
         // Add to the detections
         detections.push_back(detection);
@@ -571,23 +571,6 @@ public:
 
     }
 
-/*    // Create a Fake Detection
-    DetectionPtr detection(new Detection);
-
-    // Create a Fake Point
-    Stamped<Point> fake_loc(tf::Point(1,1,0), scan->header.stamp, scan->header.frame_id);
-
-    // Create a Fake cluster
-    SampleSet* fakeCluster = new SampleSet();
-    fakeCluster->probability_ = 1.0;
-
-    // Create a Fake Clusters
-    detection->point_ = fake_loc;
-    detection->id_    = 0;
-    detection->cluster_ = fakeCluster;
-
-    detections.push_back(detection);*/
-
     // Iterate through all detections
     for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
         detectionIt != detections.end();
@@ -595,7 +578,6 @@ public:
     {
       std::cout << "LM " << std::setw(2) << (*detectionIt)->id_ << std::setw(3) << " x:" << (*detectionIt)->point_[0] << " y:" << (*detectionIt)->point_[1] << " prob:" << (*detectionIt)->cluster_->getProbability() << std::endl;
     }
-
 
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
 
@@ -639,14 +621,18 @@ public:
         		// Calculate a fake detection
         		tf::Vector3 pplPos((*pplIt)->pos_vel_estimation_.pos_);
         		tf::Vector3 widthVec = pplPos - sensorCoord;
+        		widthVec.normalize();
+
+        		widthVec *= 0.5;
 
         		tf::Vector3 fakeMeasPos = pplPos + widthVec;
 
-        		// Create the detection
-        		DetectionPtr fakeDetection(new Detection);
+        		tf::Stamped<tf::Vector3> fakeLoc = tf::Stamped<tf::Vector3>(fakeMeasPos, scan->header.stamp, scan->header.frame_id);
 
-        		fakeDetection->id_ = fakeDetections.size() + detections.size();
-        		fakeDetection->point_ = tf::Stamped<tf::Vector3>(fakeMeasPos, scan->header.stamp, scan->header.frame_id);
+        		double fakeLegProb = 0.95;
+
+        		// Create the detection
+        		DetectionPtr fakeDetection(new Detection(fakeDetections.size() + detections.size(), fakeLoc, fakeLegProb));
 
         		fakeDetections.push_back(fakeDetection);
         	}
@@ -661,19 +647,6 @@ public:
 
     costMatrixMAP = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nLegsTracked,nMeasurementsReal + nMeasurementsFake);
     costMatrixMAP.resize(nLegsTracked, nMeasurementsReal + nMeasurementsFake);
-
-
-
-    // Fill the real detections
-    if(nLegsTracked > 0 && nMeasurementsReal + nMeasurementsFake > 0){
-    int twodim[nLegsTracked][nMeasurementsReal + nMeasurementsFake];
-
-    for(size_t col = 0; col < nMeasurementsReal + nMeasurementsFake; col++){
-    	for(size_t row = 0; row < nLegsTracked; row++){
-    		costMatrixMAP(row,col)=1234;
-
-    	}
-    }
 
     int row = 0;
     for (vector<LegFeaturePtr>::iterator legIt = propagated.begin(); legIt != propagated.end(); legIt++)
@@ -705,7 +678,7 @@ public:
         costMatrixMAP(row,col) = (int) (negLogLike);
         // costMatrix(i,j) = -assignmentProbability*100;
 
-        std::cout << BOLDCYAN << "prob: " << prob << " negLogLikelihood: " << negLogLike << " matrixValue " << costMatrixMAP(row,col) << RESET << std::endl;
+        //std::cout << BOLDCYAN << "prob: " << prob << " negLogLikelihood: " << negLogLike << " matrixValue " << costMatrixMAP(row,col) << RESET << std::endl;
         col++;
       }
 
@@ -716,9 +689,12 @@ public:
         for(size_t row_f = 0; row_f < nLegsTracked; row_f++){
         	 Stamped<Point> loc = fakeDetections[col_f]->point_;
 
-            double fakeProbCorr = 0.8;
+            double fakeProbCorr = 0.95;
             double prob = propagated[row_f]->getMeasurementProbability(loc) * fakeProbCorr;
             double negLogLike = -log(prob);
+
+            std::cout << BOLDCYAN << "LT[" <<  propagated[row_f]->int_id_ << "] prob: " << prob << "negLogLike" << negLogLike << RESET << std::endl;
+
 
 
 
@@ -737,12 +713,9 @@ public:
             	negLogLike = 1000;
             }
 
-            std::cout << "row " << row_f << " col " << col_f << std::endl;
-
             costMatrixMAP(row_f,col_f  + nMeasurementsReal) = (int) (negLogLike);
 
-            std::cout << BOLDCYAN << "prob: " << prob << " negLogLikelihood: " << negLogLike << " matrixValue " << costMatrixMAP(row_f,col_f  + nMeasurementsReal) << RESET << std::endl;
-        }
+           }
     }
 
 
@@ -762,6 +735,7 @@ public:
 
     // Print the probability matrix
     std::cout << "costMatrixMAP :____" << std::endl;
+    std::cout << "      ";
     for(int j = 0; j < nMeasurementsReal; j++)
       std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
     std::cout << RESET;
@@ -777,10 +751,141 @@ public:
 
       std::cout << std::endl;
     }
+
+
+
+    //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
+    std::vector<Solution> solutionsMAP;
+
+    // TODO depend this on the number of measurements
+    solutionsMAP = murty(costMatrixMAP,1);
+
+    // TODO Filter the solution regarding several parameters using the leg tracker information
+    // TODO Calculate the crossing value of the solutions in order to reject obvious unrealistic solutions
+
+    std::cout << "Solutions are:" << std::endl;
+    for(std::vector<Solution>::iterator solIt = solutionsMAP.begin(); solIt != solutionsMAP.end(); solIt++){
+      color_print_solution(costMatrixMAP,solIt->assignmentMatrix);
+      std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
     }
 
-    ROS_ASSERT(nMeasurementsFake == 0);
-    assert(nMeasurementsFake == 0);
+    ROS_ASSERT(solutionsMAP.size() == 1);
+
+    //////////////////////////////////////////////////////////////
+    /// Update leg measurements based on the assigned measurements
+    //////////////////////////////////////////////////////////////
+
+    std::cout << "Starting Updating the legs" << std::endl;
+
+    // Get the best solution
+    Eigen::Matrix<int,-1,-1> assignmentMat;
+    assignmentMat = solutionsMAP[0].assignmentMatrix;
+
+    if(nLegsTracked > 0 && nMeasurementsReal + nMeasurementsFake > 0){
+
+      ROS_ASSERT(nLegsTracked == assignmentMat.rows());
+      ROS_ASSERT(nMeasurementsReal + nMeasurementsFake == assignmentMat.cols());
+
+      for(int lt = 0; lt < assignmentMat.rows(); lt++){
+        for(int lm = 0; lm < assignmentMat.cols(); lm++){
+
+          // If there is an assignment
+          ROS_ASSERT(lm < assignmentMat.cols());
+          ROS_ASSERT(lt < assignmentMat.rows());
+          if(assignmentMat(lt,lm) != 0){
+
+            Stamped<Point> loc;
+            // Get the location
+            if(lm < nMeasurementsReal){
+
+              ROS_ASSERT(lm < detections.size());
+              loc = detections[lm]->point_;
+              ROS_ASSERT(loc.frame_id_ == fixed_frame);
+            }else{
+
+              ROS_ASSERT(lm-nMeasurementsReal < detections.size());
+
+              loc = detections[lm-nMeasurementsReal]->point_;
+              ROS_ASSERT(loc.frame_id_ == fixed_frame);
+            }
+
+            double prob = 1.0; // TODO implement
+            int idx = (int) indicesMAP(lt);
+
+            ROS_ASSERT(idx < propagated.size());
+            propagated[idx]->update(loc,prob);
+
+          }
+
+        }
+      }
+
+    }
+
+
+
+    /////////////////////////////////////////////////////////////////////////
+    /// Objects Creation
+    /////////////////////////////////////////////////////////////////////////
+
+    std::cout << "Starting creation of new objects" << std::endl;
+
+    // Iterate the measurements
+    for(int lm = 0; lm < nMeasurementsReal; lm++){
+
+      // If there are no trackers
+      if(nLegsTracked == 0){
+
+        // Create track for every reliable measurement
+        ROS_ASSERT(lm < nMeasurementsReal); // TODO better
+        ROS_ASSERT(lm < assignmentMat.cols());
+        ROS_ASSERT(lm < detections.size());
+
+        if(detections[lm]->getProbability() > new_track_min_probability_){
+          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[lm]->point_, tfl_));
+
+          // Set the occlusion model
+          newLegFeature->setOcclusionModel(occlusionModel_);
+
+          // Insert the leg feature into the propagated list
+          saved_leg_features.push_back(newLegFeature);
+
+          std::cout << BOLDRED << " -> Creating new Tracker LT" << newLegFeature->int_id_ << RESET << std::endl;
+
+        }
+
+      }
+
+      // If tracks exist
+      else{
+
+        // Create track for every reliable(real!) measurement
+        ROS_ASSERT(lm < nMeasurementsReal); // TODO better
+        ROS_ASSERT(lm < assignmentMat.cols());
+        ROS_ASSERT(lm < detections.size());
+        ROS_ASSERT(assignmentMat.col(lm).sum() == 0 || assignmentMat.col(lm).sum() == 1); // Check that this is hold
+
+        // If there is no measurement assigned to this
+        if(assignmentMat.col(lm).sum() == 0  && detections[lm]->getProbability() > new_track_min_probability_){
+
+          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[lm]->point_, tfl_));
+
+          // Set the occlusion model
+          newLegFeature->setOcclusionModel(occlusionModel_);
+
+          // Insert the leg feature into the propagated list
+          saved_leg_features.push_back(newLegFeature);
+
+          std::cout << BOLDRED << " -> Creating new Tracker LT[" << newLegFeature->int_id_ << "]" << RESET << std::endl;
+
+        }
+
+
+      }
+    }
+
+
+    //ROS_ASSERT(nMeasurementsFake == 0);
 
     //////////////////////////////////////////////////////////////////////////
     //// Joint Probability Data Association
@@ -1048,6 +1153,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
 
     bool useJPDA = false;
+    bool usegreedy = false;
 
     if(useJPDA){
 
@@ -1145,7 +1251,7 @@ public:
 
     // The found matches
     multiset<MatchedFeature> matches;
-    if(!useJPDA){
+    if(usegreedy){
 
 
 
