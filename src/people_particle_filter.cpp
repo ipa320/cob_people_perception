@@ -106,10 +106,10 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
       std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
     }
 
-    assert(this->_dynamicResampling == true); // TODO
+    //assert(this->_dynamicResampling == true); // TODO
     //result = result && this->StaticResampleStep(); // TODO necessary?
 
-    result = result && this->DynamicResampleStep();
+    //result = result && this->DynamicResampleStep();
 
     result = result && this->ProposalStepInternal(sysmodel,u,measmodel,z,s);
 

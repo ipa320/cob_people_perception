@@ -184,9 +184,6 @@ void LegFeature::propagate(ros::Time time)
     filter_.updatePrediction(time.toSec(),cov);
   }
 
-  // Update the Position after the prediction
-  updatePosition();
-
   // Set the predicted Position of this tracker, mainly for debugging purposes
   position_predicted_ = position_;
 
@@ -197,13 +194,14 @@ void LegFeature::propagate(ros::Time time)
 // Here the measurement is used to update the filter location
 void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 {
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature[%i]::%s",int_id_,__func__);
+  std::cout << "Received update: " << loc.getX() << "  " << loc.getY() << "  " << loc.getZ() << std::endl;
 
   meas_loc_last_update_ = loc;
 
   // Set the tf to represent this
-  tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
-  tfl_.setTransform(pose);
+  //tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
+  //tfl_.setTransform(pose);
 
   // Update the measurement time
   meas_time_ = loc.stamp_;
@@ -291,7 +289,7 @@ double LegFeature::getMeasurementProbability(tf::Stamped<tf::Point> loc){
  */
 void LegFeature::updatePosition()
 {
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature[%d]::%s",(int)int_id_,__func__);
 
   BFL::StatePosVel est;
 
@@ -301,7 +299,9 @@ void LegFeature::updatePosition()
   // Estimate using the most likely particle
   // filter_.getMostLikelyPosition(est);
 
+  std::cout << pos_vel_ << " --Update--> ";
   pos_vel_ = est;
+  std::cout << pos_vel_ << std::endl;
 
   position_[0] = est.pos_[0];
   position_[1] = est.pos_[1];

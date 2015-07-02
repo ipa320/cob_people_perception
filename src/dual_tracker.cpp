@@ -559,11 +559,6 @@ public:
       if((*clusterIt)->getProbability() > leg_reliability_limit_){
         DetectionPtr detection(new Detection(detections.size(),loc,(*clusterIt)));
 
-        //LegDetectionProb detection;
-        //detection->point_ = loc;
-        //detection->cluster_ = (*clusterIt);
-        //detection->id_ = detections.size();
-
         // Add to the detections
         detections.push_back(detection);
         ROS_ASSERT(loc.getZ() == 0); //TODO Remove
@@ -596,7 +591,6 @@ public:
 
     for(std::vector<PeopleTrackerPtr>::iterator pplIt = ppls->begin(); pplIt != ppls->end(); pplIt++){
 
-    	std::cout << "Counting number of measurements" << std::endl;
     	if((*pplIt)->getTotalProbability() > 0.4){
 
     		int numberOfMeasurementsWithinRange = 0;
@@ -606,7 +600,7 @@ public:
     	        detectionIt++)
     	    {
     	    	Stamped<Point> loc = (*detectionIt)->point_;
-    	    	double dist = loc.distance((*pplIt)->pos_vel_estimation_.pos_);
+    	    	double dist = loc.distance((*pplIt)->getEstimate().pos_);
 
     	    	if(dist < rangeThres){
     	    		numberOfMeasurementsWithinRange++;
@@ -614,16 +608,15 @@ public:
 
     	    }
     		std::cout << **pplIt << std::endl;
-    		std::cout << numberOfMeasurementsWithinRange << std::endl;
 
         	// Partial occlusion
         	if(numberOfMeasurementsWithinRange == 1){
         		// Calculate a fake detection
-        		tf::Vector3 pplPos((*pplIt)->pos_vel_estimation_.pos_);
+        		tf::Vector3 pplPos((*pplIt)->getEstimate().pos_);
         		tf::Vector3 widthVec = pplPos - sensorCoord;
         		widthVec.normalize();
 
-        		widthVec *= 0.5;
+        		widthVec *= 0.1;
 
         		tf::Vector3 fakeMeasPos = pplPos + widthVec;
 
@@ -641,9 +634,6 @@ public:
     }
 
     int nMeasurementsFake = fakeDetections.size();
-    std::cout << RED << "nMeasurementsFake" << nMeasurementsFake << RESET << std::endl;
-
-
 
     costMatrixMAP = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nLegsTracked,nMeasurementsReal + nMeasurementsFake);
     costMatrixMAP.resize(nLegsTracked, nMeasurementsReal + nMeasurementsFake);
@@ -800,19 +790,27 @@ public:
 
               ROS_ASSERT(lm < detections.size());
               loc = detections[lm]->point_;
-              ROS_ASSERT(loc.frame_id_ == fixed_frame);
+              std::cout << loc.frame_id_ << " " << fixed_frame << std::endl;
+              //ROS_ASSERT(loc.frame_id_ == fixed_frame);
+
+            // Fake updates
             }else{
 
               ROS_ASSERT(lm-nMeasurementsReal < detections.size());
 
-              loc = detections[lm-nMeasurementsReal]->point_;
-              ROS_ASSERT(loc.frame_id_ == fixed_frame);
+              loc = fakeDetections[lm-nMeasurementsReal]->point_;
+              std::cout << loc.frame_id_ << " " << fixed_frame << std::endl;
+
+              //ROS_ASSERT(loc.frame_id_ == fixed_frame);
+
             }
 
             double prob = 1.0; // TODO implement
             int idx = (int) indicesMAP(lt);
 
-            ROS_ASSERT(idx < propagated.size());
+            std::cout << "idx " << idx << std::endl;
+
+            ROS_ASSERT(lt < propagated.size());
             propagated[idx]->update(loc,prob);
 
           }
@@ -884,452 +882,6 @@ public:
       }
     }
 
-
-    //ROS_ASSERT(nMeasurementsFake == 0);
-
-    //////////////////////////////////////////////////////////////////////////
-    //// Joint Probability Data Association
-    //////////////////////////////////////////////////////////////////////////
-    ROS_DEBUG("%sJPDA [Cycle %u]", BOLDWHITE, cycle_);
-    benchmarking::Timer jpdaTimer; jpdaTimer.start();
-
-
-    // Precheck for new tracks
-
-
-
-
-
-
-
-
-
-
-
-
-
-    int i=0; // Object indice
-    int j=1; // Measurement indice
-
-    int counter = 0;
-
-    int nObjects = propagated.size();
-    int nMeasurements = detections.size() + 1; // One extra for the occlusion probability
-
-    // Generate Matrix
-    //std::cout << "There are currently " << nObjects << " objects and " << nMeasurements << " measurements(occlusion included)" << std::endl;
-    Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> costMatrix;
-    costMatrix = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nObjects,nMeasurements);
-
-    // Iterate through all detections
-    for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
-        detectionIt != detections.end();
-        detectionIt++)
-    {
-
-      i=0;
-
-      // Iterate through the trackers
-      for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
-          legIt != propagated.end();
-          legIt++)
-      {
-
-        Stamped<Point> loc = (*detectionIt)->point_;
-        SampleSet* cluster = (*detectionIt)->cluster_;
-
-        // find the closest distance between candidate and trackers
-        float dist = loc.distance((*legIt)->position_);
-        // TODO: Where exactly is loc to be expected? Should it be calculated based on particles?
-
-        // Calculate assignment probability
-        float assignmentProbability;
-        assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
-        // TODO investigate this parameters
-        //costMatrix(i,j) = min((int)-log(assignmentProbability),1000);
-        costMatrix(i,j) = -assignmentProbability*100;
-
-        i++;
-      }
-      //std::cout << std::endl;
-      j++;
-    }
-
-    // Fill the first column of the cost matrix with dummy data for occluded objects
-    int occlusionCostValue = -60; // TODO, make the dependend on something else
-    for(int i = 0; i<nObjects;i++){
-      costMatrix(i,0) = occlusionCostValue;
-    }
-
-    // Store the object indices, this is needed since the Leg Feature IDs will change with time due to creation and deletion of tracks
-    Eigen::VectorXi indices = Eigen::VectorXi::Zero(nObjects,1);
-    int indices_counter = 0;
-    for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
-        legIt != propagated.end();
-        legIt++)
-    {
-      indices(indices_counter) = (*legIt)->int_id_;
-      indices_counter++;
-    }
-
-    // Calculate the k-best assignments using murtys algorithm
-    ////////////////////////////////////////////////////////////////////////////////////
-
-    //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
-    std::vector<Solution> solutions;
-
-    // TODO depend this on the number of measurements
-    int k = nObjects;
-    solutions = murty(costMatrix,k);
-
-    // TODO Filter the solution regarding several parameters using the leg tracker information
-    // TODO Calculate the crossing value of the solutions in order to reject obvious unrealistic solutions
-
-    std::cout << "Solutions are:" << std::endl;
-    for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
-      color_print_solution(costMatrix,solIt->assignmentMatrix);
-      std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
-    }
-
-    // DEBUG OUTPUT
-    std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
-
-    // Precaculate which measurements will be required
-    Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> neededUpdateMat = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nObjects,nMeasurements);
-    for(std::vector<Solution>::iterator solIt = solutions.begin(); solIt != solutions.end(); solIt++){
-      neededUpdateMat += solIt->assignmentMatrix;
-    }
-
-    // Calculate the required measurement probabilities
-    // Each entry represents 1/N \sum_{n=1}^N p(z_j(k)|x_{i,n}^n)
-    Eigen::Matrix< double, Eigen::Dynamic, Eigen::Dynamic> probabilities = Eigen::Matrix< double, Eigen::Dynamic, Eigen::Dynamic>::Constant(nObjects,nMeasurements,-1);
-
-    //std::cout << "propagated.size() " << propagated.size() << std::endl;
-    //std::cout << "probabilities.rows() " << probabilities.rows() << std::endl;
-
-
-
-    for(int j = 0; j < probabilities.cols(); j++){
-      for(int i = 0; i < probabilities.rows(); i++){
-
-        // If this calculation is needed
-        if(neededUpdateMat(i,j) != 0){
-
-          double prob = 0.0;
-
-          // Calculate Occlusion Probability
-          if(j == 0){
-            // TODO Implement the calculation of the occlusion probability
-
-            prob = propagated[i]->getOcclusionProbability(occlusionModel_); // TODO
-          }
-
-          // Calculate the measurement probability
-          else
-          {
-            prob = propagated[i]->getMeasurementProbability(detections[j-1]->point_);
-          }
-
-          probabilities(i,j) = prob;
-
-        }
-
-      }
-    }
-    std::cout << "measurement probabilities" << std::endl << probabilities << std::endl;
-
-
-    // Fill the assignment probability matrix (contains \beta_ij)
-    Eigen::Matrix<double, -1,-1> assignmentProbabilityMatrix = Eigen::Matrix< double, -1, -1>::Zero(nObjects,nMeasurements);
-
-    for(int j = 0; j < nMeasurements; j++){
-      for(int i = 0; i < nObjects; i++){
-
-        double prob = 0.0;
-
-        // Iterate the possible assignments
-        for(int l = 0; l < solutions.size(); l++){
-
-          // Check if this assignment associates measurement j with object i
-          if(solutions[l].assignmentMatrix(i,j) == 1){
-
-            double falseMeasurementProbability = 0.01;
-            prob += jpda::calculateAssociationProbability(solutions[l].assignmentMatrix,falseMeasurementProbability,probabilities);
-
-            assignmentProbabilityMatrix(i,j) = prob;
-            //TODO Remember the occlusion probabilities
-          }
-        }
-      }
-    }
-
-    // Normalize the Assignment Probability Matrix
-    Eigen::Matrix<double, -1,-1> assignmentProbabilityMatrixNormalized = Eigen::Matrix< double, -1, -1>::Zero(nObjects,nMeasurements);
-    for(int i = 0; i < assignmentProbabilityMatrixNormalized.rows(); i++){
-
-    	double rowSum = assignmentProbabilityMatrix.row(i).sum();
-    	if(rowSum > 0.0){
-    		assignmentProbabilityMatrixNormalized.row(i) = assignmentProbabilityMatrix.row(i)/rowSum;
-    	}
-    }
-
-    // Print the probability matrix
-    std::cout << "Probability Matrix:____" << std::endl;
-    std::cout << "     |Occ  |";
-    for(int j = 0; j < nMeasurements-1; j++)
-      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
-    std::cout << RESET << std::endl;
-
-    for(int i = 0; i < nObjects; i++){
-      std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indices(i) << RESET <<"|";
-      for(int j = 0; j < nMeasurements; j++)
-        if(probabilities(i,j) > 0.0)
-          std::cout << std::setw(5) << std::fixed << std::setprecision(3) << probabilities(i,j) << "|";
-        else
-          std::cout << "     |";
-      std::cout << std::endl;
-    }
-
-
-    // Print the assignment probability matrix
-    std::cout << "Assignment Probability Matrix:____" << std::endl;
-    std::cout << "     |Occ  |";
-    for(int j = 0; j < nMeasurements-1; j++)
-    	std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
-    std::cout << RESET << std::endl;
-
-    for(int i = 0; i < nObjects; i++){
-    	std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indices(i) << RESET <<"|";
-    	for(int j = 0; j < nMeasurements; j++)
-    		if(assignmentProbabilityMatrixNormalized(i,j) > 0.0)
-    			std::cout << std::setw(5) << std::fixed << std::setprecision(3) << assignmentProbabilityMatrixNormalized(i,j) << "|";
-    		else
-    			std::cout << "     |";
-    	std::cout << std::endl;
-    }
-
-    Eigen::Matrix<double, -1,-1> combinedMat = Eigen::Matrix< double, -1, -1>::Zero(nObjects,nMeasurements);
-    combinedMat = (probabilities.array() * assignmentProbabilityMatrixNormalized.array()).matrix();
-
-
-    // Print the assignment probability matrix
-    std::cout << "Combined Probability Matrix:____" << std::endl;
-    std::cout << "     |Occ  |";
-    for(int j = 0; j < nMeasurements-1; j++)
-      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
-    std::cout << RESET << std::endl;
-
-    for(int i = 0; i < nObjects; i++){
-      std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indices(i) << RESET <<"|";
-      for(int j = 0; j < nMeasurements; j++)
-        if(combinedMat(i,j) > 0.0)
-          std::cout << std::setw(5) << std::fixed << std::setprecision(3) << combinedMat(i,j) << "|";
-        else
-          std::cout << "     |";
-      std::cout << std::endl;
-    }
-
-
-    // The assignment probability matrix indicates which measurements influences which tracker to what degree.
-    //std::cout << "Assignment Probabilities Matrix" << std::endl << assignmentProbabilityMatrix << std::endl;
-
-
-    //std::cout << "Normalized version: " << std::endl << assignmentProbabilityMatrixNormalized << std::endl;
-
-//    /// Invalidate Leg Trackers in necessary
-//    for(int i = 0; i < nObjects; i++){
-//      if(combinedMat.row(i).sum())
-//      propagated[i]->setValidity(false);
-//    }
-
-
-    jpdaTimer.stop();
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - JPDA",__func__);
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"DualTracker::%s - JPDA took %f ms",__func__, jpdaTimer.getElapsedTimeMs());
-    ROS_DEBUG("%sJPDA Done! [Cycle %u]", BOLDWHITE, cycle_);
-
-    //////////////////////////////////////////////////////////////////////////
-    //// JPDA Update (Use the results of the JPDA to update the leg trackers
-    //////////////////////////////////////////////////////////////////////////
-
-    bool useJPDA = false;
-    bool usegreedy = false;
-
-    if(useJPDA){
-
-    /// Avoid updates of trackers with low probability
-    // Iterate through the trackers
-    std::cout << BOLDYELLOW << "Doing the JPDA Update: " << RESET << std::endl;
-    for (unsigned int i = 0; i < propagated.size(); i++)
-    {
-      // Get the probabilities concerning this tracker
-      Eigen::VectorXd probs;
-      probs = assignmentProbabilityMatrixNormalized.row(i);
-
-      if(probabilities.row(i).maxCoeff() > 0.03 && probabilities(i,0) < 0.5){
-        std::cout << "LT" << propagated[i]->int_id_ << " is updated" << std::endl;
-        propagated[i]->JPDAUpdate(detections, probs, occlusionModel_, scan->header.stamp);
-      }
-      // Avoid updates of bad leg trackers
-      else
-      {
-        std::cout << "LT" << i << " is NOT updated because no reliable association is found" << std::endl;
-      }
-    }
-
-
-
-    /// Create new trackers if needed
-    // Iterate through the assignment probabilities of each measurement, create a new LT for each LM not assigned to any LT
-    std::cout << "";
-
-    unsigned int newTrackCounter = 0;
-
-    for (unsigned int j = 1; j < nMeasurements; j++){
-
-      // There should be at least some objects, this is not the case on the first run
-      if(nObjects > 0){
-        // Get the maximum likelihood
-        double maxLikelihood = probabilities.col(j).maxCoeff();
-        double minCreationLikelihood = 0.05;
-
-        if(maxLikelihood < 0.01){
-
-          std::cout << "max. Likelihood for LM" << j-1 << " is " << maxLikelihood;
-
-          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[j-1]->point_, tfl_));
-
-          // Set the occlusion model
-          newLegFeature->setOcclusionModel(occlusionModel_);
-
-          // Insert the leg feature into the propagated list
-          saved_leg_features.push_back(newLegFeature);
-
-          // Increase the new track counter
-          ++newTrackCounter;
-
-          std::cout << BOLDRED << " -> Creating new Tracker LT" << newLegFeature->int_id_ << RESET << std::endl;
-
-        }
-
-
-      }
-
-      // No objects are yet tracked at all
-      else
-      {
-
-        //double newTrackProbability = (1 - combinedMat.row())
-
-        std::cout << "No object found for measurement LM" << j-1 << " ... Creating new LT" << std::endl;
-        if(detections[j-1]->cluster_->getProbability( ) > new_track_min_probability_){
-
-          std::cout << "New object is to be created for measurement " << j-1 << "(prob "<< detections[j-1]->cluster_->getProbability( ) << " at " << detections[j-1]->point_[0] << "   " << detections[j-1]->point_[1] << std::endl;
-
-          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[j-1]->point_, tfl_));
-
-          // Set the occlusion model
-          newLegFeature->setOcclusionModel(occlusionModel_);
-
-          // Insert the leg feature into the propagated list
-          saved_leg_features.push_back(newLegFeature);
-
-          // Increase the new track counter
-          ++newTrackCounter;
-        }
-      }
-
-    }
-
-    std::cout << "Created " << newTrackCounter << " LTs" << std::endl;
-    }
-    //std::cout << "Second" << possibleAssignments(1,1) << std::endl;
-    //////////////////////////////////////////////////////////////////////////
-    //// Matching (Match Leg Detection to Trackers)
-    //////////////////////////////////////////////////////////////////////////
-
-
-    // The found matches
-    multiset<MatchedFeature> matches;
-    if(usegreedy){
-
-
-
-    ROS_DEBUG("%sMatching [Cycle %u]", BOLDWHITE, cycle_);
-
-    // Input: The propagated and new trackers, the leg detections
-
-    // Detection step: build up the set of "candidate" clusters
-    // For each candidate, find the closest tracker (within threshold) and add to the match list
-    // If no tracker is found, start a new one
-    // Match = cluster <-> Saved Feature (LEG)
-
-    unsigned int newTrackCounter = 0;
-    unsigned int matchesCounter = 0;
-
-
-
-    //assert(false);
-
-    // Iterate through all detections
-    for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
-        detectionIt != detections.end();
-        detectionIt++)
-    {
-
-      Stamped<Point> loc = (*detectionIt)->point_;
-      SampleSet* cluster = (*detectionIt)->cluster_;
-
-      // Find the closest tracker (Note that the tracker has been updated using the filter!)
-      // Multiple measurements could be assigned to the same tracker! This problem is solved below. Better methods could be thought of.
-      // IDEA_ Do this better! The closest is no necessarily the right one
-      vector<LegFeaturePtr>::iterator closest = propagated.end();
-      float closest_dist = max_track_jump_m;
-
-      // Iterate through the trackers
-      for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
-          legIt != propagated.end();
-          legIt++)
-      {
-        // find the closest distance between candidate and trackers
-        float dist = loc.distance((*legIt)->position_);
-        if (dist < closest_dist)
-        {
-          closest = legIt;
-          closest_dist = dist;
-        }
-      }
-      // Nothing close to it, start a new track // TODO only create if the probability is high
-      if (closest == propagated.end())
-      {
-        std::cout << "Meas. Prob." << (*detectionIt)->cluster_->probability_ << std::endl;
-        std::cout << "#########################################################################################################" << std::endl;
-
-
-        if(cluster->getProbability( )> new_track_min_probability_){
-          loc.setZ(0); // TODO ugly fix
-          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(loc, tfl_));
-          newLegFeature->setOcclusionModel(occlusionModel_);
-          vector<LegFeaturePtr>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), newLegFeature);
-          ++newTrackCounter;
-        }
-
-      }
-      // Add the candidate, the tracker and the distance to a match list
-      else
-      {
-        matches.insert(MatchedFeature(cluster, *closest, closest_dist, cluster->getProbability()));
-        ++matchesCounter;
-      }
-
-    }// end iterate the clusters
-
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"DualTracker::%s - Associated tracks to legs - %i matches - %i new tracks",__func__, matchesCounter, newTrackCounter);
-    ROS_DEBUG("%sMatching Done! [Cycle %u]", BOLDWHITE, cycle_);
-
-    }
-
-
     //////////////////////////////////////////////////////////////////////////
     //// High level Association: Combination of saved features to people tracker (takes approx. 0.8ms)
     //////////////////////////////////////////////////////////////////////////
@@ -1369,109 +921,6 @@ public:
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"High level association took %f ms", hlAssociationTimer.getElapsedTimeMs());
     ROS_DEBUG("%sHigh Level Association done! [Cycle %u]", BOLDWHITE, cycle_);
 
-
-    //////////////////////////////////////////////////////////////////////////
-    //// Update (Update the Trackers using the latest measurements (GNN)
-    //////////////////////////////////////////////////////////////////////////
-
-    if(!useJPDA){
-
-    ROS_DEBUG("%sUpdate [Cycle %u]", BOLDWHITE, cycle_);
-
-    // IDEA_ The next step contains one flaw, it is random which closest tracker get choosen and update the tracker, this unacceptable
-    // IDEA_ Deploy Linear Association Problem Solver Here
-    // Update the matched trackers
-    while (matches.size() > 0)
-    {
-      multiset<MatchedFeature>::iterator matched_iter = matches.begin();  // Matches iterator
-      bool found = false;
-
-      // Iterate the propagated SavedFeatures(Legs)
-      vector<LegFeaturePtr>::iterator pf_iter = propagated.begin(); // Tracker iterator
-      while (pf_iter != propagated.end()) // Iterate through all the trackers
-      {
-        // update the tracker with this candidate
-        if (matched_iter->closest_ == *pf_iter) // If this is already the pair
-        {
-          // Transform candidate to fixed frame
-          Stamped<Point> loc(matched_iter->candidate_->center(), scan->header.stamp, scan->header.frame_id);
-          try
-          {
-            tfl_.transformPoint(fixed_frame, loc, loc);
-          }
-          catch (...)
-          {
-            ROS_WARN("TF exception spot 4.");
-          }
-
-          loc.setZ(0.); // TODO ugly fix that
-          // Update the tracker with the candidate location
-          matched_iter->closest_->update(loc, matched_iter->probability_);
-
-          //assert(false);
-
-          // remove this match and
-          matches.erase(matched_iter);
-          propagated.erase(pf_iter++);
-          found = true;
-          break;
-        }
-        // still looking for the tracker to update
-        else
-        {
-          pf_iter++;
-        }
-      }
-
-      // didn't find tracker to update, because it was deleted above
-      // try to assign the candidate(leg) to another tracker
-      // Explanation: since multiple features could be assigned to the same tracker this can happen. The solution here to this however is not optimal.
-      if (!found)
-      {
-
-        Stamped<Point> loc(matched_iter->candidate_->center(), scan->header.stamp, scan->header.frame_id);
-        try
-        {
-          tfl_.transformPoint(fixed_frame, loc, loc);
-        }
-        catch (...)
-        {
-          ROS_WARN("TF exception spot 5.");
-        }
-
-        vector<LegFeaturePtr>::iterator closest = propagated.end();
-        float closest_dist = max_track_jump_m;
-
-        for (vector<LegFeaturePtr>::iterator remain_iter = propagated.begin();
-             remain_iter != propagated.end();
-             remain_iter++)
-        {
-          float dist = loc.distance((*remain_iter)->position_);
-          if (dist < closest_dist)
-          {
-            closest = remain_iter;
-            closest_dist = dist;
-          }
-        }
-
-        // no tracker is within a threshold of this candidate
-        // so create a new tracker for this candidate
-        if (closest == propagated.end()){
-          loc.setZ(0); // TODO
-          vector<LegFeaturePtr>::iterator new_saved = saved_leg_features.insert(saved_leg_features.end(), boost::shared_ptr<LegFeature>(new LegFeature(loc, tfl_)));
-
-        }
-        else{
-          matches.insert(MatchedFeature(matched_iter->candidate_, *closest, closest_dist, matched_iter->probability_));
-
-        }
-          matches.erase(matched_iter);
-      }
-    }
-    ROS_DEBUG("%sUpdate done! [Cycle %u]", BOLDWHITE, cycle_);
-    }
-
-
     //////////////////////////////////////////////////////////////////////////
     //// High level Update (Update of the people trackers
     //////////////////////////////////////////////////////////////////////////
@@ -1485,9 +934,6 @@ public:
     //////////////////////////////////////////////////////////////////////////
     //// Publish data
     //////////////////////////////////////////////////////////////////////////
-
-
-
 
     ROS_DEBUG("%sPublishing [Cycle %u]", BOLDWHITE, cycle_);
 
@@ -1535,10 +981,6 @@ public:
       publishScanLines(*scan);
     }
 
-    if(publish_jpda_associations_){
-      publishJPDAAssociations(saved_leg_features, detections, indices, assignmentProbabilityMatrix, scan->header.stamp);
-    }
-
     if(publish_people_tracker_){
       publishPeopleTracker(scan->header.stamp);
       publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
@@ -1564,19 +1006,8 @@ public:
       publishMeasurementsLabels(detections, scan->header.stamp);
     }
 
-    publishFakeMeasPos(people_trackers_.getList(), scan->header.stamp, sensorCoord);
+    publishFakeMeasPos(fakeDetections, scan->header.stamp, sensorCoord);
 
-    //////////////////////////////////////////////////////////////////////////
-    //// Print debug information (Should happen after visual publications)
-    //////////////////////////////////////////////////////////////////////////
-
-    // Print Occlusion Probabilities
-    std::cout << "Occlusion Probabilities" << std::endl;
-    for(int i = 0; i < probabilities.rows(); i++)
-      std::cout << "[" << indices[i] << "] " <<  probabilities(i,0) << std::endl;
-
-
-    ROS_DEBUG("%sPublishing done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
     //// Cleaning (Clear data)
     //////////////////////////////////////////////////////////////////////////
@@ -2487,72 +1918,59 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
   }
 
   // Add Labels to the People Trackers
-  void publishFakeMeasPos(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time, tf::Stamped<tf::Point> sensorCoord){
+  void publishFakeMeasPos(std::vector<DetectionPtr> fakeDetections, ros::Time time, tf::Stamped<tf::Point> sensorCoord){
 
     visualization_msgs::MarkerArray msgArray;
 
+    if(fakeDetections.size() == 0){
+      // The geometry message
+      visualization_msgs::Marker sphere;
+      sphere.type = visualization_msgs::Marker::DELETE;
+      sphere.header.frame_id = fixed_frame;
+      sphere.header.stamp = time;
+      sphere.id = 0;
+      sphere.ns = "FakeMeasurements";
+      msgArray.markers.push_back(sphere);
+    }
+
     int counter = 0;
-    for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
-        peopleIt != peopleTracker->end();
-        peopleIt++)
+    for (vector<DetectionPtr>::iterator detectionIt = fakeDetections.begin();
+        detectionIt != fakeDetections.end();
+        detectionIt++)
     {
 
-      if
-      (
-          (*peopleIt)->getTotalProbability() > 0.25 &&
-          (*peopleIt)->isDynamic()
-      )
-      {
-
         // The geometry message
-        visualization_msgs::Marker line_list;
-        line_list.type = visualization_msgs::Marker::LINE_LIST;
-        line_list.header.frame_id = fixed_frame;
-        line_list.header.stamp = time;
-        line_list.id = counter;
-        line_list.ns = "FakeMeasurements";
+        visualization_msgs::Marker sphere;
+        sphere.type = visualization_msgs::Marker::SPHERE;
+        sphere.header.frame_id = fixed_frame;
+        sphere.header.stamp = time;
+        sphere.id = counter;
+        sphere.ns = "FakeMeasurements";
+        sphere.pose.position.x = (*detectionIt)->point_[0];
+        sphere.pose.position.y = (*detectionIt)->point_[1];
+        sphere.pose.position.z = 0;
+        sphere.color.r = 0.8;
+        sphere.color.g = 0;
+        sphere.color.b = 0;
+        sphere.color.a = 0.8;
 
         // width
-        line_list.scale.x = 0.1;
+        sphere.scale.x = 0.2;
+        sphere.scale.y = 0.2;
+        sphere.scale.z = 0.2;
 
         // Set the color
 
         int r,g,b;
-        //r = 255;
+        r = 255;
         //getColor((*legFeatureIt)->int_id_,r,g,b);
-
-
-
-        // Calculate the precise position
-        tf::Vector3 vec;
-
-        tf::Vector3 fake((*peopleIt)->getEstimate().pos_[0],(*peopleIt)->getEstimate().pos_[1],0);
-        vec = fake - sensorCoord;
-
-        line_list.color.r = 255.0;
-        line_list.color.g = 0;
-        line_list.color.b = 100;
-        line_list.color.a = 1.0;
-
-        geometry_msgs::Point point0, point1;
-        point0.x = sensorCoord.getX();
-        point0.y = sensorCoord.getY();
-        point0.z = 0;
-
-        point1.x = (*peopleIt)->getEstimate().pos_[0] + vec[0];
-        point1.y = (*peopleIt)->getEstimate().pos_[1] + vec[1];
-        point1.z = 0;
-
-        line_list.points.push_back(point0);
-        line_list.points.push_back(point1);
-
 
         counter++;
 
         // Publish the pointcloud
-        msgArray.markers.push_back(line_list);
+        msgArray.markers.push_back(sphere);
 
-      }
+
     }
 
     map_pub_.publish(msgArray);

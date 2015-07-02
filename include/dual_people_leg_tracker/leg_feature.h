@@ -24,7 +24,7 @@
 #include <people_tracking_filter/rgb.h>
 
 // Default variables
-#define DEBUG_LEG_TRACKER 0
+#define DEBUG_LEG_TRACKER 1
 
 class PeopleTracker; // Forward declaration
 typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr; // Forward declaration
@@ -39,6 +39,9 @@ typedef std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > LegHistory;
  */
 class LegFeature
 {
+private:
+  BFL::StatePosVel pos_vel_; /**< The currently estimated pos_vel_ */
+
 public:
   static int nextid;
   tf::TransformListener& tfl_;
@@ -76,8 +79,6 @@ public:
   tf::Stamped<tf::Point> position_updated_; /**< The currently estimated leg position */
 
   tf::Stamped<tf::Point> initial_position_; /**< The initial position */
-
-  BFL::StatePosVel pos_vel_; /**< The currently estimated pos_vel_ */
 
   std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_;
 

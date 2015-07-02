@@ -524,6 +524,8 @@ void PeopleTracker::updateHistory(ros::Time time){
  * @return
  */
 BFL::StatePosVel PeopleTracker::getEstimate(){
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->int_id_, this->getLeg1()->int_id_, __func__);
+
 
   // Calculate the velocity vectors
   BFL::StatePosVel estLeg0 = getLeg0()->getEstimate();
