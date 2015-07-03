@@ -79,6 +79,9 @@ AdvancedMeasPdfPos::ProbabilityGet(const Vector3& measurement) const
 
   Probability prob = meas_noise_.ProbabilityGet(delta);
 
+  //if(prob.getValue() > 0.1)
+  //std::cout << prob.getValue() << std::endl;
+
 //  if(prob.getValue() > 1.0){
 //
 //    std::cout << "mu_" << meas_noise_.mu_.getX() << "   " << meas_noise_.mu_.getY() << "   " << meas_noise_.mu_.getZ() << "   " << std::endl;

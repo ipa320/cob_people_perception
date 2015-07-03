@@ -253,7 +253,7 @@ PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const s
 
   // Get the posterior samples
   _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
-  //_os_it = _old_samples.begin();
+  _os_it = _old_samples.begin();
 
   // Iterate through the samples
   for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
@@ -265,12 +265,23 @@ PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const s
     // TODO apply occlusion model here
 
     //std::cout << "Weight Update: " << _ns_it->WeightGet() << "    -->     ";
-    _ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);// <-- See Thrun "Probabilistic Robotics", p 99-100 eq (4.24) this method is inferior...
-    //_ns_it->WeightSet(weightfactor);
+    //_ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);// <-- See Thrun "Probabilistic Robotics", p 99-100 eq (4.24) this method is inferior...
+
+    _ns_it->WeightSet(weightfactor);
+    //if(weightfactor.getValue() > 0.01)
+    //std::cout << "weight set" << weightfactor.getValue() << std::endl;
     //std::cout << _ns_it->WeightGet() << std::endl;
   }
-
   // Update the posterior
+  bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
+
+
+  _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
+  for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
+    //if(_ns_it->WeightGet() > 0.01)
+    //std::cout << "weight get after update" <<  _ns_it->WeightGet() << std::endl;
+  }
+
   return (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
 }
 
@@ -457,8 +468,8 @@ PeopleParticleFilter::DynamicResampleStep()
   }
     if (resampling == true){
       std::cout << RED << "RESAMPLE! " << RESET << std::endl;
-      //return this->LowVarianceResample();
-      return this->Resample();
+      return this->LowVarianceResample();
+      //return this->Resample();
     }
       //return this->Resample();
     else
@@ -491,7 +502,7 @@ PeopleParticleFilter::LowVarianceResample()
   double r = (static_cast <double> (rand()) / static_cast <double> (RAND_MAX)) * (1.0/NumSamples);
   double c = _old_samples[0].WeightGet(); // Set to the weight of the first sample
 
-  std::cout << "random " << r << std::endl;
+  //std::cout << "random " << r << std::endl;
 
   unsigned int i = 0;
 
@@ -507,7 +518,7 @@ PeopleParticleFilter::LowVarianceResample()
     }
     // Set the weight from the old sample
     _ns_it->ValueSet(_old_samples[i].ValueGet());
-    _ns_it->WeightSet(invM);
+    _ns_it->WeightSet(_old_samples[i].WeightGet());
 
     // Go to the next iterator
     _ns_it++;

@@ -33,7 +33,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
     //reliability(-1.), p(4),
     use_filter_(true),
     is_valid_(true), // On construction the leg feature is always valid
-    leg_feature_update_cov_(0.0025), // The update measurement cov (should be around 0.0025, the smaller the peakier)
+    leg_feature_update_cov_(0.001), // The update measurement cov (should be around 0.0025, the smaller the peakier)
     is_static_(true) // At the beginning the leg feature is considered static
 {
   // Increase the id

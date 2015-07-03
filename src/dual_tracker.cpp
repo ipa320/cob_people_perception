@@ -1428,6 +1428,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         legFeatureIt != legFeatures.end();
         legFeatureIt++)
     {
+        //std::cout << "Particles of LT[" << (*legFeatureIt)->int_id_ << "]" << std::endl;
+
         MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
 
         vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
@@ -1436,12 +1438,13 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         WeightedSample<StatePosVel> maxSample = *std::max_element(samples.begin(), samples.end(), sampleWeightCompare);
         double maxSampleWeight = maxSample.WeightGet();
 
-        int printFirstN = 10; int n = 0;
+        //std::cout << "NSamples:" << samples.size() << " maxSampleWeight:" << maxSampleWeight << "------" << std::endl;
+        int printFirstN = 200; int n = 0;
         for(vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
           geometry_msgs::Point32 point;
           point.x = (*sampleIt).ValueGet().pos_[0];
           point.y = (*sampleIt).ValueGet().pos_[1];
-          point.z = (*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
+          point.z = 0;//(*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
 
           //
           int r,g,b;
@@ -1477,10 +1480,10 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
           if(n < printFirstN){
             //std::cout << "w: " << weight;
           }
-          //std::cout << std::endl;
+
           n++;
         }
-
+        //std::cout << std::endl;
 
 
 
@@ -2063,6 +2066,10 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       sphere.header.frame_id = fixed_frame;
       sphere.header.stamp = time;
       sphere.id = 0;
+      // width
+      sphere.scale.x = 0.2;
+      sphere.scale.y = 0.2;
+      sphere.scale.z = 0.2;
       sphere.ns = "FakeMeasurements";
       msgArray.markers.push_back(sphere);
     }
