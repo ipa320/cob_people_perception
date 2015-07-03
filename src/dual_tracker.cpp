@@ -2000,12 +2000,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       visualization_msgs::Marker person3d;
       person3d.header.stamp = time;
       person3d.header.frame_id = fixed_frame;
-      if((*peopleTrackerIt)->isDynamic()){
-        person3d.ns = "dynamic";
-      }
-      else{
-        person3d.ns = "static";
-      }
+
 
       double personHeight = 1;
       double personWidth = 0.25;
@@ -2019,13 +2014,25 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       person3d.scale.x = personWidth;
       person3d.scale.y = personWidth;
       person3d.scale.z = personHeight/2;
-      person3d.color.a = 0.75;
+
       person3d.color.r = 0;
       person3d.color.g = 0;
       person3d.color.b = 1;
-      personsArray.markers.push_back(person3d);
+      person3d.lifetime = ros::Duration(0.5);
+
 
       counter++;
+
+
+
+      // Set the color as the mixture of both leg track colors
+
+      int r0,g0,b0,r1,g1,b1;
+      //r = 255;
+      //getColor((*peopleTrackerIt)->getLeg0()->int_id_,r0,g0,b0);
+      //getColor((*peopleTrackerIt)->getLeg1()->int_id_,r1,g1,b1);
+
+
 
       visualization_msgs::Marker personHead;
       personHead.header.stamp = time;
@@ -2039,12 +2046,26 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       personHead.scale.x = personWidth*1.1;
       personHead.scale.y = personWidth*1.1;
       personHead.scale.z = personWidth*1.1;
-      personHead.color.a = 1;
       personHead.color.r = 0;
       personHead.color.g = 1;
       personHead.color.b = 0;
+      personHead.lifetime = ros::Duration(0.5);
+
+      // Static / Dynamic
+      if((*peopleTrackerIt)->isDynamic()){
+        person3d.ns = "dynamic";
+        person3d.color.a = 0.75;
+        personHead.color.a = 0.75;
+
+      }
+      else{
+        person3d.ns = "static";
+        person3d.color.a = 0.5;
+        personHead.color.a = 0.5;
+      }
 
 
+      personsArray.markers.push_back(person3d);
       personsArray.markers.push_back(personHead);
 
       counter++;
