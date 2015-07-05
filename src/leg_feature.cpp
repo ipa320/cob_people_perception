@@ -14,7 +14,7 @@ int LegFeature::nextid = 0;
 
 static std::string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
-static int NumberOfParticles = 500;
+static int NumberOfParticles = 750;
 
 /*LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl, OcclusionModelPtr ocm)
   :LegFeature(loc,tfl),
@@ -26,14 +26,14 @@ static int NumberOfParticles = 500;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    leg_feature_predict_pos_cov_(1), //0.4 Around 0.05 // Variance of the
+    leg_feature_predict_pos_cov_(0.4), //0.4 Around 0.05 // Variance of the
     leg_feature_predict_vel_cov_(4),  //1.8 Around 1.0 should be fine, the bigger the more spread
     sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true),
     is_valid_(true), // On construction the leg feature is always valid
-    leg_feature_update_cov_(0.001), // The update measurement cov (should be around 0.0025, the smaller the peakier)
+    leg_feature_update_cov_(0.0025), // The update measurement cov (should be around 0.0025, the smaller the peakier)
     is_static_(true) // At the beginning the leg feature is considered static
 {
   // Increase the id
@@ -165,7 +165,8 @@ void LegFeature::propagate(ros::Time time)
     std::cout << "Time Difference: " << (mostProbableAssociatedPPL->propagation_time_  - time) << std::endl;
 
     // Get the estimation for itself
-    StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
+    //StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
+    StatePosVel est = mostProbableAssociatedPPL->getEstimate();
 
 
 

@@ -235,6 +235,8 @@ public:
   ros::Publisher measurement_label_pub_; /**< Publish measurements */
   ros::Publisher particles_arrow_pub_; /** < Publish some particles velocity */
   ros::Publisher people_3d_pub_; /**< Publish persons in 3d */
+  ros::Publisher particles_pred_pub_; /** <Publish the predicted particles */
+  ros::Publisher particles_pred_arrow_pub_; /**< Publish the predicted particles as arrows */
 
   dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -296,6 +298,8 @@ public:
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
     map_pub_                      = nh_.advertise<visualization_msgs::MarkerArray>("fake_measurements", 0);
     people_3d_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("persons3d", 0);
+    particles_pred_pub_			  = nh_.advertise<sensor_msgs::PointCloud>("particles_pred", 0);
+    particles_pred_arrow_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows_pred", 0);
 
     if (use_seeds_)
     {
@@ -428,8 +432,9 @@ public:
     // Process the incoming scan
     benchmarking::Timer processTimer; processTimer.start();
     ScanProcessor processor(*scan, mask_);
-    processor.splitConnected(connected_thresh_);
-    processor.removeLessThan(min_points_per_group_);
+    //processor.splitConnected(connected_thresh_);
+    processor.splitConnectedRangeAware(connected_thresh_);
+    processor.removeLessThan(4);
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Process scan(clustering) took %f ms",__func__, processTimer.stopAndGetTimeMs());
 
     ROS_DEBUG("%sCreating Clusters done! [Cycle %u]", BOLDWHITE, cycle_);
@@ -514,6 +519,9 @@ public:
     propagationTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Propagated %i SavedFeatures",__func__, (int) propagated.size());
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Propagating took %f ms",__func__, propagationTimer.getElapsedTimeMs());
+
+    publishParticlesPrediction(propagated, scan->header.stamp);
+    publishParticlesPredArrows(propagated, scan->header.stamp);
 
     ROS_DEBUG("%sPrediction done! [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
@@ -653,6 +661,9 @@ public:
         Stamped<Point> loc = (*detectionIt)->point_;
 
         double prob = (*legIt)->getMeasurementProbability(loc);
+
+        if(prob < 0.005)
+        	prob = 0.000001;
         double negLogLike = -log(prob);
 
 
@@ -688,6 +699,10 @@ public:
 
             double fakeProbCorr = 0.95;
             double prob = propagated[row_f]->getMeasurementProbability(loc) * fakeProbCorr;
+
+            if(prob < 0.005)
+            	prob = 0.000001;
+
             double negLogLike = -log(prob);
 
             std::cout << BOLDCYAN << "LT[" <<  propagated[row_f]->int_id_ << "] prob: " << prob << "negLogLike" << negLogLike << RESET << std::endl;
@@ -703,11 +718,11 @@ public:
             //float assignmentProbability;
             //assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
             // TODO investigate this parameters
-            if(negLogLike > 1000)
-            	negLogLike = 1000;
+            if(negLogLike > 400)
+            	negLogLike = 400;
 
             if(std::numeric_limits<double>::has_infinity ==negLogLike){
-            	negLogLike = 1000;
+            	negLogLike = 400;
             }
 
             costMatrixMAP(row_f,col_f  + nMeasurementsReal) = (int) (negLogLike) * 1000;
@@ -745,7 +760,7 @@ public:
     for(int i = 0; i < nLegsTracked; i++){
       std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indicesMAP(i) << RESET <<"|";
       for(int j = 0; j < nMeasurementsReal + nMeasurementsFake; j++){
-          std::cout << std::setw(5) << std::fixed << std::setprecision(3) << costMatrixMAP(i,j) << "|";
+          std::cout << std::setw(6) << std::fixed << std::setprecision(5) << costMatrixMAP(i,j) << "|";
       }
       std::cout << std::endl;
     }
@@ -1247,6 +1262,8 @@ public:
       marker.points.push_back(startPoint);
       marker.points.push_back(endPoint);
 
+      //
+
       marker.scale.x = 0.05; //shaft diameter
       marker.scale.y = 0.1; //head diameter
       marker.scale.z = 0; // head length (if other than zero)
@@ -1496,6 +1513,95 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     ROS_DEBUG("DualTracker::%s Publishing Particles on %s", __func__, fixed_frame.c_str());
   }
 
+
+  /**
+   * Publish the posterior particles
+   * @param legFeatures List of Leg Features(Leg Tracker)
+   * @param time The current time
+   */
+  void publishParticlesPrediction(vector<LegFeaturePtr>& legFeatures, ros::Time time){
+    // The pointcloud message
+    sensor_msgs::PointCloud particlesPCL;
+
+    sensor_msgs::ChannelFloat32 rgb_channel;
+    rgb_channel.name="rgb";
+    particlesPCL.channels.push_back(rgb_channel);
+
+    particlesPCL.header.frame_id = fixed_frame;
+    particlesPCL.header.stamp = time;
+
+    for (vector<LegFeaturePtr>::iterator legFeatureIt = legFeatures.begin();
+        legFeatureIt != legFeatures.end();
+        legFeatureIt++)
+    {
+        //std::cout << "Particles of LT[" << (*legFeatureIt)->int_id_ << "]" << std::endl;
+
+        MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+
+        vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
+
+
+        WeightedSample<StatePosVel> maxSample = *std::max_element(samples.begin(), samples.end(), sampleWeightCompare);
+        double maxSampleWeight = maxSample.WeightGet();
+
+        //std::cout << "NSamples:" << samples.size() << " maxSampleWeight:" << maxSampleWeight << "------" << std::endl;
+        int printFirstN = 200; int n = 0;
+        for(vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
+          geometry_msgs::Point32 point;
+          point.x = (*sampleIt).ValueGet().pos_[0];
+          point.y = (*sampleIt).ValueGet().pos_[1];
+          point.z = 0;//(*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
+
+          //
+          int r,g,b;
+          double weight;
+          // If there is no sample with weight at all, make the particles blue
+          if(maxSampleWeight == 0.0){
+            r=0;
+            g=0;
+            b=255;
+          }
+
+          else
+          {
+            weight = (*sampleIt).WeightGet();
+            double normalizeWeight = weight / maxSampleWeight;
+            redGreenGradient(normalizeWeight,r,g,b);
+
+            //std::cout << normalizeWeight << " r:" << r << " g:" << g << " b:" << b << std::endl;
+          }
+
+
+          // Set the color according to the probability
+          float color_val = 0;
+          int rgb = (r << 16) | (g << 8) | b;
+          color_val = *(float*) & (rgb);
+
+          if (particlesPCL.channels[0].name == "rgb")
+            particlesPCL.channels[0].values.push_back(color_val);
+
+          particlesPCL.points.push_back(point);
+
+
+          if(n < printFirstN){
+            //std::cout << "w: " << weight;
+          }
+
+          n++;
+        }
+        //std::cout << std::endl;
+
+
+
+
+    }
+
+    // Publish the pointcloud
+    particles_pred_pub_.publish(particlesPCL);
+
+    ROS_DEBUG("DualTracker::%s Publishing Particles on %s", __func__, fixed_frame.c_str());
+  }
+
   void publishLegFeaturesVisualization(vector<LegFeaturePtr>& legFeatures, ros::Time time){
 
     // The pointcloud message
@@ -1636,10 +1742,10 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       markerMsgCylinder.ns = "predictions";
       markerMsgCylinder.id = counter;
       markerMsgCylinder.type = visualization_msgs::Marker::CYLINDER;
-      markerMsgCylinder.scale.x = 0.05; // diameter x
-      markerMsgCylinder.scale.y = 0.05; // diameter y
+      markerMsgCylinder.scale.x = 0.04; // diameter x
+      markerMsgCylinder.scale.y = 0.04; // diameter y
       markerMsgCylinder.scale.z = 0.3;  // height
-      markerMsgCylinder.color.r = 1.0;
+      markerMsgCylinder.color.b = 1.0;
       markerMsgCylinder.color.a = 0.8;
 
       markerMsgCylinder.pose.position.x = (*legIt)->position_predicted_.getX();
@@ -1660,7 +1766,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       markerMsgArrow.type = visualization_msgs::Marker::ARROW;
       markerMsgArrow.scale.x = 0.005;
       markerMsgArrow.scale.y = 0.02;
-      markerMsgArrow.color.r = 1.0;
+      markerMsgArrow.color.b = 1.0;
       markerMsgArrow.color.a = 0.8;
 
       geometry_msgs::Point point0, point1;
@@ -2467,6 +2573,73 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
     ROS_DEBUG("DualTracker::%s Publishing Particles Arrows on %s", __func__, fixed_frame.c_str());
   }
+
+  void publishParticlesPredArrows(vector<LegFeaturePtr>& legFeatures, ros::Time time){
+     // Marker Array
+     visualization_msgs::MarkerArray markerArray;
+
+     int id_counter = 0;
+
+     for (vector<LegFeaturePtr>::iterator legFeatureIt = legFeatures.begin();
+         legFeatureIt != legFeatures.end();
+         legFeatureIt++)
+     {
+         MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+
+         vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
+
+
+         WeightedSample<StatePosVel> maxSample = *std::max_element(samples.begin(), samples.end(), sampleWeightCompare);
+         double maxSampleWeight = maxSample.WeightGet();
+
+         int counter=0;
+
+         for(vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
+
+           // Not a arrow for every particle
+           counter++;
+
+           if(counter % 5 != 0) continue;
+
+           geometry_msgs::Point point_start;
+           point_start.x = (*sampleIt).ValueGet().pos_[0];
+           point_start.y = (*sampleIt).ValueGet().pos_[1];
+           point_start.z = (*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
+
+           geometry_msgs::Point point_end;
+           point_end.x = (*sampleIt).ValueGet().pos_[0] + (*sampleIt).ValueGet().vel_[0] * 1.0/12;
+           point_end.y = (*sampleIt).ValueGet().pos_[1] + (*sampleIt).ValueGet().vel_[1] * 1.0/12;
+           point_end.z = (*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
+
+
+           // Arrow
+           visualization_msgs::Marker markerMsgArrow;
+
+           markerMsgArrow.header.frame_id = fixed_frame;
+           markerMsgArrow.header.stamp = time;
+           markerMsgArrow.ns = "arrow_pred_corr";
+           markerMsgArrow.id = id_counter;
+           markerMsgArrow.type = visualization_msgs::Marker::ARROW;
+           markerMsgArrow.scale.x = 0.005;
+           markerMsgArrow.scale.y = 0.02;
+           markerMsgArrow.color.r = 1.0;
+           markerMsgArrow.color.a = 0.8;
+
+           markerMsgArrow.points.push_back(point_start);
+
+           markerMsgArrow.points.push_back(point_end);
+
+           markerArray.markers.push_back(markerMsgArrow);
+           id_counter++;
+         }
+
+     }
+
+     // Publish the pointcloud
+     particles_pred_arrow_pub_.publish(markerArray);
+
+     ROS_DEBUG("DualTracker::%s Publishing Particles Arrows on %s", __func__, fixed_frame.c_str());
+   }
 
 
 };

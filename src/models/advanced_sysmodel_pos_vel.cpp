@@ -136,6 +136,10 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   noise_.SampleFrom(noise_sample, method, args);
   res += noise_sample.ValueGet();
 
+  // Limit the total speed!
+  //res.vel_ = res.vel_.length();
+
+
   //res.pos_ += noise_sample.ValueGet().pos_;
   //res.vel_ += res.vel_;// + 0.1*noise_sample.ValueGet();
 
@@ -155,14 +159,26 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   if(useHighLevelPrediction_){
 
 
-    //Sample<StatePosVel> noise_sample_nl;
-    //noise_nl_.SetDt(dt_);
-    //noise_nl_.SampleFrom(noise_sample_nl, method, args);
+    Sample<StatePosVel> noise_sample_nl;
+    noise_nl_.SetDt(dt_);
+    noise_nl_.SampleFrom(noise_sample_nl, method, args);
 
-    // res += noise_sample_nl.ValueGet();
+    res += noise_sample_nl.ValueGet();
 
     //assert(false);
   }
+
+  double v_max = 2;
+  if(res.vel_.length() > v_max){
+
+	  std::cout << "Trimming Speed of total " << res.vel_.length() << " now:";
+
+  	  res.vel_ = res.vel_ / v_max;
+  	  std::cout << "res.vel_.length()" << std::endl;
+  }
+
+
+
 
   return true;
 }

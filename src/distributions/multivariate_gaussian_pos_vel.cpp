@@ -187,11 +187,9 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
 {
   //normX_solver_.setCovar(getSigma());
 
-  double alpha = 0.1; // Influence of the leg velocity
-  double beta = 0.01;  // With of the distribution
-
-  double v1_factor = 3.0;
-  double v2_factor = 0.07;
+  double alpha = 0.18; // Influence of the leg velocity
+  double alpha_mu = 0.05;
+  double beta = 0.00;  // With of the distribution
 
   // Get a fifty fifty chance
   if(rand() % 2 == 0){
@@ -201,8 +199,20 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
   }
 
   Eigen::Matrix<double,3,1> sample_pos = Eigen::Matrix<double,3,1>::Zero();
+  Eigen::Matrix<double,3,1> sample_vel = Eigen::Matrix<double,3,1>::Zero();
   //sample_pos = mu_.block(0,0,3,1) + eigv1_ * rnorm(0,alpha) + eigv2_ * rnorm(0,beta);
-  sample_pos = eigv1_ * rnorm(0,alpha) * v1_factor + eigv2_ * rnorm(0,beta) * v2_factor;
+
+  double vel_rand = rnorm(0,alpha);
+  double width_rand = rnorm(0,abs(vel_rand) * beta);
+
+  std::cout << "vel_rand:" << vel_rand << " width_rand: " << width_rand << std::endl;
+
+  sample_pos = eigv1_ * vel_rand + eigv1_ * alpha_mu;// + eigv2_ * vel_rand;
+
+
+  sample_vel = eigv1_ * vel_rand + eigv1_ * alpha_mu;// + eigv2_ * vel_rand;
+
+  //std::cout << "vel_rand: " << vel_rand << " width_rand: " << width_rand << std::endl;
 
   //std::cout << "eigv1_" << std::endl << eigv1_ << std::endl;
   //std::cout << "eigv2_" << std::endl << eigv2_ << std::endl;
@@ -211,11 +221,11 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
   //sample = normX_solver_->samples(1);
 
   one_sample.ValueSet(StatePosVel(Vector3(sample_pos[0],
-                                          sample_pos[1],
-                                          sample_pos[2]),
-                                  Vector3(0,
-                                          0,
-                                          0))); // TODO make this better
+		  	  	  	  	  	  	  	  	  sample_pos[1],
+										  sample_pos[2]),
+                                  Vector3(sample_vel[0],
+                                		  sample_vel[1],
+										  sample_vel[2]))); // TODO make this better
 
   //std::cout << sample << std::endl;
   //assert(false); // NOT YET IMPLEMENTED

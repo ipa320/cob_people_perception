@@ -69,6 +69,18 @@ LegFeaturePtr PeopleTracker::getRightLeg() const{
   return getLeg1();
 }
 
+LegFeaturePtr PeopleTracker::getMovingLeg() const{
+	if(getLeg0()->getEstimate().vel_.length() > getLeg1()->getEstimate().vel_.length()){
+		return getLeg0();
+	}
+}
+
+LegFeaturePtr PeopleTracker::getStandingLeg() const{
+	if(getLeg1()->getEstimate().vel_.length() > getLeg0()->getEstimate().vel_.length()){
+		return getLeg1();
+	}
+}
+
 bool PeopleTracker::addLeg(LegFeaturePtr leg){
 
   // Return false if this tracker already has two legs

@@ -93,6 +93,10 @@ class PeopleTracker{
 
     LegFeaturePtr getRightLeg() const; /**< Get right leg */
 
+    LegFeaturePtr getMovingLeg() const; /**< Get left leg */
+
+    LegFeaturePtr getStandingLeg() const; /**< Get right leg */
+
     bool isValid() const;/**< Check if the people tracker is still valid */
 
     /**

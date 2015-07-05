@@ -70,6 +70,8 @@ public:
 
   bool is_static_; /**< Flag that is set the true after a certain motion has been observed */
 
+  bool use_highlevel_prediction;
+
   double reliability, p;
 
   bool use_filter_; /**< Flag if the Filter should be used currently */
