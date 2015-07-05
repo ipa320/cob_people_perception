@@ -176,6 +176,8 @@ public:
 
   void splitConnected(float thresh);
 
+  void splitConnectedRangeAware(float thresh);
+
 };
 };
 

@@ -342,3 +342,100 @@ ScanProcessor::splitConnected(float thresh)
 
   clusters_.insert(clusters_.begin(), tmp_clusters.begin(), tmp_clusters.end());
 }
+
+
+/**
+ *  @brief Split the scan into clusters.
+ *
+ *  Splits the scan into clusters.
+ *
+ *  @param thresh Influences the splitting. Increate to get bigger clusters.
+ */
+void
+ScanProcessor::splitConnectedRangeAware(float thresh)
+{
+  list<SampleSet*> tmp_clusters;
+
+  list<SampleSet*>::iterator c_iter = clusters_.begin();
+
+  // For each cluster
+  while (c_iter != clusters_.end())
+  {
+    // Go through the entire list
+    while ((*c_iter)->size() > 0)
+    {
+      // Take the first element
+      SampleSet::iterator s_first = (*c_iter)->begin();
+
+      // Start a new queue
+      list<Sample*> sample_queue;
+      sample_queue.push_back(*s_first);
+
+      (*c_iter)->erase(s_first);
+
+      // Grow until we get to the end of the queue
+      list<Sample*>::iterator s_q = sample_queue.begin();
+      while (s_q != sample_queue.end())
+      {
+        int expand = (int)(asin(thresh / (*s_q)->range) / scan_.angle_increment);
+    	//int expand = 1;
+
+        //std::cout << "range: " << (*s_q)->range << " expand: " << expand << std::endl;
+
+        double range_thresh = thresh * (*s_q)->range * 0.75;
+        std::cout << "range_thresh" << range_thresh << std::endl;
+
+        SampleSet::iterator s_rest = (*c_iter)->begin();
+
+        while ((s_rest != (*c_iter)->end()))
+        {
+
+          double range_diff = abs((*s_rest)->range - (*s_q)->range);
+
+
+
+
+          double euclid_dist = sqrt(pow((*s_q)->x - (*s_rest)->x, 2.0f) + pow((*s_q)->y - (*s_rest)->y, 2.0f));
+          std::cout << "range_diff: " << range_diff << "  euclid_dist" << euclid_dist << std::endl;
+
+          // Precheck thresh on range
+          if (range_diff > range_thresh)
+          {
+        	//std::cout << "Range diff to big!" << std::endl;
+            break;
+          }
+          // Euclidean distance
+          else if (euclid_dist < range_thresh)
+          {
+            sample_queue.push_back(*s_rest);
+            std::cout << "   Adding i:" << (*s_rest)->index << std::endl;
+            (*c_iter)->erase(s_rest++);
+            break;
+          }
+          else
+          {
+            ++s_rest;
+          }
+        }
+        s_q++;
+      }
+      std::cout << "New cluster!" << std::endl;
+
+      // Move all the samples into the new cluster
+      SampleSet* c = new SampleSet;
+      for (s_q = sample_queue.begin(); s_q != sample_queue.end(); s_q++)
+        c->insert(*s_q);
+
+      // Store the temporary clusters
+      tmp_clusters.push_back(c);
+    }
+
+    //Now that c_iter is empty, we can delete
+    delete(*c_iter);
+
+    //And remove from the map
+    clusters_.erase(c_iter++);
+  }
+
+  clusters_.insert(clusters_.begin(), tmp_clusters.begin(), tmp_clusters.end());
+}
