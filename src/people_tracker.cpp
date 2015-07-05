@@ -70,21 +70,28 @@ LegFeaturePtr PeopleTracker::getRightLeg() const{
 }
 
 LegFeaturePtr PeopleTracker::getMovingLeg() const{
-	if(getLeg0()->getEstimate().vel_.length() > getLeg1()->getEstimate().vel_.length()){
+	if(getLeg0()->getLastStepWidth() >= getLeg1()->getLastStepWidth()){
 		return getLeg0();
 	}
+	return getLeg1();
 }
 
 LegFeaturePtr PeopleTracker::getStandingLeg() const{
-	if(getLeg1()->getEstimate().vel_.length() > getLeg0()->getEstimate().vel_.length()){
+	//return getLeg1();
+	if(getLeg1()->getLastStepWidth() < getLeg0()->getLastStepWidth()){
 		return getLeg1();
 	}
+	return getLeg0();
 }
 
 bool PeopleTracker::addLeg(LegFeaturePtr leg){
 
   // Return false if this tracker already has two legs
   if(legs_.size() >= 2) return false;
+
+  if(legs_.size() == 1){
+	  ROS_ASSERT(legs_[0]->getId() != leg->getId());
+  }
 
   legs_.push_back(leg);
   return true;
@@ -238,7 +245,7 @@ void PeopleTracker::propagate(ros::Time time){
   double deltaT = time.toSec() - this->propagation_time_.toSec();
 
 
-  if(this->getTotalProbability() > 0.8){
+  if(this->getTotalProbability() > 0.6){
 
     std::cout << *this << " is now propagated" << std::endl;
 
@@ -253,18 +260,28 @@ void PeopleTracker::propagate(ros::Time time){
 
       std::cout << "Left: L" << getLeftLeg()->int_id_ << " Right: L" << getRightLeg()->int_id_ << std::endl;
 
-
+      double product = 0;
       // Reverse iterate the history (left)
       for(unsigned int i = shortestHistSize-1; i>0; i--){
         double jumpLeft = (*leftLegHistory[i]-*leftLegHistory[i-1]).length();
         double jumpRight = (*rightLegHistory[i]-*rightLegHistory[i-1]).length();
 
+        if(jumpLeft < 0.01)
+        	jumpLeft = 0;
+
+        if(jumpRight < 0.01)
+        	jumpRight = 0;
+
+        product = jumpLeft * jumpRight;
+
         if(jumpLeft > jumpRight){
-          std::cout << RED << jumpLeft << RESET << "   " << jumpRight << std::endl;
+          std::cout << RED << jumpLeft << RESET << "   " << jumpRight << std::setw(6) << std::setprecision(6) << " prod=" << product <<  std::endl;
         }else{
-          std::cout << jumpLeft << "   " << RED << jumpRight << RESET << std::endl;
+          std::cout << jumpLeft << "   " << RED << jumpRight << RESET << std::setw(6) << std::setprecision(6) << " prod=" << product <<  std::endl;
         }
+
       }
+
 
 
       // Print for python debugging

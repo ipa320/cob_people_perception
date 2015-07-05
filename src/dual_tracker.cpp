@@ -1013,7 +1013,7 @@ public:
 
     // Publish the detections of legs
     if(publish_leg_velocity_){
-      publishLegVelocities(saved_leg_features, scan->header.stamp);
+      publishLegVelocities(people_trackers_.getList(), scan->header.stamp);
     }
 
     if(publish_leg_markers_){
@@ -1223,58 +1223,117 @@ public:
    * @param legFeatures
    * @param time
    */
-  void publishLegVelocities(vector<LegFeaturePtr>& legFeatures, ros::Time time){
+  void publishLegVelocities(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
+
+	if(peopleTracker->size() == 0)
+		return;
 
     // Create the Visualization Message (a marker array)
     visualization_msgs::MarkerArray msgArray;
 
     int counter = 0;
 
-    for (vector<LegFeaturePtr>::iterator legFeatureIt = legFeatures.begin();
-        legFeatureIt != legFeatures.end();
-        legFeatureIt++)
+    for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
+        peopleIt != peopleTracker->end();
+        peopleIt++)
     {
-      BFL::StatePosVel est = (*legFeatureIt)->getEstimate();
 
-      //std::cout <<  est << std::endl;
 
-      visualization_msgs::Marker marker;
-      marker.header.frame_id = fixed_frame;
-      marker.header.stamp = time;
-      marker.ns = "leg_feature_arrows";
-      marker.id = counter;
-      marker.type = visualization_msgs::Marker::ARROW;
-      marker.action = visualization_msgs::Marker::ADD;
+      if((*peopleIt)->getTotalProbability() > 0.6 && (*peopleIt)->isDynamic()){
 
+
+      LegFeaturePtr movingLeg = (*peopleIt)->getMovingLeg();
+      LegFeaturePtr standingLeg = (*peopleIt)->getStandingLeg();
+
+
+
+      BFL::StatePosVel estMov = movingLeg->getEstimate();
+      BFL::StatePosVel estStat = standingLeg->getEstimate();
+
+      std::cout << "estMov last Step width: " << movingLeg->getLastStepWidth() << std::endl;
+      std::cout << "estStat last Step width: " << standingLeg->getLastStepWidth() << std::endl;
+      std::cout << "estMov: " << estMov << std::endl;
+      std::cout << "estStat: " << estStat << std::endl;
+
+      ROS_ASSERT((movingLeg->getId() != standingLeg->getId()));
+
+      visualization_msgs::Marker markerMoving;
+      markerMoving.header.frame_id = fixed_frame;
+      markerMoving.header.stamp = time;
+      markerMoving.ns = "leg_feature_arrows";
+      markerMoving.id = counter;
+      markerMoving.type = visualization_msgs::Marker::ARROW;
+      double factor = 1; // Control the arrow length
 
       geometry_msgs::Point startPoint;
-      startPoint.x = est.pos_[0];
-      startPoint.y = est.pos_[1];
-      startPoint.z = est.pos_[2];
-
-      double factor = 0.5; // Control the arrow length
+      startPoint.x = estMov.pos_[0];
+      startPoint.y = estMov.pos_[1];
+      startPoint.z = estMov.pos_[2];
 
       geometry_msgs::Point endPoint;
-      endPoint.x = est.pos_[0] + est.vel_[0]*factor;
-      endPoint.y = est.pos_[1] + est.vel_[1]*factor;
-      endPoint.z = est.pos_[2] + est.vel_[2]*factor;
+      endPoint.x = estMov.pos_[0] + estMov.vel_[0]*factor;
+      endPoint.y = estMov.pos_[1] + estMov.vel_[1]*factor;
+      endPoint.z = estMov.pos_[2] + estMov.vel_[2]*factor;
 
-      marker.points.push_back(startPoint);
-      marker.points.push_back(endPoint);
+      markerMoving.points.push_back(startPoint);
+      markerMoving.points.push_back(endPoint);
 
-      //
 
-      marker.scale.x = 0.05; //shaft diameter
-      marker.scale.y = 0.1; //head diameter
-      marker.scale.z = 0; // head length (if other than zero)
-      marker.color.a = 1.0; // Don't forget to set the alpha!
-      marker.color.r = 0.0;
-      marker.color.g = 1.0;
-      marker.color.b = 0.0;
+      markerMoving.scale.x = 0.05; //shaft diameter
+      markerMoving.scale.y = 0.1; //head diameter
+      markerMoving.scale.z = 0; // head length (if other than zero)
+      markerMoving.color.a = 1.0; // Don't forget to set the alpha!
+      markerMoving.color.r = 1.0;
+      markerMoving.color.g = 0.0;
+      markerMoving.color.b = 0.0;
 
-      msgArray.markers.push_back(marker);
+
 
       counter++;
+
+
+
+      visualization_msgs::Marker markerStanding;
+      markerStanding.header.frame_id = fixed_frame;
+      markerStanding.header.stamp = time;
+      markerStanding.ns = "leg_feature_arrows";
+      markerStanding.id = counter;
+      markerStanding.type = visualization_msgs::Marker::ARROW;
+
+
+      geometry_msgs::Point startPointStat;
+      startPoint.x = estStat.pos_[0];
+      startPoint.y = estStat.pos_[1];
+      startPoint.z = 0;
+
+
+
+
+
+      geometry_msgs::Point endPointStat;
+      endPoint.x = estStat.pos_[0] + estStat.vel_[0]*10;
+      endPoint.y = estStat.pos_[1] + estStat.vel_[1]*10;
+      endPoint.z = 0;
+
+      std::cout << "Arrow from " <<  std::endl << startPoint << " to " << std::endl << endPoint << std::endl;
+
+      markerStanding.points.push_back(startPointStat);
+      markerStanding.points.push_back(endPointStat);
+
+      markerStanding.scale.x = 3; //shaft diameter
+      markerStanding.scale.y = 3; //head diameter
+      markerStanding.scale.z = 5; // head length (if other than zero)
+      markerStanding.color.a = 1.0; // Don't forget to set the alpha!
+      markerStanding.color.r = 0.0;
+      markerStanding.color.g = 1.0;
+      markerStanding.color.b = 0.0;
+
+      msgArray.markers.push_back(markerMoving);
+      msgArray.markers.push_back(markerStanding);
+
+      counter++;
+
+      }
     }
     leg_features_array_vis_pub_.publish(msgArray);
 

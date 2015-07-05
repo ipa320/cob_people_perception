@@ -133,7 +133,10 @@ public:
   }
 
   BFL::StatePosVel getEstimate(){
-    return pos_vel_;
+	BFL::StatePosVel est;
+	filter_.getEstimate(est);
+	return est;
+    //return pos_vel_;
   }
 
   unsigned int getHistorySize(){
@@ -176,6 +179,18 @@ public:
   void updateHistory();
 
   bool getLastStepWidth(double& width);
+
+  double getLastStepWidth(){
+	  double width;
+	  if(getLastStepWidth(width)){
+		  return width;
+	  }
+	  return 0;
+  }
+
+  int getId() const {
+	  return this->int_id_;
+  }
 
 private:
   void updatePosition();

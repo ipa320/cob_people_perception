@@ -99,11 +99,11 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
 
     std::vector<WeightedSample<StatePosVel> > samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
 
-    std::cout << "Samples before update" << std::endl;
+    //std::cout << "Samples before update" << std::endl;
     for(int i = 0; i<10; i++){
       StatePosVel sample = samples[i].ValueGet();
       double weight = samples[i].WeightGet();
-      std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
+      //std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
     }
 
     //assert(this->_dynamicResampling == true); // TODO
@@ -177,8 +177,8 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
   unsigned int m_k = assignmentProbabilities.rows();
 
   for(unsigned int j = 1; j < m_k; j++){
-    if(assignmentProbabilities[j] > 0.0)
-      std::cout << "Update is done with measurement " << j-1 << " at " << z[j-1]->point_[0] << "   " << z[j-1]->point_[1] << " with meas prob:" << assignmentProbabilities[j] << std::endl;
+    //if(assignmentProbabilities[j] > 0.0)
+    //  std::cout << "Update is done with measurement " << j-1 << " at " << z[j-1]->point_[0] << "   " << z[j-1]->point_[1] << " with meas prob:" << assignmentProbabilities[j] << std::endl;
   }
 
   double weightfactor = 1;
