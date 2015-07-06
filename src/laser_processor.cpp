@@ -383,7 +383,7 @@ ScanProcessor::splitConnectedRangeAware(float thresh)
         //std::cout << "range: " << (*s_q)->range << " expand: " << expand << std::endl;
 
         double range_thresh = thresh * (*s_q)->range * 0.75;
-        std::cout << "range_thresh" << range_thresh << std::endl;
+        //std::cout << "range_thresh" << range_thresh << std::endl;
 
         SampleSet::iterator s_rest = (*c_iter)->begin();
 
@@ -396,7 +396,7 @@ ScanProcessor::splitConnectedRangeAware(float thresh)
 
 
           double euclid_dist = sqrt(pow((*s_q)->x - (*s_rest)->x, 2.0f) + pow((*s_q)->y - (*s_rest)->y, 2.0f));
-          std::cout << "range_diff: " << range_diff << "  euclid_dist" << euclid_dist << std::endl;
+          //std::cout << "range_diff: " << range_diff << "  euclid_dist" << euclid_dist << std::endl;
 
           // Precheck thresh on range
           if (range_diff > range_thresh)
@@ -408,7 +408,7 @@ ScanProcessor::splitConnectedRangeAware(float thresh)
           else if (euclid_dist < range_thresh)
           {
             sample_queue.push_back(*s_rest);
-            std::cout << "   Adding i:" << (*s_rest)->index << std::endl;
+            //std::cout << "   Adding i:" << (*s_rest)->index << std::endl;
             (*c_iter)->erase(s_rest++);
             break;
           }
@@ -419,7 +419,7 @@ ScanProcessor::splitConnectedRangeAware(float thresh)
         }
         s_q++;
       }
-      std::cout << "New cluster!" << std::endl;
+     // std::cout << "New cluster!" << std::endl;
 
       // Move all the samples into the new cluster
       SampleSet* c = new SampleSet;
