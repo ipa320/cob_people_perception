@@ -4,7 +4,7 @@
  *  Created on: Apr 16, 2015
  *      Author: frm-ag
  */
-
+#undef NDEBUG
 #include <ros/console.h>
 // Own includes
 #include <dual_people_leg_tracker/people_tracker.h>
@@ -26,8 +26,12 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
   total_probability_(0.0), // Initialize the probability with zero
   propagation_time_(time),
   maxStepWidth_(0.20), // TODO make this a parameter
-  stepWidth_(-1.0),
-  hipWidth_(-1.0)
+  stepWidth_(0),
+  hipWidth_(-1.0),
+  is_static_(true),
+  dist_probability_(0.0),
+  leg_time_probability_(0.0),
+  leg_association_probability_(0.0)
 {
   // Add the legs to this people tracker
   this->addLeg(leg0);
@@ -70,6 +74,8 @@ LegFeaturePtr PeopleTracker::getRightLeg() const{
 }
 
 LegFeaturePtr PeopleTracker::getMovingLeg() const{
+  ROS_ASSERT(isDynamic());
+
 	if(getLeg0()->getLastStepWidth() >= getLeg1()->getLastStepWidth()){
 		return getLeg0();
 	}
@@ -423,10 +429,10 @@ void PeopleTracker::updateProbabilities(ros::Time time){
   //ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s - Distance %f.3 Probability: %f.2",__func__, dist, dist_probability_);
 
   // Calculate the existenz of both LegTrackers
-  double leg_time_threshold = 0.06;
+  double leg_time_threshold = 0.08;
   double min_leg_time = min(getLeg0()->getLifetime(), getLeg1()->getLifetime());
 
-  leg_time_probability_ = sigmoid(min_leg_time,5,leg_time_threshold);
+  leg_time_probability_ = sigmoid(min_leg_time,2,leg_time_threshold);
 
   // Calculate the association to the legs
   std::vector<PeopleTrackerPtr> assoLeg0 = getLeg0()->getPeopleTracker();

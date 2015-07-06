@@ -172,7 +172,7 @@ class PeopleTracker{
       return is_static_;
     }
 
-    bool isDynamic(){
+    bool isDynamic() const{
       return !is_static_;
     }
 
@@ -202,6 +202,12 @@ class PeopleTracker{
         os << BOLDGREEN << " [valid]" << RESET;
       else
         os << BOLDRED << " [invalid]" << RESET;
+
+      if(s.isDynamic()){
+        os << " [dyn]";
+      }else{
+        os << " [stat]";
+      }
 
       // Print Parameters
       os << " | hipWidth: " << s.hipWidth_ << " | stepWidth:" << s.getStepWidth();

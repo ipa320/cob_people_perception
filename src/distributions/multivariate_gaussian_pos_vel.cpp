@@ -187,20 +187,12 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
 {
   //normX_solver_.setCovar(getSigma());
 
-  double alpha = 0.25; // Influence of the leg velocity
+  double alpha = 0.35; // Influence of the leg velocity
   double alpha_mu = eigv1_.norm() * 0.1;
-  double beta = 0.3;  // With of the distribution
-
-  // Get a fifty fifty chance
-  if(rand() % 2 == 0){
-
-  }else{
-
-  }
+  double beta = 0.15;  // With of the distribution
 
   Eigen::Matrix<double,3,1> sample_pos = Eigen::Matrix<double,3,1>::Zero();
   Eigen::Matrix<double,3,1> sample_vel = Eigen::Matrix<double,3,1>::Zero();
-  //sample_pos = mu_.block(0,0,3,1) + eigv1_ * rnorm(0,alpha) + eigv2_ * rnorm(0,beta);
 
   double vel_rand = rnorm(0,alpha);
   double width_rand = rnorm(0,abs(vel_rand) * beta);
@@ -227,8 +219,6 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
                                 		  sample_vel[1],
 										  sample_vel[2]))); // TODO make this better
 
-  //std::cout << sample << std::endl;
-  //assert(false); // NOT YET IMPLEMENTED
   return true;
 }
 

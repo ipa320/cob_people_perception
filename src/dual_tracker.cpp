@@ -662,7 +662,7 @@ public:
 
         double prob = (*legIt)->getMeasurementProbability(loc);
 
-        if(prob < 0.005)
+        if(prob < 0.001)
         	prob = 0.000001;
         double negLogLike = -log(prob);
 
@@ -693,14 +693,16 @@ public:
       row++;
     }
 
+    //// FAKE MEASUREMENTS
+
     for(size_t col_f = 0; col_f < nMeasurementsFake; col_f++){
         for(size_t row_f = 0; row_f < nLegsTracked; row_f++){
         	 Stamped<Point> loc = fakeDetections[col_f]->point_;
 
-            double fakeProbCorr = 0.95;
+            double fakeProbCorr = 1.0;
             double prob = propagated[row_f]->getMeasurementProbability(loc) * fakeProbCorr;
 
-            if(prob < 0.005)
+            if(prob < 0.001)
             	prob = 0.000001;
 
             double negLogLike = -log(prob);
@@ -718,14 +720,14 @@ public:
             //float assignmentProbability;
             //assignmentProbability = 1.0-sigmoid(dist, 2, max_track_jump_m);//1.0/abs(dist);
             // TODO investigate this parameters
-            if(negLogLike > 400)
-            	negLogLike = 400;
+            if(negLogLike > 1000)
+            	negLogLike = 1000;
 
             if(std::numeric_limits<double>::has_infinity ==negLogLike){
-            	negLogLike = 400;
+            	negLogLike = 1000;
             }
 
-            costMatrixMAP(row_f,col_f  + nMeasurementsReal) = (int) (negLogLike) * 1000;
+            costMatrixMAP(row_f,col_f  + nMeasurementsReal) = (int) (negLogLike) * 100;
             probMAPMat(row_f,col_f  + nMeasurementsReal) = prob;
 
            }
@@ -789,11 +791,11 @@ public:
     std::cout << "probabilities :____" << std::endl;
     std::cout << "      ";
     for(int j = 0; j < nMeasurementsReal; j++)
-      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< " |";
+      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< "    |";
     std::cout << RESET;
 
     for(int j = 0; j < nMeasurementsFake; j++)
-      std::cout << BOLDYELLOW << "LMF" << std::setw(2) << j<< " |";
+      std::cout << BOLDYELLOW << "LMF" << std::setw(2) << j<< "    |";
     std::cout << RESET << std::endl;
 
     for(int i = 0; i < nLegsTracked; i++){
@@ -802,7 +804,7 @@ public:
           if(solutionsMAP[0].assignmentMatrix(i,j) == 1)
             std::cout << YELLOW;
 
-          std::cout << std::setw(5) << std::fixed << std::setprecision(3) << probMAPMat(i,j) << RESET "|";
+          std::cout << std::setw(6) << std::fixed << std::setprecision(6) << probMAPMat(i,j) << RESET "|";
       }
       std::cout << std::endl;
     }
@@ -890,7 +892,7 @@ public:
     /// Objects Creation
     /////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Starting creation of new objects" << std::endl;
+    std::cout << YELLOW << "Object Creation_____________" << RESET << std::endl;
 
     // Iterate the measurements
     for(int lm = 0; lm < nMeasurementsReal; lm++){
@@ -927,8 +929,12 @@ public:
         ROS_ASSERT(lm < detections.size());
         ROS_ASSERT(assignmentMat.col(lm).sum() == 0 || assignmentMat.col(lm).sum() == 1); // Check that this is hold
 
+        double colSum = assignmentMat.col(lm).sum();
+        double detectionProb = detections[lm]->getProbability();
+        double probSum = probMAPMat.col(lm).sum()/ probMAPMat.rows();
+
         // If there is no measurement assigned to this
-        if(assignmentMat.col(lm).sum() == 0  && detections[lm]->getProbability() > new_track_min_probability_){
+        if(probSum < 0.0001  && detectionProb > new_track_min_probability_){
 
           LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[lm]->point_, tfl_));
 
@@ -938,8 +944,16 @@ public:
           // Insert the leg feature into the propagated list
           saved_leg_features.push_back(newLegFeature);
 
-          std::cout << BOLDRED << " -> Creating new Tracker LT[" << newLegFeature->int_id_ << "]" << RESET << std::endl;
+          std::cout << BOLDRED << "LM[" << lm << "] -> Creating new Tracker LT[" << newLegFeature->int_id_ << "]" << RESET << std::endl;
 
+        }
+        else
+        {
+          if(probSum < 0.0001){
+            std::cout << "No tracker was created for LM[" << lm << "] because it is assigned to another tracker" << std::endl;
+          }else if(detectionProb <= new_track_min_probability_){
+            std::cout << "No tracker was created for LM[" << lm << "] because its detection probability " << detectionProb << " is to low( must be at least " << new_track_min_probability_ << std::endl;
+          }
         }
 
 
@@ -1250,10 +1264,10 @@ public:
       BFL::StatePosVel estMov = movingLeg->getEstimate();
       BFL::StatePosVel estStat = standingLeg->getEstimate();
 
-      std::cout << "estMov last Step width: " << movingLeg->getLastStepWidth() << std::endl;
-      std::cout << "estStat last Step width: " << standingLeg->getLastStepWidth() << std::endl;
-      std::cout << "estMov: " << estMov << std::endl;
-      std::cout << "estStat: " << estStat << std::endl;
+      //std::cout << "estMov last Step width: " << movingLeg->getLastStepWidth() << std::endl;
+      //std::cout << "estStat last Step width: " << standingLeg->getLastStepWidth() << std::endl;
+      //std::cout << "estMov: " << estMov << std::endl;
+      //std::cout << "estStat: " << estStat << std::endl;
 
       ROS_ASSERT((movingLeg->getId() != standingLeg->getId()));
 
@@ -1315,7 +1329,7 @@ public:
       endPoint.y = estStat.pos_[1] + estStat.vel_[1]*10;
       endPoint.z = 0;
 
-      std::cout << "Arrow from " <<  std::endl << startPoint << " to " << std::endl << endPoint << std::endl;
+      //std::cout << "Arrow from " <<  std::endl << startPoint << " to " << std::endl << endPoint << std::endl;
 
       markerStanding.points.push_back(startPointStat);
       markerStanding.points.push_back(endPointStat);
@@ -2067,8 +2081,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
           msgArray.markers.push_back(leg_mov_marker);
           msgArray.markers.push_back(leg_stat_marker);
 
-          std::cout << "Leg0 Prediction" << (*peopleTrackerIt)->leg0Prediction_.pos_[0] << " " << (*peopleTrackerIt)->leg0Prediction_.pos_[1] << std::endl;
-          std::cout << "Leg1 Prediction" << (*peopleTrackerIt)->leg1Prediction_.pos_[0] << " " << (*peopleTrackerIt)->leg1Prediction_.pos_[1] << std::endl;
+          //std::cout << "Leg0 Prediction" << (*peopleTrackerIt)->leg0Prediction_.pos_[0] << " " << (*peopleTrackerIt)->leg0Prediction_.pos_[1] << std::endl;
+          //std::cout << "Leg1 Prediction" << (*peopleTrackerIt)->leg1Prediction_.pos_[0] << " " << (*peopleTrackerIt)->leg1Prediction_.pos_[1] << std::endl;
 
         }else{
           // End line
