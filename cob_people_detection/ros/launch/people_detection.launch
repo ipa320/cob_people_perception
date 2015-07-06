@@ -20,7 +20,7 @@ for Care-O-bot default is cam3d_nodelet_manager -->
       <arg name="colorimage_in_topic" value="$(arg colorimage_in_topic)"/>
       <arg name="pointcloud_rgb_in_topic" value="$(arg pointcloud_rgb_in_topic)"/>
     </include>
-    <include file="$(find cob_people_detection)/ros/launch/image_flip.launch"/>
+    <!--include file="$(find cob_people_detection)/ros/launch/image_flip.launch"/--> <!-- only activate on cob3 robots -->
   </group>
   <group if="$(arg using_nodelets)">
     <!-- special launch files for usage with nodelets -->
@@ -30,9 +30,9 @@ for Care-O-bot default is cam3d_nodelet_manager -->
       <arg name="colorimage_in_topic" value="$(arg colorimage_in_topic)"/>
       <arg name="pointcloud_rgb_in_topic" value="$(arg pointcloud_rgb_in_topic)"/>
     </include>
-    <include file="$(find cob_people_detection)/ros/launch/image_flip_nodelet.launch">
+    <!-- include file="$(find cob_people_detection)/ros/launch/image_flip_nodelet.launch">
     	<arg name="nodelet_manager" value="$(arg nodelet_manager)"/>
-    </include>
+    </include--> <!-- only activate on cob3 robots -->
   </group>
 
   <!-- remaining launch files -->

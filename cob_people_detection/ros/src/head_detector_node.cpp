@@ -146,7 +146,7 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 	//	}
 
 	// detect heads in the depth image
-	std::vector < cv::Rect > head_bounding_boxes;
+	std::vector<cv::Rect> head_bounding_boxes;
 	head_detector_.detectRangeFace(depth_image, head_bounding_boxes, fill_unassigned_depth_values_);
 
 	// publish image patches from head region
