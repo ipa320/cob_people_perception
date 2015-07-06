@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 
 <launch>
+
+  <!-- this file is outdated, please use the people_detection.launch with nodelets configuration --> 
+
   <arg name="using_nodelets" value="true"/>
   <arg name="start_manager" default="false"/>
 
