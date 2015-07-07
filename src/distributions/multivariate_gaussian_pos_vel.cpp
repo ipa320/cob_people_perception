@@ -70,7 +70,8 @@ MultivariateGaussianPosVel::MultivariateGaussianPosVel(const Eigen::Matrix<doubl
     sigma_changed_(false),
     dt_(0.0),
     sqrt_(0.0),
-    highLevelProbability_(0.0)
+    highLevelProbability_(0.0),
+    gaitFactor_(0.0)
     //gauss_pos_(mu.pos_, sigma.pos_),
     //gauss_vel_(mu.vel_, sigma.vel_)
 {
@@ -135,6 +136,10 @@ void MultivariateGaussianPosVel::eigenvectorsSet(tf::Vector3 eigv1, tf::Vector3 
 
 }
 
+void MultivariateGaussianPosVel::setGaitFactor(double gaitFactor){
+  gaitFactor_ = gaitFactor;
+}
+
 void MultivariateGaussianPosVel::highLevelProbabilitySet(double highLevelProbability){
   highLevelProbability_ = highLevelProbability;
 }
@@ -187,9 +192,9 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
 {
   //normX_solver_.setCovar(getSigma());
 
-  double alpha = 0.35; // Influence of the leg velocity
-  double alpha_mu = eigv1_.norm() * 0.1;
-  double beta = 0.15;  // With of the distribution
+  double alpha = 0.25; // Influence of the leg velocity
+  double alpha_mu = eigv1_.norm() * 0.12;
+  double beta = 0.25;  // With of the distribution
 
   Eigen::Matrix<double,3,1> sample_pos = Eigen::Matrix<double,3,1>::Zero();
   Eigen::Matrix<double,3,1> sample_vel = Eigen::Matrix<double,3,1>::Zero();

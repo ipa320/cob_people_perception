@@ -458,7 +458,7 @@ PeopleParticleFilter::DynamicResampleStep()
       }
 
     double effectiveSampleSize = 1.0 / sum_sq_weigths;
-    std::cout << "effectiveSampleSize " << effectiveSampleSize << " threshold(" << _resampleThreshold << ")" << std::endl;
+    //std::cout << "effectiveSampleSize " << effectiveSampleSize << " threshold(" << _resampleThreshold << ")" << std::endl;
 
     if (effectiveSampleSize < _resampleThreshold)
       {
@@ -467,7 +467,7 @@ PeopleParticleFilter::DynamicResampleStep()
       }
   }
     if (resampling == true){
-      std::cout << RED << "RESAMPLE! " << RESET << std::endl;
+      //std::cout << RED << "RESAMPLE! " << RESET << std::endl;
       return this->LowVarianceResample();
       //return this->Resample();
     }
@@ -525,7 +525,7 @@ PeopleParticleFilter::LowVarianceResample()
 
   }
 
-  std::cout << "LOW VARIANCE RESAMPLING!!!" << std::endl;
+  //std::cout << "LOW VARIANCE RESAMPLING!!!" << std::endl;
 
 
 

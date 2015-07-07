@@ -14,7 +14,7 @@ int LegFeature::nextid = 0;
 
 static std::string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
-static int NumberOfParticles = 750;
+static int NumberOfParticles = 600;
 
 /*LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl, OcclusionModelPtr ocm)
   :LegFeature(loc,tfl),
@@ -26,8 +26,8 @@ static int NumberOfParticles = 750;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    leg_feature_predict_pos_cov_(0.1), //0.4 Around 0.05 // Variance of the
-    leg_feature_predict_vel_cov_(5),  //1.8 Around 1.0 should be fine, the bigger the more spread
+    leg_feature_predict_pos_cov_(0.5), //0.4 Around 0.05 // Variance of the
+    leg_feature_predict_vel_cov_(6),  //1.8 Around 1.0 should be fine, the bigger the more spread
     sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
@@ -47,7 +47,6 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   // Configuration server
   // dynamic_reconfigure::Server<leg_detector::DualTrackerConfig>::CallbackType f;
   // f = boost::bind(&LegFeature::configure, this, _1, _2);
-
 
 
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created <NEW_LEGFEATURE %s> at %f - %f - %f", __func__, id_.c_str(), loc.getX(), loc.getY(), loc.getZ());
@@ -73,11 +72,11 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   // Initialize the filter (Create the initial particles)
   //BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(0.0000001, 0.0000001, 0.000000));
 
-  double maxSpeed = 1.5; // [m/T] T = Period
+  double maxSpeed = 3; // [m/T] T = Period
 
   double sigmaSpeed = maxSpeed / 2.0; // Because we want the two sigma area
 
-  BFL::StatePosVel prior_sigma(tf::Vector3(0.01, 0.01, 0.0), tf::Vector3(sigmaSpeed, sigmaSpeed, 0.000000));
+  BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(sigmaSpeed, sigmaSpeed, 0.000000));
 
   // Initialization is around the measurement which initialized this leg feature using a uniform distribution
   BFL::StatePosVel mu(loc);
@@ -142,28 +141,6 @@ void LegFeature::propagate(ros::Time time)
     //std::cout << "\t" << **pplIt << std::endl;
   }
 
-  if(mostProbableAssociatedPPL){
-    std::cerr << "LT[" << getId() << "] High level update!!!" << *mostProbableAssociatedPPL << std::endl;
-    if(mostProbableAssociatedPPL->isDynamic()){
-      std::cerr << "The associated people tracker is dynamic!" << std::endl;
-
-      std::cerr << "My ID " << getId() << std::endl;
-      LegFeaturePtr movLeg = mostProbableAssociatedPPL->getMovingLeg();
-
-      std::cerr << "Got the moving leg!" << std::endl;
-
-//      if(mostProbableAssociatedPPL->getMovingLeg()->getId() == getId()){
-//        std::cerr << "This is the moving leg" << std::endl;
-//      }else{
-//        std::cerr << "This is NOT the moving leg!" << std::endl;
-//      }
-
-    }
-  }
-
-  std::cerr << "#################" << std::endl;
-
-
   MatrixWrapper::SymmetricMatrix cov(6);
   cov = 0.0;
   cov(1, 1) = leg_feature_predict_pos_cov_;//conf.leg_feature_predict_pos_cov;
@@ -199,12 +176,20 @@ void LegFeature::propagate(ros::Time time)
     //StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
     StatePosVel est = mostProbableAssociatedPPL->getEstimate();
 
+    double factor;
 
+    if(mostProbableAssociatedPPL->getBackLeg()->getId() == this->int_id_){
+      factor = mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getMaxStepWidth();
+      std::cout << "LT[" << int_id_ << "] is the back leg and moving!" << std::endl;
+    }else{
+      factor = - mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getMaxStepWidth();
+      std::cout << "LT[" << int_id_ << "] is the front leg and moving!" << std::endl;
+    }
 
 
     // TODO THIS SHOULD DEPEND ON THE ESTIMATION OF THE LEG; NOT THE PERSON!!!
     //filter_.updatePrediction(time.toSec(), cov, mostProbableAssociatedPPL->getEstimate().vel_, mostProbableAssociatedPPL->getHipVec());
-    filter_.updatePrediction(time.toSec(), cov, est.vel_, mostProbableAssociatedPPL->getHipVec(), mostProbableAssociatedPPL->getTotalProbability());
+    filter_.updatePrediction(time.toSec(), cov, factor, est.vel_, mostProbableAssociatedPPL->getHipVec(), mostProbableAssociatedPPL->getTotalProbability());
 
   }
   // If there is no relevant people tracker assigned-> Consider only the low level filter
@@ -226,7 +211,7 @@ void LegFeature::propagate(ros::Time time)
 void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 {
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature[%i]::%s",int_id_,__func__);
-  std::cout << "Received update: " << loc.getX() << "  " << loc.getY() << "  " << loc.getZ() << std::endl;
+  //std::cout << "Received update: " << loc.getX() << "  " << loc.getY() << "  " << loc.getZ() << std::endl;
 
   meas_loc_last_update_ = loc;
 

@@ -849,7 +849,6 @@ public:
 
               ROS_ASSERT(lm < detections.size());
               loc = detections[lm]->point_;
-              std::cout << loc.frame_id_ << " " << fixed_frame << std::endl;
               //ROS_ASSERT(loc.frame_id_ == fixed_frame);
 
             // Fake updates
@@ -858,7 +857,7 @@ public:
               ROS_ASSERT(lm-nMeasurementsReal < fakeDetections.size());
 
               loc = fakeDetections[lm-nMeasurementsReal]->point_;
-              std::cout << loc.frame_id_ << " " << fixed_frame << std::endl;
+              //std::cout << loc.frame_id_ << " " << fixed_frame << std::endl;
 
               //ROS_ASSERT(loc.frame_id_ == fixed_frame);
 
@@ -867,7 +866,7 @@ public:
             double prob = 1.0; // TODO implement
             int idx = (int) indicesMAP(lt);
 
-            std::cout << "Updating LT[" << idx << "]" << " currently there are"<< std::endl;
+            std::cout << "Updating LT[" << idx << "]" << " with LM[" << lm << "]" << std::endl;
 
             ROS_ASSERT_MSG(lt < propagated.size(), "Size propagated is %i", (int) propagated.size());
 
@@ -876,7 +875,7 @@ public:
             tf::Vector3 leg_pos = propagated[lt]->getEstimate().pos_;
             double dist = (leg_pos - loc).length();
 
-            if(probMAPMat(lt,lm) > 0.001 && dist < max_meas_jump_m)
+            if(probMAPMat(lt,lm) > 0.003 && dist < max_meas_jump_m)
             propagated[lt]->update(loc,prob);
 
           }
@@ -920,7 +919,7 @@ public:
 
       }
 
-      // If tracks exist
+      // If there are tracks
       else{
 
         // Create track for every reliable(real!) measurement
@@ -931,10 +930,16 @@ public:
 
         double colSum = assignmentMat.col(lm).sum();
         double detectionProb = detections[lm]->getProbability();
-        double probSum = probMAPMat.col(lm).sum()/ probMAPMat.rows();
 
-        // If there is no measurement assigned to this
-        if(probSum < 0.0001  && detectionProb > new_track_min_probability_){
+        double assignmentProb = 0;
+        for(size_t i = 0; i < probMAPMat.rows(); i++){
+          if(assignmentMat(i,lm) == 1)
+            assignmentProb = probMAPMat(i,lm);
+        }
+        //double probSum = probMAPMat.col(lm).sum()/ probMAPMat.rows();
+
+        // If no track is assigned to this measurement (or only a unreliable one)
+        if(assignmentProb < 0.0001  && detectionProb > new_track_min_probability_){
 
           LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[lm]->point_, tfl_));
 
@@ -949,7 +954,7 @@ public:
         }
         else
         {
-          if(probSum < 0.0001){
+          if(assignmentProb < 0.0001){
             std::cout << "No tracker was created for LM[" << lm << "] because it is assigned to another tracker" << std::endl;
           }else if(detectionProb <= new_track_min_probability_){
             std::cout << "No tracker was created for LM[" << lm << "] because its detection probability " << detectionProb << " is to low( must be at least " << new_track_min_probability_ << std::endl;
@@ -1277,7 +1282,7 @@ public:
       markerMoving.ns = "leg_feature_arrows";
       markerMoving.id = counter;
       markerMoving.type = visualization_msgs::Marker::ARROW;
-      double factor = 1; // Control the arrow length
+      double factor = 0.1; // Control the arrow length
 
       geometry_msgs::Point startPoint;
       startPoint.x = estMov.pos_[0];
@@ -1325,8 +1330,8 @@ public:
 
 
       geometry_msgs::Point endPointStat;
-      endPoint.x = estStat.pos_[0] + estStat.vel_[0]*10;
-      endPoint.y = estStat.pos_[1] + estStat.vel_[1]*10;
+      endPoint.x = estStat.pos_[0] + estStat.vel_[0];
+      endPoint.y = estStat.pos_[1] + estStat.vel_[1];
       endPoint.z = 0;
 
       //std::cout << "Arrow from " <<  std::endl << startPoint << " to " << std::endl << endPoint << std::endl;
@@ -1377,13 +1382,16 @@ public:
         marker.id = counter;
         marker.type = visualization_msgs::Marker::ARROW;
         marker.action = visualization_msgs::Marker::ADD;
+        marker.lifetime = ros::Duration(0.1);
+
+        double factor = 1.25; // Control the arrow length
 
         geometry_msgs::Point startPoint;
-        startPoint.x = est.pos_[0];
-        startPoint.y = est.pos_[1];
-        startPoint.z = est.pos_[2];
+        startPoint.x = est.pos_[0] + est.vel_[0] * 0.5;
+        startPoint.y = est.pos_[1] + est.vel_[1] * 0.5;
+        startPoint.z = est.pos_[2] + est.vel_[2] * 0.5;
 
-        double factor = 1; // Control the arrow length
+
 
         geometry_msgs::Point endPoint;
         endPoint.x = est.pos_[0] + est.vel_[0]*factor;
@@ -1393,7 +1401,7 @@ public:
         marker.points.push_back(startPoint);
         marker.points.push_back(endPoint);
 
-        marker.scale.x = 0.1; //shaft diameter
+        marker.scale.x = 0.03; //shaft diameter
         marker.scale.y = 0.1; //head diameter
         marker.scale.z = 0; // head length (if other than zero)
         marker.color.a = 1.0; // Don't forget to set the alpha!
@@ -2118,7 +2126,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         peopleTrackerIt != people_trackers_.getList()->end();
         peopleTrackerIt++){
 
-      if((*peopleTrackerIt)->getTotalProbability() > 0.5 &&
+      if((*peopleTrackerIt)->getTotalProbability() > 0.75 &&
           (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()))
       {
       visualization_msgs::Marker label;
@@ -2173,12 +2181,17 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         peopleTrackerIt != people_trackers_.getList()->end();
         peopleTrackerIt++){
 
-      if((*peopleTrackerIt)->getTotalProbability() > 0.5 &&
+      if((*peopleTrackerIt)->getTotalProbability() > 0.75 &&
           (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()))
       {
       visualization_msgs::Marker person3d;
       person3d.header.stamp = time;
       person3d.header.frame_id = fixed_frame;
+
+      int r0,g0,b0,r1,g1,b1;
+      //r = 255;
+      getColor((*peopleTrackerIt)->getLeg0()->int_id_,r0,g0,b0);
+      getColor((*peopleTrackerIt)->getLeg1()->int_id_,r1,g1,b1);
 
 
       double personHeight = 1;
@@ -2206,10 +2219,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
       // Set the color as the mixture of both leg track colors
 
-      int r0,g0,b0,r1,g1,b1;
-      //r = 255;
-      //getColor((*peopleTrackerIt)->getLeg0()->int_id_,r0,g0,b0);
-      //getColor((*peopleTrackerIt)->getLeg1()->int_id_,r1,g1,b1);
+
 
 
 
@@ -2225,9 +2235,9 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       personHead.scale.x = personWidth*1.1;
       personHead.scale.y = personWidth*1.1;
       personHead.scale.z = personWidth*1.1;
-      personHead.color.r = 0;
-      personHead.color.g = 1;
-      personHead.color.b = 0;
+      personHead.color.r = (r0+r1)/(2*255.0);
+      personHead.color.g = (g0+g1)/(2*255.0);
+      personHead.color.b = (b0+b1)/(2*255.0);
       personHead.lifetime = ros::Duration(0.5);
 
       // Static / Dynamic
@@ -2346,6 +2356,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         line_list.header.stamp = time;
         line_list.id = counter;
         line_list.ns = "people_history";
+        line_list.lifetime = ros::Duration(0.1);
 
         // width
         line_list.scale.x = 0.03;
@@ -2608,13 +2619,13 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
           if(counter % 5 != 0) continue;
 
           geometry_msgs::Point point_start;
-          point_start.x = (*sampleIt).ValueGet().pos_[0];
-          point_start.y = (*sampleIt).ValueGet().pos_[1];
+          point_start.x = (*sampleIt).ValueGet().pos_[0]  + (*sampleIt).ValueGet().vel_[0] * 1.0/12;;
+          point_start.y = (*sampleIt).ValueGet().pos_[1]  + (*sampleIt).ValueGet().vel_[1] * 1.0/12;;
           point_start.z = (*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
 
           geometry_msgs::Point point_end;
-          point_end.x = (*sampleIt).ValueGet().pos_[0] + (*sampleIt).ValueGet().vel_[0] * 1.0/12;
-          point_end.y = (*sampleIt).ValueGet().pos_[1] + (*sampleIt).ValueGet().vel_[1] * 1.0/12;
+          point_end.x = (*sampleIt).ValueGet().pos_[0] + (*sampleIt).ValueGet().vel_[0] * 2.0/12;
+          point_end.y = (*sampleIt).ValueGet().pos_[1] + (*sampleIt).ValueGet().vel_[1] * 2.0/12;
           point_end.z = (*sampleIt).WeightGet();//(*sampleIt).ValueGet().pos_[2];
 
 

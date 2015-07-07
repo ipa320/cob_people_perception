@@ -79,7 +79,7 @@ public:
    * @param hipVec (By the hip Vector)
    * @param pplTrackerProbability (The probability of the people Tracker)
    */
-  void HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec, double pplTrackerProbability);
+  void HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec, double gaitVector, double pplTrackerProbability);
 
   // set time
   void SetDt(double dt)

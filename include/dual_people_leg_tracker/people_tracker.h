@@ -21,7 +21,7 @@
 // Own includes
 #include <dual_people_leg_tracker/leg_feature.h>
 
-#define DEBUG_PEOPLE_TRACKER 1
+#define DEBUG_PEOPLE_TRACKER 0
 #define DEBUG_PEOPLETRACKERLIST 0
 
 class LegFeature; //Forward declaration
@@ -49,6 +49,7 @@ class PeopleTracker{
 
     double hipWidth_;
     double stepWidth_;
+    double stepWidthMax_;
 
     BFL::StatePosVel leg0Prediction_;
     BFL::StatePosVel leg1Prediction_;
@@ -62,6 +63,8 @@ class PeopleTracker{
 
     LegFeaturePtr leftLeg_; /**< The left leg */
     LegFeaturePtr rightLeg_;/**< The right leg */
+    LegFeaturePtr frontLeg_;/**< The front leg */
+    LegFeaturePtr backLeg_; /**< The back leg */
 
     bool addLeg(LegFeaturePtr leg);/**< Add a leg two this tracker */
 
@@ -184,9 +187,22 @@ class PeopleTracker{
       return this->stepWidth_;
     }
 
+    double getMaxStepWidth() const{
+      return this->stepWidthMax_;
+    }
+
     double getHipWidth() const{
       return this->hipWidth_;
     }
+
+    LegFeaturePtr getFrontLeg(){
+      return this->frontLeg_;
+    }
+
+    LegFeaturePtr getBackLeg(){
+      return this->backLeg_;
+    }
+
 
     /// output stream
     friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
@@ -210,7 +226,7 @@ class PeopleTracker{
       }
 
       // Print Parameters
-      os << " | hipWidth: " << s.hipWidth_ << " | stepWidth:" << s.getStepWidth();
+      os << " | hipWidth: " << s.hipWidth_ << " | stepWidth:" << s.getStepWidth() << " | maxStepWidth:" << s.getMaxStepWidth();
 
       return os;
 
@@ -280,6 +296,7 @@ class PeopleTrackerList{
      * Update the probabilities of all trackers
      */
     void updateProbabilities(ros::Time);
+
 
 
 

@@ -63,6 +63,8 @@ public:
     // High level probability
     double highLevelProbability_;
 
+    double gaitFactor_;
+
     // The Random Generator
     boost::shared_ptr<Eigen::EigenMultivariateNormal<double> > normX_solver_;
 
@@ -119,6 +121,8 @@ public:
   {
     dt_ = dt;
   };
+
+  void setGaitFactor(double gaitFactor);
 
   // Redefinition of pure virtuals
   virtual Probability ProbabilityGet(const StatePosVel& input) const;

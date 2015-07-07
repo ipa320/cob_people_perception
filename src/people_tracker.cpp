@@ -162,7 +162,7 @@ void PeopleTracker::updateTrackerState(ros::Time time){
   // Calculate the hip width (only if some velocity exists)
   if(pos_vel_estimation_.vel_.length() > 0.01){
 
-    // Set the hip vector
+    // Set the hip vector, rectangluar to the velocity
     hip_vec_[0] = -pos_vel_estimation_.vel_[1];
     hip_vec_[1] =  pos_vel_estimation_.vel_[0];
     hip_vec_[2] =  0.0;
@@ -199,6 +199,26 @@ void PeopleTracker::updateTrackerState(ros::Time time){
       rightLeg_ = getLeg0();
     }
 
+    // Calculate the current moving state
+    tf::Vector3 foo1 = (leftLeg_->getEstimate().pos_ - hipPosLeft_);
+    tf::Vector3 foo2 = pos_vel_estimation_.vel_;
+
+    double state = foo1.getX() / foo2.getX();
+    if(state > 0){
+      frontLeg_ = leftLeg_;
+      backLeg_ = rightLeg_;
+      std::cout << "left leg is front" << std::endl;
+    }else{
+      frontLeg_ = leftLeg_;
+      backLeg_ = rightLeg_;
+      std::cout << "right leg is front" << std::endl;
+    }
+
+//    std::cout << foo1.getX() / foo2.getX() << std::endl;
+//    std::cout << foo1.getY() / foo2.getY() << std::endl;
+//
+//    std::cout << "foo1 " << foo1.getX() << " " << foo1.getY() << " " << foo1.getZ() << std::endl;
+//    std::cout << "foo2 " << foo2.getX() << " " << foo2.getY() << " " << foo2.getZ() << std::endl;
 
     // DEBUG
     tf::Vector3 a_vec = pos_vel_estimation_.pos_ - hipPosLeft_;
@@ -228,7 +248,17 @@ void PeopleTracker::updateTrackerState(ros::Time time){
     hipWidth_ = (hipPosLeft_ - hipPosRight_).length();
     stepWidth_ = (hipPosLeft_ - leftLeg_->getEstimate().pos_).length();
 
-  }else{ // If there is no speed there is no left or right
+    if(stepWidth_ > stepWidthMax_){
+      stepWidthMax_ = stepWidth_;
+    }
+
+
+
+
+  }
+
+  else{ // If there is no speed there is no left or right
+
     hipPos0_     = pos_vel_estimation_.pos_;
     hipPos1_     = pos_vel_estimation_.pos_;
     hipPosLeft_  = pos_vel_estimation_.pos_;

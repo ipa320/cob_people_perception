@@ -90,10 +90,11 @@ AdvancedSysPdfPosVel::MultivariateCovarianceSet(const MatrixWrapper::SymmetricMa
 }
 
 void
-AdvancedSysPdfPosVel::HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec, double pplTrackerProbability)
+AdvancedSysPdfPosVel::HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec, double gaitFactor, double pplTrackerProbability)
 {
   ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"AdvancedSysPdfPosVel::%s",__func__);
   noise_nl_.eigenvectorsSet(vel, hipVec);
+  noise_nl_.setGaitFactor(gaitFactor);
   noise_nl_.highLevelProbabilitySet(pplTrackerProbability);
 }
 
@@ -168,7 +169,7 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
     //assert(false);
   }
 
-  double v_max = 2;
+  double v_max = 2.5;
   if(res.vel_.length() > v_max){
 
 	  std::cout << "Trimming Speed of total " << res.vel_.length() << " now:";
