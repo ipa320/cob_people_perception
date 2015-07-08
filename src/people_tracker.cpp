@@ -209,8 +209,8 @@ void PeopleTracker::updateTrackerState(ros::Time time){
       backLeg_ = rightLeg_;
       std::cout << "left leg is front" << std::endl;
     }else{
-      frontLeg_ = leftLeg_;
-      backLeg_ = rightLeg_;
+      frontLeg_ = rightLeg_;
+      backLeg_ = leftLeg_;
       std::cout << "right leg is front" << std::endl;
     }
 
@@ -294,7 +294,7 @@ void PeopleTracker::propagate(ros::Time time){
 
     if(shortestHistSize > 1 && this->isDynamic()){
 
-      std::cout << "Left: L" << getLeftLeg()->int_id_ << " Right: L" << getRightLeg()->int_id_ << std::endl;
+      //std::cout << "Left: L" << getLeftLeg()->int_id_ << " Right: L" << getRightLeg()->int_id_ << std::endl;
 
       double product = 0;
       // Reverse iterate the history (left)
@@ -311,9 +311,9 @@ void PeopleTracker::propagate(ros::Time time){
         product = jumpLeft * jumpRight;
 
         if(jumpLeft > jumpRight){
-          std::cout << RED << jumpLeft << RESET << "   " << jumpRight << std::setw(6) << std::setprecision(6) << " prod=" << product <<  std::endl;
+          //std::cout << RED << jumpLeft << RESET << "   " << jumpRight << std::setw(6) << std::setprecision(6) << " prod=" << product <<  std::endl;
         }else{
-          std::cout << jumpLeft << "   " << RED << jumpRight << RESET << std::setw(6) << std::setprecision(6) << " prod=" << product <<  std::endl;
+          //std::cout << jumpLeft << "   " << RED << jumpRight << RESET << std::setw(6) << std::setprecision(6) << " prod=" << product <<  std::endl;
         }
 
       }
@@ -321,8 +321,8 @@ void PeopleTracker::propagate(ros::Time time){
 
 
       // Print for python debugging
-      std::cout << "left_leg = [";
-      for(unsigned int i = shortestHistSize-1; i>0; i--){
+      //std::cout << "left_leg = [";
+/*      for(unsigned int i = shortestHistSize-1; i>0; i--){
         double jumpLeft = (*leftLegHistory[i]-*leftLegHistory[i-1]).length();
 
         std::cout << jumpLeft;
@@ -337,7 +337,7 @@ void PeopleTracker::propagate(ros::Time time){
 
         if(i!=1) std::cout << ",";
       }
-      std::cout << "]" << std::endl;
+      std::cout << "]" << std::endl;*/
 
 
 
