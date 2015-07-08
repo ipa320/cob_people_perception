@@ -207,11 +207,9 @@ void PeopleTracker::updateTrackerState(ros::Time time){
     if(state > 0){
       frontLeg_ = leftLeg_;
       backLeg_ = rightLeg_;
-      std::cout << "left leg is front" << std::endl;
     }else{
       frontLeg_ = rightLeg_;
       backLeg_ = leftLeg_;
-      std::cout << "right leg is front" << std::endl;
     }
 
 //    std::cout << foo1.getX() / foo2.getX() << std::endl;
@@ -364,26 +362,26 @@ void PeopleTracker::propagate(ros::Time time){
             movLeg = getLeftLeg();
             statLeg = getRightLeg();
 
-            std::cout << "The left leg is moving" << std::endl;
+            //std::cout << "The left leg is moving" << std::endl;
           }else{
             movLeg = getRightLeg();
             statLeg = getLeftLeg();
 
-            std::cout << "The right leg is moving" << std::endl;
+            //std::cout << "The right leg is moving" << std::endl;
           }
 
           double alpha = cos(min(this->getStepWidth()/this->maxStepWidth_,1.0) * M_PI)/2.0 + 0.5;
 
-          std::cout << "ALPHA" << alpha << std::endl;
+          //std::cout << "ALPHA" << alpha << std::endl;
 
           assert(alpha >= 0.0);
           assert(alpha <= 1.0);
 
           // StdCOUT propagation information
-          std::cout << "PROPAGATION____________________" << std::endl;
-          std::cout << "ALPHA" << alpha << std::endl;
-          std::cout << "LEG MOVING: " << movLeg->int_id_ << std::endl;
-          std::cout << "LEG STATIC: " << statLeg->int_id_ << std::endl;
+          //std::cout << "PROPAGATION____________________" << std::endl;
+          //std::cout << "ALPHA" << alpha << std::endl;
+          //std::cout << "LEG MOVING: " << movLeg->int_id_ << std::endl;
+          //std::cout << "LEG STATIC: " << statLeg->int_id_ << std::endl;
 
           BFL::StatePosVel LegMovPrediction;
           BFL::StatePosVel LegStatPrediction;

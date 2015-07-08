@@ -605,7 +605,7 @@ public:
     	if((*pplIt)->getTotalProbability() > 0.4){
 
     		int numberOfMeasurementsWithinRange = 0;
-    		double rangeThres = 1;
+    		double rangeThres = 3;
     	    for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
     	        detectionIt != detections.end();
     	        detectionIt++)
@@ -766,8 +766,6 @@ public:
       }
       std::cout << std::endl;
     }
-
-
 
 
     //std::cout << std::endl << "Cost Matrix:" << std::endl  << costMatrix << std::endl;
@@ -1282,7 +1280,7 @@ public:
       markerMoving.ns = "leg_feature_arrows";
       markerMoving.id = counter;
       markerMoving.type = visualization_msgs::Marker::ARROW;
-      double factor = 0.1; // Control the arrow length
+      double factor = 0.7; // Control the arrow length
 
       geometry_msgs::Point startPoint;
       startPoint.x = estMov.pos_[0];
@@ -1348,7 +1346,7 @@ public:
       markerStanding.color.b = 0.0;
 
       msgArray.markers.push_back(markerMoving);
-      msgArray.markers.push_back(markerStanding);
+      //msgArray.markers.push_back(markerStanding);
 
       counter++;
 
@@ -1845,8 +1843,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       markerMsgArrow.ns = "arrow_pred_corr";
       markerMsgArrow.id = counter;
       markerMsgArrow.type = visualization_msgs::Marker::ARROW;
-      markerMsgArrow.scale.x = 0.005;
-      markerMsgArrow.scale.y = 0.02;
+      markerMsgArrow.scale.x = 0.02;
+      markerMsgArrow.scale.y = 0.03;
       markerMsgArrow.color.b = 1.0;
       markerMsgArrow.color.a = 0.8;
 

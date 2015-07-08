@@ -192,22 +192,30 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
 {
   //normX_solver_.setCovar(getSigma());
 
-  double alpha = 0.25; // Influence of the leg velocity
-  double alpha_mu = eigv1_.norm() * 0.12;
-  double beta = 0.25;  // With of the distribution
+  double alpha = 0.7 * eigv1_.norm(); // Influence of the leg velocity
+  double alpha_mu = eigv1_.norm() * gaitFactor_; // Mu of the Distribution
+  double beta = 0.1;  // With of the distribution
 
   Eigen::Matrix<double,3,1> sample_pos = Eigen::Matrix<double,3,1>::Zero();
   Eigen::Matrix<double,3,1> sample_vel = Eigen::Matrix<double,3,1>::Zero();
 
-  double vel_rand = rnorm(0,alpha);
+  Eigen::Matrix<double,3,1> vel_norm = eigv1_;
+  vel_norm.normalize();
+
+  double vel_rand = rnorm(alpha_mu,alpha) * 0.4;
+
+
   double width_rand = rnorm(0,abs(vel_rand) * beta);
 
   //std::cout << "vel_rand:" << vel_rand << " width_rand: " << width_rand << std::endl;
+  //std::cout << "velocity is changed by factor" << vel_rand << std::endl;
 
-  sample_pos = eigv1_ * vel_rand + eigv1_ * alpha_mu + eigv2_ * width_rand;
+
+  sample_pos = eigv1_ * vel_rand + eigv2_ * width_rand;
 
 
-  sample_vel = eigv1_ * vel_rand + eigv1_ * alpha_mu + eigv2_ * width_rand;
+  sample_vel = eigv1_ * vel_rand + eigv2_ * width_rand;
+
 
   //std::cout << "vel_rand: " << vel_rand << " width_rand: " << width_rand << std::endl;
 
@@ -217,12 +225,12 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
 
   //sample = normX_solver_->samples(1);
 
-  one_sample.ValueSet(StatePosVel(Vector3(sample_pos[0],
-		  	  	  	  	  	  	  	  	  sample_pos[1],
-										  sample_pos[2]),
+  one_sample.ValueSet(StatePosVel(Vector3(0,
+                                          0,
+                                          0),
                                   Vector3(sample_vel[0],
-                                		  sample_vel[1],
-										  sample_vel[2]))); // TODO make this better
+                                		      sample_vel[1],
+                                		      sample_vel[2]))); // TODO make this better
 
   return true;
 }

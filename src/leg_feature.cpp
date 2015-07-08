@@ -14,7 +14,7 @@ int LegFeature::nextid = 0;
 
 static std::string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
-static int NumberOfParticles = 600;
+static int NumberOfParticles = 500;
 
 /*LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl, OcclusionModelPtr ocm)
   :LegFeature(loc,tfl),
@@ -26,14 +26,14 @@ static int NumberOfParticles = 600;
 // The is the one leg tracker
 LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   : tfl_(tfl),
-    leg_feature_predict_pos_cov_(0.5), //0.4 Around 0.05 // Variance of the
-    leg_feature_predict_vel_cov_(6),  //1.8 Around 1.0 should be fine, the bigger the more spread
+    leg_feature_predict_pos_cov_(0.6), //0.4 Around 0.05 // Variance of the
+    leg_feature_predict_vel_cov_(1.8),  //1.8 Around 1.0 should be fine, the bigger the more spread
     sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
     filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
     //reliability(-1.), p(4),
     use_filter_(true),
     is_valid_(true), // On construction the leg feature is always valid
-    leg_feature_update_cov_(0.01), // The update measurement cov (should be around 0.0025, the smaller the peakier)
+    leg_feature_update_cov_(0.05), // The update measurement cov (should be around 0.0025, the smaller the peakier)
     is_static_(true) // At the beginning the leg feature is considered static
 {
   // Increase the id
@@ -76,7 +76,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
 
   double sigmaSpeed = maxSpeed / 2.0; // Because we want the two sigma area
 
-  BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(sigmaSpeed, sigmaSpeed, 0.000000));
+  BFL::StatePosVel prior_sigma(tf::Vector3(0.2, 0.2, 0.0), tf::Vector3(sigmaSpeed, sigmaSpeed, 0.000000));
 
   // Initialization is around the measurement which initialized this leg feature using a uniform distribution
   BFL::StatePosVel mu(loc);
@@ -150,7 +150,7 @@ void LegFeature::propagate(ros::Time time)
   cov(5, 5) = leg_feature_predict_vel_cov_;//conf.leg_feature_predict_vel_cov;
   cov(6, 6) = 0.0;
 
-  // If there exists a relevant high level filter
+  // Update of the moving leg
   if(mostProbableAssociatedPPL 											// If there is a associated PPLTracker
      && mostProbableAssociatedPPL->isValid()
      && mostProbableAssociatedPPL->getTotalProbability() > 0.6 			// If it has a certain Probability
@@ -160,7 +160,7 @@ void LegFeature::propagate(ros::Time time)
 
 	double s = mostProbableAssociatedPPL->getStepWidth();
 	//double s = 0;
-	double s_max = 0.3;
+	double s_max = mostProbableAssociatedPPL->getMaxStepWidth();
 	std::cout << "stepWidth: " << s << std::endl;
 
 
@@ -180,10 +180,10 @@ void LegFeature::propagate(ros::Time time)
 
     if(mostProbableAssociatedPPL->getBackLeg()->getId() == this->int_id_){
       factor = mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getMaxStepWidth();
-      std::cout << "LT[" << int_id_ << "] is the back leg and moving!" << std::endl;
+      std::cout << "LT[" << int_id_ << "] is the back leg and moving! " << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
     }else{
       factor = - mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getMaxStepWidth();
-      std::cout << "LT[" << int_id_ << "] is the front leg and moving!" << std::endl;
+      std::cout << "LT[" << int_id_ << "] is the front leg and moving!" << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
     }
 
 
