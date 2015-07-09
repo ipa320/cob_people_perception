@@ -190,11 +190,13 @@ MultivariateGaussianPosVel::SampleFrom(vector<Sample<StatePosVel> >& list_sample
 bool
 MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void * args) const
 {
-  //normX_solver_.setCovar(getSigma());
+  // EigV1 is the velocity in direction of movement
+  // EigV2 is the hip Vector
+  // The gaitFactor corresponds to the distance towards a endpoint
 
-  double alpha = 0.7 * eigv1_.norm(); // Influence of the leg velocity
+  double alpha    = eigv1_.norm(); // Influence of the leg velocity
   double alpha_mu = eigv1_.norm() * gaitFactor_; // Mu of the Distribution
-  double beta = 0.1;  // With of the distribution
+  double beta = 1;  // Spread in direction of the hip vector
 
   Eigen::Matrix<double,3,1> sample_pos = Eigen::Matrix<double,3,1>::Zero();
   Eigen::Matrix<double,3,1> sample_vel = Eigen::Matrix<double,3,1>::Zero();
@@ -202,7 +204,8 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
   Eigen::Matrix<double,3,1> vel_norm = eigv1_;
   vel_norm.normalize();
 
-  double vel_rand = rnorm(alpha_mu,alpha) * 0.4;
+  // Generate sample for the velocity
+  double vel_rand = rnorm(alpha_mu,alpha);
 
 
   double width_rand = rnorm(0,abs(vel_rand) * beta);
@@ -211,23 +214,25 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
   //std::cout << "velocity is changed by factor" << vel_rand << std::endl;
 
 
-  sample_pos = eigv1_ * vel_rand + eigv2_ * width_rand;
+  sample_pos = eigv1_ * vel_rand * dt_ * 1.5  + eigv2_ * width_rand * dt_ * 2;
 
 
-  sample_vel = eigv1_ * vel_rand + eigv2_ * width_rand;
+  sample_vel = eigv1_ * vel_rand * dt_ + eigv2_ * width_rand * dt_;
+
+  //std::cout << "dt_" << dt_ << std::endl;
 
 
   //std::cout << "vel_rand: " << vel_rand << " width_rand: " << width_rand << std::endl;
 
-  //std::cout << "eigv1_" << std::endl << eigv1_ << std::endl;
-  //std::cout << "eigv2_" << std::endl << eigv2_ << std::endl;
-  //std::cout << "samples_pos" << std::endl << sample_pos << std::endl;
+  std::cout << "eigv1_" << std::endl << eigv1_ << std::endl;
+  std::cout << "eigv2_" << std::endl << eigv2_ << std::endl;
+  std::cout << "samples_pos" << std::endl << sample_pos << std::endl;
 
   //sample = normX_solver_->samples(1);
 
-  one_sample.ValueSet(StatePosVel(Vector3(0,
-                                          0,
-                                          0),
+  one_sample.ValueSet(StatePosVel(Vector3(sample_pos[0],
+                                          sample_pos[1],
+                                          sample_pos[2]),
                                   Vector3(sample_vel[0],
                                 		      sample_vel[1],
                                 		      sample_vel[2]))); // TODO make this better
