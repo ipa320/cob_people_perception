@@ -46,10 +46,26 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
     id_[0] = leg1->int_id_;
   }
 
+  // Set the
+  SymmetricMatrix measurementCov(3);
+  for (unsigned int i = 0; i < 3; i++)
+    for (unsigned int j = 0; j < 3; j++)
+      measurementCov(i + 1, j + 1) = 0.1;
+
+  StatePosVel prior_sigma(tf::Vector3(sqrt(measurementCov(1, 1)), sqrt(measurementCov(
+                                        2, 2)), sqrt(measurementCov(3, 3))), tf::Vector3(0.0000001, 0.0000001, 0.0000001));
+  //kalmanTracker = new estimation::TrackerKalman("people_tracker", sys_sigma_);
+  //Tracker* new_tracker = new TrackerParticle(tracker_name.str(), num_particles_tracker, sys_sigma_);
+  //kalmanTracker->initialize(measurementCov, prior_sigma, time.toSec());
+
+
+
   ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s <NEW_PEOPLETRACKER %i-%i>", __func__, id_[0], id_[1]);
 }
 
 PeopleTracker::~PeopleTracker(){
+  //delete kalmanTracker;
+
   ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s <DELETE_PEOPLETRACKER %i-%i>", __func__, id_[0], id_[1]);
 }
 

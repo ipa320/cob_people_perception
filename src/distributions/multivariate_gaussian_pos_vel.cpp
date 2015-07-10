@@ -204,6 +204,8 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
   Eigen::Matrix<double,3,1> vel_norm = eigv1_;
   vel_norm.normalize();
 
+  ROS_ASSERT(alpha >= 0);
+
   // Generate sample for the velocity
   double vel_rand = rnorm(alpha_mu,alpha);
 
@@ -214,28 +216,29 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
   //std::cout << "velocity is changed by factor" << vel_rand << std::endl;
 
 
-  sample_pos = eigv1_ * vel_rand * dt_ * 1.5  + eigv2_ * width_rand * dt_ * 2;
+  sample_pos = eigv1_ * vel_rand * dt_ * 1.5 + eigv2_ * width_rand * dt_ * 2.2;
 
 
-  sample_vel = eigv1_ * vel_rand * dt_ + eigv2_ * width_rand * dt_;
+  sample_vel = eigv1_ * vel_rand * dt_ * 0.5 + eigv2_ * width_rand * dt_ * 0.5;
 
   //std::cout << "dt_" << dt_ << std::endl;
 
 
   //std::cout << "vel_rand: " << vel_rand << " width_rand: " << width_rand << std::endl;
 
-  std::cout << "eigv1_" << std::endl << eigv1_ << std::endl;
-  std::cout << "eigv2_" << std::endl << eigv2_ << std::endl;
-  std::cout << "samples_pos" << std::endl << sample_pos << std::endl;
+//  std::cout << "eigv1_" << std::endl << eigv1_ << std::endl;
+//  std::cout << "eigv2_" << std::endl << eigv2_ << std::endl;
+//  std::cout << "samples_pos" << std::endl << sample_pos << std::endl;
+//  std::cout << "samples_vel" << std::endl << sample_vel << std::endl;
 
   //sample = normX_solver_->samples(1);
 
   one_sample.ValueSet(StatePosVel(Vector3(sample_pos[0],
                                           sample_pos[1],
-                                          sample_pos[2]),
+                                          0),
                                   Vector3(sample_vel[0],
-                                		      sample_vel[1],
-                                		      sample_vel[2]))); // TODO make this better
+                                          sample_vel[1],
+                                		      0))); // TODO make this better
 
   return true;
 }

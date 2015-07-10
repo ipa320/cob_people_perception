@@ -156,7 +156,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWr
   // Set the covariances of the System Model
   ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->CovarianceSet(cov);
 
-  // Turn off high level prediction
+  // Turn off high level prediction (!!! Important!!!)
   ((AdvancedSysPdfPosVel*)sys_model_.SystemPdfGet())->setUseHighlevelPrediction(false);
 
   return this->updatePrediction(time);

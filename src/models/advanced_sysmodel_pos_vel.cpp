@@ -169,7 +169,7 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
     //assert(false);
   }
 
-  double v_max = 2.5;
+  double v_max = 4;
   if(res.vel_.length() > v_max){
 
 	    std::cout << "Trimming Speed of total " << res.vel_.length() << " now:";

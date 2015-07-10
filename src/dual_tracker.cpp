@@ -432,8 +432,8 @@ public:
     // Process the incoming scan
     benchmarking::Timer processTimer; processTimer.start();
     ScanProcessor processor(*scan, mask_);
-    //processor.splitConnected(connected_thresh_);
-    processor.splitConnectedRangeAware(connected_thresh_);
+    processor.splitConnected(connected_thresh_);
+    //processor.splitConnectedRangeAware(connected_thresh_);
     processor.removeLessThan(4);
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Process scan(clustering) took %f ms",__func__, processTimer.stopAndGetTimeMs());
 
@@ -934,7 +934,23 @@ public:
         // If no track is assigned to this measurement (or only a unreliable one)
         if(assignmentProb < 0.0001  && detectionProb > new_track_min_probability_){
 
-          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[lm]->point_, tfl_));
+          // Check the distance to the next measurement
+          double dist_min = 1000;
+          for(size_t i = 0; i < nMeasurementsReal; i++){
+            if(i != lm){
+              double dist = (detections[i]->point_ - detections[lm]->point_).length();
+              std::cout << "Dist LM[" << i << "] <-> LM[" << lm << "]" << dist << std::endl;
+
+              if(dist < dist_min){
+                dist_min = dist;
+              }
+            }
+          }
+
+          // Check for false meas
+          if(dist_min > 0.2){
+            LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[lm]->point_, tfl_));
+
 
           // Set the occlusion model
           newLegFeature->setOcclusionModel(occlusionModel_);
@@ -943,6 +959,7 @@ public:
           saved_leg_features.push_back(newLegFeature);
 
           std::cout << BOLDRED << "LM[" << lm << "] -> Creating new Tracker LT[" << newLegFeature->int_id_ << "]" << RESET << std::endl;
+          }
 
         }
         else
@@ -2349,7 +2366,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         line_list.header.stamp = time;
         line_list.id = (*peopleIt)->getLeg0()->getId()* 1000 + (*peopleIt)->getLeg1()->getId();
         line_list.ns = "people_history";
-        //line_list.lifetime = ros::Duration(0.1);
+        line_list.lifetime = ros::Duration(0.1);
 
         // width
         line_list.scale.x = 0.03;

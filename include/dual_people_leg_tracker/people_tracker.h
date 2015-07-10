@@ -77,7 +77,9 @@ class PeopleTracker{
 
     double maxStepWidth_; /**< Maximal Step Width */
 
-
+    //// KALMAN SMOOTHING
+    BFL::StatePosVel sys_sigma_;
+    estimation::Tracker* kalmanTracker; /**< Kalman Tracker for Smoothing */
 
   public:
     PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time);/**< Construct a People tracker based on this two legs */
