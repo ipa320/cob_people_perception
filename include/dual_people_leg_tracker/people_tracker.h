@@ -21,6 +21,8 @@
 // Own includes
 #include <dual_people_leg_tracker/leg_feature.h>
 
+#include <people_tracking_filter/tracker_kalman.h>
+
 #define DEBUG_PEOPLE_TRACKER 0
 #define DEBUG_PEOPLETRACKERLIST 0
 
@@ -57,6 +59,8 @@ class PeopleTracker{
     ros::Time propagation_time_; /**< Time the propagation is towards */
 
   private:
+    std::string fixed_frame_; /**< The fixed frame */
+
     bool is_static_;
 
     std::vector<LegFeaturePtr> legs_; /**< the legs, should be maximum 2! */
@@ -79,10 +83,11 @@ class PeopleTracker{
 
     //// KALMAN SMOOTHING
     BFL::StatePosVel sys_sigma_;
-    estimation::Tracker* kalmanTracker; /**< Kalman Tracker for Smoothing */
+    estimation::TrackerKalman* kalmanTracker_; /**< Kalman Tracker for Smoothing */
+    BFL::StatePosVel kalmanEstimation_; /**< The current Kalman Estimation */
 
   public:
-    PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time);/**< Construct a People tracker based on this two legs */
+    PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time, std::string);/**< Construct a People tracker based on this two legs */
 
     ~PeopleTracker();
 
@@ -152,6 +157,13 @@ class PeopleTracker{
      * @return The estimation
      */
     BFL::StatePosVel getEstimate();
+
+
+    /**
+     * Get the estimation obtained from the HL Kalman Filter
+     * @return Estimation of the KF
+     */
+    BFL::StatePosVel getKalmanEstimation();
 
     /**
      * Get the size of the people history
