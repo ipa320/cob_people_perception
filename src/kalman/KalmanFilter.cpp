@@ -44,17 +44,17 @@ KalmanFilter::KalmanFilter(Eigen::Matrix<double,4,1> initialState, ros::Time tim
 
 	// Process Covariance
 	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4);
-	Q_(0,0) = 0.1;
-	Q_(1,1) = 0.1;
+	Q_(0,0) = 0.001;
+	Q_(1,1) = 0.001;
 	Q_(2,2) = 0.001;
 	Q_(3,3) = 0.001;
 
 	// Measurement Covariance
-	R_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*100000;
+	R_ = Eigen::Matrix<double,-1,-1>::Zero(4,4);
 	R_(0,0) = 100;
 	R_(1,1) = 100;
-	R_(2,2) = 1000;
-	R_(3,3) = 1000;
+	R_(2,2) = 100;
+	R_(3,3) = 100;
 
 	S_k_ = Eigen::Matrix<double,4,4>::Identity(4,4);
 	S_k_temp_ = Eigen::Matrix<double,4,4>::Identity(4,4);

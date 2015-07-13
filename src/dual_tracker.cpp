@@ -1084,6 +1084,8 @@ public:
 
     publishPeopleVelocityKalman(people_trackers_.getList(), scan->header.stamp);
 
+    publishPeopleLines(people_trackers_.getList(), scan->header.stamp);
+
     // TODO parameter
     publishPeople3d(scan->header.stamp);
 
@@ -1097,6 +1099,8 @@ public:
     }
 
     publishParticlesArrows(saved_leg_features, scan->header.stamp);
+
+
     // Publish leg Measurements on
     //if(publish_leg_measurements_){
       //publishLegMeasurementArray(saved_leg_features);
@@ -1485,6 +1489,72 @@ public:
         msgArray.markers.push_back(marker);
 
         counter++;
+      }
+    }
+    people_visualization_pub_.publish(msgArray);
+
+  }
+
+  /**
+   * Publish the people lines for inter-people-interaction
+   * @param peopleTracker
+   * @param time
+   */
+  void publishPeopleLines(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
+
+    // Create the Visualization Message (a marker array)
+    visualization_msgs::MarkerArray msgArray;
+
+    int counter = 0;
+
+    for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
+        peopleIt != peopleTracker->end();
+        peopleIt++)
+    {
+      if((*peopleIt)->getTotalProbability() > 0.6 && (*peopleIt)->isDynamic()){
+
+
+        BFL::StatePosVel est = (*peopleIt)->getEstimateKalman();
+        std::vector<tf::Vector3> peopleLines = (*peopleIt)->getEstimationLines(13,0.1);
+
+        for(std::vector<tf::Vector3>::iterator vecIt = peopleLines.begin(); vecIt != peopleLines.end(); vecIt++){
+          visualization_msgs::Marker marker;
+          marker.header.frame_id = fixed_frame;
+          marker.header.stamp = time;
+          marker.ns = "people_lines";
+          marker.id = counter;
+          marker.type = visualization_msgs::Marker::ARROW;
+          marker.action = visualization_msgs::Marker::ADD;
+          marker.lifetime = ros::Duration(0.1);
+
+          geometry_msgs::Point startPoint;
+          startPoint.x = est.pos_[0];
+          startPoint.y = est.pos_[1];
+          startPoint.z = 0.0;
+
+          geometry_msgs::Point endPoint;
+          endPoint.x = est.pos_[0] + vecIt->getX() * 3;
+          endPoint.y = est.pos_[1] + vecIt->getY() * 3;
+          endPoint.z = 0.0;
+
+          //std::cout << "endpoint x: " << endPoint.x << "endpoint y:" << endPoint.y << std::endl;
+
+          marker.points.push_back(startPoint);
+          marker.points.push_back(endPoint);
+
+          marker.scale.x = 0.01; //shaft diameter
+          marker.scale.y = 0.1; //head diameter
+          marker.scale.z = 0.3; // head length (if other than zero)
+          marker.color.a = 0.7; // Don't forget to set the alpha!
+          marker.color.r = 0.4;
+          marker.color.g = 0.4;
+          marker.color.b = 0.4;
+
+          msgArray.markers.push_back(marker);
+
+          counter++;
+        }
+
       }
     }
     people_visualization_pub_.publish(msgArray);

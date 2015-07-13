@@ -178,6 +178,8 @@ class PeopleTracker{
       return this->hip_vec_;
     }
 
+    std::vector<tf::Vector3> getEstimationLines(int NumberOfLines, double angle_inkrement);
+
     //BFL::StatePosVel getLegEstimate(int id){
     //  return pos_vel_estimation_;
     //}

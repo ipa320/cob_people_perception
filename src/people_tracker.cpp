@@ -676,6 +676,38 @@ std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  PeopleTracker::getHist
   return position_history_;
 }
 
+std::vector<tf::Vector3> PeopleTracker::getEstimationLines(int NumberOfLines, double angle_inkrement){
+  // Check that the Number of Lines is unequal
+  ROS_ASSERT(NumberOfLines % 2 != 0);
+
+  tf::Vector3 mainLine = this->getEstimateKalman().vel_;
+
+  //std::cout << "mainLine x:" << mainLine.getX() << " y:" << mainLine.getY() << " z:" << mainLine.getZ() << std::endl;
+
+
+  std::vector<tf::Vector3> lines_vec;
+  tf::Vector3 rotationVector(0,0,1);
+
+  for(size_t i = 0; i < NumberOfLines; i++){
+    double angle = pow(-1,(i % 2)) * ceil(i/2.0) * angle_inkrement;
+    //std::cout << "angle" << angle << std::endl;
+
+
+    tf::Vector3 newLine = mainLine;
+    newLine = newLine.rotate(rotationVector, angle);
+    newLine = newLine.normalized();
+
+    //std::cout << "newline x:" << newLine.getX() << " y:" << newLine.getY() << " z:" << newLine.getZ() << std::endl;
+
+
+    lines_vec.push_back(newLine);
+  }
+  //std::cout << "-------" << std::endl;
+  //ROS_ASSERT(false);
+
+  return lines_vec;
+}
+
 /////////////////////////////////////////////////////////////
 //// PeopleTrackerList Class Definitions
 /////////////////////////////////////////////////////////////
