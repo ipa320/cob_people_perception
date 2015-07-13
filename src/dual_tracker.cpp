@@ -195,8 +195,6 @@ public:
   bool publish_measurement_labels_; /**< Publish labels of measurements */
   bool publish_predicted_leg_positions_; /**< Publish the estimated position of the legs due to the prediction of the associated people tracker */
   bool publish_scans_lines_; /**< Publish visualizations of the scan lines */
-  bool publish_kalman_estimation_; /**< Publish the estimation obtained from the KF */
-
 
   int next_p_id_;
 
@@ -239,7 +237,6 @@ public:
   ros::Publisher people_3d_pub_; /**< Publish persons in 3d */
   ros::Publisher particles_pred_pub_; /** <Publish the predicted particles */
   ros::Publisher particles_pred_arrow_pub_; /**< Publish the predicted particles as arrows */
-  ros::Publisher people_velocity_kalman_pub_; /**< Publish the kalman estimation of the HL */
 
   dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -301,10 +298,8 @@ public:
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
     map_pub_                      = nh_.advertise<visualization_msgs::MarkerArray>("fake_measurements", 0);
     people_3d_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("persons3d", 0);
-    particles_pred_pub_           = nh_.advertise<sensor_msgs::PointCloud>("particles_pred", 0);
+    particles_pred_pub_			  = nh_.advertise<sensor_msgs::PointCloud>("particles_pred", 0);
     particles_pred_arrow_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows_pred", 0);
-    people_velocity_kalman_pub_   = nh_.advertise<visualization_msgs::MarkerArray>("peoples", 0);
-
 
     if (use_seeds_)
     {
@@ -346,7 +341,7 @@ public:
     leg_reliability_limit_      = config.leg_reliability_limit;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, leg_reliability_limit_ );
 
     // People Tracker Parameters
-    people_probability_limit_   = config.people_probability_limit; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - people_probability_limit_ %f", __func__, people_probability_limit_);
+    people_probability_limit_   = config.people_probability_limit; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, people_probability_limit_);
 
     // Publish clustering
     publish_clusters_           = config.publish_clusters;        ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
@@ -367,7 +362,7 @@ public:
     publish_people_tracker_     = config.publish_people_tracker;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_tracker_ %d", __func__, publish_people_tracker_ );
     publish_static_people_trackers_ = config.publish_static_people_trackers; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_static_people_trackers_ %d", __func__, publish_static_people_trackers_);
     publish_people_history_     = config.publish_people_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_history_ %d", __func__, publish_people_history_ );
-    publish_kalman_estimation_   = config.publish_kalman_estimation; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_kalman_estimation_ %d", __func__, publish_kalman_estimation_ );
+
 
     publish_particles_          = config.publish_particles;       ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_particles_ %d", __func__, publish_particles_ );
     publish_matches_            = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_matches_ %d", __func__, publish_matches_ );
@@ -1001,7 +996,7 @@ public:
         // Add the tracker to the list if it is new
         if(!this->people_trackers_.exists(*legIt0, *legIt1)){
           // Create the people tracker
-          PeopleTrackerPtr temp_people_tracker(new PeopleTracker(*legIt0, *legIt1, scan->header.stamp, fixed_frame));
+          PeopleTrackerPtr temp_people_tracker(new PeopleTracker(*legIt0, *legIt1, scan->header.stamp));
           (*legIt0)->addPeopleTracker(temp_people_tracker);
           (*legIt1)->addPeopleTracker(temp_people_tracker);
           people_trackers_.addPeopleTracker(temp_people_tracker);
@@ -1084,11 +1079,6 @@ public:
       publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
       publishPeopleTrackerLabels(scan->header.stamp);
     }
-
-    if(publish_kalman_estimation_){
-      publishPeopleVelocityKalman(people_trackers_.getList(), scan->header.stamp);
-    }
-
     // TODO parameter
     publishPeople3d(scan->header.stamp);
 
@@ -1100,8 +1090,6 @@ public:
     if(publish_occlusion_model_){
       publishOcclusionModel(saved_leg_features, scan->header.stamp);
     }
-
-
 
     publishParticlesArrows(saved_leg_features, scan->header.stamp);
     // Publish leg Measurements on
@@ -1377,65 +1365,6 @@ public:
       }
     }
     leg_features_array_vis_pub_.publish(msgArray);
-
-  }
-
-  // Publish the Velocity Estimated from the Kalman Filter
-  void publishPeopleVelocityKalman(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
-
-    // Create the Visualization Message (a marker array)
-    visualization_msgs::MarkerArray msgArray;
-
-    int counter = 0;
-
-    for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
-        peopleIt != peopleTracker->end();
-        peopleIt++)
-    {
-      if((*peopleIt)->getTotalProbability() > new_track_min_probability_ ){
-
-        BFL::StatePosVel est = (*peopleIt)->getKalmanEstimation();
-
-        //std::cout <<  est << std::endl;
-
-        visualization_msgs::Marker marker;
-        marker.header.frame_id = fixed_frame;
-        marker.header.stamp = time;
-        marker.ns = "people_velocity_arrows_kalman";
-        marker.id = counter;
-        marker.type = visualization_msgs::Marker::ARROW;
-        marker.lifetime = ros::Duration(0.1);
-
-        double factor = 10; // Control the arrow length
-
-        geometry_msgs::Point startPoint;
-        startPoint.x = est.pos_[0] + est.vel_[0] * 0.5;
-        startPoint.y = est.pos_[1] + est.vel_[1] * 0.5;
-        startPoint.z = est.pos_[2] + est.vel_[2] * 0.5;
-
-
-        geometry_msgs::Point endPoint;
-        endPoint.x = est.pos_[0] + est.vel_[0]*factor;
-        endPoint.y = est.pos_[1] + est.vel_[1]*factor;
-        endPoint.z = est.pos_[2] + est.vel_[2]*factor;
-
-        marker.points.push_back(startPoint);
-        marker.points.push_back(endPoint);
-
-        marker.scale.x = 0.02; //shaft diameter
-        marker.scale.y = 0.2; //head diameter
-        marker.scale.z = 0; // head length (if other than zero)
-        marker.color.a = 1.0; // Don't forget to set the alpha!
-        marker.color.r = 0.0;
-        marker.color.g = 1.0;
-        marker.color.b = 0.0;
-
-        msgArray.markers.push_back(marker);
-
-        counter++;
-      }
-    }
-    people_velocity_kalman_pub_.publish(msgArray);
 
   }
 

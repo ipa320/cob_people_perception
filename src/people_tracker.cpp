@@ -21,7 +21,7 @@ bool isValidPeopleTracker(const PeopleTrackerPtr & o){
 }
 
 
-PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time time, std::string fixed_frame):
+PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time time):
   creation_time_(time),
   total_probability_(0.0), // Initialize the probability with zero
   propagation_time_(time),
@@ -31,16 +31,8 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
   is_static_(true),
   dist_probability_(0.0),
   leg_time_probability_(0.0),
-  leg_association_probability_(0.0),
-  fixed_frame_(fixed_frame)
+  leg_association_probability_(0.0)
 {
-  sys_sigma_.pos_[0] = 0.1;
-  sys_sigma_.pos_[1] = 0.1;
-  sys_sigma_.pos_[2] = 0.0;
-  sys_sigma_.vel_[0] = 0.001;
-  sys_sigma_.vel_[1] = 0.001;
-  sys_sigma_.vel_[2] = 0.0;
-
   // Add the legs to this people tracker
   this->addLeg(leg0);
   this->addLeg(leg1);
@@ -54,24 +46,19 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
     id_[0] = leg1->int_id_;
   }
 
-  // Initial measurement
-  tf::Stamped<tf::Vector3> meas;
-  meas.setData(this->getEstimate().pos_);
-  meas.stamp_ = time;
-  meas.frame_id_ = fixed_frame;
+  // Set the
+  SymmetricMatrix measurementCov(3);
+  for (unsigned int i = 0; i < 3; i++)
+    for (unsigned int j = 0; j < 3; j++)
+      measurementCov(i + 1, j + 1) = 0.1;
 
-  std::cout << "Kalman initialized at" << this->getEstimate() << std::endl;
+  StatePosVel prior_sigma(tf::Vector3(sqrt(measurementCov(1, 1)), sqrt(measurementCov(
+                                        2, 2)), sqrt(measurementCov(3, 3))), tf::Vector3(0.0000001, 0.0000001, 0.0000001));
+  //kalmanTracker = new estimation::TrackerKalman("people_tracker", sys_sigma_);
+  //Tracker* new_tracker = new TrackerParticle(tracker_name.str(), num_particles_tracker, sys_sigma_);
+  //kalmanTracker->initialize(measurementCov, prior_sigma, time.toSec());
 
 
-  kalmanTracker_ = new estimation::TrackerKalman("smoothing_kalman", sys_sigma_);
-
-  // Initial uncertainty
-  double initMeasCov = 0.2;
-  StatePosVel prior_sigma(tf::Vector3(sqrt(initMeasCov), sqrt(initMeasCov), sqrt(initMeasCov)), tf::Vector3(0.3, 0.3, 0.0000001));
-  kalmanTracker_->initialize(meas, prior_sigma, time.toSec());
-
-  ROS_ASSERT(kalmanTracker_->isInitialized());
-  //ROS_ASSERT(false);
 
   ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s <NEW_PEOPLETRACKER %i-%i>", __func__, id_[0], id_[1]);
 }
@@ -166,40 +153,13 @@ bool PeopleTracker::isValid() const{
 }
 
 void PeopleTracker::update(ros::Time time){
-  std::cout << "Update of " << *this << std::endl;
-
   // Update the system state
   updateTrackerState(time);
 
   // Update the probabilities
   updateProbabilities(time);
 
-  if(this->getTotalProbability() > 0.6){
-  try{
-    // Update the kalman Filter
-    kalmanTracker_->updatePrediction(time.toSec());
-
-
-    double measCov = 2;
-    SymmetricMatrix measCov_(3);
-    for (unsigned int i = 0; i < 3; i++)
-      for (unsigned int j = 0; j < 3; j++)
-        measCov_(i + 1, j + 1) = measCov;
-
-    ROS_ASSERT(this->getEstimate().pos_[2] == 0);
-
-    std::cout << "Updating Kalman with" << this->getEstimate() << std::endl;
-
-    kalmanTracker_->updateCorrection(this->getEstimate().pos_, measCov_);
-
-  }
-  // Catch errors
-  catch(...){
-    //ROS_ASSERT(false);
-  }
-  }
-
-
+  // Update the history
   // updateHistory(time);
 }
 
@@ -656,16 +616,6 @@ BFL::StatePosVel PeopleTracker::getEstimate(){
   pos_vel_estimation.vel_ = 0.5 * pos_vel_estimation.vel_; // TODO ugly find a better way for this
 
   return pos_vel_estimation;
-}
-
-BFL::StatePosVel PeopleTracker::getKalmanEstimation(){
-  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->int_id_, this->getLeg1()->int_id_, __func__);
-
-  BFL::StatePosVel pos_vel_estimation_kalman;
-
-  kalmanTracker_->getEstimate(pos_vel_estimation_kalman);
-
-  return pos_vel_estimation_kalman;
 }
 
 BFL::StatePosVel PeopleTracker::getLegEstimate(int id){

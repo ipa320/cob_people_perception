@@ -71,6 +71,7 @@ add_library(dual_people_leg_tracker
             src/distributions/gaussian_pos_vel_mod.cpp
             src/leg_feature.cpp
             src/people_tracker.cpp
+            src/kalman/KalmanFilter.cpp
             )
 
 catkin_package(INCLUDE_DIRS 
