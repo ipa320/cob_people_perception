@@ -171,7 +171,7 @@ void PeopleTrackingNode::callbackRcv(const people_msgs::PositionMeasurement::Con
                                               2, 2)), sqrt(cov(3, 3))), tf::Vector3(0.0000001, 0.0000001, 0.0000001));
         tracker_name << "person " << tracker_counter_++;
         Tracker* new_tracker = new TrackerKalman(tracker_name.str(),
-            sys_sigma_);
+sys_sigma_);
         //Tracker* new_tracker = new TrackerParticle(tracker_name.str(), num_particles_tracker, sys_sigma_);
         new_tracker->initialize(meas, prior_sigma,
                                 message->header.stamp.toSec());
