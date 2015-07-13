@@ -20,6 +20,7 @@
 
 // Own includes
 #include <dual_people_leg_tracker/leg_feature.h>
+#include <dual_people_leg_tracker/kalman/KalmanFilter.h>
 
 #define DEBUG_PEOPLE_TRACKER 0
 #define DEBUG_PEOPLETRACKERLIST 0
@@ -78,8 +79,10 @@ class PeopleTracker{
     double maxStepWidth_; /**< Maximal Step Width */
 
     //// KALMAN SMOOTHING
-    BFL::StatePosVel sys_sigma_;
-    estimation::Tracker* kalmanTracker; /**< Kalman Tracker for Smoothing */
+    //BFL::StatePosVel sys_sigma_;
+    //estimation::Tracker* kalmanTracker; /**< Kalman Tracker for Smoothing */
+
+    filter::KalmanFilter* kalmanFilter_;
 
   public:
     PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time);/**< Construct a People tracker based on this two legs */
@@ -152,6 +155,12 @@ class PeopleTracker{
      * @return The estimation
      */
     BFL::StatePosVel getEstimate();
+
+    /**
+     * Get the estimation of the Kalman filter
+     * @return
+     */
+    BFL::StatePosVel getEstimateKalman();
 
     /**
      * Get the size of the people history

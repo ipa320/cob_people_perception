@@ -219,7 +219,7 @@ public:
   ros::Publisher leg_measurements_vis_pub_;/**< Visualization of leg detections */
   ros::Publisher leg_features_vis_pub_;/**< Visualization of leg tracks */
   ros::Publisher leg_features_array_vis_pub_;/**< Visualization of leg estimation using arrows */
-  ros::Publisher people_track_vis_pub_;/**< Visualization of people tracks */
+  ros::Publisher people_visualization_pub_;/**< Visualization of people tracks */
   ros::Publisher leg_features_history_vis_pub_;/**< Visualization of leg tracks */
   ros::Publisher people_history_vis_pub_;/**< Visualization of leg tracks */
   ros::Publisher matches_vis_pub_;/**< Visualization of the pairing leg_detection <-> leg_track */
@@ -237,6 +237,8 @@ public:
   ros::Publisher people_3d_pub_; /**< Publish persons in 3d */
   ros::Publisher particles_pred_pub_; /** <Publish the predicted particles */
   ros::Publisher particles_pred_arrow_pub_; /**< Publish the predicted particles as arrows */
+  ros::Publisher people_velocity_kalman_pub_;  /**< Publish the velocity obtained by a kalman estimation */
+
 
   dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
@@ -288,7 +290,7 @@ public:
     leg_measurements_vis_pub_     = nh_.advertise<sensor_msgs::PointCloud>("leg_measurements", 0);
     leg_features_vis_pub_         = nh_.advertise<sensor_msgs::PointCloud>("leg_features", 0);
     matches_vis_pub_              = nh_.advertise<visualization_msgs::Marker>("matches", 0);
-    people_track_vis_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("peoples", 0);
+    people_visualization_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("peoples", 0);
     people_history_vis_pub_       = nh_.advertise<visualization_msgs::MarkerArray>("people_history", 0);
     leg_predicted_pub_            = nh_.advertise<visualization_msgs::MarkerArray>("leg_predicted_positions_", 0);
     scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
@@ -298,7 +300,7 @@ public:
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
     map_pub_                      = nh_.advertise<visualization_msgs::MarkerArray>("fake_measurements", 0);
     people_3d_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("persons3d", 0);
-    particles_pred_pub_			  = nh_.advertise<sensor_msgs::PointCloud>("particles_pred", 0);
+    particles_pred_pub_           = nh_.advertise<sensor_msgs::PointCloud>("particles_pred", 0);
     particles_pred_arrow_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows_pred", 0);
 
     if (use_seeds_)
@@ -1079,6 +1081,9 @@ public:
       publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
       publishPeopleTrackerLabels(scan->header.stamp);
     }
+
+    publishPeopleVelocityKalman(people_trackers_.getList(), scan->header.stamp);
+
     // TODO parameter
     publishPeople3d(scan->header.stamp);
 
@@ -1425,6 +1430,64 @@ public:
       }
     }
     people_velocity_pub_.publish(msgArray);
+
+  }
+
+  void publishPeopleVelocityKalman(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
+
+    // Create the Visualization Message (a marker array)
+    visualization_msgs::MarkerArray msgArray;
+
+    int counter = 0;
+
+    for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
+        peopleIt != peopleTracker->end();
+        peopleIt++)
+    {
+      if((*peopleIt)->getTotalProbability() > 0.6 ){
+
+        BFL::StatePosVel est = (*peopleIt)->getEstimateKalman();
+
+        visualization_msgs::Marker marker;
+        marker.header.frame_id = fixed_frame;
+        marker.header.stamp = time;
+        marker.ns = "kalman_estimation";
+        marker.id = counter;
+        marker.type = visualization_msgs::Marker::ARROW;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.lifetime = ros::Duration(0.1);
+
+        double factor = 0.5; // Control the arrow length
+
+        geometry_msgs::Point startPoint;
+        startPoint.x = est.pos_[0];
+        startPoint.y = est.pos_[1];
+        startPoint.z = 0.0;
+
+
+
+        geometry_msgs::Point endPoint;
+        endPoint.x = est.pos_[0] + est.vel_[0]*factor;
+        endPoint.y = est.pos_[1] + est.vel_[1]*factor;
+        endPoint.z = 0.0;
+
+        marker.points.push_back(startPoint);
+        marker.points.push_back(endPoint);
+
+        marker.scale.x = 0.1; //shaft diameter
+        marker.scale.y = 0.1; //head diameter
+        marker.scale.z = 0; // head length (if other than zero)
+        marker.color.a = 1.0; // Don't forget to set the alpha!
+        marker.color.r = 0.0;
+        marker.color.g = 1.0;
+        marker.color.b = 1.0;
+
+        msgArray.markers.push_back(marker);
+
+        counter++;
+      }
+    }
+    people_visualization_pub_.publish(msgArray);
 
   }
 
@@ -2120,7 +2183,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     }
 
     // Publish the marker Array
-    people_track_vis_pub_.publish(msgArray);
+    people_visualization_pub_.publish(msgArray);
 
 
   }

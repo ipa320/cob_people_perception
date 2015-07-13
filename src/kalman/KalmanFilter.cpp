@@ -11,7 +11,7 @@
 
 using namespace filter;
 
-KalmanFilter::KalmanFilter(Eigen::Matrix<double,2,1> initialState, ros::Time time) {
+KalmanFilter::KalmanFilter(Eigen::Matrix<double,4,1> initialState, ros::Time time) {
 
   // Set the time
   filterTime_ = time;
@@ -19,8 +19,8 @@ KalmanFilter::KalmanFilter(Eigen::Matrix<double,2,1> initialState, ros::Time tim
 	// Set the state
 	initial_state_[0] = initialState[0];
 	initial_state_[1] = initialState[1];
-	initial_state_[2] = 0.0;
-	initial_state_[3] = 0.0;
+	initial_state_[2] = initialState[2];
+	initial_state_[3] = initialState[3];
 
 	// Current estimation is the initial state
 	state_estimated_ = initial_state_;
@@ -32,22 +32,32 @@ KalmanFilter::KalmanFilter(Eigen::Matrix<double,2,1> initialState, ros::Time tim
 
 	// Define the measurement Matrix
 	H_ << 1, 0, 0, 0,
-		    0, 1, 0,  0;
+		    0, 1, 0, 0,
+		    0, 0, 1, 0,
+		    0, 0, 0, 1;
 
-	P_post_ <<  1, 0, 0, 0,
-			        0, 1, 0, 0,
-			        0, 0, 2, 0,
-			        0, 0, 0, 2;
+	P_post_ <<  0.1, 0, 0, 0,
+			        0, 0.1, 0, 0,
+			        0, 0, 1.0, 0,
+			        0, 0, 0, 1.0;
 	P_prior_  = P_post_;
 
 	// Process Covariance
-	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*0.001;
+	Q_ = Eigen::Matrix<double,-1,-1>::Identity(4,4);
+	Q_(0,0) = 0.1;
+	Q_(1,1) = 0.1;
+	Q_(2,2) = 0.001;
+	Q_(3,3) = 0.001;
 
 	// Measurement Covariance
-	R_ = Eigen::Matrix<double,-1,-1>::Identity(2,2)*0.001;
+	R_ = Eigen::Matrix<double,-1,-1>::Identity(4,4)*100000;
+	R_(0,0) = 100;
+	R_(1,1) = 100;
+	R_(2,2) = 1000;
+	R_(3,3) = 1000;
 
-	S_k_ = Eigen::Matrix<double,2,2>::Identity(2,2);
-	S_k_temp_ = Eigen::Matrix<double,2,2>::Identity(2,2);
+	S_k_ = Eigen::Matrix<double,4,4>::Identity(4,4);
+	S_k_temp_ = Eigen::Matrix<double,4,4>::Identity(4,4);
 
 
 //	std::cout << "A Kalman filter was created, current state " << std::endl << state_estimated_ <<  std::endl;
@@ -107,20 +117,20 @@ void KalmanFilter::predict(ros::Time time){
   this->filterTime_ = time;
 }
 
-void KalmanFilter::update(Eigen::Matrix<double,2,1> z_k){
+void KalmanFilter::update(Eigen::Matrix<double,4,1> z_k){
 	//std::cout << "Kalman Filter was updated with " << z_k.transpose() << std::endl;
 
 
 
 	// Residual
-	Eigen::Matrix<double,2,1> y_k;
+	Eigen::Matrix<double,4,1> y_k;
 	y_k = z_k - H_ * state_predicted_;
 
 	// Residual covariance
 	S_k_ = H_ * P_prior_ * H_.transpose() + R_;
 
 	// Kalman Gain
-	Eigen::Matrix<double,4,2> K_k;
+	Eigen::Matrix<double,4,4> K_k;
 	K_k = P_prior_ * H_.transpose() * S_k_.inverse();
 
 	// State estimation
@@ -141,11 +151,11 @@ Eigen::Matrix<double,4,1> KalmanFilter::getEstimation(){
 	return this->state_estimated_;
 }
 
-Eigen::Matrix<double,2,1> KalmanFilter::getMeasurementPrediction(){
-	return this->state_predicted_.block(0,0,2,1);
+Eigen::Matrix<double,4,1> KalmanFilter::getMeasurementPrediction(){
+	return this->state_predicted_.block(0,0,4,1);
 }
 
-double KalmanFilter::getMeasurementLikelihood(Eigen::Vector2d meas){
+/*double KalmanFilter::getMeasurementLikelihood(Eigen::Vector2d meas){
 
   S_k_temp_ = H_ * P_prior_ * H_.transpose() + R_;
 
@@ -164,5 +174,5 @@ double KalmanFilter::getMeasurementLikelihood(Eigen::Vector2d meas){
 
   return likelihood;
 
-}
+}*/
 

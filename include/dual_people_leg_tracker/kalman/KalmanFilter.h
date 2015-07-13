@@ -22,7 +22,7 @@ public:
 
 	Eigen::Matrix<double,4,4> A_dt; // Changes with dt
 
-	Eigen::Matrix<double,2,4> H_; // Transition Matrix
+	Eigen::Matrix<double,4,4> H_; // Measurement matrix
 
 	Eigen::Matrix<double,4,4> P_prior_; // Predicted (a priori) estimate covariance
 
@@ -30,11 +30,11 @@ public:
 
 	Eigen::Matrix<double,4,4> Q_; // Process Covariance
 
-	Eigen::Matrix<double,2,2> R_; // Measurement Covariance
+	Eigen::Matrix<double,4,4> R_; // Measurement Covariance
 
-	Eigen::Matrix<double,2,2> S_k_; // Residual Covariance
+	Eigen::Matrix<double,4,4> S_k_; // Residual Covariance
 
-	Eigen::Matrix<double,2,2> S_k_temp_; // For the measurement likelihood
+	Eigen::Matrix<double,4,4> S_k_temp_; // For the measurement likelihood
 
 	Eigen::Matrix<double,4,1> initial_state_; // The current State
 
@@ -42,12 +42,12 @@ public:
 
 	Eigen::Matrix<double,4,1> state_estimated_; // The state estimation
 
-	Eigen::Vector2d measurement_prediction_; // Current measurement prediction
+	Eigen::Matrix<double,4,1> measurement_prediction_; // Current measurement prediction
 
 	ros::Time filterTime_;
 
 public:
-	KalmanFilter(Eigen::Matrix<double,2,1> initialState, ros::Time time);
+	KalmanFilter(Eigen::Matrix<double,4,1> initialState, ros::Time time);
 	//KalmanFilter(const KalmanFilter &obj);
 	virtual ~KalmanFilter();
 
@@ -64,13 +64,13 @@ public:
 	Eigen::Matrix<double,4,1> getEstimation();
 
 	// Get the measurement prediction
-	Eigen::Matrix<double,2,1> getMeasurementPrediction();
+	Eigen::Matrix<double,4,1> getMeasurementPrediction();
 
 	// Do a update
-	void update(Eigen::Matrix<double,2,1>);
+	void update(Eigen::Matrix<double,4,1>);
 
 	// Get measurement likelihood
-  double getMeasurementLikelihood(Eigen::Vector2d meas);
+  // double getMeasurementLikelihood(Eigen::Vector2d meas);
 
 };
 }

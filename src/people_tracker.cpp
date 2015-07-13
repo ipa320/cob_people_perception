@@ -58,7 +58,12 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
   //Tracker* new_tracker = new TrackerParticle(tracker_name.str(), num_particles_tracker, sys_sigma_);
   //kalmanTracker->initialize(measurementCov, prior_sigma, time.toSec());
 
-
+  Eigen::Matrix<double,4,1> initialMeasurement;
+  initialMeasurement(0,0) = this->getEstimate().pos_[0];
+  initialMeasurement(1,0) = this->getEstimate().pos_[1];
+  initialMeasurement(2,0) = this->getEstimate().vel_[0];
+  initialMeasurement(3,0) = this->getEstimate().vel_[1];
+  kalmanFilter_ = new filter::KalmanFilter(initialMeasurement, time);
 
   ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s <NEW_PEOPLETRACKER %i-%i>", __func__, id_[0], id_[1]);
 }
@@ -158,6 +163,20 @@ void PeopleTracker::update(ros::Time time){
 
   // Update the probabilities
   updateProbabilities(time);
+
+  // Update the KF
+  kalmanFilter_->predict(time);
+
+  Eigen::Matrix<double,4,1> currentPos;
+  currentPos(0,0) = this->getEstimate().pos_[0];
+  currentPos(1,0) = this->getEstimate().pos_[1];
+  currentPos(2,0) = this->getEstimate().vel_[0];
+  currentPos(3,0) = this->getEstimate().vel_[1];
+
+  kalmanFilter_->update(currentPos);
+  //std::cout << "------------------" << std::endl;
+  //std::cout << kalmanFilter_->getEstimation() << std::endl;
+
 
   // Update the history
   // updateHistory(time);
@@ -297,7 +316,7 @@ void PeopleTracker::propagate(ros::Time time){
 
   if(this->getTotalProbability() > 0.6){
 
-    std::cout << *this << " is now propagated" << std::endl;
+    //std::cout << *this << " is now propagated" << std::endl;
 
     // Get the history of both assigned leg trackers
     std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > leftLegHistory = this->getLeftLeg()->getHistory();
@@ -629,6 +648,23 @@ BFL::StatePosVel PeopleTracker::getLegEstimate(int id){
   if(id == id_[1]){
     return leg1Prediction_;
   }
+
+}
+
+BFL::StatePosVel PeopleTracker::getEstimateKalman(){
+  BFL::StatePosVel kalmanEstimation;
+
+  Eigen::Matrix<double,4,1> estimationMatrix;
+
+  estimationMatrix = kalmanFilter_->getEstimation();
+  kalmanEstimation.pos_[0] = estimationMatrix(0,0);
+  kalmanEstimation.pos_[1] = estimationMatrix(1,0);
+  kalmanEstimation.pos_[2] = 0.0;
+  kalmanEstimation.vel_[0] = estimationMatrix(2,0);
+  kalmanEstimation.vel_[1] = estimationMatrix(3,0);
+  kalmanEstimation.vel_[2] = 0.0;
+
+  return kalmanEstimation;
 
 }
 
