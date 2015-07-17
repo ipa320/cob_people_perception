@@ -10,6 +10,7 @@
 
 // ROS includes
 #include <ros/ros.h>
+#include <tf/transform_broadcaster.h>
 
 // System includes
 #include <vector>
@@ -58,6 +59,9 @@ class PeopleTracker{
     ros::Time propagation_time_; /**< Time the propagation is towards */
 
   private:
+
+    tf::TransformBroadcaster br; /**< A transform broadcaster */
+
     bool is_static_;
 
     std::vector<LegFeaturePtr> legs_; /**< the legs, should be maximum 2! */
@@ -216,6 +220,16 @@ class PeopleTracker{
       return this->backLeg_;
     }
 
+    std::string getName(){
+      std::stringstream name;
+
+      name << "ppl" << this->id_[0] << "_" << this->id_[1];
+
+      return name.str();
+    }
+
+    void broadCastTf(ros::Time time);
+
 
     /// output stream
     friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
@@ -309,6 +323,9 @@ class PeopleTrackerList{
      * Update the probabilities of all trackers
      */
     void updateProbabilities(ros::Time);
+
+
+    BFL::StatePosVel getEstimationFrom(std::string name);
 
 
 

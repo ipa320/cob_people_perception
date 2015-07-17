@@ -144,6 +144,8 @@ public:
 
   TransformListener tfl_; /**< The transform listener */
 
+  tf::TransformBroadcaster br; /**< A tranform broadcaster */
+
   ScanMask mask_; /**< A scan mask */
 
   OcclusionModelPtr occlusionModel_; /**< The occlusion model */
@@ -171,6 +173,14 @@ public:
   int feature_id_;
 
   bool use_seeds_;
+
+  // RMSE, Error stuff
+  std::vector<double> error_buf;
+  std::vector<double> error_buf_rmse;
+  tf::StampedTransform errorTransform;
+  tf::StampedTransform positionTransform;
+  std::vector<ros::Time> measurePointTime;
+
 
   Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> costMatrixMAP;
   Eigen::Matrix< double, Eigen::Dynamic, Eigen::Dynamic> probMAPMat;
@@ -1111,6 +1121,88 @@ public:
     }
 
     publishFakeMeasPos(fakeDetections, scan->header.stamp, sensorCoord);
+
+    //////////////////////////////////////////////////////////////////////////
+    //// RMSE
+    //////////////////////////////////////////////////////////////////////////
+    tf::Transform correctionTransform;
+
+    std::string optiTrackName = "optitrack_robot_station1";
+    //std::string optiTrackNameCorrection = "optitrack_robot_station1_corr";
+
+    tf::Quaternion q;
+    q.setRPY(0,0,0);
+    correctionTransform.setOrigin( tf::Vector3(-0.15, 0.0, 0.0) );
+    correctionTransform.setRotation(q);
+    //br.sendTransform(tf::StampedTransform(transform, scan->header.stamp, optiTrackName, optiTrackNameCorrection));
+
+
+
+    try {
+      tfl_.lookupTransform("odom_combined", optiTrackName, ros::Time(0), errorTransform);
+      tfl_.lookupTransform("odom_combined", "ppl0_3", ros::Time(0), positionTransform);
+
+      if(abs((errorTransform.stamp_ - positionTransform.stamp_).toSec()) < 0.1){
+
+        std::cout << "errorTransform Time:" << errorTransform.stamp_ << std::endl;
+        std::cout << "positionTransform Time:" << positionTransform.stamp_ << std::endl;
+        std::cout << "Delta: " << (errorTransform.stamp_ - positionTransform.stamp_).toSec() << std::endl;
+
+        std::cout << "positionTransform " << positionTransform.getOrigin().getX() << " " << positionTransform.getOrigin().getY() << " time:" << positionTransform.stamp_ << std::endl;
+        std::cout << "errorTransform " << errorTransform.getOrigin().getX() << " " << errorTransform.getOrigin().getY() << " time:" << errorTransform.stamp_ << std::endl;
+
+        std::cout << BOLDBLUE << "distance " << ((errorTransform*correctionTransform).getOrigin() - positionTransform.getOrigin()).length() << std::endl;
+        double distance = ((errorTransform*correctionTransform).getOrigin() - positionTransform.getOrigin()).length();
+
+
+        error_buf.push_back(distance);
+        measurePointTime.push_back(scan->header.stamp);
+
+
+
+        // Calculate the rmse
+        double sum = 0;
+        for(size_t i = 0; i < error_buf.size(); i++){
+          sum += pow(error_buf[i],2);
+        }
+
+        double rmse =  sqrt(sum/error_buf.size());
+
+        error_buf_rmse.push_back(rmse);
+
+        // Python output the rmse
+        std::cout << "error = [";
+        for(size_t i = 0; i < error_buf.size(); i++){
+          std::cout << error_buf[i] << ",";
+        }
+        std::cout << ']' << RESET << std::endl;
+
+        // Python output the rmse
+        std::cout << "rmse = [";
+        for(size_t i = 0; i < error_buf_rmse.size(); i++){
+          std::cout << error_buf_rmse[i] << ",";
+        }
+        std::cout << ']' << RESET << std::endl;
+
+        // Python output the time
+        std::cout << "time = [";
+        for(size_t i = 0; i < measurePointTime.size(); i++){
+          std::cout << measurePointTime[i] << ",";
+        }
+        std::cout << ']' << RESET << std::endl;
+
+
+
+      }
+
+    }
+    catch (tf::TransformException ex){
+      ROS_WARN("NO TRANSFORMATION FOUND");
+    }
+
+
+
+
 
     //////////////////////////////////////////////////////////////////////////
     //// Cleaning (Clear data)

@@ -174,6 +174,8 @@ void PeopleTracker::update(ros::Time time){
   currentPos(3,0) = this->getEstimate().vel_[1];
 
   kalmanFilter_->update(currentPos);
+
+  broadCastTf(time);
   //std::cout << "------------------" << std::endl;
   //std::cout << kalmanFilter_->getEstimation() << std::endl;
 
@@ -708,6 +710,26 @@ std::vector<tf::Vector3> PeopleTracker::getEstimationLines(int NumberOfLines, do
   return lines_vec;
 }
 
+/***
+ * Broadcast the position of humans in a tf
+ * @param time
+ */
+void PeopleTracker::broadCastTf(ros::Time time){
+  tf::Transform transform;
+
+  tf::Quaternion q;
+  q.setRPY(0,0,0);
+
+
+  transform.setOrigin( tf::Vector3(this->getEstimate().pos_[0], this->getEstimate().pos_[1], 0.0) );
+  transform.setRotation(q);
+
+  br.sendTransform(tf::StampedTransform(transform, time, "odom_combined", this->getName()));
+
+  std::cout << this->getName() << " published transform!" << std::endl;
+
+}
+
 /////////////////////////////////////////////////////////////
 //// PeopleTrackerList Class Definitions
 /////////////////////////////////////////////////////////////
@@ -794,6 +816,14 @@ void PeopleTrackerList::updateAllTrackers(ros::Time time){
     (*peopleTrackerIt)->update(time);
 
     (*peopleTrackerIt)->updateHistory(time);
+  }
+}
+
+BFL::StatePosVel PeopleTrackerList::getEstimationFrom(std::string name){
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
+    if((*peopleTrackerIt)->getName() ==  name){
+      return (*peopleTrackerIt)->getEstimate();
+    }
   }
 }
 

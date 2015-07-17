@@ -144,7 +144,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
 };
 
 /**
- * @brief Do the prediction without the influence of the estimation of the high level filter
+ * @brief Do the prediction WITHOUT the influence of the estimation of the high level filter
  * @param time
  * @return
  */
