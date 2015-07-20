@@ -216,7 +216,7 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
   //std::cout << "velocity is changed by factor" << vel_rand << std::endl;
 
 
-  sample_pos = eigv1_ * vel_rand * dt_ * 1.5 + eigv2_ * width_rand * dt_ * 2.2;
+  sample_pos = eigv1_ * vel_rand * dt_ * 1.5 + eigv2_ * width_rand * dt_ * 2.3;
 
 
   sample_vel = eigv1_ * vel_rand * dt_ * 0.5 + eigv2_ * width_rand * dt_ * 0.5;

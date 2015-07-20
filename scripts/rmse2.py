@@ -28,7 +28,16 @@ def plotErrorPlot(name,error,rmse):
     return plotErrorPlotWithTime(name,error,rmse,time)
     
 def plotErrorPlotWithTime(name,error,rmse,t):
-    print name
+    
+    # Parameters
+    y_stretch  = 1.5
+    median_text_x_offset = 0.23
+    general_font_size = 16
+    
+    
+    
+    print "Plotting " + name
+
     
     # trim the rmse
     rmse = rmse[0:len(error)]
@@ -40,39 +49,55 @@ def plotErrorPlotWithTime(name,error,rmse,t):
     t[:] = [x - initialTime for x in t]
     
     # Get the figure
-    fig = plt.figure(figsize=(15,5))
-    gs = GridSpec(100,100,bottom=0.18,left=0.18,right=0.88)
+    plt.figure(figsize=(20,3))
+    #gs = GridSpec(100,100,bottom=0.18,left=0.18,right=0.88)
+    
+    
     
     axarr = []
     
-    axarr[]0 = fig.add_subplot(gs[:,0:60])
+   # axarr[]0 = fig.add_subplot(gs[:,0:60])
 
     # designate ax2 to span all rows, 
-    ax2 = fig.add_subplot(gs[:,75:99])
+    #ax2 = fig.add_subplot(gs[:,75:99])
+    
+    
+        
+    ax1 = plt.subplot2grid((1,6), (0,0), colspan=5)
+    ax2 = plt.subplot2grid((1,6), (0,5), colspan=1)
+
+    axarr.append(ax1)
+    axarr.append(ax2)    
     
     #plot
     axarr[0].plot(t[0:len(error)],getRMSE(error),'r.-', markersize = 10, label="RMSE")
-    axarr[0].set_title("Root mean squared error", fontsize=15)
-    axarr[0].set_ylim(0,max(error)*1.8)
+    axarr[0].set_title("Error", fontsize=general_font_size)
+    axarr[0].set_ylim(0,max(error)*y_stretch)
     axarr[0].set_xlim(0,max(t))
 
     axarr[0].plot(t[0:len(error)],error,'b.-', markersize = 10, label="Translational Error")
-    axarr[0].legend(loc="upper left", prop={'size':12})
+    axarr[0].legend(loc="upper left", prop={'size':general_font_size})
     axarr[0].set_xlabel('Time[s]')
-    axarr[0].set_ylabel('||e|| [m]')
+    axarr[0].set_ylabel('||e|| [m]', fontsize = general_font_size)
+    axarr[0].tick_params(axis='x', labelsize=general_font_size)
+    axarr[0].tick_params(axis='y', labelsize=general_font_size)
 
     #plt.subplots_adjust(left=None, bottom=None, right=None, top=2, wspace=None, hspace=0.75)
 
     bp = axarr[1].boxplot(error)
     axarr[1].set_title("Error distribution", fontsize=15)
     axarr[1].set_xticklabels([])
-    axarr[1].set_ylim(0,max(error)*1.1)
-    axarr[1].set_ylabel('||e|| [m]')
+    axarr[1].tick_params(axis='y', labelsize=general_font_size)
+    #axarr[1].set_yticklabels([])
+    axarr[1].yaxis.tick_right()    
+    
+    axarr[1].set_ylim(0,max(error)*y_stretch)
+    #axarr[1].set_ylabel('||e|| [m]')
     median =  bp['medians'][0].get_ydata()[0]
     print median
-    axarr[1].text(1, median, median, fontsize = 9, color="red", backgroundcolor="white",clip_on=True, horizontalalignment='center', verticalalignment='center')
+    axarr[1].text(1 + median_text_x_offset, median, "{:.3f}".format(median), fontsize = 13, color="red", backgroundcolor="white",clip_on=True, horizontalalignment='center', verticalalignment='center')
     
-    plt.suptitle(name, fontsize = 20)
+    #plt.suptitle(name, fontsize = 20)
     plt.subplots_adjust(left=None, bottom=None, right=None, top=0.85, wspace=None, hspace=0.6)
     
     return axarr
@@ -203,45 +228,46 @@ saveResult();
 
 
 name = "precision_tests_walk_very_fast01.bag"
-error = [0.102909,0.130096,0.176046,0.129305,0.095364,0.069260,0.066736,0.164497,0.085798,0.105511,0.113664,0.153321,0.126112,0.170803,0.320593,0.206946,0.295378,0.455388,0.586912,0.677759,0.716265,]
-rmse = [0.466851,0.388512,0.347785,0.316397,0.291442,0.271090,0.254677,0.246293,0.235224,0.226522,0.219346,0.214989,0.209892,0.207515,0.216321,0.215781,0.220957,0.239096,0.267454,0.300000,0.330498,]
-plotErrorPlot(name,error,rmse)
+error = [0.102265,0.106561,0.167142,0.101220,0.074522,0.087421,0.062686,0.139049,0.072217,0.104355,0.131036]
+rmse = [0.102265,0.104435,0.128776,0.122470,0.114498,0.110447,0.104963,0.109804,0.106286,0.106095,0.108599,0.124367,0.149592,0.193793,0.261541,0.314482,0.386302,0.489168,0.578069,]
+time = [1436863541.883118491,1436863541.962119360,1436863542.041131454,1436863542.120101813,1436863542.198115324,1436863542.277289036,1436863542.356153710,1436863542.439745173,1436863542.513113686,1436863542.671154630,1436863542.749114367,1436863543.064108544,1436863543.143109098,1436863543.221233346,1436863543.379260069,1436863543.458127728,1436863543.537222240,1436863543.694123374,1436863543.773153497,]
+plotErrorPlotWithTime(name,error,rmse,time)
 saveResult();
 
 
-for name, error, rmse in zip(name_lst, error_lst, rmse_lst):
-    
-    print name
-    
-    # trim the rmse
-    rmse = rmse[0:len(error)]
-    
-    #calculate the time
-    t = np.arange(0,len(error)*0.08, 0.08)
-    
-    f, axarr = plt.subplots(2, figsize=(15,5))
-    
-    #plot
-    axarr[0].plot(t[0:len(error)],getRMSE(error),'r.-', markersize = 10, label="RMSE")
-    axarr[0].set_title("Root mean squared error", fontsize=15)
-    axarr[0].set_ylim(0,max(error)*1.5)
-    axarr[0].set_xlim(0,max(t))
-
-    axarr[0].plot(t[0:len(error)],error,'b.-', markersize = 10, label="Translational Error")
-    axarr[0].legend()
-    #plt.subplots_adjust(left=None, bottom=None, right=None, top=2, wspace=None, hspace=0.75)
-
-    axarr[1].boxplot(error)
-    axarr[1].set_title("Error distribution", fontsize=15)
-    axarr[1].set_xticklabels([])
-    axarr[1].set_ylim(0,max(error)*1.5)
-    
-    plt.suptitle(name, fontsize = 20)
-    plt.subplots_adjust(left=None, bottom=None, right=None, top=0.85, wspace=None, hspace=0.4)
-    
-    #Save the image
-    savefig('./output/'+os.path.splitext(name)[0]+'.pdf')
+#for name, error, rmse in zip(name_lst, error_lst, rmse_lst):
+#    
+#    print name
+#    
+#    # trim the rmse
+#    rmse = rmse[0:len(error)]
+#    
+#    #calculate the time
+#    t = np.arange(0,len(error)*0.08, 0.08)
+#    
+#    f, axarr = plt.subplots(2, figsize=(15,5))
+#    
+#    #plot
+#    axarr[0].plot(t[0:len(error)],getRMSE(error),'r.-', markersize = 10, label="RMSE")
+#    axarr[0].set_title("Root mean squared error", fontsize=15)
+#    axarr[0].set_ylim(0,max(error)*1.5)
+#    axarr[0].set_xlim(0,max(t))
 #
+#    axarr[0].plot(t[0:len(error)],error,'b.-', markersize = 10, label="Translational Error")
+#    axarr[0].legend()
+#    #plt.subplots_adjust(left=None, bottom=None, right=None, top=2, wspace=None, hspace=0.75)
+#
+#    axarr[1].boxplot(error)
+#    axarr[1].set_title("Error distribution", fontsize=15)
+#    axarr[1].set_xticklabels([])
+#    axarr[1].set_ylim(0,max(error)*1.5)
+#    
+#    plt.suptitle(name, fontsize = 20)
+#    plt.subplots_adjust(left=None, bottom=None, right=None, top=0.85, wspace=None, hspace=0.4)
+#    
+#    #Save the image
+#    savefig('./output/'+os.path.splitext(name)[0]+'.pdf')
+##
 #rmse = [0.103596,0.103596,0.103596,0.090355,0.083768,0.077188,0.071798,0.072069,0.077150,0.082247,0.086194,0.089350,0.091935,0.094095,0.095927,0.097503,0.098872,0.100073,0.101135,0.101897,0.101450,0.099892,0.098816,0.097818,0.096892,0.096028,0.098784,0.100588,0.100879,0.099562,0.098146,0.096721,0.095479,0.094990,0.094783,0.093821,0.092780,0.091895,0.091048,0.101978]
 #error = [0.103596,0.103596,0.103596,0.021439,0.049285,0.025740,0.018365,0.073936,0.109626,0.118646,0.118646,0.118646,0.118646,0.118646,0.118646,0.118646,0.118646,0.118646,0.118646,0.115418,0.092050,0.058243,0.071120,0.071120,0.071120,0.071120,0.154001,0.140818,0.108703,0.047499,0.035106,0.027406,0.038384,0.077158,0.087436,0.049569,0.040179,0.048971,0.048971]
 

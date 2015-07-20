@@ -384,7 +384,7 @@ public:
     // JPDA Publications
     publish_jpda_associations_  = config.publish_jpda_associations;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_jpda_associations_ %d", __func__, publish_jpda_associations_ );
 
-    no_observation_timeout_s = config.no_observation_timeout;
+    no_observation_timeout_s = config.no_observation_timeout;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - no_observation_timeout_s %f", __func__, no_observation_timeout_s );
     max_second_leg_age_s     = config.max_second_leg_age;
     max_track_jump_m         = config.max_track_jump;
     max_meas_jump_m          = config.max_meas_jump;
@@ -1140,7 +1140,7 @@ public:
 
     try {
       tfl_.lookupTransform("odom_combined", optiTrackName, ros::Time(0), errorTransform);
-      tfl_.lookupTransform("odom_combined", "ppl0_3", ros::Time(0), positionTransform);
+      tfl_.lookupTransform("odom_combined", "ppl1_3", ros::Time(0), positionTransform);
 
       if(abs((errorTransform.stamp_ - positionTransform.stamp_).toSec()) < 0.1){
 
@@ -2591,7 +2591,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         line_list.header.stamp = time;
         line_list.id = (*peopleIt)->getLeg0()->getId()* 1000 + (*peopleIt)->getLeg1()->getId();
         line_list.ns = "people_history";
-        line_list.lifetime = ros::Duration(0.1);
+        //line_list.lifetime = ros::Duration(0.1);
 
         // width
         line_list.scale.x = 0.03;
