@@ -52,14 +52,14 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: LaserScan
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
       Cell Size: 1
       Class: rviz/Grid
-      Color: 160; 160; 164
+      Color: 249; 249; 255
       Enabled: true
       Line Style:
         Line Width: 0.03
@@ -304,138 +304,13 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        base_battery_battery:
-          Value: true
-        base_footprint:
-          Value: true
-        base_laser_front_link:
-          Value: true
-        base_laser_rear_link:
-          Value: true
-        base_laser_top_link:
-          Value: true
-        base_link:
-          Value: true
-        base_link_optitrack_station1:
-          Value: true
-        base_link_optitrack_station2:
-          Value: true
-        bl_caster_r_wheel_link:
-          Value: true
-        bl_caster_rotation_link:
-          Value: true
-        br_caster_r_wheel_link:
-          Value: true
-        br_caster_rotation_link:
-          Value: true
-        calibration_tool_ground_plane_1:
-          Value: true
-        calibration_tool_ground_plane_2:
-          Value: true
-        calibration_tool_station1:
-          Value: true
-        fl_caster_r_wheel_link:
-          Value: true
-        fl_caster_rotation_link:
-          Value: true
-        fr_caster_r_wheel_link:
-          Value: true
-        fr_caster_rotation_link:
-          Value: true
-        map:
-          Value: true
-        odom_combined:
-          Value: true
-        optitrack_frame:
-          Value: true
-        optitrack_groundplane_1:
-          Value: true
-        optitrack_groundplane_2:
-          Value: true
-        optitrack_robot_station1:
-          Value: true
-        optitrack_robot_station2:
-          Value: true
-        ppl0_1:
-          Value: true
-        ppl0_2:
-          Value: true
-        ppl0_3:
-          Value: true
-        ppl0_4:
-          Value: true
-        ppl0_5:
-          Value: true
-        ppl0_6:
-          Value: true
-        ppl1_2:
-          Value: true
-        ppl1_3:
-          Value: true
-        ppl1_4:
-          Value: true
-        ppl1_5:
-          Value: true
-        ppl1_6:
-          Value: true
-        ppl2_3:
-          Value: true
-        ppl2_4:
-          Value: true
-        ppl2_5:
-          Value: true
-        ppl2_6:
-          Value: true
-        ppl2_7:
-          Value: true
-        ppl2_8:
-          Value: true
-        ppl3_10:
-          Value: true
-        ppl3_4:
-          Value: true
-        ppl3_5:
-          Value: true
-        ppl3_6:
-          Value: true
-        ppl3_7:
-          Value: true
-        ppl3_8:
-          Value: true
-        ppl3_9:
-          Value: true
-        ppl5_6:
-          Value: true
-        ppl5_7:
-          Value: true
-        ppl5_8:
-          Value: true
-        ppl6_7:
-          Value: true
-        ppl6_8:
-          Value: true
-        ppl7_10:
-          Value: true
-        ppl7_8:
-          Value: true
-        ppl7_9:
-          Value: true
-        ppl8_10:
-          Value: true
-        ppl8_9:
-          Value: true
-        ppl9_10:
-          Value: true
-        robot_station1:
-          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        odom_combined:
-          {}
+        {}
       Update Interval: 0
       Value: true
     - Class: rviz/MarkerArray
