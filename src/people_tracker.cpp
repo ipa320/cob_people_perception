@@ -11,6 +11,8 @@
 #include <dual_people_leg_tracker/math/math_functions.h>
 #include <leg_detector/color_definitions.h>
 
+#include <math.h>
+
 /////////////////////////////////////////////////////////////
 //// PeopleTracker Class Definitions
 /////////////////////////////////////////////////////////////
@@ -608,6 +610,8 @@ void PeopleTracker::updateProbabilities(ros::Time time){
 
 void PeopleTracker::updateHistory(ros::Time time){
 
+  if(this->getTotalProbability() > 0.5){
+
   BFL::StatePosVel est = getEstimate();
 
   boost::shared_ptr<tf::Stamped<tf::Point> > point(new tf::Stamped<tf::Point>());
@@ -617,6 +621,7 @@ void PeopleTracker::updateHistory(ros::Time time){
   point->stamp_ = time;
 
   position_history_.push_back(point);
+  }
 }
 
 /**
@@ -730,6 +735,81 @@ void PeopleTracker::broadCastTf(ros::Time time){
 
 }
 
+
+/**
+ * Calculate the energy function of this tracker
+ */
+void PeopleTracker::calculateEnergyFunction(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list){
+  std::cout << BOLDBLUE << "Calculating Energy function!!!!!" << RESET << std::endl;
+
+  double sigma_d = 1;
+  double beta = 1; // peakness of the weighting function
+
+  Eigen::Vector2d nextDesiredVelocity;
+  nextDesiredVelocity.setZero();
+
+  double interactionEnergySum = 0;
+
+  // Get the position of this person
+  BFL::StatePosVel posvelSelf = this->getEstimate();
+
+  Eigen::Vector2d posSelf;
+  Eigen::Vector2d velSelf;
+
+  posSelf(0) = posvelSelf.pos_[0];
+  posSelf(1) = posvelSelf.pos_[1];
+  velSelf(0) = posvelSelf.vel_[0];
+  velSelf(1) = posvelSelf.vel_[1];
+
+  // Iterate through the People Tracker
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list->begin(); peopleTrackerIt != list->end(); peopleTrackerIt++){
+
+
+
+
+    if((*peopleTrackerIt)->getTotalProbability() > 0.5){
+      if(*this == **peopleTrackerIt){
+        std::cout << "I am:__________";
+      }
+      else{
+        double wd = 1.0;
+        double wr = 1.0;
+        double sigma_d = 1;
+
+        Eigen::Vector2d pos;
+        Eigen::Vector2d vel;
+
+
+        // Get the position of this person
+        BFL::StatePosVel posvel = (*peopleTrackerIt)->getEstimate();
+
+        pos(0) = posvel.pos_[0];
+        pos(1) = posvel.pos_[1];
+        vel(0) = posvel.vel_[0];
+        vel(1) = posvel.vel_[1];
+
+        Eigen::Vector2d k = posSelf-pos;
+        Eigen::Vector2d q = velSelf-vel;
+
+        double d_square = (k-((k.dot(q))/q.squaredNorm()) * q).squaredNorm();
+
+        interactionEnergySum += wd * wr * exp(- d_square / (2* sigma_d));
+
+      }
+      std::cout << (**peopleTrackerIt) << std::endl;
+    }
+
+  }
+
+  std::cout << "interactionEnergySum " << interactionEnergySum << std::endl;
+}
+
+
+bool operator== (PeopleTracker &p0, PeopleTracker &p1)
+{
+  return (p0.getName() == p1.getName());
+}
+
 /////////////////////////////////////////////////////////////
 //// PeopleTrackerList Class Definitions
 /////////////////////////////////////////////////////////////
@@ -826,4 +906,16 @@ BFL::StatePosVel PeopleTrackerList::getEstimationFrom(std::string name){
     }
   }
 }
+
+void PeopleTrackerList::calculateEnergys(){
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
+
+    if((*peopleTrackerIt)->getTotalProbability() > 0.5)
+      (*peopleTrackerIt)->calculateEnergyFunction(this->getList());
+  }
+}
+
+
+
+
 

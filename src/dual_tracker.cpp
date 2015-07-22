@@ -612,12 +612,16 @@ public:
     // Calculate the fake measurements
     boost::shared_ptr<std::vector<PeopleTrackerPtr> > ppls = people_trackers_.getList();
 
+
     for(std::vector<PeopleTrackerPtr>::iterator pplIt = ppls->begin(); pplIt != ppls->end(); pplIt++){
+
+      std::cout << "Checking if there should be a fake measurement for " << (*pplIt)->getName() << std::endl;
+
 
     	if((*pplIt)->getTotalProbability() > 0.4){
 
     		int numberOfMeasurementsWithinRange = 0;
-    		double rangeThres = 3;
+    		double rangeThres = 2;
     	    for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
     	        detectionIt != detections.end();
     	        detectionIt++)
@@ -630,7 +634,7 @@ public:
     	    	}
 
     	    }
-    		std::cout << **pplIt << std::endl;
+    		//std::cout << **pplIt << std::endl;
 
         	// Partial occlusion
         	if(numberOfMeasurementsWithinRange == 1){
@@ -651,6 +655,11 @@ public:
         		DetectionPtr fakeDetection(new Detection(fakeDetections.size() + detections.size(), fakeLoc, fakeLegProb));
 
         		fakeDetections.push_back(fakeDetection);
+
+        		std::cout << "Creating fake detection!" << std::endl;
+        	}
+        	else{
+        	  std::cout << "No fake detection because numberOfMeasurementsWithinRange=" << numberOfMeasurementsWithinRange << std::endl;
         	}
     	}
 
@@ -871,7 +880,7 @@ public:
             double prob = 1.0; // TODO implement
             int idx = (int) indicesMAP(lt);
 
-            std::cout << "Updating LT[" << idx << "]" << " with LM[" << lm << "]" << std::endl;
+
 
             ROS_ASSERT_MSG(lt < propagated.size(), "Size propagated is %i", (int) propagated.size());
 
@@ -880,8 +889,19 @@ public:
             tf::Vector3 leg_pos = propagated[lt]->getEstimate().pos_;
             double dist = (leg_pos - loc).length();
 
-            if(probMAPMat(lt,lm) > 0.003 && dist < max_meas_jump_m)
-            propagated[lt]->update(loc,prob);
+            if(probMAPMat(lt,lm) > 0.003 && dist < max_meas_jump_m){
+              std::cout << "Updating LT[" << idx << "]" << " with LM[" << lm << "]" << std::endl;
+              propagated[lt]->update(loc,prob);
+            }else{
+              if(dist >= max_meas_jump_m){
+                std::cout << RED << "NOT Updating LT[" << idx << "]" << " with LM[" << lm << "] because the distance:" << dist << " is greate than the max_meas_jump: " << max_meas_jump_m << RESET << std::endl;
+              }
+
+              if(probMAPMat(lt,lm) <= 0.003){
+                std::cout << RED << "NOT Updating LT[" << idx << "]" << " with LM[" << lm << "] because the assignment probability:" << probMAPMat(lt,lm) << " is too low(must be 0.003): " << RESET << std::endl;
+              }
+            }
+
 
           }
 
@@ -1201,7 +1221,10 @@ public:
     }
 
 
-
+    //////////////////////////////////////////////////////////////////////////
+    //// Social interaction
+    //////////////////////////////////////////////////////////////////////////
+    people_trackers_.calculateEnergys();
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -2579,7 +2602,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       if
       (
           (*peopleIt)->getHistorySize() > 1 &&
-          (*peopleIt)->getTotalProbability() > 0.5 &&
+          (*peopleIt)->getTotalProbability() > 0.85 &&
           (*peopleIt)->isDynamic()
       )
       {
@@ -2591,7 +2614,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         line_list.header.stamp = time;
         line_list.id = (*peopleIt)->getLeg0()->getId()* 1000 + (*peopleIt)->getLeg1()->getId();
         line_list.ns = "people_history";
-        //line_list.lifetime = ros::Duration(0.1);
+        line_list.lifetime = ros::Duration(1);
 
         // width
         line_list.scale.x = 0.03;

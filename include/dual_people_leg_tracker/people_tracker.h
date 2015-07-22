@@ -32,6 +32,8 @@ typedef boost::shared_ptr<LegFeature> LegFeaturePtr;
 class PeopleTracker; //Forward declaration
 typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr;
 
+class PeopleTrackerList; //Forward
+
 /**
  * High level People Tracker consisting of two low level leg tracks
  */
@@ -230,6 +232,7 @@ class PeopleTracker{
 
     void broadCastTf(ros::Time time);
 
+    void calculateEnergyFunction(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list);
 
     /// output stream
     friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
@@ -259,7 +262,11 @@ class PeopleTracker{
 
     };
 
+    friend bool operator== (PeopleTracker &p0, PeopleTracker &p1);
+
 };
+
+
 
 bool isValidPeopleTracker(const PeopleTrackerPtr & o);
 
@@ -327,8 +334,7 @@ class PeopleTrackerList{
 
     BFL::StatePosVel getEstimationFrom(std::string name);
 
-
-
+    void calculateEnergys();
 
 
 };
