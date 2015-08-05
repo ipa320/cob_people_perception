@@ -84,11 +84,9 @@ class PeopleTracker{
 
     double maxStepWidth_; /**< Maximal Step Width */
 
-    //// KALMAN SMOOTHING
-    //BFL::StatePosVel sys_sigma_;
-    //estimation::Tracker* kalmanTracker; /**< Kalman Tracker for Smoothing */
+    filter::KalmanFilter* kalmanFilter_; /**< Kalman Filter associated to the people Tracker to provide smoothing */
 
-    filter::KalmanFilter* kalmanFilter_;
+    tf::Vector3 nextDesiredVelocity;
 
   public:
     PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time);/**< Construct a People tracker based on this two legs */
@@ -232,7 +230,17 @@ class PeopleTracker{
 
     void broadCastTf(ros::Time time);
 
-    void calculateEnergyFunction(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list);
+    void calculateNextDesiredVelocity(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list);
+
+    double calculateEnergyInteractionSinglePerson(PeopleTrackerPtr other, Eigen::Vector2d currentPosition, Eigen::Vector2d currentVelocity);
+
+    double calculateEnergyInteraction(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, Eigen::Vector2d currentPosition, Eigen::Vector2d currentVelocity);
+
+    Eigen::Vector2d calculateEnergyInteractionGradient(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, Eigen::Vector2d currentPosition, Eigen::Vector2d currentVelocity);
+
+    tf::Vector3 getNextDesiredVelocity(){
+      return this->nextDesiredVelocity;
+    }
 
     /// output stream
     friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
@@ -334,7 +342,7 @@ class PeopleTrackerList{
 
     BFL::StatePosVel getEstimationFrom(std::string name);
 
-    void calculateEnergys();
+    void calculateTheNextDesiredVelocities();
 
 
 };

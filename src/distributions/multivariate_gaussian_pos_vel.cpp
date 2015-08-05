@@ -220,10 +220,10 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
 
 
   sample_pos = eigv1_ * vel_rand * dt_ * 0.8 + eigv2_ * width_rand * dt_ * 0.8;
-
-
   sample_vel = eigv1_ * vel_rand * 1.6 + eigv2_ * width_rand * 1.6;
 
+
+  //sample_pos = eigv1_ * vel_rand * dt_ * 5 + eigv2_ * width_rand * dt_ * 5;
   //std::cout << "dt_" << dt_ << std::endl;
 
 
