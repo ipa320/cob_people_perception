@@ -24,14 +24,18 @@ Panels:
         - /Marker4
         - /MarkerArray4
         - /MarkerArray5
+        - /MarkerArray5/Status1
+        - /MarkerArray5/Namespaces1
         - /MarkerArray6
         - /MarkerArray6/Status1
-        - /TF1
-        - /TF1/Frames1
         - /MarkerArray7
         - /MarkerArray8
         - /MarkerArray9
         - /LaserScan2
+        - /TF1
+        - /TF1/Frames1
+        - /TF1/Tree1
+        - /LaserScan3
       Splitter Ratio: 0.5
     Tree Height: 563
   - Class: rviz/Selection
@@ -52,7 +56,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: LaserScan
 Visualization Manager:
   Class: ""
   Displays:
@@ -200,7 +204,7 @@ Visualization Manager:
       Value: false
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /matches
+      Marker Topic: /visualization_marker
       Name: Marker
       Namespaces:
         {}
@@ -285,7 +289,7 @@ Visualization Manager:
       Value: false
     - Class: rviz/MarkerArray
       Enabled: false
-      Marker Topic: /leg_labels
+      Marker Topic: /peoples
       Name: MarkerArray
       Namespaces:
         {}
@@ -296,22 +300,8 @@ Visualization Manager:
       Marker Topic: /people_history
       Name: MarkerArray
       Namespaces:
-        {}
+        people_history: true
       Queue Size: 100
-      Value: true
-    - Class: rviz/TF
-      Enabled: true
-      Frame Timeout: 15
-      Frames:
-        All Enabled: true
-      Marker Scale: 1
-      Name: TF
-      Show Arrows: true
-      Show Axes: true
-      Show Names: true
-      Tree:
-        {}
-      Update Interval: 0
       Value: true
     - Class: rviz/MarkerArray
       Enabled: false
@@ -323,7 +313,7 @@ Visualization Manager:
       Value: false
     - Class: rviz/MarkerArray
       Enabled: false
-      Marker Topic: /particle_arrows_pred
+      Marker Topic: /leg_labels
       Name: MarkerArray
       Namespaces:
         {}
@@ -366,6 +356,49 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Class: rviz/TF
+      Enabled: false
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+      Marker Scale: 2
+      Name: TF
+      Show Arrows: false
+      Show Axes: true
+      Show Names: true
+      Tree:
+        {}
+      Update Interval: 0
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/LaserScan
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 8192
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: LaserScan
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.01
+      Style: Points
+      Topic: /scan_front
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 85; 85; 85
@@ -390,20 +423,23 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
-      Class: rviz/TopDownOrtho
+      Class: rviz/Orbit
+      Distance: 5.0351
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: -8.70837
+        Y: 1.32595
+        Z: 0.767069
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 173.119
+      Pitch: 1.3448
       Target Frame: <Fixed Frame>
-      Value: TopDownOrtho (rviz)
-      X: -1.85438
-      Y: -6.06582
+      Value: Orbit (rviz)
+      Yaw: 3.39502
     Saved: ~
 Window Geometry:
   Displays:
