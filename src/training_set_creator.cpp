@@ -209,7 +209,7 @@ public:
 
         // TODO should be later all the topics
         std::vector<std::string> topics;
-        topics.push_back(std::string("/scan_front"));
+        topics.push_back(std::string("/scan"));
         //topics.push_back(std::string("/scan_rear"));
         topics.push_back(std::string("/tf"));
         std::cout << "Pushed topics" << std::endl;

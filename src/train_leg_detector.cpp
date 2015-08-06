@@ -124,6 +124,7 @@ public:
         // Iterate the messages
         std::vector<std::string> topics;
         topics.push_back(std::string("/scan_front"));   // TODO make this more general
+        topics.push_back(std::string("/scan_back"));   // TODO make this more general
         topics.push_back(std::string("/labels"));       // TODO make this more general
         //topics.push_back(std::string("/tf"));
 
@@ -342,7 +343,7 @@ public:
           }
           time_end = boost::posix_time::microsec_clock::local_time();
           boost::posix_time::time_duration duration(time_end - time_start);
-          cout << "Duration: " << duration.total_microseconds() << '\n';
+          //cout << "Duration: " << duration.total_microseconds() << '\n';
 
           if (prediction > 0){
               pos_right++;
@@ -380,6 +381,8 @@ public:
         // Test for positive data (no legs)
         int test_pos_right = 0;
         int test_pos_total = 0;
+        double prob = 0;
+
         for (vector< vector<float> >::iterator i = test_pos_data_.begin();
              i != test_pos_data_.end();
              i++)
@@ -393,10 +396,12 @@ public:
                   break;
               case CVRTREES:
                   prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  prob = ((CvRTrees *)classificatorIt->pClassificator)->predict_prob(tmp_mat);
                   break;
           }
           if (prediction > 0){
               test_pos_right++;
+              //std::cout << "prob: " << prob << "->" << prediction << std::endl;
               //cout << "Positiv with " << prediction << endl;
           }
           test_pos_total++;
