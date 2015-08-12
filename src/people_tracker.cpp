@@ -13,6 +13,8 @@
 
 #include <math.h>
 
+#include <dual_people_leg_tracker/social_interaction/formulas.h>
+
 /////////////////////////////////////////////////////////////
 //// PeopleTracker Class Definitions
 /////////////////////////////////////////////////////////////
@@ -740,307 +742,187 @@ void PeopleTracker::broadCastTf(ros::Time time){
  * Calculate the next desired velocity
  * @param list List of all the trackers
  */
-void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list){
-  std::cout << this->getName() << " calculates the next desired velocity" << std::endl;
-
+void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, size_t predictionStep, double timeInterval){
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->int_id_, this->getLeg1()->int_id_, __func__);
 
   // The next desired velocity
   Eigen::Vector2d nextDesiredVelocity;
 
-  // Parameters
-  double stepsize = 0.01;
+  // Optimization parameters
+  double otherTrackerMinProbability = 0.6;
 
-  double currentEnergy = 1000;
+  Eigen::Vector2d v_i; //Current velocity
+  v_i(0) = this->getEstimate().vel_[0];
+  v_i(1) = this->getEstimate().vel_[1];
 
-  Eigen::Vector2d currentVelocity;
-  currentVelocity(0) = this->getEstimate().vel_[0];
-  currentVelocity(1) = this->getEstimate().vel_[1];
+  Eigen::Vector2d p_i; // Current position
+  p_i(0) = this->getEstimate().pos_[0];
+  p_i(1) = this->getEstimate().pos_[1];
 
-  Eigen::Vector2d currentPosition;
-  currentPosition(0) = this->getEstimate().pos_[0];
-  currentPosition(1) = this->getEstimate().pos_[1];
+  // Add to the list of predicted position
 
-  // Gradient Descent
-  //double interactionEnergy = this->calculateEnergyInteraction(list, currentVelocity);
+  // if this is the first prediction step
+  if(predictionStep == 0){
+    // Add the current estimation
+    tf::Vector3 currentPos = this->getEstimate().pos_;
+    this->nextDesiredPosition.push_back(currentPos);
 
-  // Calculate Gradient
+  }
+
+  // Abort if this person is standing
+  if(v_i.norm() < 0.1){
+    std::cout << this->getName() << " is considered standing" << std::endl;
+    this->nextDesiredVelocity =  this->getEstimate().vel_;
+    return;
+  }
+
+  std::cout << this->getName() << " calculates the next desired velocity" << std::endl;
+
+  std::vector<Eigen::Vector2d> positionOthers;
+  std::vector<Eigen::Vector2d> velocityOthers;
+
+  // Iterate all the trackers to get the positions and velocities
+  std::cout << "\t it takes into account: ";
+  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list->begin(); peopleTrackerIt != list->end(); peopleTrackerIt++){
+
+    if((*peopleTrackerIt)->getTotalProbability() > otherTrackerMinProbability){
+      if(!(*this == **peopleTrackerIt)){
+        Eigen::Vector2d pos, vel;
+
+        std::cout << (*peopleTrackerIt)->getName() << "  ";
+
+        // Get the estimate
+        pos[0] = (*peopleTrackerIt)->getEstimate().pos_[0];
+        pos[1] = (*peopleTrackerIt)->getEstimate().pos_[1];
+
+        vel[0] = (*peopleTrackerIt)->getEstimate().vel_[0];
+        vel[1] = (*peopleTrackerIt)->getEstimate().vel_[1];
+
+        positionOthers.push_back(pos);
+        velocityOthers.push_back(vel);
+      }
+    }
+  }
+
+  std::cout << std::endl;
+
+
   Eigen::Vector2d grad;
   Eigen::Vector2d gradInteractionEnergy;
-  //grad =
 
-  size_t counter = 0;
-  size_t maxIterations = 1000;
-  double energyDeltaAbort = 0.00001;
-  double velocityDeltaAbort = 0.0000001;
+  // Parameters
+  double sigma_d = 0.361; // Distance to avoid of other objects, the bigger the more influence
+  double sigma_w = 2.088; // Radius of influence of other objects
+  double lambda_0 = 1;
+  double lambda_1 = 2.33;
+  double lambda_2 = 2.073;
+  double beta = 1.1462;
+  double alpha = 0.730;
 
-  double energyLast = 100000;
-  double velocityLast = 1000;
+  Eigen::Vector2d v_tilde_i = v_i;
 
-  Eigen::Vector2d lastVelocity = currentVelocity;
+  // Desired speed (currently - keep constant)
+  double u_i = v_i.norm();
 
-  std::cout << "\t Starting loop | Start velocity:" << currentVelocity.transpose() << std::endl;
+  // Goal (lies on a straight line)
+  double timeDelta = 1;
+  Eigen::Vector2d z_i = p_i + timeDelta * v_i;
 
-  while(counter < maxIterations){
+  std::cout << "\t Starting loop | Start velocity:" << v_tilde_i.transpose() << std::endl;
+
+  ////////////////////////////////////////////////////////////////
+  /// Gradient Descent (with Backtracking Line Search)
+  ///////////////////////////////////////////////////////////////
+
+  size_t iteration_counter = 0;
+  size_t maxIterations = 100;
+  double energyDeltaAbort = 0.0001;
+  double velocityDeltaAbort = 0.001;
+
+  Eigen::Vector2d v_tilde_i_last = v_tilde_i;
+
+  double energyLast  = E_i(positionOthers, velocityOthers, v_tilde_i, p_i, v_i, u_i, z_i, sigma_d, sigma_w, beta, lambda_0, lambda_1, lambda_2);
+
+  double a = 0.2;
+  double beta_gradient_descent = 0.8;
+
+
+  while(iteration_counter < maxIterations){
+
+    double eta = 1;
 
     // calculate the gradient
-    gradInteractionEnergy = this->calculateEnergyInteractionGradient(list, currentPosition, lastVelocity);
-    grad = gradInteractionEnergy;
+    grad = E_i_gradient(positionOthers, velocityOthers, v_tilde_i, p_i, v_i, u_i, z_i, sigma_d, sigma_w, beta, lambda_0, lambda_1, lambda_2);
+    //std::cout << "gradient: " << grad << std::endl;
 
-
-    // Make a gradient descent
-    currentVelocity = lastVelocity - stepsize * grad;
 
     // Get the energy at this point
-    double currentEnergy = this->calculateEnergyInteraction(list, currentPosition, currentVelocity);
+    double currentEnergy  = E_i(positionOthers, velocityOthers, v_tilde_i - eta * grad, p_i, v_i, u_i, z_i, sigma_d, sigma_w, beta, lambda_0, lambda_1, lambda_2);
 
+    if(positionOthers.size() > 0)
+      std::cout << "Starting backtracking line search! currentEnergy: " << currentEnergy << std::endl;
+    while(energyLast - currentEnergy <  a * eta * grad.squaredNorm()){
+      //std::cout << "energyLast - currentEnergy " << energyLast - currentEnergy << "  a * eta * grad.squaredNorm(): " << a * eta * grad.squaredNorm() << std::endl;
+      //std::cout << "current Energy: " << currentEnergy << " energyLast: " << energyLast << std::endl;
+      eta = beta_gradient_descent * eta;
+
+      currentEnergy  = E_i(positionOthers, velocityOthers, v_tilde_i - eta * grad, p_i, v_i, u_i, z_i, sigma_d, sigma_w, beta, lambda_0, lambda_1, lambda_2);
+      //std::cout << "eta: " << eta << std::endl;
+    }
+    if(positionOthers.size() > 0)
+      std::cout << "EnergyStep: " << currentEnergy - energyLast  << "  eta:" << eta << std::endl;
+
+    // Make a gradient descent
+    v_tilde_i_last = v_tilde_i;
+    v_tilde_i = v_tilde_i - eta * grad;
 
     // Save energy
     double energyDelta = abs(energyLast - currentEnergy);
-    double velocityDelta = (lastVelocity - currentVelocity).norm();
+    double velocityDelta = (v_tilde_i_last - v_tilde_i).norm();
 
-    if(energyLast > currentEnergy)
+    if(energyLast >= currentEnergy)
       std::cout << GREEN;
-    else
+    else{
+      assert(false);
       std::cout << RED;
+    }
 
 
-    std::cout << "[" << counter << "] energy: " << currentEnergy << " dEn:" << energyDelta << "  dVel: " << velocityDelta << " | curVel: " << currentVelocity.transpose() << RESET << std::endl;
+    if(positionOthers.size() > 0) // Only output if other persons where considered
+      std::cout << "[" << iteration_counter << "] energy: " << currentEnergy << " dEn:" << energyDelta << "  dVel: " << velocityDelta << " | curVel: " << v_tilde_i.transpose() << RESET << std::endl;
 
     // Check abort criteria
     if(energyDelta < energyDeltaAbort){
-      std::cout << "Abort -> energyDelta:" << energyDelta << std::endl;
+      if(positionOthers.size() > 0)
+        std::cout << "Abort -> energyDelta:" << energyDelta << std::endl;
+      //assert(false);
       break;
     }
 
 
 
     if(velocityDelta < velocityDelta){
-      std::cout << "Abort -> velocityDelta:" << velocityDelta << std::endl;
+      if(positionOthers.size() > 0)
+        std::cout << "Abort -> velocityDelta:" << velocityDelta << std::endl;
       break;
     }
 
-    lastVelocity = currentVelocity;
     energyLast = currentEnergy;
-    counter++;
+    iteration_counter++;
   }
+
+  // Check the difference
+  std::cout << "Change in velocity:" << (v_tilde_i - v_i).norm() << std::endl;
 
   // Store the desired Velocity
-  tf::Vector3 desiredVelocity(currentVelocity(0),currentVelocity(1),0);
+  tf::Vector3 desiredVelocity(v_tilde_i(0),v_tilde_i(1),0);
   this->nextDesiredVelocity = desiredVelocity;
 
+  //assert(positionOthers.size() == 0);
+
 
 }
 
-double PeopleTracker::calculateEnergyInteractionSinglePerson(PeopleTrackerPtr other, Eigen::Vector2d currentPosition, Eigen::Vector2d currentVelocity){
-
-  double wd = 1.0;
-  double wr = 1.0;
-  double sigma_d = 0.361;
-  double sigma_d_sq = pow(sigma_d,2);
-  double sigma_w = 2.088; // radius of influence of other objects
-
-  double beta = 1.462;    // ''peakiness'' of the weighting function
-
-
-  Eigen::Vector2d posSelf = currentPosition;
-  Eigen::Vector2d velSelf = currentVelocity;
-
-  Eigen::Vector2d posOther;
-  Eigen::Vector2d velOther;
-
-
-  // Get the position/velocity of this person
-  BFL::StatePosVel posvel = other->getEstimate();
-
-  posOther(0) = posvel.pos_[0];
-  posOther(1) = posvel.pos_[1];
-  velOther(0) = posvel.vel_[0];
-  velOther(1) = posvel.vel_[1];
-
-  Eigen::Vector2d k = posSelf-posOther;
-  Eigen::Vector2d q = velSelf-velOther;
-
-  Eigen::Vector2d vecToOther = posOther - posSelf; // Vector from self to other person
-
-
-  // Calculate the angular displacement
-  double cos_phi = velSelf.dot(vecToOther)/(velSelf.norm() * vecToOther.norm());
-  double phi = acos(cos_phi);
-  double phi_deg = phi * 180.0 / M_PI;
-
-  // Calculate the weight of the distance
-  wd = exp(-k.squaredNorm()/(2*sigma_d_sq));
-
-  // Calculate the weight of the angular displacement
-  wr = pow(((1.0 + cos(phi))/2),beta);
-
-  // Calculate the total weight
-  double weightTotal = wd * wr;
-
-
-  double d_square = (k-((k.dot(q))/q.squaredNorm()) * q).squaredNorm();
-
-  double energy = wd * wr * exp(- d_square / (2* sigma_d));
-
-  //std::cout << "\t " << other->getName() << " wd: " << wd << " | wr: " << wr << " | w: " << weightTotal << " | phi(deg): " << phi_deg << " | energy:" << energy << std::endl;
-
-  return energy;
-}
-
-/***
- * Calculate the Energy Function of all the trackers
- * @param list
- */
-double PeopleTracker::calculateEnergyInteraction(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, Eigen::Vector2d currentPosition, Eigen::Vector2d currentVelocity){
-
-  // Probability the other people tracker needs to even be considered
-  double otherTrackerMinProbability = 0.8;
-
-  double sigma_d = 1;
-  double beta = 1; // peakness of the weighting function
-
-  double interactionEnergySum = 0;
-
-  // Iterate all the trackers
-  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list->begin(); peopleTrackerIt != list->end(); peopleTrackerIt++){
-
-    if((*peopleTrackerIt)->getTotalProbability() > otherTrackerMinProbability){
-      // Check if this is the tracker itself
-      if(*this == **peopleTrackerIt){
-        //std::cout << "I am:__________";
-      }
-
-      else
-      {
-        double energy = this->calculateEnergyInteractionSinglePerson(*peopleTrackerIt,currentPosition,currentVelocity);
-        interactionEnergySum += energy;
-        //std::cout << "\t " << (*peopleTrackerIt)->getName() << " -> energy:" << energy << std::endl;
-      }
-      //std::cout << (**peopleTrackerIt) << std::endl;
-    }
-
-  }
-
-  //std::cout << "interactionEnergySum " << interactionEnergySum << std::endl;
-  return interactionEnergySum;
-}
-
-
-/***
- * Calculate the gradient of the interaction energy
- * @param list
- */
-Eigen::Vector2d PeopleTracker::calculateEnergyInteractionGradient(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, Eigen::Vector2d currentPosition, Eigen::Vector2d currentVelocity){
-  //std::cout << BOLDBLUE << "Calculating Energy function!!!!!" << RESET << std::endl;
-
-  Eigen::Vector2d gradient;
-  gradient = Eigen::Vector2d::Zero();
-
-  // Probability the other people tracker needs to even be considered
-  double otherTrackerMinProbability = 0.8;
-
-  double beta = 1.462; // peakness of the weighting function
-
-  Eigen::Vector2d nextDesiredVelocity;
-  nextDesiredVelocity.setZero();
-
-  double interactionEnergySum = 0;
-
-  Eigen::Vector2d posSelf = currentPosition;
-  Eigen::Vector2d velSelf = currentVelocity;
-
-  // Iterate all the trackers
-  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list->begin(); peopleTrackerIt != list->end(); peopleTrackerIt++){
-
-    if((*peopleTrackerIt)->getTotalProbability() > otherTrackerMinProbability){
-      // Check if this is the tracker itself
-      if(*this == **peopleTrackerIt){
-        //std::cout << "I am:__________";
-      }
-
-      else
-      {
-        //std::cout << "\t {{" << (*peopleTrackerIt)->getName() << "}}" << std::endl;
-
-        // Variables (calculated later)
-        double wd = 1.0;
-        double wr = 1.0;
-        double sigma_d = 0.361;
-        double sigma_d_sq = pow(sigma_d,2);
-        double sigma_w = 2.088; // radius of influence of other objects
-
-        double beta = 1.0;    // ''peakiness'' of the weighting function
-
-        Eigen::Vector2d posOther;
-        Eigen::Vector2d velOther;
-
-
-        // Get the position/velocity of this person
-        BFL::StatePosVel posvel = (*peopleTrackerIt)->getEstimate();
-
-        posOther(0) = posvel.pos_[0];
-        posOther(1) = posvel.pos_[1];
-        velOther(0) = posvel.vel_[0];
-        velOther(1) = posvel.vel_[1];
-
-        Eigen::Vector2d k = posSelf-posOther;
-        Eigen::Vector2d q = velSelf-velOther;
-
-        Eigen::Vector2d vecToOther = posOther - posSelf; // Vector from self to other person
-
-
-        // Calculate the angular displacement
-        double cos_phi = velSelf.dot(vecToOther)/(velSelf.norm() * vecToOther.norm());
-        double phi = acos(cos_phi);
-        double phi_deg = phi * 180.0 / M_PI;
-
-        // Calculate the weight of the distance
-        wd = exp(-k.squaredNorm()/(2*sigma_d_sq));
-
-        // Calculate the weight of the angular displacement
-        wr = pow(((1.0 + cos(phi))/2),beta);
-
-        // Calculate the total weight
-        double weightTotal = wd * wr;
-
-
-        double k_x = k[0];
-        double k_y = k[1];
-        double q_x = q[0];
-        double q_y = q[1];
-
-        double nominator = pow(q.squaredNorm(),2);
-
-        beta = (k_x * q_x + k_y * q_y)/q.squaredNorm();
-
-        double beta_dx = (3 * k_x * pow(q_x,2) + k_x * pow(q_y,2) + 2*k_y*q_x*q_y)/nominator;
-        double beta_dy = (3* k_y * pow(q_y,2) + k_y * pow(q_x,2) + 2*k_x*q_x*q_y)/nominator;
-
-        double d_dx = -2*k_x*(beta_dx * q_x + beta) + 2*q_x - 2*k_y*q_y*beta_dx;
-        double d_dy = -2 * k_x * q_x * beta_dy - 2 * k_y*(beta_dy * q_y + beta)  + 2 * q_y;
-
-        double energyHere = this->calculateEnergyInteractionSinglePerson(*peopleTrackerIt, currentPosition, currentVelocity);
-
-        double E_dx = energyHere * (-(1.0/(2 * pow(sigma_d,2)))) * d_dx;
-        double E_dy = energyHere * (-(1.0/(2 * pow(sigma_d,2)))) * d_dy;
-
-        Eigen::Vector2d gradientSinglePerson;
-        gradientSinglePerson[0] = E_dx;
-        gradientSinglePerson[1] = E_dy;
-
-        //std::cout << "\t gradient:" << gradientSinglePerson.transpose() << std::endl;
-
-        gradient += gradientSinglePerson;
-
-      }
-      //std::cout << (**peopleTrackerIt) << std::endl;
-    }
-
-  }
-
-  //std::cout << "interactionEnergySum " << interactionEnergySum << std::endl;
-  return gradient;
-}
 
 
 bool operator== (PeopleTracker &p0, PeopleTracker &p1)
@@ -1145,11 +1027,19 @@ BFL::StatePosVel PeopleTrackerList::getEstimationFrom(std::string name){
   }
 }
 
-void PeopleTrackerList::calculateTheNextDesiredVelocities(){
+void PeopleTrackerList::calculateTheNextDesiredVelocities(double timeInterval, size_t predictionSteps){
   for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
 
-    if((*peopleTrackerIt)->getTotalProbability() > 0.8)
-      (*peopleTrackerIt)->calculateNextDesiredVelocity(this->getList());
+    // Iterate the prediction steps
+    for(size_t predictionStep = 0; predictionStep < predictionSteps; predictionStep++){
+
+      // Only consider persons with a certain probability
+      if((*peopleTrackerIt)->getTotalProbability() > 0.8)
+        (*peopleTrackerIt)->calculateNextDesiredVelocity(this->getList(), predictionStep, timeInterval);
+
+
+    }
+
   }
 }
 

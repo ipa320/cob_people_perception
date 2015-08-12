@@ -1522,9 +1522,9 @@ public:
         marker.id = counter;
         marker.type = visualization_msgs::Marker::ARROW;
         marker.action = visualization_msgs::Marker::ADD;
-        marker.lifetime = ros::Duration(0.1);
+        //marker.lifetime = ros::Duration(0.1);
 
-        double factor = 1.25; // Control the arrow length
+        double factor = 2; // Control the arrow length
 
         geometry_msgs::Point startPoint;
         startPoint.x = est.pos_[0] + est.vel_[0] * 0.5;
@@ -1640,9 +1640,9 @@ public:
           marker.id = counter;
           marker.type = visualization_msgs::Marker::ARROW;
           marker.action = visualization_msgs::Marker::ADD;
-          marker.lifetime = ros::Duration(0.1);
+          //marker.lifetime = ros::Duration(0.1);
 
-          double factor = 0.5; // Control the arrow length
+          double factor = 2; // Control the arrow length
 
           geometry_msgs::Point startPoint;
           startPoint.x = est.pos_[0];
@@ -1659,8 +1659,8 @@ public:
           marker.points.push_back(startPoint);
           marker.points.push_back(endPoint);
 
-          marker.scale.x = 0.1; //shaft diameter
-          marker.scale.y = 0.2; //head diameter
+          marker.scale.x = 0.03; //shaft diameter
+          marker.scale.y = 0.1; //head diameter
           marker.scale.z = 0; // head length (if other than zero)
           marker.color.a = 1.0; // Don't forget to set the alpha!
           marker.color.r = 1.0;

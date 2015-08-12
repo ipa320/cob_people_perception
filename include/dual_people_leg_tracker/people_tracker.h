@@ -86,7 +86,10 @@ class PeopleTracker{
 
     filter::KalmanFilter* kalmanFilter_; /**< Kalman Filter associated to the people Tracker to provide smoothing */
 
-    tf::Vector3 nextDesiredVelocity;
+    std::vector<tf::Vector3> nextDesiredPosition; /**< Vector containing the calculated desired position of this people tracker */
+
+    std::vector<tf::Vector3> nextDesiredVelocity; /**< Vector containing the calculated desired Velocities of this people tracker */
+
 
   public:
     PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time);/**< Construct a People tracker based on this two legs */
@@ -230,15 +233,9 @@ class PeopleTracker{
 
     void broadCastTf(ros::Time time);
 
-    void calculateNextDesiredVelocity(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list);
+    void calculateNextDesiredVelocity(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, size_t predictionStep, double timeInterval);
 
-    double calculateEnergyInteractionSinglePerson(PeopleTrackerPtr other, Eigen::Vector2d currentPosition, Eigen::Vector2d currentVelocity);
-
-    double calculateEnergyInteraction(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, Eigen::Vector2d currentPosition, Eigen::Vector2d currentVelocity);
-
-    Eigen::Vector2d calculateEnergyInteractionGradient(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, Eigen::Vector2d currentPosition, Eigen::Vector2d currentVelocity);
-
-    tf::Vector3 getNextDesiredVelocity(){
+    std::vector<tf::Vector3> getNextDesiredVelocities(){
       return this->nextDesiredVelocity;
     }
 
@@ -342,7 +339,7 @@ class PeopleTrackerList{
 
     BFL::StatePosVel getEstimationFrom(std::string name);
 
-    void calculateTheNextDesiredVelocities();
+    void calculateTheNextDesiredVelocities(double timeInterval, size_t predictionSteps);
 
 
 };
