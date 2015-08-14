@@ -1640,7 +1640,7 @@ public:
 
             // Get the prediction
             BFL::StatePosVel est = (*peopleIt)->getNextDesiredPosVel(predN);
-            BFL::StatePosVel estNext = (*peopleIt)->getNextDesiredPosVel(predN);
+            BFL::StatePosVel estNext = (*peopleIt)->getNextDesiredPosVel(predN+1);
             std::cout << "[step " << predN << "] " << est << std::endl;
 
             visualization_msgs::Marker marker;
@@ -1675,10 +1675,12 @@ public:
             marker.scale.x = 0.03; //shaft diameter
             marker.scale.y = 0.1; //head diameter
             marker.scale.z = 0; // head length (if other than zero)
-            marker.color.a = alpha_min + (double)predN/(*peopleIt)->getNumberOfPredictions() * range; // Don't forget to set the alpha!
-            marker.color.r = 1.0;
-            marker.color.g = 0.0;
-            marker.color.b = 1.0;
+            marker.color.a = alpha_min + ((double)predN)/(*peopleIt)->getNumberOfPredictions() * range; // Don't forget to set the alpha!
+            marker.color.r = 0.0;
+            marker.color.g = 1.0;
+            marker.color.b = 0.0;
+
+            std::cout << "alpha" << marker.color.a << std::endl;
 
             msgArray.markers.push_back(marker);
 
