@@ -1228,11 +1228,15 @@ public:
     //////////////////////////////////////////////////////////////////////////
     //// Social interaction
     //////////////////////////////////////////////////////////////////////////
-    people_trackers_.calculateTheNextDesiredVelocities();
+    ROS_DEBUG("%sSocial interaction [Cycle %u]", BOLDWHITE, cycle_);
 
-    publishEstimateNextVelocity(people_trackers_.getList(), scan->header.stamp);
+    double predictionTimeInterval = 0.2;
+    double predictionSteps = 15;
+    people_trackers_.calculateTheNextDesiredVelocities(predictionTimeInterval, predictionSteps);
 
+    publishEstimateNextVelocity(people_trackers_.getList(), scan->header.stamp, predictionTimeInterval);
 
+    ROS_DEBUG("%sSocial interaction [Cycle %u]", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
     //// Cleaning (Clear data)
     //////////////////////////////////////////////////////////////////////////
@@ -1616,7 +1620,7 @@ public:
 
   }
 
-  void publishEstimateNextVelocity(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
+  void publishEstimateNextVelocity(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time, double predictionTimeInterval){
 
       // Create the Visualization Message (a marker array)
       visualization_msgs::MarkerArray msgArray;
@@ -1627,49 +1631,60 @@ public:
           peopleIt != peopleTracker->end();
           peopleIt++)
       {
+
         if((*peopleIt)->getTotalProbability() > 0.6 ){
 
+          std::cout << YELLOW << "######### " << (*peopleIt)->getName() << RESET << std::endl;
 
-          BFL::StatePosVel est = (*peopleIt)->getEstimate();
-          tf::Vector3 estNextVel = (*peopleIt)->getNextDesiredVelocity();
+          for(size_t predN = 0; predN < (*peopleIt)->getNumberOfPredictions()-1; predN++){
 
-          visualization_msgs::Marker marker;
-          marker.header.frame_id = fixed_frame;
-          marker.header.stamp = time;
-          marker.ns = "next_desired_velocity";
-          marker.id = counter;
-          marker.type = visualization_msgs::Marker::ARROW;
-          marker.action = visualization_msgs::Marker::ADD;
-          //marker.lifetime = ros::Duration(0.1);
+            // Get the prediction
+            BFL::StatePosVel est = (*peopleIt)->getNextDesiredPosVel(predN);
+            BFL::StatePosVel estNext = (*peopleIt)->getNextDesiredPosVel(predN);
+            std::cout << "[step " << predN << "] " << est << std::endl;
 
-          double factor = 2; // Control the arrow length
+            visualization_msgs::Marker marker;
+            marker.header.frame_id = fixed_frame;
+            marker.header.stamp = time;
+            marker.ns = "next_desired_velocity";
+            marker.id = counter;
+            marker.type = visualization_msgs::Marker::ARROW;
+            marker.action = visualization_msgs::Marker::ADD;
+            //marker.lifetime = ros::Duration(0.1);
 
-          geometry_msgs::Point startPoint;
-          startPoint.x = est.pos_[0];
-          startPoint.y = est.pos_[1];
-          startPoint.z = 0.0;
+            double factor = 1; // Control the arrow length
+
+            geometry_msgs::Point startPoint;
+            startPoint.x = est.pos_[0];
+            startPoint.y = est.pos_[1];
+            startPoint.z = 0.0;
+
+            geometry_msgs::Point endPoint;
+            endPoint.x = estNext.pos_[0];// + est.vel_[0]*factor;
+            endPoint.y = estNext.pos_[1];// + est.vel_[1]*factor;
+            endPoint.z = 0.0;
+
+            marker.points.push_back(startPoint);
+            marker.points.push_back(endPoint);
+
+            // Calculate the alpha value
+            double alpha_min = 0.2;
+            double range = 1 - alpha_min;
 
 
+            marker.scale.x = 0.03; //shaft diameter
+            marker.scale.y = 0.1; //head diameter
+            marker.scale.z = 0; // head length (if other than zero)
+            marker.color.a = alpha_min + (double)predN/(*peopleIt)->getNumberOfPredictions() * range; // Don't forget to set the alpha!
+            marker.color.r = 1.0;
+            marker.color.g = 0.0;
+            marker.color.b = 1.0;
 
-          geometry_msgs::Point endPoint;
-          endPoint.x = est.pos_[0] + estNextVel[0]*factor;
-          endPoint.y = est.pos_[1] + estNextVel[1]*factor;
-          endPoint.z = 0.0;
+            msgArray.markers.push_back(marker);
 
-          marker.points.push_back(startPoint);
-          marker.points.push_back(endPoint);
+            counter++;
+          }
 
-          marker.scale.x = 0.03; //shaft diameter
-          marker.scale.y = 0.1; //head diameter
-          marker.scale.z = 0; // head length (if other than zero)
-          marker.color.a = 1.0; // Don't forget to set the alpha!
-          marker.color.r = 1.0;
-          marker.color.g = 0.0;
-          marker.color.b = 1.0;
-
-          msgArray.markers.push_back(marker);
-
-          counter++;
         }
       }
       people_next_velocity_pub_.publish(msgArray);
@@ -2535,7 +2550,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       person3d.color.r = 0;
       person3d.color.g = 0;
       person3d.color.b = 1;
-      person3d.lifetime = ros::Duration(0.5);
+      person3d.lifetime = ros::Duration(8);
 
 
       counter++;
@@ -2543,10 +2558,6 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
 
       // Set the color as the mixture of both leg track colors
-
-
-
-
 
       visualization_msgs::Marker personHead;
       personHead.header.stamp = time;
@@ -2563,7 +2574,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       personHead.color.r = (r0+r1)/(2*255.0);
       personHead.color.g = (g0+g1)/(2*255.0);
       personHead.color.b = (b0+b1)/(2*255.0);
-      personHead.lifetime = ros::Duration(0.5);
+      personHead.lifetime = ros::Duration(8);
 
       // Static / Dynamic
       if((*peopleTrackerIt)->isDynamic()){

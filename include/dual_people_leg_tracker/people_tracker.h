@@ -239,6 +239,18 @@ class PeopleTracker{
       return this->nextDesiredVelocity;
     }
 
+    BFL::StatePosVel getNextDesiredPosVel(size_t predictionStep);
+
+    size_t getNumberOfPredictions(){
+      if(this->nextDesiredPosition.size() != this->nextDesiredVelocity.size()){
+        std::cout << "this->nextDesiredPosition.size(): " << this->nextDesiredPosition.size() << std::endl;
+        std::cout << "this->nextDesiredVelocity.size(): " << this->nextDesiredVelocity.size() << std::endl;
+      }
+      ROS_ASSERT(this->nextDesiredPosition.size() == this->nextDesiredVelocity.size());
+
+      return this->nextDesiredPosition.size();
+    }
+
     /// output stream
     friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
     {

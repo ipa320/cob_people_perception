@@ -19,7 +19,7 @@ inline double E_ij(Eigen::Vector2d p_i, Eigen::Vector2d p_j, Eigen::Vector2d v_t
 
   double d_square = (k-((k.dot(q))/q.squaredNorm()) * q).squaredNorm();
 
-  double energy = exp(- d_square / (2 * pow(sigma_d,2)));
+  double energy = exp(- (d_square / (2 * pow(sigma_d,2))));
 
   return energy;
 }
@@ -40,15 +40,15 @@ inline Eigen::Vector2d E_ij_gradient(Eigen::Vector2d p_i, Eigen::Vector2d p_j, E
   double beta = (k_x * q_x + k_y * q_y)/q.squaredNorm();
 
   double beta_dx = (3 * k_x * pow(q_x,2) + k_x * pow(q_y,2) + 2*k_y*q_x*q_y)/nominator;
-  double beta_dy = (3* k_y * pow(q_y,2) + k_y * pow(q_x,2) + 2*k_x*q_x*q_y)/nominator;
+  double beta_dy = (3 * k_y * pow(q_y,2) + k_y * pow(q_x,2) + 2*k_x*q_x*q_y)/nominator;
 
-  double d_dx = -2*k_x*(beta_dx * q_x + beta) + 2*q_x - 2*k_y*q_y*beta_dx;
-  double d_dy = -2 * k_x * q_x * beta_dy - 2 * k_y*(beta_dy * q_y + beta)  + 2 * q_y;
+  double d_dx = 2 * (k_x - beta * q_x) * ( -beta_dx * q_x - beta) + 2 * (k_y - beta * q_y) * (-beta_dx) * q_y;
+  double d_dy = 2 * (k_x - beta * q_x) * (-beta_dy) * q_x         + 2 * (k_y - beta * q_y) * (-beta_dy * q_y - beta);
 
-  double energyHere = E_ij(p_i,p_j,v_tilde_i,v_j,sigma_d);
+  double energyHere = E_ij(p_i, p_j, v_tilde_i, v_j, sigma_d);
 
-  double E_dx = energyHere * (-(1.0/(2 * pow(sigma_d,2)))) * d_dx;
-  double E_dy = energyHere * (-(1.0/(2 * pow(sigma_d,2)))) * d_dy;
+  double E_dx = (-(1.0/(2 * pow(sigma_d,2)))) * energyHere * d_dx;
+  double E_dy = (-(1.0/(2 * pow(sigma_d,2)))) * energyHere * d_dy;
 
   Eigen::Vector2d e_ij_gradient;
   e_ij_gradient[0] = E_dx;
@@ -85,7 +85,7 @@ inline double D_i(Eigen::Vector2d z_i, Eigen::Vector2d p_i, Eigen::Vector2d v_ti
   double nominator   = (z_i - p_i).dot(v_tilde_i);
   double denominator = (z_i - p_i).norm() * v_tilde_i.norm();
 
-  D_i = nominator / denominator;
+  D_i = -nominator / denominator;
 
   return D_i;
 }
@@ -133,8 +133,10 @@ inline double w_r_phi(Eigen::Vector2d p_i, // Own position
   double cos_phi = v_i.dot(vecToOther)/(v_i.norm() * vecToOther.norm());
   w_r_phi = pow(((1.0 + cos_phi)/2),beta);
 
-  if(abs(acos(cos_phi)) > M_PI/2.0)
+  if(abs(acos(cos_phi)) > M_PI/2.0){
     w_r_phi = 0;
+  }
+
 
   assert(w_r_phi >= 0);
   assert(!isnan(w_r_phi));
@@ -236,7 +238,7 @@ double E_i(std::vector<Eigen::Vector2d> positionsOthers,
 
   double energy_I_i = lambda_0 * I_i(positionsOthers, velocityOthers, v_tilde_i, p_i, v_i, sigma_d, sigma_w, beta);
   double energy_S_i = lambda_1 * S_i(u_i, v_tilde_i);
-  double energy_D_i = lambda_2 * D_i(z_i, p_i, v_tilde_i);
+  double energy_D_i = lambda_2 * D_i(z_i, p_i, v_tilde_i); // Energy towards goal
 
   double energy = energy_I_i + energy_S_i + energy_D_i;
 
@@ -260,10 +262,19 @@ Eigen::Vector2d E_i_gradient(std::vector<Eigen::Vector2d> positionsOthers,
 {
 
   Eigen::Vector2d energyGradient;
+  Eigen::Vector2d energyGradient_I_i;
+  Eigen::Vector2d energyGradient_S_i;
+  Eigen::Vector2d energyGradient_D_i;
 
-  energyGradient = lambda_0 * I_i_gradient(positionsOthers, velocityOthers, v_tilde_i, p_i, v_i, sigma_d, sigma_w, beta) \
-                 + lambda_1 * S_i_gradient(u_i, v_tilde_i) \
-                 + lambda_2 * D_i_gradient(z_i, p_i, v_tilde_i);
+  energyGradient_I_i = lambda_0 * I_i_gradient(positionsOthers, velocityOthers, v_tilde_i, p_i, v_i, sigma_d, sigma_w, beta);
+  energyGradient_S_i = lambda_1 * S_i_gradient(u_i, v_tilde_i);
+  energyGradient_D_i = lambda_2 * D_i_gradient(z_i, p_i, v_tilde_i);
+
+  energyGradient = energyGradient_I_i + energyGradient_S_i + energyGradient_D_i;
+
+  double energyTotalNorm =  energyGradient_I_i.norm() + energyGradient_S_i.norm() + energyGradient_D_i.norm();
+
+  std::cout << "EnergyDist: OtherObjects: " << energyGradient_I_i.norm()/energyTotalNorm << "  keepingSpeed: " << energyGradient_S_i.norm()/energyTotalNorm << "%  keepingGoal" << energyGradient_D_i.norm()/energyTotalNorm << "%" << std::endl;
 
   return energyGradient;
 }
