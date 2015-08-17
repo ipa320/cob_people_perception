@@ -160,7 +160,7 @@ void LegFeature::propagate(ros::Time time)
 
 	double s = mostProbableAssociatedPPL->getStepWidth();
 	//double s = 0;
-	double s_max = mostProbableAssociatedPPL->getMaxStepWidth();
+	double s_max = mostProbableAssociatedPPL->getStepWidthMax();
 	std::cout << "stepWidth: " << s << std::endl;
 
 
@@ -179,10 +179,10 @@ void LegFeature::propagate(ros::Time time)
     double factor;
 
     if(mostProbableAssociatedPPL->getBackLeg()->getId() == this->int_id_){
-      factor = mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getMaxStepWidth();
+      factor = mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getStepWidthMax();
       std::cout << "LT[" << int_id_ << "] is the back leg and moving! " << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
     }else{
-      factor = - mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getMaxStepWidth();
+      factor = - mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getStepWidthMax();
       std::cout << "LT[" << int_id_ << "] is the front leg and moving!" << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
     }
 
@@ -192,6 +192,9 @@ void LegFeature::propagate(ros::Time time)
     filter_.updatePrediction(time.toSec(), cov, factor, est.vel_, mostProbableAssociatedPPL->getHipVec(), mostProbableAssociatedPPL->getTotalProbability());
 
   }
+
+
+
   // If there is no relevant people tracker assigned-> Consider only the low level filter
   else
   {

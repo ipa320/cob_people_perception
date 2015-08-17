@@ -82,13 +82,16 @@ class PeopleTracker{
 
     ros::Time creation_time_;/**< Time that this tracker was created */
 
-    double maxStepWidth_; /**< Maximal Step Width */
+    //double maxStepWidth_; /**< Maximal Step Width */
 
     filter::KalmanFilter* kalmanFilter_; /**< Kalman Filter associated to the people Tracker to provide smoothing */
 
     std::vector<tf::Vector3> nextDesiredPosition; /**< Vector containing the calculated desired position of this people tracker */
 
     std::vector<tf::Vector3> nextDesiredVelocity; /**< Vector containing the calculated desired Velocities of this people tracker */
+
+    tf::Vector3 currentGoal_; /**< The current goal position */
+    bool hasGoal_; /**< True if a goal is set */
 
 
   public:
@@ -161,7 +164,7 @@ class PeopleTracker{
      * Get the estimation of the People Tracker, this is calculated using the estimation of both legs
      * @return The estimation
      */
-    BFL::StatePosVel getEstimate();
+    BFL::StatePosVel getEstimate() const;
 
     /**
      * Get the estimation of the Kalman filter
@@ -207,7 +210,7 @@ class PeopleTracker{
       return this->stepWidth_;
     }
 
-    double getMaxStepWidth() const{
+    double getStepWidthMax() const{
       return this->stepWidthMax_;
     }
 
@@ -241,6 +244,14 @@ class PeopleTracker{
 
     BFL::StatePosVel getNextDesiredPosVel(size_t predictionStep);
 
+    void setGoal(tf::Vector3& goal){
+      currentGoal_ = goal;
+    }
+
+    tf::Vector3 getGoal(){
+      return this->currentGoal_;
+    }
+
     size_t getNumberOfPredictions(){
       if(this->nextDesiredPosition.size() != this->nextDesiredVelocity.size()){
         std::cout << "this->nextDesiredPosition.size(): " << this->nextDesiredPosition.size() << std::endl;
@@ -273,7 +284,7 @@ class PeopleTracker{
       }
 
       // Print Parameters
-      os << " | hipWidth: " << s.hipWidth_ << " | stepWidth:" << s.getStepWidth() << " | maxStepWidth:" << s.getMaxStepWidth();
+      os << " | hipWidth: " << s.hipWidth_ << " | stepWidth:" << s.getStepWidth() << " | maxStepWidth:" << s.getStepWidthMax() << " | vAbs:" << s.getEstimate().vel_.length();
 
       return os;
 

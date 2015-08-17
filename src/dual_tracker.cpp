@@ -1626,16 +1626,95 @@ public:
       visualization_msgs::MarkerArray msgArray;
 
       int counter = 0;
+      int counter_goal = 0;
 
       for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
           peopleIt != peopleTracker->end();
           peopleIt++)
       {
 
-        if((*peopleIt)->getTotalProbability() > 0.6 ){
+        if((*peopleIt)->getTotalProbability() > 0.8 && (*peopleIt)->getEstimate().vel_.length() > 0.3){
 
-          std::cout << YELLOW << "######### " << (*peopleIt)->getName() << RESET << std::endl;
+          //std::cout << YELLOW << "######### " << (*peopleIt)->getName() << RESET << std::endl;
 
+          // Plot the goal
+          visualization_msgs::Marker markerGoal;
+          markerGoal.header.frame_id = fixed_frame;
+          markerGoal.header.stamp = time;
+          markerGoal.ns = "goals";
+          markerGoal.id = ++counter_goal;
+          markerGoal.type = visualization_msgs::Marker::CYLINDER;
+          markerGoal.action = visualization_msgs::Marker::ADD;
+          markerGoal.pose.position.x = (*peopleIt)->getGoal()[0];
+          markerGoal.pose.position.y = (*peopleIt)->getGoal()[1];
+          markerGoal.pose.position.z = 0.25;
+          markerGoal.scale.x = 0.02; //shaft diameter
+          markerGoal.scale.y = 0.02; //head diameter
+          markerGoal.scale.z = 0.5; // head length (if other than zero)
+          markerGoal.color.a = 1.0;
+          markerGoal.color.r = 0.0;
+          markerGoal.color.g = 1.0;
+          markerGoal.color.b = 0.0;
+
+          msgArray.markers.push_back(markerGoal);
+
+          // Add goal label
+          visualization_msgs::Marker label;
+          label.header.stamp = time;
+          label.header.frame_id = fixed_frame;
+          label.ns = "goals_labels";
+          label.id = counter;
+          label.type = label.TEXT_VIEW_FACING;
+          label.pose.position.x = (*peopleIt)->getGoal()[0];
+          label.pose.position.y = (*peopleIt)->getGoal()[1];
+          label.pose.position.z = 0.55;
+          label.scale.z = .1;
+          label.color.a = 1;
+          label.color.r = 0;
+          label.color.g = 1.0;
+          label.color.b = 0;
+          // Add text
+          char buf[100];
+          sprintf(buf, "Goal");
+          label.text = buf;
+
+          msgArray.markers.push_back(label);
+
+          // Plot line to goal
+          visualization_msgs::Marker arrowMarker;
+          arrowMarker.header.frame_id = fixed_frame;
+          arrowMarker.header.stamp = time;
+          arrowMarker.ns = "goal_arrow";
+          arrowMarker.id = counter;
+          arrowMarker.type = visualization_msgs::Marker::ARROW;
+          arrowMarker.action = visualization_msgs::Marker::ADD;
+          //marker.lifetime = ros::Duration(0.1);
+
+          geometry_msgs::Point startPoint;
+          startPoint.x = (*peopleIt)->getEstimate().pos_[0];
+          startPoint.y = (*peopleIt)->getEstimate().pos_[1];
+          startPoint.z = 0.0;
+
+          geometry_msgs::Point endPoint;
+          endPoint.x = (*peopleIt)->getGoal()[0];
+          endPoint.y = (*peopleIt)->getGoal()[1];
+          endPoint.z = 0.0;
+
+          arrowMarker.points.push_back(startPoint);
+          arrowMarker.points.push_back(endPoint);
+
+          arrowMarker.scale.x = 0.03; //shaft diameter
+          arrowMarker.scale.y = 0.03; //head diameter
+          arrowMarker.scale.z = 0; // head length (if other than zero)
+          arrowMarker.color.a = 0.6; // Don't forget to set the alpha!
+          arrowMarker.color.r = 0.0;
+          arrowMarker.color.g = 1.0;
+          arrowMarker.color.b = 0.0;
+
+          msgArray.markers.push_back(arrowMarker);
+
+
+          // Iterate the number of predictions and draw Arrows
           for(size_t predN = 0; predN < (*peopleIt)->getNumberOfPredictions()-1; predN++){
 
             // Get the prediction
@@ -1680,7 +1759,7 @@ public:
             marker.color.g = 1.0;
             marker.color.b = 0.0;
 
-            std::cout << "alpha" << marker.color.a << std::endl;
+            //std::cout << "alpha" << marker.color.a << std::endl;
 
             msgArray.markers.push_back(marker);
 
