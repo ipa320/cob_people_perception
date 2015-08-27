@@ -11,6 +11,17 @@ name_lst = []
 error_lst = []
 rmse_lst = []
 
+width = 6
+
+fig_width = 10
+fig_height = 2
+
+# Parameters
+y_stretch  = 1.5
+median_text_x_offset = 0.25
+general_font_size = 10
+median_font_size = 8
+
 def getRMSE(error):
     rmse = []
     error_square_sum = 0;
@@ -29,13 +40,6 @@ def plotErrorPlot(name,error,rmse):
     
 def plotErrorPlotWithTime(name,error,rmse,t):
     
-    # Parameters
-    y_stretch  = 1.5
-    median_text_x_offset = 0.23
-    general_font_size = 16
-    
-    
-    
     print "Plotting " + name
 
     
@@ -49,10 +53,8 @@ def plotErrorPlotWithTime(name,error,rmse,t):
     t[:] = [x - initialTime for x in t]
     
     # Get the figure
-    plt.figure(figsize=(20,3))
+    plt.figure(figsize=(fig_width,fig_height))
     #gs = GridSpec(100,100,bottom=0.18,left=0.18,right=0.88)
-    
-    
     
     axarr = []
     
@@ -61,10 +63,8 @@ def plotErrorPlotWithTime(name,error,rmse,t):
     # designate ax2 to span all rows, 
     #ax2 = fig.add_subplot(gs[:,75:99])
     
-    
-        
-    ax1 = plt.subplot2grid((1,6), (0,0), colspan=5)
-    ax2 = plt.subplot2grid((1,6), (0,5), colspan=1)
+    ax1 = plt.subplot2grid((1,width), (0,0), colspan=width-1)
+    ax2 = plt.subplot2grid((1,width), (0,width-1), colspan=1)
 
     axarr.append(ax1)
     axarr.append(ax2)    
@@ -95,7 +95,7 @@ def plotErrorPlotWithTime(name,error,rmse,t):
     #axarr[1].set_ylabel('||e|| [m]')
     median =  bp['medians'][0].get_ydata()[0]
     print median
-    axarr[1].text(1 + median_text_x_offset, median, "{:.3f}".format(median), fontsize = 13, color="red", backgroundcolor="white",clip_on=True, horizontalalignment='center', verticalalignment='center')
+    axarr[1].text(1 + median_text_x_offset, median, "{:.3f}".format(median), fontsize = median_font_size, color="red", backgroundcolor="white",clip_on=True, horizontalalignment='center', verticalalignment='center')
     
     #plt.suptitle(name, fontsize = 20)
     plt.subplots_adjust(left=None, bottom=None, right=None, top=0.85, wspace=None, hspace=0.6)
