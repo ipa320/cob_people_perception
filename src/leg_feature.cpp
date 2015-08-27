@@ -14,7 +14,7 @@ int LegFeature::nextid = 0;
 
 static std::string fixed_frame              = "odom_combined";  // The fixed frame in which ? //TODO find out
 
-static int NumberOfParticles = 350;
+static int NumberOfParticles = 700;
 
 /*LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl, OcclusionModelPtr ocm)
   :LegFeature(loc,tfl),
@@ -151,18 +151,12 @@ void LegFeature::propagate(ros::Time time)
   cov(6, 6) = 0.0;
 
   // Update of the moving leg
-  if(mostProbableAssociatedPPL 											// If there is a associated PPLTracker
-     && mostProbableAssociatedPPL->isValid()
-     && mostProbableAssociatedPPL->getTotalProbability() > 0.6 			// If it has a certain Probability
-     && mostProbableAssociatedPPL->isDynamic() 							// If it is dynamic (moving)
-     && mostProbableAssociatedPPL->getMovingLeg()->getId() == getId())	// If this is the leg considered moving
+  if(mostProbableAssociatedPPL                                          // If there is a associated PPLTracker
+     && mostProbableAssociatedPPL->isValid()                            // The associated PPLTracker has to be valid
+     && mostProbableAssociatedPPL->getTotalProbability() > 0.6          // If it has a certain Probability   TODO make variable
+     && mostProbableAssociatedPPL->isDynamic()                          // If the person is moving
+     && mostProbableAssociatedPPL->getMovingLeg()->getId() == getId())  // If this is the moving leg
   {
-
-	double s = mostProbableAssociatedPPL->getStepWidth();
-	//double s = 0;
-	double s_max = mostProbableAssociatedPPL->getStepWidthMax();
-	std::cout << "stepWidth: " << s << std::endl;
-
 
     //std::cout << RED << "Updating L" << this->int_id_ << " most probable associatet people tracker is" << *mostProbableAssociatedPPL << RESET << std::endl;
     ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i considers a high level filter for its update", __func__, int_id_);
@@ -170,38 +164,40 @@ void LegFeature::propagate(ros::Time time)
     // Check that the high level filter was propagated to this time
     ROS_ASSERT((mostProbableAssociatedPPL->propagation_time_  - time).isZero());
 
-    std::cout << "Time Difference: " << (mostProbableAssociatedPPL->propagation_time_  - time) << std::endl;
-
-    // Get the estimation for itself
-    //StatePosVel est = mostProbableAssociatedPPL->getLegEstimate(int_id_);
+    // Get the estimation of the associated people tracker
     StatePosVel est = mostProbableAssociatedPPL->getEstimate();
 
-    double factor;
+    // Get the current StepWidth
+    double s = mostProbableAssociatedPPL->getStepWidth();
 
+    // Get the maximum StepWidth
+    double s_max = mostProbableAssociatedPPL->getStepWidthMax();
+
+    // Calculate the factor depending if the leg is the back or the front leg
+    double factor = 0;
     if(mostProbableAssociatedPPL->getBackLeg()->getId() == this->int_id_){
-      factor = mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getStepWidthMax();
+      factor = s/s_max;
       std::cout << "LT[" << int_id_ << "] is the back leg and moving! " << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
     }else{
-      factor = - mostProbableAssociatedPPL->getStepWidth() / mostProbableAssociatedPPL->getStepWidthMax();
+      factor = - s/s_max;
       std::cout << "LT[" << int_id_ << "] is the front leg and moving!" << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
     }
 
-
-    // TODO THIS SHOULD DEPEND ON THE ESTIMATION OF THE LEG; NOT THE PERSON!!!
-    //filter_.updatePrediction(time.toSec(), cov, mostProbableAssociatedPPL->getEstimate().vel_, mostProbableAssociatedPPL->getHipVec());
+    // Do the prediction with HighLevel Influence
     filter_.updatePrediction(time.toSec(), cov, factor, est.vel_, mostProbableAssociatedPPL->getHipVec(), mostProbableAssociatedPPL->getTotalProbability());
 
   }
 
-
-
   // If there is no relevant people tracker assigned-> Consider only the low level filter
+  // OR if this is the static leg
   else
   {
     ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i does a simple update", __func__, int_id_);
 
     filter_.updatePrediction(time.toSec(),cov);
   }
+
+  //TODO special case for the standing leg?! use a really low variance for it?
 
   // Set the predicted Position of this tracker, mainly for debugging purposes
   position_predicted_ = position_;
