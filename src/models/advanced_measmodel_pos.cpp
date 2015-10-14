@@ -57,9 +57,7 @@ AdvancedMeasPdfPos::~AdvancedMeasPdfPos()
 
 Probability
 AdvancedMeasPdfPos::getZeroProbability(){
-
   tf::Vector3 zeroVec(0,0,0);
-
   return meas_noise_.ProbabilityGet(zeroVec);
 }
 
@@ -73,32 +71,8 @@ AdvancedMeasPdfPos::getZeroProbability(){
 Probability
 AdvancedMeasPdfPos::ProbabilityGet(const Vector3& measurement) const
 {
-  //ConditionalArgumentGet(0) is the state
-
   tf::Vector3 delta = measurement - ConditionalArgumentGet(0).pos_;
-
   Probability prob = meas_noise_.ProbabilityGet(delta);
-
-  //if(prob.getValue() > 0.1)
-  //std::cout << prob.getValue() << std::endl;
-
-//  if(prob.getValue() > 1.0){
-//
-//    std::cout << "mu_" << meas_noise_.mu_.getX() << "   " << meas_noise_.mu_.getY() << "   " << meas_noise_.mu_.getZ() << "   " << std::endl;
-//    std::cout << "sqrt_" << meas_noise_.sqrt_ << std::endl;
-//    std::cout << "sigma_ " << meas_noise_.sigma_[0] << "  " << meas_noise_.sigma_[1] << "  " << meas_noise_.sigma_[2] << std::endl;
-//
-//
-//    std::cout << "MeasProb " << prob.getValue() << std::endl;
-//
-//    std::cout << "delta " << delta.getX() << "   " << delta.getY() << "   " << delta.getZ() << std::endl;
-//    std::cout << "Value greater than 1.0" << std::endl;
-//  }
-
-/*  std::cout << ConditionalArgumentGet(0).pos_.getX() << " " << ConditionalArgumentGet(0).pos_.getY() << " " << ConditionalArgumentGet(0).pos_.getZ()<< std::endl;
-  std::cout << "Delta" << delta.getX() << " " << delta.getY() << " " << delta.getZ() << " Norm:" << delta.length() << std::endl;
-  std::cout << prob.getValue() << std::endl;*/
-
 
   return prob;
 }

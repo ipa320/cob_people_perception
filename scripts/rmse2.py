@@ -14,13 +14,14 @@ rmse_lst = []
 width = 6
 
 fig_width = 10
-fig_height = 2
+fig_height = 4
 
 # Parameters
 y_stretch  = 1.5
-median_text_x_offset = 0.25
-general_font_size = 10
-median_font_size = 8
+median_text_x_offset = 0.30
+general_font_size = 22
+median_font_size = 14
+annotation_font_size = 22
 
 def getRMSE(error):
     rmse = []
@@ -70,32 +71,53 @@ def plotErrorPlotWithTime(name,error,rmse,t):
     axarr.append(ax2)    
     
     #plot
-    axarr[0].plot(t[0:len(error)],getRMSE(error),'r.-', markersize = 10, label="RMSE")
+    axarr[0].plot(t[0:len(error)],getRMSE(error),'r.-', markersize = 20, label="RMSE", linewidth=2)
     axarr[0].set_title("Error", fontsize=general_font_size)
     axarr[0].set_ylim(0,max(error)*y_stretch)
     axarr[0].set_xlim(0,max(t))
 
-    axarr[0].plot(t[0:len(error)],error,'b.-', markersize = 10, label="Translational Error")
-    axarr[0].legend(loc="upper left", prop={'size':general_font_size})
-    axarr[0].set_xlabel('Time[s]')
+    axarr[0].plot(t[0:len(error)],error,'b.-', markersize = 20, label="Transl. Error", linewidth=2)
+    axarr[0].legend(loc="best", prop={'size':general_font_size}, labelspacing=0, borderpad=0.1, frameon=False)
+    axarr[0].set_xlabel('Time[s]', fontsize = general_font_size)
     axarr[0].set_ylabel('||e|| [m]', fontsize = general_font_size)
     axarr[0].tick_params(axis='x', labelsize=general_font_size)
     axarr[0].tick_params(axis='y', labelsize=general_font_size)
 
     #plt.subplots_adjust(left=None, bottom=None, right=None, top=2, wspace=None, hspace=0.75)
-
+    #boxpropa = dict(linestyle='--', linewidth=3, color='darkgoldenrod')
     bp = axarr[1].boxplot(error)
-    axarr[1].set_title("Error distribution", fontsize=15)
+    axarr[1].set_title("Distribution", fontsize=general_font_size)
     axarr[1].set_xticklabels([])
     axarr[1].tick_params(axis='y', labelsize=general_font_size)
     #axarr[1].set_yticklabels([])
     axarr[1].yaxis.tick_right()    
     
     axarr[1].set_ylim(0,max(error)*y_stretch)
+    
+    print bp
+    
+    # Change the box lines to red, with linewidth 2.
+    boxlines = bp['boxes']
+    for line in boxlines:
+        line.set_linewidth(2)
+
+    # Change the median lines to green, with linewidth 2.
+    medlines = bp['medians']
+    for line in medlines:
+        line.set_linewidth(2)    
+        
+    whiskers = bp['whiskers']
+    for line in whiskers:
+        line.set_linewidth(2)
+        
+    caps = bp['caps']
+    for line in caps:
+        line.set_linewidth(2)  
+    
     #axarr[1].set_ylabel('||e|| [m]')
     median =  bp['medians'][0].get_ydata()[0]
     print median
-    axarr[1].text(1 + median_text_x_offset, median, "{:.3f}".format(median), fontsize = median_font_size, color="red", backgroundcolor="white",clip_on=True, horizontalalignment='center', verticalalignment='center')
+    axarr[1].text(1 + median_text_x_offset, median, "{:.2f}".format(median), fontsize = median_font_size, color="red", backgroundcolor="white",clip_on=True, horizontalalignment='center', verticalalignment='center')
     
     #plt.suptitle(name, fontsize = 20)
     plt.subplots_adjust(left=None, bottom=None, right=None, top=0.85, wspace=None, hspace=0.6)
@@ -113,10 +135,10 @@ rmse = [0.018269,0.037123,0.057330,0.090662,0.100498,0.100096,0.098559,0.095980,
 time = [1436863617.346435549,1436863617.425429606,1436863617.582367390,1436863617.661361611,1436863617.740363920,1436863617.819383609,1436863617.897364169,1436863617.976360706,1436863618.055377889,1436863618.134496980,1436863618.291375217,1436863618.370401104,1436863618.449361231,1436863618.527383493,1436863618.606366934,1436863618.687751715,1436863618.763410270,1436863618.842359482,1436863618.920401296,1436863618.999370725,1436863619.078384040,1436863619.157440107,1436863619.235367683,1436863619.393379577,1436863619.472381873,1436863619.550402709,1436863619.629420841,1436863619.708398394,1436863619.787375005,1436863619.865362950,1436863620.023440867,1436863620.101374835,1436863620.180363782,1436863620.259407560,1436863620.338392417,1436863620.416411500,1436863620.495381612,1436863620.574395277,1436863620.653374043,1436863620.731382269,1436863620.810390216,1436863620.967382056,1436863621.046382492,1436863621.125376624,1436863621.203435848,1436863621.282384272,1436863621.440388830,1436863621.519391432,1436863621.597443381,1436863621.676418836,1436863621.755385944,1436863621.834618382,1436863621.913371307,1436863621.992397161,1436863622.071664146,1436863622.150397078,1436863622.229376784,]
 axarr = plotErrorPlotWithTime(name,error,rmse,time)
 axarr[0].axvspan(1.5, 2.1, color='gray', alpha=0.5)
-axarr[0].text((1.5+2.1)/2, max(error)*1.5*0.9, "sidestep", fontsize = 12, horizontalalignment='center')
+axarr[0].text((1.5+2.1)/2, max(error)*1.5*0.9, "sidestep", fontsize = annotation_font_size, horizontalalignment='center')
 
 axarr[0].axvspan(2.2, 3.2, color='gray', alpha=0.5)
-axarr[0].text((2.2+3.2)/2, max(error)*1.5*0.9, "acceleration", fontsize = 12, horizontalalignment='center')
+axarr[0].text((2.2+3.2)/2, max(error)*1.5*0.9, "accel.", fontsize = annotation_font_size, horizontalalignment='center')
 saveResult()
 
 
@@ -126,7 +148,7 @@ rmse = [0.077488,0.070987,0.087712,0.111427,0.122722,0.130327,0.132622,0.131393,
 time = [1436863677.838593049,1436863677.916614816,1436863677.995599041,1436863678.074595534,1436863678.152591155,1436863678.231733383,1436863678.310593444,1436863678.389618693,1436863678.467588045,1436863678.546589771,1436863678.625597423,1436863678.703594617,1436863678.782602710,1436863678.861592825,1436863679.097582876,1436863679.176594394,1436863679.255614091,1436863679.334756405,1436863679.412603479,1436863679.491604649,1436863679.570595926,1436863679.648590201,1436863679.727799058,1436863679.806611662,1436863679.885588874,1436863680.042604881,1436863680.121602531,1436863680.200624459,1436863680.279606844,1436863680.436611517,1436863680.515596411,1436863680.594602496,1436863680.672608291,1436863680.751708086,1436863680.830597059,1436863680.987600517,1436863681.066594187,1436863681.145593043,1436863681.302627599,1436863681.381606319,1436863681.460604645,1436863681.539625542,1436863681.618635017,1436863681.779777572,1436863681.854602683,1436863681.933610666,1436863682.012605975,1436863682.091606848,1436863682.170607854,1436863682.249602614,1436863682.327620513,1436863682.406606158,1436863682.722615716,1436863682.800607959,1436863682.879602137,1436863682.958615150,1436863683.115599993,1436863683.194622717,1436863683.273604122,1436863683.352600302,1436863683.509601882,1436863683.588791646,1436863683.667601315,1436863683.745611637,1436863683.824627810,1436863683.903625470,1436863683.982639230,1436863684.060628586,1436863684.139623157,1436863684.218698652,1436863684.297618733,]
 axarr = plotErrorPlotWithTime(name,error,rmse,time)
 axarr[0].axvspan(2.3, 3.6, color='gray', alpha=0.5)
-axarr[0].text((2.3+3.6)/2, max(error)*1.5*0.9, "stop", fontsize = 12, horizontalalignment='center')
+axarr[0].text((2.3+3.6)/2, max(error)*1.5*0.9, "stop", fontsize = annotation_font_size, horizontalalignment='center')
 saveResult()
 
 
@@ -136,9 +158,9 @@ rmse = [0.102391,0.106767,0.100518,0.093332,0.097796,0.113698,0.116352,0.118458,
 time = [1436863731.642810604,1436863731.721801743,1436863731.800805143,1436863731.878813683,1436863731.957802281,1436863732.036828160,1436863732.114798104,1436863732.193800301,1436863732.272794347,1436863732.350798698,1436863732.429857073,1436863732.586814263,1436863732.665793615,1436863732.822816077,1436863732.901810453,1436863733.137795512,1436863733.296028421,1436863733.373804565,1436863733.452806308,1436863733.531991194,1436863733.610935608,1436863733.689822125,1436863733.768804438,1436863733.847809111,1436863733.926804239,1436863734.005817331,1436863734.083805406,1436863734.162818489,1436863734.241813823,1436863734.320833843,1436863734.398805172,1436863734.477811840,1436863734.556809903,1436863734.635875589,1436863734.714817600,1436863734.793939060,1436863734.872812170,1436863734.950845767,1436863735.030145174,1436863735.108809038,1436863735.187846715,1436863735.266806729,1436863735.344828063,1436863735.423819215,1436863735.502814631,1436863735.660818705,1436863735.738869592,1436863735.817813415,1436863735.896992896,1436863735.975822685,1436863736.054826235,1436863736.132811299,1436863736.211829746,1436863736.290832269,1436863736.369807671,1436863736.448829071,1436863736.528481061,1436863736.605812074,1436863736.684876993,1436863736.764212259,1436863736.842809914,1436863736.921821800,1436863736.999821134,1436863737.078820447,1436863737.158046838,1436863737.236913241,1436863737.315920739,1436863737.393816416,1436863737.472833321,]
 axarr = plotErrorPlot(name,error,rmse)
 axarr[0].axvspan(2.25, 3.3, color='gray', alpha=0.5)
-axarr[0].text((2.25+3.3)/2, max(error)*1.5*0.9, "stop", fontsize = 12, horizontalalignment='center')
+axarr[0].text((2.25+3.3)/2, max(error)*1.5*0.9, "stop", fontsize = annotation_font_size, horizontalalignment='center')
 axarr[0].axvspan(3.4, 4.0, color='gray', alpha=0.5)
-axarr[0].text((3.4+4.0)/2, max(error)*1.5*0.9, "acceleration", fontsize = 12, horizontalalignment='center')
+axarr[0].text((3.4+4.0)/2, max(error)*1.5*0.9, "accel.", fontsize = annotation_font_size, horizontalalignment='center')
 saveResult();
 
 
@@ -208,7 +230,7 @@ time = [1436863806.792117776,1436863806.870120940,1436863806.949103052,143686380
 axarr = plotErrorPlot(name,error,rmse)
 
 axarr[0].axvspan(1, 1.8, color='gray', alpha=0.5)
-axarr[0].text((1+1.8)/2, max(error)*1.5*0.9, "occlusion", fontsize = 12, horizontalalignment='center')
+axarr[0].text((1+1.8)/2, max(error)*1.5*0.9, "occlusion", fontsize = annotation_font_size, horizontalalignment='center')
 
 
 saveResult();

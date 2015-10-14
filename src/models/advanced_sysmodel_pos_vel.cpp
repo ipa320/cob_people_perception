@@ -137,28 +137,8 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   noise_.SampleFrom(noise_sample, method, args);
   res += noise_sample.ValueGet();
 
-  // Limit the total speed!
-  //res.vel_ = res.vel_.length();
-
-
-  //res.pos_ += noise_sample.ValueGet().pos_;
-  //res.vel_ += res.vel_;// + 0.1*noise_sample.ValueGet();
-
-  //std::cout << "Noise from system Model:" << noise_sample.ValueGet() << std::endl;
-
-
-  // add noise (Based on nonlinear models)
-  //benchmarking::Timer timer;
-  //timer.start();
-
-
-
-
-  // TODO This can be done better!!!
-
   // Only use the high level prediction if explicitly set true
   if(useHighLevelPrediction_){
-
 
     Sample<StatePosVel> noise_sample_nl;
     noise_nl_.SetDt(dt_);
