@@ -22,6 +22,7 @@
 // Own includes
 #include <dual_people_leg_tracker/leg_feature.h>
 #include <dual_people_leg_tracker/kalman/KalmanFilter.h>
+#include <dual_people_leg_tracker/config_struct.h>
 
 #define DEBUG_PEOPLE_TRACKER 0
 #define DEBUG_PEOPLETRACKERLIST 0
@@ -121,6 +122,12 @@ class PeopleTracker{
      * Update everything of this tracker
      */
     void update(ros::Time);
+
+    /**
+     * Update the configuration/parameters of the filter/trackers
+     * @param filter_config
+     */
+    void configure(config_struct filter_config);
 
     /**
      * Update the state of the Tracker

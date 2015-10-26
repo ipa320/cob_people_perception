@@ -102,7 +102,7 @@ LegFeaturePtr PeopleTracker::getRightLeg() const{
 LegFeaturePtr PeopleTracker::getMovingLeg() const{
   ROS_ASSERT(isDynamic());
 
-	if(getLeg0()->getLastStepWidth() >= getLeg1()->getLastStepWidth()){
+	if(getLeg0()->getLastPositionJumpWidth() >= getLeg1()->getLastPositionJumpWidth()){
 		return getLeg0();
 	}
 	return getLeg1();
@@ -110,7 +110,7 @@ LegFeaturePtr PeopleTracker::getMovingLeg() const{
 
 LegFeaturePtr PeopleTracker::getStandingLeg() const{
 	//return getLeg1();
-	if(getLeg1()->getLastStepWidth() < getLeg0()->getLastStepWidth()){
+	if(getLeg1()->getLastPositionJumpWidth() < getLeg0()->getLastPositionJumpWidth()){
 		return getLeg1();
 	}
 	return getLeg0();
@@ -188,6 +188,12 @@ void PeopleTracker::update(ros::Time time){
 
   // Update the history
   // updateHistory(time);
+}
+
+void PeopleTracker::configure(config_struct filter_config){
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s", __func__);
+
+  // TODO Implement
 }
 
 /**
@@ -367,43 +373,16 @@ void PeopleTracker::propagate(ros::Time time){
 
       }
 
-
-
-      // Print for python debugging
-      //std::cout << "left_leg = [";
-/*      for(unsigned int i = shortestHistSize-1; i>0; i--){
-        double jumpLeft = (*leftLegHistory[i]-*leftLegHistory[i-1]).length();
-
-        std::cout << jumpLeft;
-        if(i!=1) std::cout << ",";
-      }
-      std::cout << "]" << std::endl;
-
-      std::cout << "right_leg = [";
-      for(unsigned int i = shortestHistSize-1; i>0; i--){
-        double jumpRight = (*rightLegHistory[i]-*rightLegHistory[i-1]).length();
-        std::cout << jumpRight;
-
-        if(i!=1) std::cout << ",";
-      }
-      std::cout << "]" << std::endl;*/
-
-
-
-
-
       // Define the moving leg by the one with the last most movement
 
       if(deltaT > 0){
 
         // Differentiate between the moving and the static leg
-        double lastStepWidthLeftLeg;
-        double lastStepWidthRightLeg;
-        getLeftLeg()->getLastStepWidth(lastStepWidthLeftLeg);
-        getRightLeg()->getLastStepWidth(lastStepWidthRightLeg);
+        double lastStepWidthLeftLeg = getLeftLeg()->getLastPositionJumpWidth();
+        double lastStepWidthRightLeg = getRightLeg()->getLastPositionJumpWidth();
 
-        //return;
-        if(getLeftLeg()->getLastStepWidth(lastStepWidthLeftLeg) && getRightLeg()->getLastStepWidth(lastStepWidthRightLeg)){
+        // If both legs had a step
+        if(lastStepWidthLeftLeg > 0 && lastStepWidthRightLeg > 0){
 
           // Set the fixed leg
           LegFeaturePtr movLeg;
@@ -440,7 +419,7 @@ void PeopleTracker::propagate(ros::Time time){
           BFL::StatePosVel people_pos_vel_estimation_ = this->getEstimate();
 
           // Estimate the velocity
-          LegMovPrediction.vel_   = 5 * people_pos_vel_estimation_.vel_ * alpha;   // Estimate Speed of the moving Leg
+          LegMovPrediction.vel_   = 5 * people_pos_vel_estimation_.vel_ * alpha;   // Estimate Speed of the moving Leg // TODO Where comes this parameter from?
           LegStatPrediction.vel_  = 5 * people_pos_vel_estimation_.vel_ * (1-alpha);  // Estimated Speed of the constant Leg
 
           // First calculate the positions
@@ -457,7 +436,6 @@ void PeopleTracker::propagate(ros::Time time){
           }
 
         }
-
 
       }
 

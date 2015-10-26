@@ -34,7 +34,8 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
     use_filter_(true),
     is_valid_(true), // On construction the leg feature is always valid
     leg_feature_update_cov_(0.05), // The update measurement cov (should be around 0.0025, the smaller the peakier)
-    is_static_(true) // At the beginning the leg feature is considered static
+    is_static_(true), // At the beginning the leg feature is considered static
+    leg_feature_measurement_cov_(0.004)
 {
   // Increase the id
   int_id_ = nextid++;
@@ -237,6 +238,13 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   // Update history
   updateHistory();
 }
+
+void LegFeature::configure(config_struct filter_config){
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
+
+  // TODO Implement
+}
+
 /**
  * Perform a update using the probabilities calculated by the JPDA
  * @param detections    // The current detections
@@ -283,9 +291,6 @@ double LegFeature::getOcclusionProbability(OcclusionModelPtr occlusionModel){
 
 double LegFeature::getMeasurementProbability(tf::Stamped<tf::Point> loc){
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
-
-
-  double leg_feature_measurement_cov_ = 0.004;
 
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
@@ -350,22 +355,19 @@ void LegFeature::updateHistory()
   position_history_.push_back(point);
 }
 
-bool LegFeature::getLastStepWidth(double& width){
-
-  if(getHistorySize()<2){
-    return false;
-  }
-
+double LegFeature::getLastPositionJumpWidth(){
 
   unsigned int histSize = getHistorySize();
 
-  width = (*getHistory()[histSize-1] - *getHistory()[histSize-2]).length();
+  // Return false if only one history is recorded
+  if(getHistorySize() < 2){
+    return 0;
+  }
 
-  return true;
+  return (*getHistory()[histSize-1] - *getHistory()[histSize-2]).length();
 
 }
 
-// TODO do this static
 /**
  *  @brief The distance between two legs.
  *
@@ -375,8 +377,7 @@ double LegFeature::distance(LegFeaturePtr leg0,  LegFeaturePtr leg1){
     tf::Stamped<tf::Point> one = leg0->position_;
     tf::Stamped<tf::Point> two = leg1->position_;
 
-    double distance = (one-two).length();
-    return distance;
+    return (one-two).length();
 }
 
 void LegFeature::removeInvalidAssociations(){

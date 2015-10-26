@@ -18,6 +18,7 @@
 #include <dual_people_leg_tracker/visualization/color_definitions.h>
 #include <dual_people_leg_tracker/people_tracker.h>
 #include <dual_people_leg_tracker/detection/detection.h>
+#include <dual_people_leg_tracker/config_struct.h>
 
 // People Stack
 #include <people_tracking_filter/state_pos_vel.h>
@@ -66,6 +67,8 @@ public:
   double leg_feature_predict_pos_cov_; /**< The prediction position covariance */
   double leg_feature_predict_vel_cov_; /**< The prediction velocity covariance */
 
+  double leg_feature_measurement_cov_; /**< The leg measurement covariance */
+
   bool is_valid_;
 
   bool is_static_; /**< Flag that is set the true after a certain motion has been observed */
@@ -99,6 +102,12 @@ public:
   void propagate(ros::Time time);
 
   void update(tf::Stamped<tf::Point> loc, double probability);
+
+  /**
+   * Update the configuration/parameters of the tracker and the associated filter
+   * @param filter_config
+   */
+  void configure(config_struct filter_config);
 
   void JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& probabilities, OcclusionModelPtr occlusionModel, ros::Time measTime);
 
@@ -178,15 +187,7 @@ public:
 
   void updateHistory();
 
-  bool getLastStepWidth(double& width);
-
-  double getLastStepWidth(){
-	  double width;
-	  if(getLastStepWidth(width)){
-		  return width;
-	  }
-	  return 0;
-  }
+  double getLastPositionJumpWidth();
 
   int getId() const {
 	  return this->int_id_;
@@ -195,6 +196,8 @@ public:
 
 private:
   void updatePosition();
+
+
 };
 
 

@@ -45,6 +45,7 @@
 #include <dual_people_leg_tracker/math/math_functions.h>
 #include <dual_people_leg_tracker/jpda/murty.h>
 #include <dual_people_leg_tracker/jpda/jpda.h>
+#include <dual_people_leg_tracker/config_struct.h>
 #include <leg_detector/laser_processor.h>
 #include <leg_detector/calc_leg_features.h>
 #include <dual_people_leg_tracker/visualization/visualization_conversions.h>
@@ -109,17 +110,6 @@ bool isLegFeatureValid(const LegFeaturePtr & o){
 
 bool sampleWeightCompare(WeightedSample<StatePosVel> i, WeightedSample<StatePosVel> j) { return i.WeightGet()<j.WeightGet(); }
 
-struct config_struct/** < Structure for filter configuration */
-{
-    double fakeLegProb;
-    double minFakeLegPersonProbability;
-
-    double fakeLegRealLegDistance;
-    double fakeLegRangeThres; //Distance to look for other legs around a detected leg
-    double fakeLegMeasurementProbabiltyFactor;
-
-    double minUpdateProbability;
-};
 
 // actual legdetector node
 class DualTracker
@@ -389,14 +379,16 @@ public:
     leg_pair_separation_m    = config.leg_pair_separation;
 
     // Set probabilties of the filter
-    filter_config.fakeLegProb = 0.95; // TODO make variable
-    filter_config.minFakeLegPersonProbability = 0.6;
-    filter_config.fakeLegRealLegDistance = 0.1; // TODO make cfg editable
-    filter_config.fakeLegRangeThres = 2; // TODO make cfg editable
-    filter_config.fakeLegMeasurementProbabiltyFactor = 1.0; // TODO make cfg editable
-    filter_config.minUpdateProbability = 0.003; // TODO make cfg editable
+    use_fake_measurements_                            = config.use_fake_measurements; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - use_fake_measurements_ %d", __func__, use_fake_measurements_ );
 
-    use_fake_measurements_   = config.use_fake_measurements; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - use_fake_measurements_ %d", __func__, use_fake_measurements_ );
+    filter_config.fakeLegProb                         = config.fake_leg_probability;
+    filter_config.minFakeLegPersonProbability         = config.min_fake_leg_person_probability;
+    filter_config.fakeLegRealLegDistance              = config.fake_leg_real_leg_distance;
+    filter_config.fakeLegRangeThres                   = config.fake_leg_range_thres;
+    filter_config.fakeLegMeasurementProbabiltyFactor  = config.fake_leg_measurement_probabilty_factor;
+
+    filter_config.minUpdateProbability                = config.min_update_probability; // TODO make cfg editable
+
 
 
 
@@ -506,6 +498,27 @@ public:
 
     ROS_DEBUG("%sRemoving old Trackers done! [Cycle %u]", BOLDWHITE, cycle_);
 
+    boost::shared_ptr<std::vector<PeopleTrackerPtr> > pplTrackers = people_trackers_.getList();
+
+    //////////////////////////////////////////////////////////////////////////
+    //// Update the tracker configuration/parameters for existing trackers
+    //////////////////////////////////////////////////////////////////////////
+
+    for(std::vector<PeopleTrackerPtr>::iterator pplTrackerIt = pplTrackers->begin();
+        pplTrackerIt != pplTrackers->end();
+        pplTrackerIt++)
+    {
+      (*pplTrackerIt)->configure(this->filter_config);
+    }
+
+    for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin();
+        legIt != saved_leg_features.end();
+        legIt++)
+    {
+      (*legIt)->configure(this->filter_config);
+    }
+
+
     //////////////////////////////////////////////////////////////////////////
     //// Propagation/Prediction using the motion model
     //////////////////////////////////////////////////////////////////////////
@@ -514,7 +527,6 @@ public:
 
     /// People Tracker Propagation
     // High level propagation
-    boost::shared_ptr<std::vector<PeopleTrackerPtr> > pplTrackers = people_trackers_.getList();
     for(std::vector<PeopleTrackerPtr>::iterator pplTrackerIt = pplTrackers->begin();
         pplTrackerIt != pplTrackers->end();
         pplTrackerIt++)
@@ -761,7 +773,7 @@ public:
 
     std::vector<Solution> solutionsMAP;
 
-    // TODO change for hungarian(here 1-step murty == hungarian is used)
+    //hungarian(here 1-step murty == hungarian is used)
     solutionsMAP = murty(costMatrixMAP,1);
     ROS_ASSERT(solutionsMAP.size() == 1);
 
