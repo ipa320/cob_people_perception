@@ -37,26 +37,15 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
     is_static_(true), // At the beginning the leg feature is considered static
     leg_feature_measurement_cov_(0.004)
 {
-  // Increase the id
+  // Assign id
   int_id_ = nextid++;
 
-  // Generate the string id
-  char id[100];
-  snprintf(id, 100, "legtrack%d", int_id_);
-  id_ = std::string(id);
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created <NEW_LEGFEATURE %s> at %f - %f - %f", __func__, getIdStr().c_str(), loc.getX(), loc.getY(), loc.getZ());
 
-  // Configuration server
-  // dynamic_reconfigure::Server<leg_detector::DualTrackerConfig>::CallbackType f;
-  // f = boost::bind(&LegFeature::configure, this, _1, _2);
-
-
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created <NEW_LEGFEATURE %s> at %f - %f - %f", __func__, id_.c_str(), loc.getX(), loc.getY(), loc.getZ());
-
-  object_id = "";
   time_ = loc.stamp_;
   meas_time_ = loc.stamp_;
-  //other = NULL;
 
+  // Transform to local frame
   try
   {
     tfl_.transformPoint(fixed_frame, loc, loc);
@@ -67,11 +56,8 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   }
 
   // Create transform to the tracker position
-  tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
+  tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, getIdStr(), loc.frame_id_);
   tfl_.setTransform(pose);
-
-  // Initialize the filter (Create the initial particles)
-  //BFL::StatePosVel prior_sigma(tf::Vector3(0.1, 0.1, 0.0), tf::Vector3(0.0000001, 0.0000001, 0.000000));
 
   double maxSpeed = 3; // [m/T] T = Period
 
@@ -96,11 +82,6 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
   position_predicted_[1] = loc.getY();
   position_predicted_[2] = loc.getZ();
 
-  //leg_feature_update_cov_    = config.leg_feature_update_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_update_cov_ %f", __func__, leg_feature_update_cov_ );
-  //leg_feature_predict_pos_cov_    = config.leg_feature_predict_pos_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_predict_pos_cov_ %f", __func__, leg_feature_predict_pos_cov_ );
-  //leg_feature_predict_vel_cov_    = config.leg_feature_predict_vel_cov;     ROS_DEBUG_COND(DEBUG_LEG_TRACKER, "DEBUG_LEG_TRACKER::%s - leg_feature_predict_vel_cov_ %f", __func__, leg_feature_predict_vel_cov_ );
-
-
   // Update the position of this leg feature
   updatePosition();
 }
@@ -111,7 +92,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
 LegFeature::~LegFeature(){
   //peopleTrackerList_.clear();
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s <DELETE_LEGFEATURE %s>", __func__, id_.c_str());
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s <DELETE_LEGFEATURE %s>", __func__, getIdStr().c_str());
 }
 
 /**
@@ -176,12 +157,16 @@ void LegFeature::propagate(ros::Time time)
 
     // Calculate the factor depending if the leg is the back or the front leg
     double factor = 0;
+
+    // Back leg and moving
     if(mostProbableAssociatedPPL->getBackLeg()->getId() == this->int_id_){
       factor = s/s_max;
-      std::cout << "LT[" << int_id_ << "] is the back leg and moving! " << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
-    }else{
+      //std::cout << "LT[" << int_id_ << "] is the back leg and moving! " << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
+    }
+    // Front leg and moving
+    else{
       factor = - s/s_max;
-      std::cout << "LT[" << int_id_ << "] is the front leg and moving!" << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
+      //std::cout << "LT[" << int_id_ << "] is the front leg and moving!" << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
     }
 
     // Do the prediction with HighLevel Influence
@@ -198,12 +183,10 @@ void LegFeature::propagate(ros::Time time)
     filter_.updatePrediction(time.toSec(),cov);
   }
 
-  //TODO special case for the standing leg?! use a really low variance for it?
-
   // Set the predicted Position of this tracker, mainly for debugging purposes
   position_predicted_ = position_;
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Done Propagating leg_tracker with ID %s", __func__, id_.c_str());
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Done Propagating leg_tracker with ID %s", __func__, getIdStr().c_str());
 
 }
 
@@ -214,10 +197,6 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   //std::cout << "Received update: " << loc.getX() << "  " << loc.getY() << "  " << loc.getZ() << std::endl;
 
   meas_loc_last_update_ = loc;
-
-  // Set the tf to represent this
-  //tf::StampedTransform pose(tf::Pose(tf::Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
-  //tfl_.setTransform(pose);
 
   // Update the measurement time
   meas_time_ = loc.stamp_;
@@ -245,45 +224,12 @@ void LegFeature::configure(config_struct filter_config){
   // TODO Implement
 }
 
-/**
- * Perform a update using the probabilities calculated by the JPDA
- * @param detections    // The current detections
- * @param probabilities // The assignment probabilities (The first entry is the occlusion probability!)
- */
-void LegFeature::JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& assignmentProbabilities, OcclusionModelPtr occlusionModel, ros::Time measTime){
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s [%i]",__func__, int_id_);
-  //std::cout << "LT" << this->int_id_ << " - JPDAUpdate" << std::endl;
-  //std::cout << "Probabilities" << std::endl << assignmentProbabilities << std::endl;
-
-  meas_time_ = measTime;
-  time_ = measTime;
-
-  // Covariance of the Measurement
-  MatrixWrapper::SymmetricMatrix cov(3);
-  cov(1, 1) = leg_feature_update_cov_;
-  cov(2, 2) = leg_feature_update_cov_;
-  cov(3, 3) = leg_feature_update_cov_;
-
-  filter_.updateJPDA(cov,detections,assignmentProbabilities, occlusionModel);
-  //filter_.updateCorrection()
-
-  // Update the position based on the latest measurements
-  updatePosition();
-
-  // Resample if necessary
-  //filter_.dynamicResample();
-
-  // Update history
-  updateHistory();
-
-}
-
+// Not used
 double LegFeature::getOcclusionProbability(OcclusionModelPtr occlusionModel){
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s",__func__);
 
   // Check if occlusion model exists
   ROS_ASSERT(occlusionModel);
-
 
   return filter_.getOcclusionProbability(occlusionModel);
   //return occlusion_model_->getOcclusionProbability(loc);
@@ -311,17 +257,15 @@ void LegFeature::updatePosition()
 {
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature[%d]::%s",(int)int_id_,__func__);
 
-  BFL::StatePosVel est;
 
   // Estimate using the weighted mean
+  BFL::StatePosVel est;
   filter_.getEstimate(est);
 
   // Estimate using the most likely particle
   // filter_.getMostLikelyPosition(est);
 
-  //std::cout << pos_vel_ << " --Update--> ";
   pos_vel_ = est;
-  //std::cout << pos_vel_ << std::endl;
 
   position_[0] = est.pos_[0];
   position_[1] = est.pos_[1];

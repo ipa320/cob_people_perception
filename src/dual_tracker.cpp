@@ -186,7 +186,7 @@ public:
   bool publish_measurement_labels_; /**< Publish labels of measurements */
   bool publish_fake_measurements_; /**< Publish a visualization of the fake measurements */
   bool publish_predicted_leg_positions_; /**< Publish the estimated position of the legs due to the prediction of the associated people tracker */
-  bool publish_scans_lines_; /**< Publish visualizations of the scan lines */
+  bool publish_scans_lines_; /**< Publish laserscan as lines */
 
   int next_p_id_;
 
@@ -1079,10 +1079,6 @@ public:
       publishPeopleVelocityKalman(people_trackers_.getList(), scan->header.stamp);
     }
 
-    if(publish_people_lines_){
-      publishPeopleLines(people_trackers_.getList(), scan->header.stamp);
-    }
-
     if(publish_people_3d_){
       publishPeople3d(scan->header.stamp);
     }
@@ -1250,9 +1246,9 @@ public:
       {
         people_msgs::PositionMeasurement pos;
         pos.header.stamp = legFeatures.front()->meas_time_;
-        pos.header.frame_id = legFeatures.front()->fixed_frame_;
+        pos.header.frame_id = legFeatures.front()->getFixedFrame();
         pos.name = "leg_detector";
-        pos.object_id = (*sf_iter)->id_;
+        pos.object_id = (*sf_iter)->getIdStr();
         pos.pos.x = (*sf_iter)->position_[0];
         pos.pos.y = (*sf_iter)->position_[1];
         pos.pos.z = (*sf_iter)->position_[2];
@@ -1274,7 +1270,7 @@ public:
   // Create the Position Measurement Array
   people_msgs::PositionMeasurementArray array;
   array.header.stamp =  saved_leg_features.front()->time_;
-  array.header.frame_id = saved_leg_features.front()->fixed_frame_;
+  array.header.frame_id = saved_leg_features.front()->getFixedFrame();
 
   // Publish
   array.people = legs;
@@ -1738,73 +1734,6 @@ public:
 
     }
 
-
-  /**
-   * Publish the people lines for inter-people-interaction
-   * @param peopleTracker
-   * @param time
-   */
-  void publishPeopleLines(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
-
-    // Create the Visualization Message (a marker array)
-    visualization_msgs::MarkerArray msgArray;
-
-    int counter = 0;
-
-    for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
-        peopleIt != peopleTracker->end();
-        peopleIt++)
-    {
-      if((*peopleIt)->getTotalProbability() > 0.6 && (*peopleIt)->isDynamic()){
-
-
-        BFL::StatePosVel est = (*peopleIt)->getEstimateKalman();
-        std::vector<tf::Vector3> peopleLines = (*peopleIt)->getEstimationLines(13,0.1);
-
-        for(std::vector<tf::Vector3>::iterator vecIt = peopleLines.begin(); vecIt != peopleLines.end(); vecIt++){
-          visualization_msgs::Marker marker;
-          marker.header.frame_id = fixed_frame;
-          marker.header.stamp = time;
-          marker.ns = "people_lines";
-          marker.id = counter;
-          marker.type = visualization_msgs::Marker::ARROW;
-          marker.action = visualization_msgs::Marker::ADD;
-          marker.lifetime = ros::Duration(0.1);
-
-          geometry_msgs::Point startPoint;
-          startPoint.x = est.pos_[0];
-          startPoint.y = est.pos_[1];
-          startPoint.z = 0.0;
-
-          geometry_msgs::Point endPoint;
-          endPoint.x = est.pos_[0] + vecIt->getX() * 3;
-          endPoint.y = est.pos_[1] + vecIt->getY() * 3;
-          endPoint.z = 0.0;
-
-          //std::cout << "endpoint x: " << endPoint.x << "endpoint y:" << endPoint.y << std::endl;
-
-          marker.points.push_back(startPoint);
-          marker.points.push_back(endPoint);
-
-          marker.scale.x = 0.01; //shaft diameter
-          marker.scale.y = 0.1; //head diameter
-          marker.scale.z = 0.3; // head length (if other than zero)
-          marker.color.a = 0.7; // Don't forget to set the alpha!
-          marker.color.r = 0.4;
-          marker.color.g = 0.4;
-          marker.color.b = 0.4;
-
-          msgArray.markers.push_back(marker);
-
-          counter++;
-        }
-
-      }
-    }
-    people_visualization_pub_.publish(msgArray);
-
-  }
-
   /**
    * Publish some clusters
    * @param clusters  The clusters
@@ -1873,7 +1802,6 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     if (s != NULL)
     {
 
-
       geometry_msgs::Point startPoint;
       startPoint.x = 0.0;
       startPoint.y = 0.0;
@@ -1924,7 +1852,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         double maxSampleWeight = maxSample.WeightGet();
 
         //std::cout << "NSamples:" << samples.size() << " maxSampleWeight:" << maxSampleWeight << "------" << std::endl;
-        int printFirstN = 200; int n = 0;
+
         for(vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
           geometry_msgs::Point32 point;
           point.x = (*sampleIt).ValueGet().pos_[0];
@@ -1961,17 +1889,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
           particlesPCL.points.push_back(point);
 
-
-          if(n < printFirstN){
-            //std::cout << "w: " << weight;
-          }
-
-          n++;
         }
-        //std::cout << std::endl;
-
-
-
 
     }
 

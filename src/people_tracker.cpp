@@ -1,18 +1,19 @@
 /*
  * people_tracker.cpp
- *
- *  Created on: Apr 16, 2015
- *      Author: frm-ag
  */
+
 #undef NDEBUG
+
+// ROS includes
 #include <ros/console.h>
+
+// System includes
+#include <math.h>
+
 // Own includes
 #include <dual_people_leg_tracker/people_tracker.h>
 #include <dual_people_leg_tracker/math/math_functions.h>
-#include <leg_detector/color_definitions.h>
-
-#include <math.h>
-
+#include <dual_people_leg_tracker/visualization/color_definitions.h>
 #include <dual_people_leg_tracker/social_interaction/formulas.h>
 
 /////////////////////////////////////////////////////////////
@@ -24,14 +25,13 @@ bool isValidPeopleTracker(const PeopleTrackerPtr & o){
   return !o->isValid();
 }
 
-
 PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time time):
   creation_time_(time),
   total_probability_(0.0), // Initialize the probability with zero
   propagation_time_(time),
-  stepWidthMax_(0.20), // TODO make this a parameter
-  stepWidth_(0.2),
-  hipWidth_(-1.0),
+  stepWidthMax_(0.20),    // TODO make this a parameter
+  stepWidth_(0.2),        // Initialize with this default stepWidth
+  hipWidth_(-1.0),        // Initialize with default hipWidth -1
   is_static_(true),
   dist_probability_(0.0),
   leg_time_probability_(0.0),
@@ -74,8 +74,6 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
 }
 
 PeopleTracker::~PeopleTracker(){
-  //delete kalmanTracker;
-
   ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker::%s <DELETE_PEOPLETRACKER %i-%i>", __func__, id_[0], id_[1]);
 }
 
@@ -90,12 +88,14 @@ LegFeaturePtr PeopleTracker::getLeg1() const{
 LegFeaturePtr PeopleTracker::getLeftLeg() const{
   if(this->leftLeg_)
     return this->leftLeg_;
+  // Default return Leg0
   return getLeg0();
 }
 
 LegFeaturePtr PeopleTracker::getRightLeg() const{
   if(this->rightLeg_)
     return this->rightLeg_;
+  //Default return Leg1
   return getLeg1();
 }
 
@@ -181,10 +181,7 @@ void PeopleTracker::update(ros::Time time){
   kalmanFilter_->update(currentPos);
 
   if(this->getTotalProbability() > 0.8)
-    broadCastTf(time);
-  //std::cout << "------------------" << std::endl;
-  //std::cout << kalmanFilter_->getEstimation() << std::endl;
-
+    broadCastTf(time); // TODO choose better position for this
 
   // Update the history
   // updateHistory(time);
@@ -321,8 +318,7 @@ void PeopleTracker::updateTrackerState(ros::Time time){
     hipWidth_ = (getLeg0()->getEstimate().pos_ - getLeg1()->getEstimate().pos_).length();
   }
 
-  ROS_ASSERT(stepWidthMax_ < 4);
-
+  ROS_ASSERT(stepWidthMax_ < 4); // TODO critical remove!
 
   // Update static/dynamic
   is_static_ = !(getLeg0()->isDynamic() && getLeg1()->isDynamic());
@@ -336,7 +332,7 @@ void PeopleTracker::propagate(ros::Time time){
   double deltaT = time.toSec() - this->propagation_time_.toSec();
 
 
-  if(this->getTotalProbability() > 0.6){
+  if(this->getTotalProbability() > 0.6){ // TODO make this variable
 
     //std::cout << *this << " is now propagated" << std::endl;
 
@@ -565,7 +561,7 @@ void PeopleTracker::updateProbabilities(ros::Time time){
 
   int min_history = min(hist0.size(),hist1.size());
 
-  if(total_probability_ > 0.5){
+  if(total_probability_ > 0.5){ // TODO make this variable
     //std::cout << *this << std::endl;
 
     std::vector<double> move_sum;
@@ -583,8 +579,7 @@ void PeopleTracker::updateProbabilities(ros::Time time){
 
 
   // Print
-#ifdef DEBUG_PEOPLE_TRACKER
-
+  #ifdef DEBUG_PEOPLE_TRACKER
   std::string color = RESET;
   if(total_probability_ > 0.6){
     color = BOLDMAGENTA;
@@ -593,14 +588,13 @@ void PeopleTracker::updateProbabilities(ros::Time time){
     color = BOLDYELLOW;
     ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"%s#%i-%i|dist %.3f prob: %.2f| leg_time: %.2f prob: %.2f|leg_asso prob: %.2f|| total_p: %.2f|",color.c_str(), id_[0], id_[1], dist, dist_probability_,min_leg_time, leg_time_probability_,leg_association_probability_, total_probability_);
   }
-
-#endif
+  #endif
 
 }
 
 void PeopleTracker::updateHistory(ros::Time time){
 
-  if(this->getTotalProbability() > 0.5){
+  if(this->getTotalProbability() > 0.5){ // TODO remove or make variable
 
   BFL::StatePosVel est = getEstimate();
 
@@ -620,7 +614,6 @@ void PeopleTracker::updateHistory(ros::Time time){
  */
 BFL::StatePosVel PeopleTracker::getEstimate() const{
   ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->int_id_, this->getLeg1()->int_id_, __func__);
-
 
   // Calculate the velocity vectors
   BFL::StatePosVel estLeg0 = getLeg0()->getEstimate();
@@ -669,40 +662,8 @@ unsigned int PeopleTracker::getHistorySize(){
   return position_history_.size();
 }
 
-std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  PeopleTracker::getHistory(){
+std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  PeopleTracker::getHistory() const{
   return position_history_;
-}
-
-std::vector<tf::Vector3> PeopleTracker::getEstimationLines(int NumberOfLines, double angle_inkrement){
-  // Check that the Number of Lines is unequal
-  ROS_ASSERT(NumberOfLines % 2 != 0);
-
-  tf::Vector3 mainLine = this->getEstimateKalman().vel_;
-
-  //std::cout << "mainLine x:" << mainLine.getX() << " y:" << mainLine.getY() << " z:" << mainLine.getZ() << std::endl;
-
-
-  std::vector<tf::Vector3> lines_vec;
-  tf::Vector3 rotationVector(0,0,1);
-
-  for(size_t i = 0; i < NumberOfLines; i++){
-    double angle = pow(-1,(i % 2)) * ceil(i/2.0) * angle_inkrement;
-    //std::cout << "angle" << angle << std::endl;
-
-
-    tf::Vector3 newLine = mainLine;
-    newLine = newLine.rotate(rotationVector, angle);
-    newLine = newLine.normalized();
-
-    //std::cout << "newline x:" << newLine.getX() << " y:" << newLine.getY() << " z:" << newLine.getZ() << std::endl;
-
-
-    lines_vec.push_back(newLine);
-  }
-  //std::cout << "-------" << std::endl;
-  //ROS_ASSERT(false);
-
-  return lines_vec;
 }
 
 /***
@@ -710,18 +671,19 @@ std::vector<tf::Vector3> PeopleTracker::getEstimationLines(int NumberOfLines, do
  * @param time
  */
 void PeopleTracker::broadCastTf(ros::Time time){
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->int_id_, this->getLeg1()->int_id_, __func__);
+
   tf::Transform transform;
 
   tf::Quaternion q;
   q.setRPY(0,0,0);
 
-
   transform.setOrigin( tf::Vector3(this->getEstimate().pos_[0], this->getEstimate().pos_[1], 0.0) );
   transform.setRotation(q);
 
-  br.sendTransform(tf::StampedTransform(transform, time, "odom_combined", this->getName()));
-
-  std::cout << this->getName() << " published transform!" << std::endl;
+  tf::StampedTransform test;
+  test = tf::StampedTransform(transform, time, "odom_combined", this->getName());
+  br.sendTransform(test);
 
 }
 
@@ -736,7 +698,7 @@ void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<P
   Eigen::Vector2d nextDesiredVelocity;
 
   // Optimization parameters
-  double otherTrackerMinProbability = 0.6;
+  double otherTrackerMinProbability = 0.6; //TODO make variable
 
   Eigen::Vector2d v_i; //Current velocity
   Eigen::Vector2d p_i; // Current position
@@ -744,7 +706,7 @@ void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<P
   // Goal velocity
   double u_i;
 
-  // Goal
+  // Goal (Manually set)
   Eigen::Vector2d z_i;
   z_i[0] = -10.5;
   z_i[1] = 1.5;
@@ -896,10 +858,6 @@ void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<P
     grad = E_i_gradient(positionOthers, velocityOthers, v_tilde_i, p_i, v_i, u_i, z_i, sigma_d, sigma_w, beta, lambda_0, lambda_1, lambda_2);
     //std::cout << "gradient: " << grad << std::endl;
 
-
-
-
-
     // Get the energy at this point
     double currentEnergy  = E_i(positionOthers, velocityOthers, v_tilde_i - eta * grad, p_i, v_i, u_i, z_i, sigma_d, sigma_w, beta, lambda_0, lambda_1, lambda_2);
 
@@ -928,16 +886,11 @@ void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<P
     double energyDelta = abs(energyLast - currentEnergy);
     double velocityDelta = (v_tilde_i_last - v_tilde_i).norm();
 
-    if(energyLast >= currentEnergy)
-      //std::cout << GREEN;
-    1+1;
-    else{
+    if(!(energyLast >= currentEnergy)){
       std::cout << "Number of considered persons " << positionOthers.size() << std::endl;
       std::cout << "NO ENERGY REDUCTION! eta:" << eta << std::endl;
-      //assert(false);
       std::cout << RED;
     }
-
 
     //if(positionOthers.size() > 0) // Only output if other persons where considered
     //  std::cout << "[" << iteration_counter << "] energy: " << currentEnergy << " dEn:" << energyDelta << "  dVel: " << velocityDelta << " | curVel: " << v_tilde_i.transpose() << RESET << std::endl;
@@ -949,7 +902,6 @@ void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<P
       //assert(false);
       break;
     }
-
 
 
     if(velocityDelta < velocityDelta){
@@ -975,7 +927,6 @@ void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<P
 
   //assert(positionOthers.size() == 0);
 
-
 }
 
 /**
@@ -984,7 +935,7 @@ void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<P
  * @param timeInterval
  * @return
  */
-BFL::StatePosVel PeopleTracker::getNextDesiredPosVel(size_t predictionStep){
+BFL::StatePosVel PeopleTracker::getNextDesiredPosVel(size_t predictionStep) const{
   ROS_DEBUG_COND(DEBUG_PEOPLETRACKERLIST,"PeopleTracker::%s",__func__);
   BFL::StatePosVel nextDesiredPosVel;
 
@@ -1020,10 +971,7 @@ bool operator== (PeopleTracker &p0, PeopleTracker &p1)
 /////////////////////////////////////////////////////////////
 
 PeopleTrackerList::PeopleTrackerList():
-  list_(new std::vector<PeopleTrackerPtr>())
-  {
-
-  }
+  list_(new std::vector<PeopleTrackerPtr>()){}
 
 /**
  * Check if a People Tracker allready exists for these two legs
@@ -1031,7 +979,7 @@ PeopleTrackerList::PeopleTrackerList():
  * @param legB The other leg
  * @return True if it allready exists
  */
-bool PeopleTrackerList::exists(LegFeaturePtr legA, LegFeaturePtr legB){
+bool PeopleTrackerList::exists(LegFeaturePtr legA, LegFeaturePtr legB) const{
   // Iterate through the People Tracker
   for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
     if((*peopleTrackerIt)->isTheSame(legA,legB))
@@ -1046,7 +994,7 @@ bool PeopleTrackerList::exists(LegFeaturePtr legA, LegFeaturePtr legB){
  * @param The People Tracker
  * @return True if the Tracker exists, false otherwise
  */
-bool PeopleTrackerList::exists(PeopleTrackerPtr peopleTracker){
+bool PeopleTrackerList::exists(PeopleTrackerPtr peopleTracker) const{
   // Iterate through the People Tracker
   for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
     if((*peopleTrackerIt)->isTheSame(peopleTracker))
@@ -1062,6 +1010,7 @@ bool PeopleTrackerList::exists(PeopleTrackerPtr peopleTracker){
  * @return true
  */
 bool PeopleTrackerList::addPeopleTracker(PeopleTrackerPtr peopleTrackerPtr){
+  ROS_DEBUG_COND(DEBUG_PEOPLETRACKERLIST,"PeopleTrackerList::%s",__func__);
   list_->push_back(peopleTrackerPtr);
   return true;
 }
@@ -1083,7 +1032,8 @@ int PeopleTrackerList::removeInvalidTrackers(){
 
 }
 
-void PeopleTrackerList::printTrackerList(){
+void PeopleTrackerList::printTrackerList() const{
+  ROS_DEBUG_COND(DEBUG_PEOPLETRACKERLIST,"PeopleTrackerList::%s",__func__);
   std::cout << "TrackerList:" << std::endl;
   for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
     std::cout << **peopleTrackerIt << std::endl;
@@ -1091,29 +1041,24 @@ void PeopleTrackerList::printTrackerList(){
 }
 
 void PeopleTrackerList::updateProbabilities(ros::Time time){
+  ROS_DEBUG_COND(DEBUG_PEOPLETRACKERLIST,"PeopleTrackerList::%s",__func__);
   for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
     (*peopleTrackerIt)->updateProbabilities(time);
   }
 }
 
 void PeopleTrackerList::updateAllTrackers(ros::Time time){
+  ROS_DEBUG_COND(DEBUG_PEOPLETRACKERLIST,"PeopleTrackerList::%s",__func__);
   for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
+
     (*peopleTrackerIt)->update(time);
-
     (*peopleTrackerIt)->updateHistory(time);
-  }
-}
 
-BFL::StatePosVel PeopleTrackerList::getEstimationFrom(std::string name){
-  for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
-    if((*peopleTrackerIt)->getName() ==  name){
-      return (*peopleTrackerIt)->getEstimate();
-    }
   }
 }
 
 void PeopleTrackerList::calculateTheNextDesiredVelocities(double timeInterval, size_t predictionSteps){
-
+  ROS_DEBUG_COND(DEBUG_PEOPLETRACKERLIST,"PeopleTrackerList::%s",__func__);
   // Iterate the prediction steps
   for(size_t predictionStep = 0; predictionStep < predictionSteps; predictionStep++){
 
@@ -1121,8 +1066,7 @@ void PeopleTrackerList::calculateTheNextDesiredVelocities(double timeInterval, s
     for(std::vector<PeopleTrackerPtr>::iterator peopleTrackerIt = list_->begin(); peopleTrackerIt != list_->end(); peopleTrackerIt++){
 
       // Only consider persons with a certain probability
-      if((*peopleTrackerIt)->getTotalProbability() > 0.6){
-        //std::cout << YELLOW << "\t[step " << predictionStep << "] " << (*peopleTrackerIt)->getName() << RESET << std::endl;
+      if((*peopleTrackerIt)->getTotalProbability() > 0.6){ // TODO make variable
         (*peopleTrackerIt)->calculateNextDesiredVelocity(this->getList(), predictionStep, timeInterval);
       }
 

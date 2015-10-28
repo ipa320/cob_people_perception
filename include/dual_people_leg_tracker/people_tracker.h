@@ -1,8 +1,6 @@
 /*
  * people_tracker.h
  *
- *  Created on: Apr 16, 2015
- *      Author: frm-ag
  */
 
 #ifndef PEOPLE_LEG_DETECTOR_INCLUDE_LEG_DETECTOR_PEOPLE_TRACKER_H_
@@ -24,6 +22,7 @@
 #include <dual_people_leg_tracker/kalman/KalmanFilter.h>
 #include <dual_people_leg_tracker/config_struct.h>
 
+// Debug Flags
 #define DEBUG_PEOPLE_TRACKER 0
 #define DEBUG_PEOPLETRACKERLIST 0
 
@@ -40,7 +39,7 @@ class PeopleTrackerList; //Forward
  */
 class PeopleTracker{
   public:
-    // State Variables
+
     BFL::StatePosVel pos_vel_estimation_; /**< The currently estimated pos_vel_ of this people */
 
     tf::Vector3 hip_vec_; /**< Vector orthogonal to the velocity vector, representing the hip direction pos_vel_estimation.vel_.dot(hip_vec_) = 0 should hold every time*/
@@ -48,24 +47,26 @@ class PeopleTracker{
     tf::Vector3 hipPos0_, hipPos1_; /**< Vector of the endpoints of vector */
     tf::Vector3 hipPosLeft_, hipPosRight_; /**< Vector of the endpoints of vector */
 
-    boost::array<int, 2> id_;
+    boost::array<int, 2> id_;/**< Numerical id of this people tracker */
 
     std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_; /**< The position history of the people tracker */
 
-    double hipWidth_;
-    double stepWidth_;
-    double stepWidthMax_;
+    double hipWidth_;     //TODO Annotate
+    double stepWidth_;    //TODO Annotate
+    double stepWidthMax_; //TODO Annotate
 
-    BFL::StatePosVel leg0Prediction_;
-    BFL::StatePosVel leg1Prediction_;
+    BFL::StatePosVel leg0Prediction_; //TODO Used?
+    BFL::StatePosVel leg1Prediction_; //TODO Used?
 
     ros::Time propagation_time_; /**< Time the propagation is towards */
+
+    config_struct current_config_; /**< The current set config file */
 
   private:
 
     tf::TransformBroadcaster br; /**< A transform broadcaster */
 
-    bool is_static_;
+    bool is_static_;  /**< Flag if this person is static (never did move) */
 
     std::vector<LegFeaturePtr> legs_; /**< the legs, should be maximum 2! */
 
@@ -73,8 +74,6 @@ class PeopleTracker{
     LegFeaturePtr rightLeg_;/**< The right leg */
     LegFeaturePtr frontLeg_;/**< The front leg */
     LegFeaturePtr backLeg_; /**< The back leg */
-
-    bool addLeg(LegFeaturePtr leg);/**< Add a leg two this tracker */
 
     double total_probability_;/**< Overall probability in this tracker */
     double dist_probability_;/**< Probability of this tracker based on the distance of the legs */
@@ -92,17 +91,17 @@ class PeopleTracker{
     std::vector<tf::Vector3> nextDesiredVelocity; /**< Vector containing the calculated desired Velocities of this people tracker */
 
     tf::Vector3 currentGoal_; /**< The current goal position */
-    bool hasGoal_; /**< True if a goal is set */
 
+    bool hasGoal_; /**< True if a goal is set */
 
   public:
     PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time);/**< Construct a People tracker based on this two legs */
 
-    ~PeopleTracker();
+    ~PeopleTracker(); /**< Destructor */
 
     bool isTheSame(LegFeaturePtr, LegFeaturePtr); /**< Check if this People Tracker is the same as one that would be constructed of the two given legs */
 
-    bool isTheSame(PeopleTrackerPtr);
+    bool isTheSame(PeopleTrackerPtr); /**< Check if this People Tracker is the same as the provided one */
 
     LegFeaturePtr getLeg0() const;/**< Get Leg0 */
 
@@ -189,19 +188,17 @@ class PeopleTracker{
      * Get the history of this people tracker
      * @return Vector of Shared Pointers of Stamped Points
      */
-    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  getHistory();
+    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  getHistory() const;
 
-    tf::Vector3 getHipVec(){
+    /**
+     * Return the hip Vector
+     * @return
+     */
+    tf::Vector3 getHipVec() const{
       return this->hip_vec_;
     }
 
-    std::vector<tf::Vector3> getEstimationLines(int NumberOfLines, double angle_inkrement);
-
-    //BFL::StatePosVel getLegEstimate(int id){
-    //  return pos_vel_estimation_;
-    //}
-
-    bool isStatic(){
+    bool isStatic() const{
       return is_static_;
     }
 
@@ -225,15 +222,15 @@ class PeopleTracker{
       return this->hipWidth_;
     }
 
-    LegFeaturePtr getFrontLeg(){
+    LegFeaturePtr getFrontLeg() const{
       return this->frontLeg_;
     }
 
-    LegFeaturePtr getBackLeg(){
+    LegFeaturePtr getBackLeg() const{
       return this->backLeg_;
     }
 
-    std::string getName(){
+    std::string getName() const{
       std::stringstream name;
 
       name << "ppl" << this->id_[0] << "_" << this->id_[1];
@@ -241,35 +238,64 @@ class PeopleTracker{
       return name.str();
     }
 
+    /**
+     * Broadcast this people trackers transformation
+     * @param time
+     */
     void broadCastTf(ros::Time time);
 
+    /**
+     * Calculate the next desired velocity (experimental)
+     * @param list            List of all trackers
+     * @param predictionStep  The current prediction Step
+     * @param timeInterval    The time interval between the predictions
+     */
     void calculateNextDesiredVelocity(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, size_t predictionStep, double timeInterval);
 
-    std::vector<tf::Vector3> getNextDesiredVelocities(){
+    /**
+     * Return the calculated next desired velocity
+     * @return
+     */
+    std::vector<tf::Vector3> getNextDesiredVelocities() const{
       return this->nextDesiredVelocity;
     }
 
-    BFL::StatePosVel getNextDesiredPosVel(size_t predictionStep);
+    /**
+     * Return the desired velocity for a given prediction step
+     * @param predictionStep
+     * @return
+     */
+    BFL::StatePosVel getNextDesiredPosVel(size_t predictionStep) const;
 
+    /**
+     * Set a goal for this tracker (experimental: currently done manually - further development needed)
+     * @param goal
+     */
     void setGoal(tf::Vector3& goal){
       currentGoal_ = goal;
     }
 
-    tf::Vector3 getGoal(){
+    /**
+     * Return the current goal
+     * @return
+     */
+    tf::Vector3 getGoal() const{
       return this->currentGoal_;
     }
 
-    size_t getNumberOfPredictions(){
-      if(this->nextDesiredPosition.size() != this->nextDesiredVelocity.size()){
-        std::cout << "this->nextDesiredPosition.size(): " << this->nextDesiredPosition.size() << std::endl;
-        std::cout << "this->nextDesiredVelocity.size(): " << this->nextDesiredVelocity.size() << std::endl;
-      }
+    /**
+     * Get the number of predictions
+     * @return Number of Predictions
+     */
+    size_t getNumberOfPredictions() const{
       ROS_ASSERT(this->nextDesiredPosition.size() == this->nextDesiredVelocity.size());
 
       return this->nextDesiredPosition.size();
     }
 
-    /// output stream
+    /**
+     * Overload the operator the provide easy cout functionality
+     */
     friend std::ostream& operator<< (std::ostream& os, const PeopleTracker& s)
     {
 
@@ -297,7 +323,20 @@ class PeopleTracker{
 
     };
 
+    /**
+     * Overloaded operator to compare two PeopleTracker
+     * @param p0
+     * @param p1
+     * @return
+     */
     friend bool operator== (PeopleTracker &p0, PeopleTracker &p1);
+
+  private:
+
+    /**
+     * Add a leg two this tracker
+     */
+    bool addLeg(LegFeaturePtr leg);
 
 };
 
@@ -313,6 +352,9 @@ class PeopleTrackerList{
     boost::shared_ptr<std::vector<PeopleTrackerPtr> > list_; /**< the legs, should be maximum 2! */
 
   public:
+    /**
+     * Constructor
+     */
     PeopleTrackerList();
 
     /**
@@ -328,20 +370,20 @@ class PeopleTrackerList{
      * @param legB The other leg
      * @return True if exists, false otherwise
      */
-    bool exists(LegFeaturePtr legA, LegFeaturePtr legB);
+    bool exists(LegFeaturePtr legA, LegFeaturePtr legB) const;
 
     /**
      * Check if a tracker with the same two legs is already in the list
      * @param The tracker
      * @return True if the Tracker already exists
      */
-    bool exists(PeopleTrackerPtr);
+    bool exists(PeopleTrackerPtr) const;
 
     /**
      * Get the list of People Trackers
      * @return Pointer to the list of people trackers
      */
-    boost::shared_ptr<std::vector<PeopleTrackerPtr> > getList(){
+    boost::shared_ptr<std::vector<PeopleTrackerPtr> > getList() const{
       return list_;
     }
 
@@ -354,7 +396,7 @@ class PeopleTrackerList{
     /**
      * std::cout a list if the current trackers
      */
-    void printTrackerList();
+    void printTrackerList() const;
 
     /**
      * Call update on all trackers
@@ -366,11 +408,12 @@ class PeopleTrackerList{
      */
     void updateProbabilities(ros::Time);
 
-
-    BFL::StatePosVel getEstimationFrom(std::string name);
-
+    /**
+     * Calculate the next desired velocity (experimental!)
+     * @param timeInterval
+     * @param predictionSteps
+     */
     void calculateTheNextDesiredVelocities(double timeInterval, size_t predictionSteps);
-
 
 };
 

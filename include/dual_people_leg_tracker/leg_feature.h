@@ -43,25 +43,35 @@ class LegFeature
 private:
   BFL::StatePosVel pos_vel_; /**< The currently estimated pos_vel_ */
 
+  double reliability_; /**< Reliability */
+
+  bool is_valid_; /**< True if valid (otherwise marked for deletion) */
+
+  bool is_static_; /**< Flag that is set the true after a certain motion has been observed */
+
+  std::string fixed_frame_;    /**< The fixed frame to use */
+
+  static int nextid;           /**< Id counter */
+
 public:
-  static int nextid;
-  tf::TransformListener& tfl_;
-  std::string fixed_frame_;
+
+  estimation::AdvancedTrackerParticle filter_; /**< The particle filter */
+
+  tf::TransformListener& tfl_; /**< Associated transform listener */
+
 
   std::vector<PeopleTrackerPtr> peopleTrackerList_; /**< List of associated people trackers */
 
-  BFL::StatePosVel sys_sigma_;
-  estimation::AdvancedTrackerParticle filter_;
+  BFL::StatePosVel sys_sigma_; /**< System variance */
 
-  std::string id_;
-  std::string object_id;
-  int int_id_;
+
+  int int_id_;     /**< Id of the instance */
   ros::Time time_; /**< Time of the last scan */
   ros::Time time_prediction_; /**< The time the prediction was made to */
-  ros::Time meas_time_;
+  ros::Time meas_time_; /**< The time of the last measurement */
   tf::Stamped<tf::Point> meas_loc_last_update_; /**< The measurement used in the last update */
 
-  OcclusionModelPtr occlusion_model_;
+  OcclusionModelPtr occlusion_model_; /**< Occlusion model according to the rays (Not used!) */
 
   double leg_feature_update_cov_; /**< The measurement update covariance */
   double leg_feature_predict_pos_cov_; /**< The prediction position covariance */
@@ -69,13 +79,8 @@ public:
 
   double leg_feature_measurement_cov_; /**< The leg measurement covariance */
 
-  bool is_valid_;
 
-  bool is_static_; /**< Flag that is set the true after a certain motion has been observed */
-
-  bool use_highlevel_prediction;
-
-  double reliability, p;
+  bool use_highlevel_prediction; /**< Flag whether high level prediction should be used */
 
   bool use_filter_; /**< Flag if the Filter should be used currently */
 
@@ -85,22 +90,28 @@ public:
 
   tf::Stamped<tf::Point> initial_position_; /**< The initial position */
 
-  std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_;
+  std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_; /**< History of this leg */
 
-  //dynamic_reconfigure::Server<leg_detector::DualTrackerConfig> server_; /**< The configuration server*/
-  //void configure(leg_detector::DualTrackerConfig &config, uint32_t level); /**< Configuration config */
-  //LegFeaturePtr other;
-  //float dist_to_person_;
-
-  //dynamic_reconfigure::Server<leg_detector::DualTrackerConfig> server;
-  //leg_detector::DualTrackerConfig conf;
-
+  /**
+   * Constructor
+   * @param loc Initial location
+   * @param tfl TransformListener to use
+   */
   LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl);
 
   ~LegFeature();
 
+  /**
+   * Propagate/Predict to a given time
+   * @param time
+   */
   void propagate(ros::Time time);
 
+  /**
+   * Update with measurement
+   * @param loc Location of the measurement
+   * @param probability Probability of the measurement
+   */
   void update(tf::Stamped<tf::Point> loc, double probability);
 
   /**
@@ -109,42 +120,75 @@ public:
    */
   void configure(config_struct filter_config);
 
-  void JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& probabilities, OcclusionModelPtr occlusionModel, ros::Time measTime);
-
+  //void JPDAUpdate(std::vector<DetectionPtr>& detections, Eigen::VectorXd& probabilities, OcclusionModelPtr occlusionModel, ros::Time measTime);
+  /**
+   * Get the occlusion probability (currently not used), maybe effective to avoid leg switch
+   * @param occlusionModel
+   * @return
+   */
   double getOcclusionProbability(OcclusionModelPtr occlusionModel);
 
+  /**
+   * Get the probability of a measurement given this leg
+   * @param loc Location of the measurement
+   * @return
+   */
   double getMeasurementProbability(tf::Stamped<tf::Point> loc);
 
+  /**
+   * Get the lifetime of this leg tracker
+   * @return
+   */
   double getLifetime()
   {
     return filter_.getLifetime();
   }
 
-  double getReliability()
+  /**
+   * Return the reliability of this legtracker
+   * @return
+   */
+  double getReliability() const
   {
-    return reliability;
+    return reliability_;
   }
 
+  /**
+   * Set the validity for this tracker
+   * @param valid True if valid, False otherwise (should lead to tracker deletion)
+   */
   void setValidity(bool valid){
     is_valid_ = valid;
   }
 
+  /**
+   * Check if the leg tracker is valid
+   * @return True if tracker is valid, False otherwise
+   */
   bool isValid() const{
     return is_valid_;
   }
 
-  bool isStatic(){
+  /**
+   * Check if the leg is static (didnt move since detection)
+   * @return True if static
+   */
+  bool isStatic() const{
     return is_static_;
   }
 
-  bool isDynamic(){
+  /**
+   * Check if leg is dynamic (moved since detection)
+   * @return
+   */
+  bool isDynamic() const{
     return !is_static_;
   }
 
   BFL::StatePosVel getEstimate(){
-	BFL::StatePosVel est;
-	filter_.getEstimate(est);
-	return est;
+    BFL::StatePosVel est;
+    filter_.getEstimate(est);
+    return est;
     //return pos_vel_;
   }
 
@@ -167,6 +211,10 @@ public:
   void setOcclusionModel(OcclusionModelPtr ocm){
     occlusion_model_ = ocm;
     this->filter_.setOcclusionModel(ocm);
+  }
+
+  std::string getFixedFrame() const{
+    return this->fixed_frame_;
   }
 
   // Remove People Tracker that are invalid from the associations list
@@ -193,6 +241,13 @@ public:
 	  return this->int_id_;
   }
 
+  std::string getIdStr() const{
+    // Generate the string id
+    char id[100];
+    snprintf(id, 100, "legtrack%d", this->int_id_);
+
+    return std::string(id);
+  }
 
 private:
   void updatePosition();
