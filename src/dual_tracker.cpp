@@ -469,7 +469,7 @@ public:
         sf_iter != saved_leg_features.end();
         sf_iter++)
     {
-      if ((*sf_iter)->meas_time_ < purge)
+      if ((*sf_iter)->getLastMeasurementTime() < purge)
       {
         (*sf_iter)->setValidity(false);
       }
@@ -748,7 +748,7 @@ public:
         legIt != propagated.end();
         legIt++)
     {
-      indicesMAP(indices_counter_map) = (*legIt)->int_id_;
+      indicesMAP(indices_counter_map) = (*legIt)->getId();
       indices_counter_map++;
     }
 
@@ -900,7 +900,7 @@ public:
           // Insert the leg feature into the propagated list
           saved_leg_features.push_back(newLegFeature);
 
-          std::cout << BOLDRED << " -> Creating new Tracker LT" << newLegFeature->int_id_ << RESET << std::endl;
+          std::cout << BOLDRED << " -> Creating new Tracker LT" << newLegFeature->getId() << RESET << std::endl;
 
         }
 
@@ -953,7 +953,7 @@ public:
           // Insert the leg feature into the propagated list
           saved_leg_features.push_back(newLegFeature);
 
-          std::cout << BOLDRED << "LM[" << lm << "] -> Creating new Tracker LT[" << newLegFeature->int_id_ << "]" << RESET << std::endl;
+          std::cout << BOLDRED << "LM[" << lm << "] -> Creating new Tracker LT[" << newLegFeature->getId() << "]" << RESET << std::endl;
           }
 
         }
@@ -1245,7 +1245,7 @@ public:
       if ((*sf_iter)->getReliability() > leg_reliability_limit_ && publish_leg_measurements_)
       {
         people_msgs::PositionMeasurement pos;
-        pos.header.stamp = legFeatures.front()->meas_time_;
+        pos.header.stamp = legFeatures.front()->getLastMeasurementTime();
         pos.header.frame_id = legFeatures.front()->getFixedFrame();
         pos.name = "leg_detector";
         pos.object_id = (*sf_iter)->getIdStr();
@@ -1269,7 +1269,7 @@ public:
 
   // Create the Position Measurement Array
   people_msgs::PositionMeasurementArray array;
-  array.header.stamp =  saved_leg_features.front()->time_;
+  array.header.stamp =  saved_leg_features.front()->getLastScanTime();
   array.header.frame_id = saved_leg_features.front()->getFixedFrame();
 
   // Publish
@@ -2019,7 +2019,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
           // Set the color
           int r,g,b;
           //r = 255;
-          getColor((*legFeatureIt)->int_id_,r,g,b);
+          getColor((*legFeatureIt)->getId(),r,g,b);
 
           // Set the color according to the probability
           float color_val = 0;
@@ -2052,7 +2052,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         line_list.type = visualization_msgs::Marker::LINE_LIST;
         line_list.header.frame_id = fixed_frame;
         line_list.header.stamp = time;
-        line_list.id = (*legFeatureIt)->int_id_;
+        line_list.id = (*legFeatureIt)->getId();
         line_list.ns = "history";
 
         // width
@@ -2062,7 +2062,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
         int r,g,b;
         //r = 255;
-        getColor((*legFeatureIt)->int_id_,r,g,b);
+        getColor((*legFeatureIt)->getId(),r,g,b);
 
         line_list.color.r = r/255.0;
         line_list.color.g = g/255.0;
@@ -2247,7 +2247,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
       // Add text
       char buf[100];
-      sprintf(buf, "L%d", (*legFeatureIt)->int_id_);
+      sprintf(buf, "L%d", (*legFeatureIt)->getId());
       label.text = buf;
 
       labelArray.markers.push_back(label);
@@ -2495,8 +2495,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
       int r0,g0,b0,r1,g1,b1;
       //r = 255;
-      getColor((*peopleTrackerIt)->getLeg0()->int_id_,r0,g0,b0);
-      getColor((*peopleTrackerIt)->getLeg1()->int_id_,r1,g1,b1);
+      getColor((*peopleTrackerIt)->getLeg0()->getId(),r0,g0,b0);
+      getColor((*peopleTrackerIt)->getLeg1()->getId(),r1,g1,b1);
 
 
       double personHeight = 1;

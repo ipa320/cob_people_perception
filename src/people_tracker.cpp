@@ -43,12 +43,12 @@ PeopleTracker::PeopleTracker(LegFeaturePtr leg0, LegFeaturePtr leg1, ros::Time t
   this->addLeg(leg1);
 
   // Set the id of the tracker
-  if(leg0->int_id_ < leg1->int_id_){
-    id_[0] = leg0->int_id_;
-    id_[1] = leg1->int_id_;
+  if(leg0->getId() < leg1->getId()){
+    id_[0] = leg0->getId();
+    id_[1] = leg1->getId();
   }else{
-    id_[1] = leg0->int_id_;
-    id_[0] = leg1->int_id_;
+    id_[1] = leg0->getId();
+    id_[0] = leg1->getId();
   }
 
   // Set the
@@ -131,11 +131,11 @@ bool PeopleTracker::addLeg(LegFeaturePtr leg){
 
 bool PeopleTracker::isTheSame(LegFeaturePtr legA, LegFeaturePtr legB){
 
-  if(this->getLeg0()->int_id_ == legA->int_id_ && this->getLeg1()->int_id_ == legB->int_id_){
+  if(this->getLeg0()->getId() == legA->getId() && this->getLeg1()->getId() == legB->getId()){
     return true;
   }
 
-  if(this->getLeg1()->int_id_ == legA->int_id_ && this->getLeg0()->int_id_ == legB->int_id_){
+  if(this->getLeg1()->getId() == legA->getId() && this->getLeg0()->getId() == legB->getId()){
     return true;
   }
   return false;
@@ -143,11 +143,11 @@ bool PeopleTracker::isTheSame(LegFeaturePtr legA, LegFeaturePtr legB){
 
 bool PeopleTracker::isTheSame (PeopleTrackerPtr peopleTracker){
 
-  if(this->getLeg0()->int_id_ == peopleTracker->getLeg0()->int_id_ && this->getLeg1()->int_id_ == peopleTracker->getLeg1()->int_id_){
+  if(this->getLeg0()->getId() == peopleTracker->getLeg0()->getId() && this->getLeg1()->getId() == peopleTracker->getLeg1()->getId()){
     return true;
   }
 
-  if(this->getLeg1()->int_id_ == peopleTracker->getLeg0()->int_id_ && this->getLeg0()->int_id_ == peopleTracker->getLeg1()->int_id_){
+  if(this->getLeg1()->getId() == peopleTracker->getLeg0()->getId() && this->getLeg0()->getId() == peopleTracker->getLeg1()->getId()){
     return true;
   }
 
@@ -345,7 +345,7 @@ void PeopleTracker::propagate(ros::Time time){
 
     if(shortestHistSize > 1 && this->isDynamic()){
 
-      //std::cout << "Left: L" << getLeftLeg()->int_id_ << " Right: L" << getRightLeg()->int_id_ << std::endl;
+      //std::cout << "Left: L" << getLeftLeg()->getId() << " Right: L" << getRightLeg()->getId() << std::endl;
 
       double product = 0;
       // Reverse iterate the history (left)
@@ -406,8 +406,8 @@ void PeopleTracker::propagate(ros::Time time){
           // StdCOUT propagation information
           //std::cout << "PROPAGATION____________________" << std::endl;
           //std::cout << "ALPHA" << alpha << std::endl;
-          //std::cout << "LEG MOVING: " << movLeg->int_id_ << std::endl;
-          //std::cout << "LEG STATIC: " << statLeg->int_id_ << std::endl;
+          //std::cout << "LEG MOVING: " << movLeg->getId() << std::endl;
+          //std::cout << "LEG STATIC: " << statLeg->getId() << std::endl;
 
           BFL::StatePosVel LegMovPrediction;
           BFL::StatePosVel LegStatPrediction;
@@ -423,7 +423,7 @@ void PeopleTracker::propagate(ros::Time time){
           LegMovPrediction.pos_ =  LegMovPrediction.vel_*deltaT + movLeg->getEstimate().pos_;
 
           // Set the Estimates
-          if(movLeg->int_id_ == getLeg0()->int_id_ && statLeg->int_id_ == getLeg1()->int_id_){
+          if(movLeg->getId() == getLeg0()->getId() && statLeg->getId() == getLeg1()->getId()){
             leg0Prediction_ = LegMovPrediction;
             leg1Prediction_ = LegStatPrediction;
           }else{
@@ -448,14 +448,14 @@ void PeopleTracker::propagate(ros::Time time){
     }
 
 
-    std::cout << "The history (size " << this->getLeftLeg()->getHistorySize() << ") of the left leg(L"<< this->getLeftLeg()->int_id_ << ") is" << std::endl;
+    std::cout << "The history (size " << this->getLeftLeg()->getHistorySize() << ") of the left leg(L"<< this->getLeftLeg()->getId() << ") is" << std::endl;
     for(std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator histLeftIt = leftLegHistory.begin();
         histLeftIt != leftLegHistory.end();
         histLeftIt++){
       std::cout << (*histLeftIt)->getX() << " " << (*histLeftIt)->getY() << std::endl;
     }
 
-    std::cout << "The history (size " << this->getRightLeg()->getHistorySize() << ") of the right leg(L" << this->getRightLeg()->int_id_<< ") is" << std::endl;
+    std::cout << "The history (size " << this->getRightLeg()->getHistorySize() << ") of the right leg(L" << this->getRightLeg()->getId()<< ") is" << std::endl;
     for(std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator histRightIt = rightLegHistory.begin();
         histRightIt != rightLegHistory.end();
         histRightIt++){
@@ -613,7 +613,7 @@ void PeopleTracker::updateHistory(ros::Time time){
  * @return
  */
 BFL::StatePosVel PeopleTracker::getEstimate() const{
-  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->int_id_, this->getLeg1()->int_id_, __func__);
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->getId(), this->getLeg1()->getId(), __func__);
 
   // Calculate the velocity vectors
   BFL::StatePosVel estLeg0 = getLeg0()->getEstimate();
@@ -671,7 +671,7 @@ std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  PeopleTracker::getHist
  * @param time
  */
 void PeopleTracker::broadCastTf(ros::Time time){
-  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->int_id_, this->getLeg1()->int_id_, __func__);
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->getId(), this->getLeg1()->getId(), __func__);
 
   tf::Transform transform;
 
@@ -692,7 +692,7 @@ void PeopleTracker::broadCastTf(ros::Time time){
  * @param list List of all the trackers
  */
 void PeopleTracker::calculateNextDesiredVelocity(boost::shared_ptr<std::vector<PeopleTrackerPtr> > list, size_t predictionStep, double timeInterval){
-  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->int_id_, this->getLeg1()->int_id_, __func__);
+  ROS_DEBUG_COND(DEBUG_PEOPLE_TRACKER,"PeopleTracker[%i-%i]::%s", this->getLeg0()->getId(), this->getLeg1()->getId(), __func__);
 
   // The next desired velocity
   Eigen::Vector2d nextDesiredVelocity;

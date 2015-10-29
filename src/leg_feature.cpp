@@ -42,8 +42,8 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
 
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created <NEW_LEGFEATURE %s> at %f - %f - %f", __func__, getIdStr().c_str(), loc.getX(), loc.getY(), loc.getZ());
 
-  time_ = loc.stamp_;
-  meas_time_ = loc.stamp_;
+  time_last_scan_ = loc.stamp_;
+  time_meas_ = loc.stamp_;
 
   // Transform to local frame
   try
@@ -67,7 +67,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl)
 
   // Initialization is around the measurement which initialized this leg feature using a uniform distribution
   BFL::StatePosVel mu(loc);
-  filter_.initialize(mu, prior_sigma, time_.toSec());
+  filter_.initialize(mu, prior_sigma, time_last_scan_.toSec());
 
   // Get the first estimation of the particle state
   BFL::StatePosVel est;
@@ -103,7 +103,7 @@ void LegFeature::propagate(ros::Time time)
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i", __func__, int_id_);
 
   // Update the time
-  time_ = time;
+  time_last_scan_ = time;
   time_prediction_ = time;
 
   // Get the associated people tracker with the highest probability
@@ -199,8 +199,8 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   meas_loc_last_update_ = loc;
 
   // Update the measurement time
-  meas_time_ = loc.stamp_;
-  time_ = meas_time_;
+  time_meas_ = loc.stamp_;
+  time_last_scan_ = time_meas_;
 
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
@@ -270,7 +270,7 @@ void LegFeature::updatePosition()
   position_[0] = est.pos_[0];
   position_[1] = est.pos_[1];
   position_[2] = est.pos_[2];
-  position_.stamp_ = time_;
+  position_.stamp_ = time_last_scan_;
   position_.frame_id_ = fixed_frame_;
   double nreliability = fmin(1.0, fmax(0.1, est.vel_.length() / 0.5)); //TODO ???????
   //reliability = fmax(reliability, nreliability);
@@ -294,10 +294,11 @@ void LegFeature::updateHistory()
   point->setX( est.pos_[0]);
   point->setY( est.pos_[1]);
   point->setZ( est.pos_[2]);
-  point->stamp_ = time_;
+  point->stamp_ = time_last_scan_;
 
   position_history_.push_back(point);
 }
+
 
 double LegFeature::getLastPositionJumpWidth(){
 
@@ -312,11 +313,6 @@ double LegFeature::getLastPositionJumpWidth(){
 
 }
 
-/**
- *  @brief The distance between two legs.
- *
- *  Calculates the euclidian distance between to features(legs)
- */
 double LegFeature::distance(LegFeaturePtr leg0,  LegFeaturePtr leg1){
     tf::Stamped<tf::Point> one = leg0->position_;
     tf::Stamped<tf::Point> two = leg1->position_;
@@ -328,10 +324,6 @@ void LegFeature::removeInvalidAssociations(){
   peopleTrackerList_.erase(std::remove_if(peopleTrackerList_.begin(),peopleTrackerList_.end(), isValidPeopleTracker),peopleTrackerList_.end());
 }
 
-/**
- * Add a People Tracker to associated with this leg, every leg holds its associated People Trackers
- * @param peopleTracker
- */
 void LegFeature::addPeopleTracker(PeopleTrackerPtr peopleTracker){
   // Add this tracker to the list
   this->peopleTrackerList_.push_back(peopleTracker);

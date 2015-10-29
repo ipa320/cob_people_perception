@@ -41,6 +41,15 @@ typedef std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > LegHistory;
 class LegFeature
 {
 private:
+
+  int int_id_;     /**< Id of the instance */
+
+  ros::Time time_last_scan_; /**< Time of the last scan */
+
+  ros::Time time_prediction_; /**< The time the prediction was made to */
+
+  ros::Time time_meas_; /**< The time of the last measurement */
+
   BFL::StatePosVel pos_vel_; /**< The currently estimated pos_vel_ */
 
   double reliability_; /**< Reliability */
@@ -53,22 +62,16 @@ private:
 
   static int nextid;           /**< Id counter */
 
+  std::vector<PeopleTrackerPtr> peopleTrackerList_; /**< List of associated people trackers */
+
+  BFL::StatePosVel sys_sigma_; /**< System variance */
+
 public:
 
   estimation::AdvancedTrackerParticle filter_; /**< The particle filter */
 
   tf::TransformListener& tfl_; /**< Associated transform listener */
 
-
-  std::vector<PeopleTrackerPtr> peopleTrackerList_; /**< List of associated people trackers */
-
-  BFL::StatePosVel sys_sigma_; /**< System variance */
-
-
-  int int_id_;     /**< Id of the instance */
-  ros::Time time_; /**< Time of the last scan */
-  ros::Time time_prediction_; /**< The time the prediction was made to */
-  ros::Time meas_time_; /**< The time of the last measurement */
   tf::Stamped<tf::Point> meas_loc_last_update_; /**< The measurement used in the last update */
 
   OcclusionModelPtr occlusion_model_; /**< Occlusion model according to the rays (Not used!) */
@@ -92,6 +95,8 @@ public:
 
   std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_; /**< History of this leg */
 
+
+public:
   /**
    * Constructor
    * @param loc Initial location
@@ -100,6 +105,22 @@ public:
   LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl);
 
   ~LegFeature();
+
+  /**
+   * Return the time of the last processed scan
+   * @return
+   */
+  ros::Time getLastScanTime(){
+    return this->time_last_scan_;
+  }
+
+  /**
+   * Return the last measurement time
+   * @return
+   */
+  ros::Time getLastMeasurementTime(){
+    return this->time_meas_;
+  }
 
   /**
    * Propagate/Predict to a given time
@@ -200,8 +221,17 @@ public:
     return position_history_;
   }
 
+  /**
+   *  @brief The distance between two legs.
+   *
+   *  Calculates the euclidian distance between to features(legs)
+   */
   static double distance(LegFeaturePtr leg0,  LegFeaturePtr leg1);
 
+  /**
+   * Add a People Tracker to associated with this leg, every leg holds its associated People Trackers
+   * @param peopleTracker
+   */
   void addPeopleTracker(PeopleTrackerPtr);
 
   std::vector<PeopleTrackerPtr> getPeopleTracker(){
@@ -224,7 +254,7 @@ public:
   friend std::ostream& operator<< (std::ostream& os, const LegFeature& s)
   {
 
-    os << "LegFeature: " << s.int_id_;
+    os << "LegFeature: " << s.getId();
 
     if(s.isValid())
       os << BOLDGREEN << " [valid]" << RESET;
@@ -235,6 +265,10 @@ public:
 
   void updateHistory();
 
+  /**
+   * Return the distance between the last two positions
+   * @return distance between the last two positions
+   */
   double getLastPositionJumpWidth();
 
   int getId() const {
