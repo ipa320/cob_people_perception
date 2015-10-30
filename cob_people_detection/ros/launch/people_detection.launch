@@ -3,11 +3,11 @@
 <launch>
   <!-- parameters -->
   <arg name="camera_namespace" default="camera"/>    <!-- top level namespace of the openni camera driver, default for openni driver is camera, for Care-O-bot default is cam3d -->
-  <arg name="colorimage_in_topic" default="/$(arg camera_namespace)/rgb/image_color"/>    <!-- very different between openni driver versions, might also be /$(arg camera_namespace)/rgb/image -->
+  <arg name="colorimage_in_topic" default="/$(arg camera_namespace)/rgb/image_raw"/>    <!-- very different between openni driver versions, might also be /$(arg camera_namespace)/rgb/image_color -->
   <arg name="pointcloud_rgb_in_topic" default="/$(arg camera_namespace)/depth_registered/points"/>    <!-- very different between openni driver versions, might also be /$(arg camera_namespace)/rgb/points or /$(arg camera_namespace)/depth/points_xyzrgb or /$(arg camera_namespace)/depth_registered/points -->
 
   <arg name="using_nodelets" default="false"/>    <!-- for using people detection with the faster nodelet mode, provide argument true -->
-  <arg name="nodelet_manager" default="$(arg camera_namespace)_nodelet_manager"/>    <!-- name of the nodelet manager started by the openni driver, default for the openni driver is camera_nodelet_manager, 
+  <arg name="nodelet_manager" default="$(arg camera_namespace)/$(arg camera_namespace)_nodelet_manager"/>    <!-- name of the nodelet manager started by the openni driver, default for the openni driver is camera_nodelet_manager, 
 for Care-O-bot default is cam3d_nodelet_manager -->
   <arg name="start_manager" default="false"/>     <!-- if you do not like to use the nodelet manager provided by the openni driver, specify your own by setting this parameter to true and providing the name of your manager with argument nodelet_manager-->
   <arg name="display_results_with_image_view" default="true"/>		<!-- set to false if you do not like to display the camera image with names attached to detected faces within an image_view window --> 
@@ -20,7 +20,7 @@ for Care-O-bot default is cam3d_nodelet_manager -->
       <arg name="colorimage_in_topic" value="$(arg colorimage_in_topic)"/>
       <arg name="pointcloud_rgb_in_topic" value="$(arg pointcloud_rgb_in_topic)"/>
     </include>
-    <include file="$(find cob_people_detection)/ros/launch/image_flip.launch"/>
+    <!--include file="$(find cob_people_detection)/ros/launch/image_flip.launch"/--> <!-- only activate on cob3 robots -->
   </group>
   <group if="$(arg using_nodelets)">
     <!-- special launch files for usage with nodelets -->
@@ -30,9 +30,9 @@ for Care-O-bot default is cam3d_nodelet_manager -->
       <arg name="colorimage_in_topic" value="$(arg colorimage_in_topic)"/>
       <arg name="pointcloud_rgb_in_topic" value="$(arg pointcloud_rgb_in_topic)"/>
     </include>
-    <include file="$(find cob_people_detection)/ros/launch/image_flip_nodelet.launch">
+    <!-- include file="$(find cob_people_detection)/ros/launch/image_flip_nodelet.launch">
     	<arg name="nodelet_manager" value="$(arg nodelet_manager)"/>
-    </include>
+    </include--> <!-- only activate on cob3 robots -->
   </group>
 
   <!-- remaining launch files -->

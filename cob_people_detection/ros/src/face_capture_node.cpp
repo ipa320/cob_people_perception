@@ -79,12 +79,10 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	bool debug;								// enables some debug outputs
 	bool use_depth;
 
-  bool norm_illumination;
-  bool norm_align;
-  bool norm_extreme_illumination;
-  int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
-
-
+	bool norm_illumination;
+	bool norm_align;
+	bool norm_extreme_illumination;
+	int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
 
 	std::cout << "\n---------------------------\nFace Capture Node Parameters:\n---------------------------\n";
 	if(!node_handle_.getParam("/cob_people_detection/data_storage_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
@@ -123,7 +121,7 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	delete_data_server_->start();
 
 	// input synchronization
-//	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_people_detection_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
+//	sync_input_2_ = new message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<cob_perception_msgs::ColorDepthImageArray, sensor_msgs::Image> >(30);
 //	sync_input_2_->connectInput(face_detection_subscriber_, color_image_sub_);
 
 	std::cout << "FaceCaptureNode initialized. " << face_images_.size() << " color images and " << face_depthmaps_.size() << " depth images for training loaded.\n" << std::endl;
@@ -215,7 +213,7 @@ void FaceCaptureNode::addDataServerCallback(const cob_people_detection::addDataG
 }
 
 /// captures the images
-void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg)//, const sensor_msgs::Image::ConstPtr& color_image_msg)
+void FaceCaptureNode::inputCallback(const cob_perception_msgs::ColorDepthImageArray::ConstPtr& face_detection_msg)//, const sensor_msgs::Image::ConstPtr& color_image_msg)
 {
 	//ROS_INFO("inputCallback");
 
@@ -249,25 +247,27 @@ void FaceCaptureNode::inputCallback(const cob_people_detection_msgs::ColorDepthI
 
 		// store image and label
 // merge todo: check whether new coordinate convention (face_bounding box uses coordinates of head and face) hold in this code as well
-//		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
-//		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
+//		const cob_perception_msgs::Rect& face_rect = face_detection_msg->head_detections[0].face_detections[0];
+//		const cob_perception_msgs::Rect& head_rect = face_detection_msg->head_detections[0].head_detection;
 //		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
-		const cob_people_detection_msgs::Rect& face_rect = face_detection_msg->head_detections[headIndex].face_detections[0];
-		const cob_people_detection_msgs::Rect& head_rect = face_detection_msg->head_detections[headIndex].head_detection;
+		const cob_perception_msgs::Rect& face_rect = face_detection_msg->head_detections[headIndex].face_detections[0];
+		const cob_perception_msgs::Rect& head_rect = face_detection_msg->head_detections[headIndex].head_detection;
 		cv::Rect face_bounding_box(face_rect.x, face_rect.y, face_rect.width, face_rect.height);
 		cv::Rect head_bounding_box(head_rect.x, head_rect.y, head_rect.width, head_rect.height);
 		cv::Mat img_color = color_image;
 		cv::Mat img_depth = depth_image;
+
 		// normalize face
-		if (face_recognizer_trainer_.addFace(img_color,img_depth,face_bounding_box,head_bounding_box , current_label_, face_images_,face_depthmaps_)==ipa_Utils::RET_FAILED)
+		if (face_recognizer_trainer_.addFace(img_color, img_depth, face_bounding_box, head_bounding_box, current_label_, face_images_, face_depthmaps_)==ipa_Utils::RET_FAILED)
 		{
-			ROS_WARN("Normalizing failed");
+			ROS_WARN("face_capture: Adding face failed.");
+			capture_image_ = false;			// reset trigger for recording
 			return;
 		}
 
 		// only after successful recording
-		capture_image_ = false;			// reset trigger for recording
 		number_captured_images_++;		// increase number of captured images
+		capture_image_ = false;			// reset trigger for recording
 
 		ROS_INFO("Face number %d captured.", number_captured_images_);
 	}
@@ -410,3 +410,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+

@@ -281,7 +281,7 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 					for (int u=0; u<heads_depth_images[head_index].cols; u++)
 					{
 						float val = heads_depth_images[head_index].at<cv::Vec3f>(v,u)[2];
-						if (val==0.f || heads_depth_images[head_index].at<cv::Vec3f>(v,u)[2] > avg_depth_value+0.4 || isnan(val)==true)
+						if (val==0.f || fabs(heads_depth_images[head_index].at<cv::Vec3f>(v,u)[2]-avg_depth_value) > 0.18 || val!=val)
 							heads_color_images[head_index].at<cv::Vec3b>(v,u) = cv::Vec3b(255, 255, 255);
 					}
 //			std::cout << "avg_depth_value=" << avg_depth_value << std::endl;
@@ -294,3 +294,4 @@ unsigned long FaceDetector::detectColorFaces(std::vector<cv::Mat>& heads_color_i
 
 	return ipa_Utils::RET_OK;
 }
+
