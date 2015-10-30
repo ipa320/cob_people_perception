@@ -1,13 +1,18 @@
 <?xml version="1.0"?>
 
 <launch>
-  <!-- sensor message gateway node (forwards sensor messages in a desired rate) -->
-  <rosparam command="load" ns="/cob_image_flip/kinect_image_flip" file="$(find cob_image_flip)/ros/launch/image_flip_params.yaml"/>
-  <node pkg="nodelet" type="nodelet" name="CobKinectImageFlipNodelet" ns="/cob_image_flip/kinect_image_flip" args="load cob_image_flip/CobKinectImageFlipNodelet /cam3d_nodelet_manager" output="screen">
-    <remap from="pointcloud_in" to="/cob_people_detection/sensor_message_gateway/pointcloud_rgb_out"/>
-    <remap from="pointcloud_out" to="/cob_people_detection/image_flip/pointcloud_rgb_out"/>
-    <remap from="colorimage_in" to="/cob_people_detection/sensor_message_gateway/colorimage_out"/>
-    <remap from="colorimage_out" to="/cob_people_detection/image_flip/colorimage_out"/>
-  </node>           
+	<arg name="camera" default="cam3d" />
+	<arg name="start_manager" default="false"/>
+	<arg name="nodelet_manager" default="$(arg camera)_nodelet_manager"/>
+	
+	<node if="$(arg start_manager)" pkg="nodelet" type="nodelet" name="$(arg nodelet_manager)"  args="manager" output="screen"/>
+
+	<node pkg="nodelet" type="nodelet" name="ImageFlipNodelet" ns="/cob_image_flip" args="load cob_image_flip/ImageFlipNodelet /$(arg camera)/$(arg nodelet_manager)" output="screen">
+    <rosparam command="load" file="$(find cob_people_detection)/ros/launch/image_flip_params.yaml"/>
+    <remap from="~pointcloud_in" to="/cob_people_detection/sensor_message_gateway/pointcloud_rgb_out"/>
+    <remap from="~pointcloud_out" to="/cob_people_detection/image_flip/pointcloud_rgb_out"/>
+    <remap from="~colorimage_in" to="/cob_people_detection/sensor_message_gateway/colorimage_out"/>
+    <remap from="~colorimage_out" to="/cob_people_detection/image_flip/colorimage_out"/>
+  </node>
 
 </launch>

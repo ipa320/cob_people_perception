@@ -1,0 +1,23 @@
+all: installed
+
+TARBALL = build/NiTE-Linux-x64-2.2.tar.bz2
+TARBALL_URL = https://github.com/ipa320/thirdparty/raw/master/NiTE-Linux-x64-2.2.tar.bz2
+# originally from http://ilab.usc.edu/packages/forall/ubuntu-13.10/NiTE-Linux-x64-2.2.tar.bz2
+SOURCE_DIR = build/NiTE-Linux-x64-2.2
+UNPACK_CMD = tar xjf
+MD5SUM_FILE = NiTE-Linux-x64-2.2.tar.bz2.md5sum
+
+include $(shell rospack find mk)/download_unpack_build.mk
+
+installed: $(SOURCE_DIR)/unpacked
+	# copy to common
+	mkdir -p common/lib
+	mkdir -p common/include/libnite2
+	
+	cp -r $(SOURCE_DIR)/Include/* common/include/libnite2/
+	cp -r $(SOURCE_DIR)/Redist/* common/lib
+	
+clean:
+	rm -rf common $(SOURCE_DIR) $(TARBALL)
+wipe: clean
+	-rm -rf build

@@ -1,4 +1,4 @@
-# this string allows to change the path to the stored recognition models
+# this string allows to change the path to the Haar classifier model
 # string
 # data_directory: path_to_data -> please change this parameter in the launch file
 
@@ -10,23 +10,8 @@ enable_face_recognition: true
 # string[] e.g. ['albert', 'bernhard', 'caesar']
 #identification_labels_to_recognize: ['albert', 'bernhard', 'caesar']
 
-# desired width and height of the eigenfaces (=eigenvectors)
-# int
-eigenface_size: 100
 
-# number of eigenvectors per person to identify -> controls the total number of eigenvectors
-# int
-eigenvectors_per_person: 5
-
-# threshold to facespace, detections with a higher score are not considered as being faces
-# double
-threshold_facespace: 22000
-
-# threshold to detect unknown faces, detections with a higher score receive the unknown label and not a name
-# double
-threshold_unknown: 4000
-
-# metric for nearest neighbor search in face space: 0 = Euklidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
+# metric for nearest neighbor search in face space: 0 = Euclidean, 1 = Mahalanobis, 2 = Mahalanobis Cosine
 # int
 metric: 0
 
@@ -34,6 +19,41 @@ metric: 0
 # bool
 debug: false
 
+#specifies subspace algorithm: 0 = Fisherfaces, 1 = Eigenfaces, 2 = LDA2D, 3 = PCA2D (attention: choices 0 and 1 work with a single person in the training data, options 2 and 3 will cause a crash of the program if you do not train at least 2 different people)
+# int
+recognition_method: 2
+
+
+# is unknown threshold supposed to be utilized: true = use unknown threshold, false = do not use threshold
+# bool
+use_unknown_thresh: true
+
+# use depth
+use_depth: false
+
 # display timing information
 # bool
 display_timing: false
+
+# parameters for face image normalization
+
+# dimension of normalized image
+# int
+norm_size: 100
+
+# toggle illumination compensation
+# bool
+norm_illumination: true
+
+# toggle 3D face alignement
+# bool
+norm_align: false
+
+# toggle processing for extreme conditions
+# bool
+norm_extreme_illumination: false
+
+# set dimension of features ( default )
+# bool
+feature_dimension: 15
+

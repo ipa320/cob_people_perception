@@ -1,68 +1,66 @@
 /*!
-*****************************************************************
-* \file
-*
-* \note
-* Copyright (c) 2012 \n
-* Fraunhofer Institute for Manufacturing Engineering
-* and Automation (IPA) \n\n
-*
-*****************************************************************
-*
-* \note
-* Project name: Care-O-bot
-* \note
-* ROS stack name: cob_people_perception
-* \note
-* ROS package name: cob_people_detection
-*
-* \author
-* Author: Richard Bormann
-* \author
-* Supervised by:
-*
-* \date Date of creation: 07.08.2012
-*
-* \brief
-* functions for detecting a face within a color image (patch)
-* current approach: haar detector on color image
-*
-*****************************************************************
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*
-* - Redistributions of source code must retain the above copyright
-* notice, this list of conditions and the following disclaimer. \n
-* - Redistributions in binary form must reproduce the above copyright
-* notice, this list of conditions and the following disclaimer in the
-* documentation and/or other materials provided with the distribution. \n
-* - Neither the name of the Fraunhofer Institute for Manufacturing
-* Engineering and Automation (IPA) nor the names of its
-* contributors may be used to endorse or promote products derived from
-* this software without specific prior written permission. \n
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU Lesser General Public License LGPL as
-* published by the Free Software Foundation, either version 3 of the
-* License, or (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU Lesser General Public License LGPL for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License LGPL along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
-*
-****************************************************************/
-
-
+ *****************************************************************
+ * \file
+ *
+ * \note
+ * Copyright (c) 2012 \n
+ * Fraunhofer Institute for Manufacturing Engineering
+ * and Automation (IPA) \n\n
+ *
+ *****************************************************************
+ *
+ * \note
+ * Project name: Care-O-bot
+ * \note
+ * ROS stack name: cob_people_perception
+ * \note
+ * ROS package name: cob_people_detection
+ *
+ * \author
+ * Author: Richard Bormann
+ * \author
+ * Supervised by:
+ *
+ * \date Date of creation: 07.08.2012
+ *
+ * \brief
+ * functions for detecting a face within a color image (patch)
+ * current approach: haar detector on color image
+ *
+ *****************************************************************
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer. \n
+ * - Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution. \n
+ * - Neither the name of the Fraunhofer Institute for Manufacturing
+ * Engineering and Automation (IPA) nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission. \n
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License LGPL as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License LGPL for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License LGPL along with this program.
+ * If not, see <http://www.gnu.org/licenses/>.
+ *
+ ****************************************************************/
 
 #ifdef __LINUX__
-	#include "cob_people_detection/face_detector_node.h"
-	#include "cob_vision_utils/GlobalDefines.h"
+#include "cob_people_detection/face_detector_node.h"
+#include "cob_vision_utils/GlobalDefines.h"
 #else
 #endif
 
@@ -77,24 +75,23 @@
 // timer
 #include <cob_people_detection/timer.h>
 
-
 using namespace ipa_PeopleDetector;
 
-FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh)
-: node_handle_(nh)
+FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh) :
+	node_handle_(nh)
 {
 	data_directory_ = ros::package::getPath("cob_people_detection") + "/common/files/";
 
 	// Parameters
-	double faces_increase_search_scale;		// The factor by which the search window is scaled between the subsequent scans
-	int faces_drop_groups;					// Minimum number (minus 1) of neighbor rectangles that makes up an object.
-	int faces_min_search_scale_x;			// Minimum search scale x
-	int faces_min_search_scale_y;			// Minimum search scale y
-	bool reason_about_3dface_size;			// if true, the 3d face size is determined and only faces with reasonable size are accepted
-	double face_size_max_m;					// the maximum feasible face diameter [m] if reason_about_3dface_size is enabled
-	double face_size_min_m;					// the minimum feasible face diameter [m] if reason_about_3dface_size is enabled
-	double max_face_z_m;					// maximum distance [m] of detected faces to the sensor
-	bool debug;								// enables some debug outputs
+	double faces_increase_search_scale; // The factor by which the search window is scaled between the subsequent scans
+	int faces_drop_groups; // Minimum number (minus 1) of neighbor rectangles that makes up an object.
+	int faces_min_search_scale_x; // Minimum search scale x
+	int faces_min_search_scale_y; // Minimum search scale y
+	bool reason_about_3dface_size; // if true, the 3d face size is determined and only faces with reasonable size are accepted
+	double face_size_max_m; // the maximum feasible face diameter [m] if reason_about_3dface_size is enabled
+	double face_size_min_m; // the minimum feasible face diameter [m] if reason_about_3dface_size is enabled
+	double max_face_z_m; // maximum distance [m] of detected faces to the sensor
+	bool debug; // enables some debug outputs
 	std::cout << "\n--------------------------\nFace Detector Parameters:\n--------------------------\n";
 	node_handle_.param("data_directory", data_directory_, data_directory_);
 	std::cout << "data_directory = " << data_directory_ << "\n";
@@ -120,11 +117,11 @@ FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh)
 	std::cout << "display_timing = " << display_timing_ << "\n";
 
 	// initialize face detector
-	face_detector_.init(data_directory_, faces_increase_search_scale, faces_drop_groups, faces_min_search_scale_x, faces_min_search_scale_y,
-			reason_about_3dface_size, face_size_max_m, face_size_min_m, max_face_z_m, debug);
+	face_detector_.init(data_directory_, faces_increase_search_scale, faces_drop_groups, faces_min_search_scale_x, faces_min_search_scale_y, reason_about_3dface_size,
+			face_size_max_m, face_size_min_m, max_face_z_m, debug);
 
 	// advertise topics
-	face_position_publisher_ = node_handle_.advertise<cob_people_detection_msgs::ColorDepthImageArray>("face_positions", 1);
+	face_position_publisher_ = node_handle_.advertise<cob_perception_msgs::ColorDepthImageArray>("face_positions", 1);
 
 	// subscribe to head detection topic
 	head_position_subscriber_ = nh.subscribe("head_positions", 1, &FaceDetectorNode::head_positions_callback, this);
@@ -137,12 +134,14 @@ FaceDetectorNode::~FaceDetectorNode(void)
 }
 
 // Prevent deleting memory twice, when using smart pointer
-void voidDeleter(const sensor_msgs::Image* const) {}
-
-void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::ColorDepthImageArray::ConstPtr& head_positions)
+void voidDeleter(const sensor_msgs::Image* const )
 {
-//	Timer tim;
-//	tim.start();
+}
+
+void FaceDetectorNode::head_positions_callback(const cob_perception_msgs::ColorDepthImageArray::ConstPtr& head_positions)
+{
+	//	Timer tim;
+	//	tim.start();
 
 	// receive head positions and detect faces in the head region, finally publish detected faces
 
@@ -150,60 +149,67 @@ void FaceDetectorNode::head_positions_callback(const cob_people_detection_msgs::
 	std::vector<cv::Mat> heads_color_images, heads_depth_images;
 	heads_color_images.resize(head_positions->head_detections.size());
 	heads_depth_images.resize(head_positions->head_detections.size());
-	cv_bridge::CvImageConstPtr cv_ptr;
-	for (unsigned int i=0; i<head_positions->head_detections.size(); i++)
+	cv_bridge::CvImageConstPtr cv_cptr;
+	cv_bridge::CvImagePtr cv_ptr(new cv_bridge::CvImage);
+	for (unsigned int i = 0; i < head_positions->head_detections.size(); i++)
 	{
 		// color image
 		sensor_msgs::ImageConstPtr msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(head_positions->head_detections[i].color_image), voidDeleter);
 		try
 		{
-			cv_ptr = cv_bridge::toCvCopy(msgPtr, sensor_msgs::image_encodings::BGR8);
-		}
-		catch (cv_bridge::Exception& e)
+			cv_cptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::RGB8);
+		} catch (cv_bridge::Exception& e)
 		{
 			ROS_ERROR("cv_bridge exception: %s", e.what());
 			return;
 		}
-		heads_color_images[i] = cv_ptr->image;
+		heads_color_images[i] = cv_cptr->image.clone();
 
 		// depth image
 		msgPtr = boost::shared_ptr<const sensor_msgs::Image>(&(head_positions->head_detections[i].depth_image), voidDeleter);
 		try
 		{
-			cv_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::TYPE_32FC3);
-		}
-		catch (cv_bridge::Exception& e)
+			cv_cptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::TYPE_32FC3);
+		} catch (cv_bridge::Exception& e)
 		{
 			ROS_ERROR("cv_bridge exception: %s", e.what());
 			return;
 		}
-		heads_depth_images[i] = cv_ptr->image;
+		heads_depth_images[i] = cv_cptr->image;
 	}
-	std::vector<std::vector<cv::Rect> > face_coordinates;
+	std::vector < std::vector<cv::Rect> > face_coordinates;
 	face_detector_.detectColorFaces(heads_color_images, heads_depth_images, face_coordinates);
+	// face_normalizer_.normalizeFaces(heads_color_images, heads_depth_images, face_coordinates);
 
-	cob_people_detection_msgs::ColorDepthImageArray image_array;
+	// prepare the message for publication
+	cob_perception_msgs::ColorDepthImageArray image_array;
 	image_array = *head_positions;
-	for (unsigned int i=0; i<face_coordinates.size(); i++)
+	for (unsigned int i = 0; i < face_coordinates.size(); i++)
 	{
-		for (unsigned int j=0; j<face_coordinates[i].size(); j++)
+		for (unsigned int j = 0; j < face_coordinates[i].size(); j++)
 		{
-			cob_people_detection_msgs::Rect rect;
+			// face rectangle
+			cob_perception_msgs::Rect rect;
 			rect.x = face_coordinates[i][j].x;
 			rect.y = face_coordinates[i][j].y;
 			rect.width = face_coordinates[i][j].width;
 			rect.height = face_coordinates[i][j].height;
 			image_array.head_detections[i].face_detections.push_back(rect);
 		}
+		// processed color image
+		cv_ptr->encoding = sensor_msgs::image_encodings::RGB8;
+		cv_ptr->image = heads_color_images[i];
+		cv_ptr->toImageMsg(image_array.head_detections[i].color_image);
+		image_array.head_detections[i].color_image.header = head_positions->head_detections[i].color_image.header;
 	}
 
 	face_position_publisher_.publish(image_array);
 
 	if (display_timing_ == true)
-		ROS_INFO("%d FaceDetection: Time stamp of pointcloud message: %f. Delay: %f.", head_positions->header.seq, head_positions->header.stamp.toSec(), ros::Time::now().toSec()-head_positions->header.stamp.toSec());
-//	ROS_INFO("Face detection took %f ms.", tim.getElapsedTimeInMilliSec());
+		ROS_INFO("%d FaceDetection: Time stamp of pointcloud message: %f. Delay: %f.", head_positions->header.seq, head_positions->header.stamp.toSec(),
+				ros::Time::now().toSec() - head_positions->header.stamp.toSec());
+	//	ROS_INFO("Face detection took %f ms.", tim.getElapsedTimeInMilliSec());
 }
-
 
 //#######################
 //#### main programm ####

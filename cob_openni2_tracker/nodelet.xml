@@ -1,0 +1,9 @@
+<library path="lib/libbody_tracker_nodelet">
+
+  <class name="cob_openni2_tracker/body_tracker_nodelet" type="BodyTrackerNodelet" base_class_type="nodelet::Nodelet">
+  <description>
+ 	 This is my nodelet.
+  </description>
+  </class>
+  
+</library>

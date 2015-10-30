@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- face detection node (detects faces in color image and publishes their positions) -->
+  <rosparam command="load" ns="/cob_people_detection/face_recognizer" file="$(find cob_people_detection)/ros/launch/scene_publisher_params.yaml"/>
+  <node name="scene_publisher" pkg="cob_people_detection" ns="/cob_people_detection/scene_publisher" type="scene_publisher" output="screen">
+  </node>
+
+</launch>
