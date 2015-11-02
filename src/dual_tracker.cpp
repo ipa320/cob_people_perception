@@ -790,10 +790,16 @@ public:
       std::cout << std::endl;
     }
 
+    // Currently a vector of solutions is allowed but only the first is used
+    // however using murty is possible to determine multiple associations and
+    // use multiple of these for procedures such as JPDA
     std::vector<Solution> solutionsMAP;
 
-    //hungarian(here 1-step murty == hungarian is used)
-    solutionsMAP = murty(costMatrixMAP,1);
+    // Obtain multiple solutions using murty algorithm
+    //solutionsMAP = murty(costMatrixMAP,1);
+
+    solutionsMAP.push_back(solvehungarian(costMatrixMAP));
+
     ROS_ASSERT(solutionsMAP.size() == 1);
 
     /*
