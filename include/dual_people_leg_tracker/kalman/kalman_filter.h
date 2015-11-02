@@ -1,10 +1,3 @@
-/*
- * KalmanFilter.h
- *
- *  Created on: Jun 27, 2015
- *      Author: alex
- */
-
 #ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_KALMANFILTER_H_
 #define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_KALMANFILTER_H_
 

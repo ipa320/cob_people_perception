@@ -32,7 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen */
+/* Based on the work of Wim Meeussen */
 
 
 #ifndef MULTIVARIATE_GAUSSIAN_POS_VEL_H

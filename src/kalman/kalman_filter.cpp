@@ -1,13 +1,8 @@
-/*
- * KalmanFilter.cpp
- *
- *  Created on: Jun 27, 2015
- *      Author: alex
- */
-
-#include <dual_people_leg_tracker/kalman/KalmanFilter.h>
+// System includes
 #include <iostream>
 
+// Own includes
+#include <dual_people_leg_tracker/kalman/kalman_filter.h>
 
 using namespace filter;
 

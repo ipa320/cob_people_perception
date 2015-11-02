@@ -32,7 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen */
+/* Based on the work of Wim Meeussen */
 
 
 #ifndef GAUSSIAN_POS_VEL_MOD_H

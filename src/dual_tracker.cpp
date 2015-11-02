@@ -34,26 +34,28 @@
 #undef NDEBUG
 #include <ros/ros.h>
 #include <limits>
+#include <algorithm>
+
+// Leg Detector includes
+#include <leg_detector/laser_processor.h>
+#include <leg_detector/calc_leg_features.h>
 
 // Own includes
-//#include <leg_detector/constants.h>
-#include <dual_people_leg_tracker/dual_tracker.h>
 #include <dual_people_leg_tracker/DualTrackerConfig.h>
+#include <dual_people_leg_tracker/dual_tracker.h>
 #include <dual_people_leg_tracker/detection/detection.h>
-#include <dual_people_leg_tracker/jpda/association_pair.h>
-#include <dual_people_leg_tracker/jpda/unique_association_builder.h>
 #include <dual_people_leg_tracker/math/math_functions.h>
 #include <dual_people_leg_tracker/jpda/murty.h>
 #include <dual_people_leg_tracker/jpda/jpda.h>
 #include <dual_people_leg_tracker/config_struct.h>
-#include <leg_detector/laser_processor.h>
-#include <leg_detector/calc_leg_features.h>
-#include <dual_people_leg_tracker/visualization/visualization_conversions.h>
-#include <benchmarking/timer.h>
+#include <dual_people_leg_tracker/benchmarking/timer.h>
 #include <dual_people_leg_tracker/leg_feature.h>
 #include <dual_people_leg_tracker/people_tracker.h>
-#include <leg_detector/color_definitions.h>
+#include <dual_people_leg_tracker/models/occlusion_model.h>
+
 #include <dual_people_leg_tracker/visualization/color_functions.h>
+#include <dual_people_leg_tracker/visualization/color_definitions.h>
+#include <dual_people_leg_tracker/visualization/visualization_conversions.h>
 
 // OpenCV includes
 #include <opencv/cxcore.h>
@@ -73,16 +75,13 @@
 #include <tf/message_filter.h>
 #include <message_filters/subscriber.h>
 
-// People tracking
+// People tracking filter
 #include <people_tracking_filter/tracker_kalman.h>
 #include <people_tracking_filter/state_pos_vel.h>
 #include <people_tracking_filter/rgb.h>
-#include <dual_people_leg_tracker/models/occlusion_model.h>
 
 // Configuration
 #include <dynamic_reconfigure/server.h>
-
-#include <algorithm>
 
 // Namespaces
 using namespace std;
@@ -2350,8 +2349,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         pointLeftLeg.z = 0;
 
         // Hip 0
-        pointHipLeft.x = (*peopleTrackerIt)->hipPosLeft_[0];
-        pointHipLeft.y = (*peopleTrackerIt)->hipPosLeft_[1];
+        pointHipLeft.x = (*peopleTrackerIt)->getHipPosLeft()[0];
+        pointHipLeft.y = (*peopleTrackerIt)->getHipPosLeft()[1];
         pointHipLeft.z = 0.0;
 
         // Center of the Person
@@ -2360,8 +2359,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         pointCenter.z = 0.0;
 
         // Hip 1
-        pointHipRight.x = (*peopleTrackerIt)->hipPosRight_[0];
-        pointHipRight.y = (*peopleTrackerIt)->hipPosRight_[1];
+        pointHipRight.x = (*peopleTrackerIt)->getHipPosRight()[0];
+        pointHipRight.y = (*peopleTrackerIt)->getHipPosRight()[1];
         pointHipRight.z = 0.0;
 
         // Leg 1
@@ -2420,12 +2419,12 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
           leg_stat_marker.scale.y = sphereSize;
           leg_stat_marker.scale.z = sphereSize;
 
-          leg_mov_marker.pose.position.x = (*peopleTrackerIt)->leg0Prediction_.pos_[0];
-          leg_mov_marker.pose.position.y = (*peopleTrackerIt)->leg0Prediction_.pos_[1];
+          leg_mov_marker.pose.position.x = (*peopleTrackerIt)->getLeg0Prediction().pos_[0];
+          leg_mov_marker.pose.position.y = (*peopleTrackerIt)->getLeg0Prediction().pos_[1];
           leg_mov_marker.pose.position.z = 0.0;
 
-          leg_stat_marker.pose.position.x = (*peopleTrackerIt)->leg1Prediction_.pos_[0];
-          leg_stat_marker.pose.position.y = (*peopleTrackerIt)->leg1Prediction_.pos_[1];
+          leg_stat_marker.pose.position.x = (*peopleTrackerIt)->getLeg1Prediction().pos_[0];
+          leg_stat_marker.pose.position.y = (*peopleTrackerIt)->getLeg1Prediction().pos_[1];
           leg_stat_marker.pose.position.z = 0.0;
 
           msgArray.markers.push_back(leg_mov_marker);
@@ -2500,7 +2499,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         state = "static";
       }
       char buf[100];
-      sprintf(buf, "#PT%d-%d-p%.2f(%s)", (*peopleTrackerIt)->id_[0], (*peopleTrackerIt)->id_[1], (*peopleTrackerIt)->getTotalProbability(), state.c_str());
+      sprintf(buf, "#PT%d-%d-p%.2f(%s)", (*peopleTrackerIt)->getId()[0], (*peopleTrackerIt)->getId()[1], (*peopleTrackerIt)->getTotalProbability(), state.c_str());
       label.text = buf;
 
       labelArray.markers.push_back(label);
@@ -2713,15 +2712,11 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator prevPointIt;
         std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator nextPointIt;
 
-        prevPointIt = (*peopleIt)->position_history_.begin();
-        nextPointIt = (*peopleIt)->position_history_.begin();
+        prevPointIt = (*peopleIt)->getPositionHistory().begin();
+        nextPointIt = (*peopleIt)->getPositionHistory().begin();
         nextPointIt++;
 
-        //std::cout << "Creating line!" << std::endl;
-
-
-
-        while(nextPointIt != (*peopleIt)->position_history_.end()){
+        while(nextPointIt != (*peopleIt)->getPositionHistory().end()){
           geometry_msgs::Point point0, point1;
           point0.x = (*prevPointIt)->getX();
           point0.y = (*prevPointIt)->getY();

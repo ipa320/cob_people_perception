@@ -360,11 +360,6 @@ private:
    */
   PeopleTrackerPtr getMostProbableAssociatedPeopleTracker() const;
 
-
-
-
-
-
 };
 
 

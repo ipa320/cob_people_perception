@@ -133,8 +133,6 @@ public:
   }
 
 
-
-
 private:
   // pdf / model / filter
   BFL::MCPdfPosVel                                          prior_; // The particles pdf function
@@ -152,9 +150,6 @@ private:
   double filter_time_; /**< The last filter time */
   double quality_;
   unsigned int num_particles_;
-
-
-
 
 }; // class
 

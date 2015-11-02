@@ -1,10 +1,3 @@
-/*
- * color_gradient.hpp
- *
- *  Created on: Mar 16, 2015
- *      Author: frm-ag
- */
-
 #ifndef COLOR_GRADIENT_HPP_
 #define COLOR_GRADIENT_HPP_
 

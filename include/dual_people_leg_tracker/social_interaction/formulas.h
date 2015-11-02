@@ -272,7 +272,7 @@ Eigen::Vector2d E_i_gradient(std::vector<Eigen::Vector2d> positionsOthers,
 
   energyGradient = energyGradient_I_i + energyGradient_S_i + energyGradient_D_i;
 
-  double energyTotalNorm =  energyGradient_I_i.norm() + energyGradient_S_i.norm() + energyGradient_D_i.norm();
+  //double energyTotalNorm =  energyGradient_I_i.norm() + energyGradient_S_i.norm() + energyGradient_D_i.norm();
 
   //std::cout << "EnergyDist: OtherObjects: " << energyGradient_I_i.norm()/energyTotalNorm << "  keepingSpeed: " << energyGradient_S_i.norm()/energyTotalNorm << "%  keepingGoal" << energyGradient_D_i.norm()/energyTotalNorm << "%" << std::endl;
 

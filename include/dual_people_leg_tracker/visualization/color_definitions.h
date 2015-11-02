@@ -1,10 +1,3 @@
-/*
- * color_definitions.h
- *
- *  Created on: Feb 27, 2015
- *      Author: frm-ag
- */
-
 #ifndef PEOPLE_LEG_DETECTOR_INCLUDE_LEG_DETECTOR_COLOR_DEFINITIONS_H_
 #define PEOPLE_LEG_DETECTOR_INCLUDE_LEG_DETECTOR_COLOR_DEFINITIONS_H_
 

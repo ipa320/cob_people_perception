@@ -1,8 +1,3 @@
-/*
- * people_tracker.h
- *
- */
-
 #ifndef PEOPLE_LEG_DETECTOR_INCLUDE_LEG_DETECTOR_PEOPLE_TRACKER_H_
 #define PEOPLE_LEG_DETECTOR_INCLUDE_LEG_DETECTOR_PEOPLE_TRACKER_H_
 
@@ -19,8 +14,8 @@
 
 // Own includes
 #include <dual_people_leg_tracker/leg_feature.h>
-#include <dual_people_leg_tracker/kalman/KalmanFilter.h>
 #include <dual_people_leg_tracker/config_struct.h>
+#include <dual_people_leg_tracker/kalman/kalman_filter.h>
 
 // Debug Flags
 #define DEBUG_PEOPLE_TRACKER 0
@@ -38,31 +33,9 @@ class PeopleTrackerList; //Forward
  * High level People Tracker consisting of two low level leg tracks
  */
 class PeopleTracker{
-  public:
-
-    BFL::StatePosVel pos_vel_estimation_; /**< The currently estimated pos_vel_ of this people */
-
-    tf::Vector3 hip_vec_; /**< Vector orthogonal to the velocity vector, representing the hip direction pos_vel_estimation.vel_.dot(hip_vec_) = 0 should hold every time*/
-
-    tf::Vector3 hipPos0_, hipPos1_; /**< Vector of the endpoints of vector */
-    tf::Vector3 hipPosLeft_, hipPosRight_; /**< Vector of the endpoints of vector */
-
-    boost::array<int, 2> id_;/**< Numerical id of this people tracker */
-
-    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_; /**< The position history of the people tracker */
-
-    double hipWidth_;     //TODO Annotate
-    double stepWidth_;    //TODO Annotate
-    double stepWidthMax_; //TODO Annotate
-
-    BFL::StatePosVel leg0Prediction_; //TODO Used?
-    BFL::StatePosVel leg1Prediction_; //TODO Used?
-
-    ros::Time propagation_time_; /**< Time the propagation is towards */
-
-    config_struct current_config_; /**< The current set config file */
 
   private:
+    ros::Time propagation_time_; /**< Time the propagation is towards */
 
     tf::TransformBroadcaster br; /**< A transform broadcaster */
 
@@ -93,6 +66,27 @@ class PeopleTracker{
     tf::Vector3 currentGoal_; /**< The current goal position */
 
     bool hasGoal_; /**< True if a goal is set */
+
+    config_struct current_config_; /**< The current set config file */
+
+    BFL::StatePosVel leg0Prediction_;
+    BFL::StatePosVel leg1Prediction_;
+
+    double hipWidth_;
+    double stepWidth_;
+    double stepWidthMax_;
+
+    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_; /**< The position history of the people tracker */
+
+    tf::Vector3 hipPos0_, hipPos1_; /**< Vector of the endpoints of vector */
+    tf::Vector3 hipPosLeft_, hipPosRight_; /**< Vector of the endpoints of vector */
+
+    boost::array<int, 2> id_;/**< Numerical id of this people tracker */
+
+    BFL::StatePosVel pos_vel_estimation_; /**< The currently estimated pos_vel_ of this people */
+
+    tf::Vector3 hip_vec_; /**< Vector orthogonal to the velocity vector, representing the hip direction pos_vel_estimation.vel_.dot(hip_vec_) = 0 should hold every time*/
+
 
   public:
     PeopleTracker(LegFeaturePtr, LegFeaturePtr, ros::Time);/**< Construct a People tracker based on this two legs */
@@ -230,12 +224,36 @@ class PeopleTracker{
       return this->backLeg_;
     }
 
+    BFL::StatePosVel getLeg0Prediction() const{
+      return this->leg0Prediction_;
+    }
+
+    BFL::StatePosVel getLeg1Prediction() const{
+      return this->leg1Prediction_;
+    }
+
     std::string getName() const{
       std::stringstream name;
 
       name << "ppl" << this->id_[0] << "_" << this->id_[1];
 
       return name.str();
+    }
+
+    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >& getPositionHistory(){
+      return this->position_history_;
+    }
+
+    tf::Vector3 getHipPosRight() const{
+      return this->hipPosRight_;
+    }
+
+    tf::Vector3 getHipPosLeft() const{
+      return this->hipPosLeft_;
+    }
+
+    boost::array<int, 2> getId() const{
+      return this->id_;
     }
 
     /**
@@ -292,6 +310,8 @@ class PeopleTracker{
 
       return this->nextDesiredPosition.size();
     }
+
+
 
     /**
      * Overload the operator the provide easy cout functionality
