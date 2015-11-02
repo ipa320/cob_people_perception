@@ -253,7 +253,7 @@ double AdvancedTrackerParticle::getMeasProbability(const tf::Vector3&  meas, con
   return filter_->getMeasurementProbability(&meas_model_, meas);
 }
 
-double AdvancedTrackerParticle::getOcclusionProbability(OcclusionModelPtr occlusionModel){
+double AdvancedTrackerParticle::getOcclusionProbability(OcclusionModelPtr occlusionModel) {
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
   return filter_->getOcclusionProbability(occlusionModel);

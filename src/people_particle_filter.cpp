@@ -206,7 +206,7 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
       if(assignmentProbabilities[j] > 0.0){
 
 
-          double measProb = measmodel->ProbabilityGet(z[j-1]->point_,x_new);
+          double measProb = measmodel->ProbabilityGet(z[j-1]->getLocation(),x_new);
           //std::cout << "assignmentProbability=" << assignmentProbabilities[j] << "  meas Prob=" << measProb;
           weightSum += assignmentProbabilities[j] * measProb;
           //std::cout << " weightSum=" << weightSum << std::endl;

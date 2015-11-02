@@ -1,10 +1,3 @@
-/*
- * timer.h
- *
- *  Created on: Mar 19, 2015
- *      Author: frm-ag
- */
-
 #ifndef PEOPLE_LEG_DETECTOR_INCLUDE_BENCHMARKING_TIMER_H_
 #define PEOPLE_LEG_DETECTOR_INCLUDE_BENCHMARKING_TIMER_H_
 
@@ -62,6 +55,7 @@ class Timer{
 
   private:
     boost::posix_time::ptime time_start; /**< Start Time */
+
     boost::posix_time::ptime time_end; /**< End Time */
 
     bool running; /**< Running Flag */

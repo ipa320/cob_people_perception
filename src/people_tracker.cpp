@@ -488,8 +488,8 @@ void PeopleTracker::updateProbabilities(ros::Time time){
   leg_time_probability_ = sigmoid(min_leg_time,2,leg_time_threshold);
 
   // Calculate the association to the legs
-  std::vector<PeopleTrackerPtr> assoLeg0 = getLeg0()->getPeopleTracker();
-  std::vector<PeopleTrackerPtr> assoLeg1 = getLeg1()->getPeopleTracker();
+  std::vector<PeopleTrackerPtr> assoLeg0 = getLeg0()->getAssociatedPeopleTracker();
+  std::vector<PeopleTrackerPtr> assoLeg1 = getLeg1()->getAssociatedPeopleTracker();
 
   //std::cout << "Investigating the legs of " << *this << std::endl;
 

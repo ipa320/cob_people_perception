@@ -149,6 +149,9 @@ public:
 
   int feature_id_;
 
+
+
+
   //bool use_seeds_;
 
   // RMSE, Error stuff
@@ -201,6 +204,15 @@ public:
   int min_points_per_group_;
 
   unsigned int cycle_; /**< Cycle counter to count the filter cycles */
+
+  double leg_feature_predict_pos_cov_;
+  double leg_feature_predict_vel_cov_;
+  double leg_feature_update_cov_;
+  double leg_feature_measurement_cov_;
+  double initial_leg_feature_predict_pos_cov_;
+  double initial_leg_feature_predict_vel_cov_;
+  double min_people_probability_for_hl_prediction_;
+  double static_threshold_distance_;
 
   benchmarking::Timer cycleTimer; /**< Timer to measure the cycle time */
   benchmarking::Timer freeTimer; /**< Timer to measure the time left for calculations */
@@ -389,7 +401,15 @@ public:
 
     filter_config.minUpdateProbability                = config.min_update_probability; // TODO make cfg editable
 
+    leg_feature_predict_pos_cov_ = 0.2; // TODO make configable
+    leg_feature_predict_vel_cov_ = 1.2; // TODO make configable
+    leg_feature_update_cov_ = 0.05; // TODO make configable
+    leg_feature_measurement_cov_ = 0.004; // TODO make configable
+    initial_leg_feature_predict_pos_cov_ = 0.2; // TODO make configable
+    initial_leg_feature_predict_vel_cov_ = 1.5; // TODO make configable
 
+    min_people_probability_for_hl_prediction_ = 0.6; // TODO make configable
+    static_threshold_distance_ = 0.4; // TODO make configable
 
 
     if (fixed_frame.compare(config.fixed_frame) != 0)
@@ -610,7 +630,7 @@ public:
         detectionIt != detections.end();
         detectionIt++)
     {
-      std::cout << "LM " << std::setw(2) << (*detectionIt)->id_ << std::setw(3) << " x:" << (*detectionIt)->point_[0] << " y:" << (*detectionIt)->point_[1] << " prob:" << (*detectionIt)->cluster_->getProbability() << std::endl;
+      std::cout << "LM " << std::setw(2) << (*detectionIt)->id_ << std::setw(3) << " x:" << (*detectionIt)->getLocation()[0] << " y:" << (*detectionIt)->getLocation()[1] << " prob:" << (*detectionIt)->cluster_->getProbability() << std::endl;
     }*/
 
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
@@ -641,7 +661,7 @@ public:
             detectionIt != detections.end();
             detectionIt++)
           {
-            Stamped<Point> loc = (*detectionIt)->point_;
+            Stamped<Point> loc = (*detectionIt)->getLocation();
             double dist = loc.distance((*pplIt)->getEstimate().pos_);
 
             if(dist < rangeThres){
@@ -695,7 +715,7 @@ public:
     	int col = 0;
     	for (vector<DetectionPtr>::iterator detectionIt = detections.begin(); detectionIt != detections.end(); detectionIt++)
     	{
-        Stamped<Point> loc = (*detectionIt)->point_;
+        Stamped<Point> loc = (*detectionIt)->getLocation();
 
         double prob = (*legIt)->getMeasurementProbability(loc);
 
@@ -720,7 +740,7 @@ public:
 
     for(size_t col_f = 0; col_f < nMeasurementsFake; col_f++){
         for(size_t row_f = 0; row_f < nLegsTracked; row_f++){
-        	 Stamped<Point> loc = fakeDetections[col_f]->point_;
+        	 Stamped<Point> loc = fakeDetections[col_f]->getLocation();
 
             double prob = propagated[row_f]->getMeasurementProbability(loc) * filter_config.fakeLegMeasurementProbabiltyFactor;
 
@@ -838,14 +858,14 @@ public:
             if(lm < nMeasurementsReal){
 
               ROS_ASSERT(lm < detections.size());
-              loc = detections[lm]->point_;
+              loc = detections[lm]->getLocation();
               //ROS_ASSERT(loc.frame_id_ == fixed_frame);
 
             // Fake updates
             }else{
 
               ROS_ASSERT(lm-nMeasurementsReal < fakeDetections.size());
-              loc = fakeDetections[lm-nMeasurementsReal]->point_;
+              loc = fakeDetections[lm-nMeasurementsReal]->getLocation();
             }
 
             //double minProbability = 0.003; // TODO implement variable
@@ -892,7 +912,19 @@ public:
 
         if(detections[lm]->getProbability() > new_track_min_probability_){
 
-          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[lm]->point_, tfl_));
+          LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(
+              new LegFeature(detections[lm]->getLocation(),
+                             tfl_,
+                             leg_feature_predict_pos_cov_,
+                             leg_feature_predict_vel_cov_,
+                             leg_feature_update_cov_,
+                             leg_feature_measurement_cov_,
+                             initial_leg_feature_predict_pos_cov_,
+                             initial_leg_feature_predict_vel_cov_,
+                             min_people_probability_for_hl_prediction_,
+                             static_threshold_distance_
+                             )
+          );
 
           // Set the occlusion model // Set the occlusion model (Currently no occlusion model is used!)
           // newLegFeature->setOcclusionModel(occlusionModel_);
@@ -933,7 +965,7 @@ public:
           double dist_min = 1000;
           for(size_t i = 0; i < nMeasurementsReal; i++){
             if(i != lm){
-              double dist = (detections[i]->point_ - detections[lm]->point_).length();
+              double dist = (detections[i]->getLocation() - detections[lm]->getLocation()).length();
               std::cout << "Dist LM[" << i << "] <-> LM[" << lm << "]" << dist << std::endl;
 
               if(dist < dist_min){
@@ -944,7 +976,18 @@ public:
 
           // Create only if the distance to between two detections is below a certain threshold
           if(dist_min > 0.2){
-            LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(new LegFeature(detections[lm]->point_, tfl_));
+            LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(
+                new LegFeature(detections[lm]->getLocation(),
+                               tfl_,
+                               leg_feature_predict_pos_cov_,
+                               leg_feature_predict_vel_cov_,
+                               leg_feature_update_cov_,
+                               leg_feature_measurement_cov_,
+                               initial_leg_feature_predict_pos_cov_,
+                               initial_leg_feature_predict_vel_cov_,
+                               min_people_probability_for_hl_prediction_,
+                               static_threshold_distance_)
+            );
 
 
           // Set the occlusion model (Currently no occlusion model is used!)
@@ -1249,9 +1292,9 @@ public:
         pos.header.frame_id = legFeatures.front()->getFixedFrame();
         pos.name = "leg_detector";
         pos.object_id = (*sf_iter)->getIdStr();
-        pos.pos.x = (*sf_iter)->position_[0];
-        pos.pos.y = (*sf_iter)->position_[1];
-        pos.pos.z = (*sf_iter)->position_[2];
+        pos.pos.x = (*sf_iter)->getPosition()[0];
+        pos.pos.y = (*sf_iter)->getPosition()[1];
+        pos.pos.z = (*sf_iter)->getPosition()[2];
         pos.reliability = reliability;
         pos.covariance[0] = pow(0.3 / reliability, 2.0);
         pos.covariance[1] = 0.0;
@@ -1843,7 +1886,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     {
         //std::cout << "Particles of LT[" << (*legFeatureIt)->int_id_ << "]" << std::endl;
 
-        MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+        MCPdf<StatePosVel>* mc = (*legFeatureIt)->postGet();
 
         vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
 
@@ -1922,7 +1965,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     {
         //std::cout << "Particles of LT[" << (*legFeatureIt)->int_id_ << "]" << std::endl;
 
-        MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+        MCPdf<StatePosVel>* mc = (*legFeatureIt)->postGet();
 
         vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
 
@@ -2007,7 +2050,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
         if(publish_static_people_trackers_ || (*legFeatureIt)->isDynamic()){
           // Create center Point
-          Stamped<tf::Point> center = (*legFeatureIt)->position_;
+          Stamped<tf::Point> center = (*legFeatureIt)->getPosition();
 
           geometry_msgs::Point32 point;
           point.x = center[0];
@@ -2039,13 +2082,14 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
   void publishLegHistory(vector<LegFeaturePtr>& legFeatures, ros::Time time){
 
+    // Iterate each leg
     for (vector<LegFeaturePtr>::iterator legFeatureIt = legFeatures.begin();
         legFeatureIt != legFeatures.end();
         legFeatureIt++)
     {
 
-      if((*legFeatureIt)->position_history_.size() > 1){
-
+      // Iteration has to be at least of size 2 for a line drawing
+      if((*legFeatureIt)->getHistory().size() > 1){
 
         // The geometry message
         visualization_msgs::Marker line_list;
@@ -2059,9 +2103,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         line_list.scale.x = 0.01;
 
         // Set the color
-
         int r,g,b;
-        //r = 255;
         getColor((*legFeatureIt)->getId(),r,g,b);
 
         line_list.color.r = r/255.0;
@@ -2069,18 +2111,16 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         line_list.color.b = b/255.0;
         line_list.color.a = 1.0;
 
-        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator prevPointIt;
-        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator nextPointIt;
+        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::const_iterator prevPointIt;
+        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::const_iterator nextPointIt;
 
-        prevPointIt = (*legFeatureIt)->position_history_.begin();
-        nextPointIt = (*legFeatureIt)->position_history_.begin();
+        // Use to pointers to pairwise iteration
+        prevPointIt = (*legFeatureIt)->getHistory().begin();
+        nextPointIt = (*legFeatureIt)->getHistory().begin();
         nextPointIt++;
 
-        //std::cout << "Creating line!" << std::endl;
+        while(nextPointIt != (*legFeatureIt)->getHistory().end()){
 
-        int counter = 0;
-
-        while(nextPointIt != (*legFeatureIt)->position_history_.end()){
           geometry_msgs::Point point0, point1;
           point0.x = (*prevPointIt)->getX();
           point0.y = (*prevPointIt)->getY();
@@ -2093,11 +2133,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
           line_list.points.push_back(point0);
           line_list.points.push_back(point1);
 
-          //std::cout << "[" << counter << "]" << point0.x << " " << point0.y << "---->" << point1.x << " " << point1.y << std::endl;
-
           prevPointIt++;
           nextPointIt++;
-          counter++;
         }
 
         // Publish the pointcloud
@@ -2134,8 +2171,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       markerMsgCylinder.color.b = 1.0;
       markerMsgCylinder.color.a = 0.8;
 
-      markerMsgCylinder.pose.position.x = (*legIt)->position_predicted_.getX();
-      markerMsgCylinder.pose.position.y = (*legIt)->position_predicted_.getY();
+      markerMsgCylinder.pose.position.x = (*legIt)->getPredictedPosition().getX();
+      markerMsgCylinder.pose.position.y = (*legIt)->getPredictedPosition().getY();
       markerMsgCylinder.pose.position.z = 0.0;
 
       markerArray.markers.push_back(markerMsgCylinder);
@@ -2156,14 +2193,14 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       markerMsgArrow.color.a = 0.8;
 
       geometry_msgs::Point point0, point1;
-      point0.x = (*legIt)->position_predicted_.getX();
-      point0.y = (*legIt)->position_predicted_.getY();
+      point0.x = (*legIt)->getPredictedPosition().getX();
+      point0.y = (*legIt)->getPredictedPosition().getY();
       point0.z = 0.0;
 
       markerMsgArrow.points.push_back(point0);
 
-      point1.x = (*legIt)->position_.getX();
-      point1.y = (*legIt)->position_.getY();
+      point1.x = (*legIt)->getPosition().getX();
+      point1.y = (*legIt)->getPosition().getY();
       point1.z = 0.0;
 
       markerMsgArrow.points.push_back(point1);
@@ -2198,15 +2235,15 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         legFeatureIt++)
     {
 
-      if(abs((time-(*legFeatureIt)->meas_loc_last_update_.stamp_).toSec()) < 0.01){
+      if(abs((time-(*legFeatureIt)->getLocationOfLastMeasurementUpdate().stamp_).toSec()) < 0.01){
         geometry_msgs::Point p0;
-        p0.x = (*legFeatureIt)->position_[0];
-        p0.y = (*legFeatureIt)->position_[1];
+        p0.x = (*legFeatureIt)->getPosition()[0];
+        p0.y = (*legFeatureIt)->getPosition()[1];
         p0.z = 0;
 
         geometry_msgs::Point p1;
-        p1.x = (*legFeatureIt)->meas_loc_last_update_[0];
-        p1.y = (*legFeatureIt)->meas_loc_last_update_[1];
+        p1.x = (*legFeatureIt)->getLocationOfLastMeasurementUpdate()[0];
+        p1.y = (*legFeatureIt)->getLocationOfLastMeasurementUpdate()[1];
         p1.z = 0;
 
         markerMsg.points.push_back(p0);
@@ -2308,8 +2345,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         geometry_msgs::Point pointLeftLeg, pointLegRight, pointHipLeft, pointHipRight, pointCenter;
 
         // Leg 0
-        pointLeftLeg.x = (*peopleTrackerIt)->getLeftLeg()->position_[0];
-        pointLeftLeg.y = (*peopleTrackerIt)->getLeftLeg()->position_[1];
+        pointLeftLeg.x = (*peopleTrackerIt)->getLeftLeg()->getPosition()[0];
+        pointLeftLeg.y = (*peopleTrackerIt)->getLeftLeg()->getPosition()[1];
         pointLeftLeg.z = 0;
 
         // Hip 0
@@ -2328,8 +2365,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         pointHipRight.z = 0.0;
 
         // Leg 1
-        pointLegRight.x = (*peopleTrackerIt)->getRightLeg()->position_[0];
-        pointLegRight.y = (*peopleTrackerIt)->getRightLeg()->position_[1];
+        pointLegRight.x = (*peopleTrackerIt)->getRightLeg()->getPosition()[0];
+        pointLegRight.y = (*peopleTrackerIt)->getRightLeg()->getPosition()[1];
         pointLegRight.z = 0;
 
         if((*peopleTrackerIt)->getEstimate().vel_.length() > 0.2){
@@ -2598,8 +2635,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         sphere.header.stamp = time;
         sphere.id = counter;
         sphere.ns = "FakeMeasurements";
-        sphere.pose.position.x = (*detectionIt)->point_[0];
-        sphere.pose.position.y = (*detectionIt)->point_[1];
+        sphere.pose.position.x = (*detectionIt)->getLocation()[0];
+        sphere.pose.position.y = (*detectionIt)->getLocation()[1];
         sphere.pose.position.z = 0;
         sphere.color.r = 0.8;
         sphere.color.g = 0;
@@ -2735,7 +2772,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         legFeatureIt != legFeatures.end();
         legFeatureIt++)
     {
-        MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+        MCPdf<StatePosVel>* mc = (*legFeatureIt)->postGet();
 
         vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
 
@@ -2823,13 +2860,13 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
           markerMsg.color.a = 1.0;
 
           geometry_msgs::Point p0;
-          p0.x = leg->position_predicted_.getX();
-          p0.y = leg->position_predicted_.getY();
+          p0.x = leg->getPredictedPosition().getX();
+          p0.y = leg->getPredictedPosition().getY();
           p0.z = 0;
 
           geometry_msgs::Point p1;
-          p1.x = detection->point_[0];
-          p1.y = detection->point_[1];
+          p1.x = detection->getLocation()[0];
+          p1.y = detection->getLocation()[1];
           p1.z = 0;
 
           markerMsg.points.push_back(p0);
@@ -2868,8 +2905,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       label.ns = "meas_label";
       label.id = counter;
       label.type = label.TEXT_VIEW_FACING;
-      label.pose.position.x = (*detectionsIt)->point_[0];
-      label.pose.position.y = (*detectionsIt)->point_[1];
+      label.pose.position.x = (*detectionsIt)->getLocation()[0];
+      label.pose.position.y = (*detectionsIt)->getLocation()[1];
       label.pose.position.z = 0.3;
       label.scale.z = .1;
       label.color.b = 1;
@@ -2878,7 +2915,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
       // Add text
       char buf[100];
-      sprintf(buf, "#%i-%g", counter, (*detectionsIt)->cluster_->probability_);
+      sprintf(buf, "#%i-%g", counter, (*detectionsIt)->getProbability());
       label.text = buf;
 
       labelArray.markers.push_back(label);
@@ -2902,7 +2939,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
         legFeatureIt != legFeatures.end();
         legFeatureIt++)
     {
-        MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+        MCPdf<StatePosVel>* mc = (*legFeatureIt)->postGet();
 
         vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
 
@@ -2969,10 +3006,9 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
          legFeatureIt != legFeatures.end();
          legFeatureIt++)
      {
-         MCPdf<StatePosVel>* mc = (*legFeatureIt)->filter_.getFilter()->PostGet();
+         MCPdf<StatePosVel>* mc = (*legFeatureIt)->postGet();
 
          vector<WeightedSample<StatePosVel> > samples = mc->ListOfSamplesGet();
-
 
          WeightedSample<StatePosVel> maxSample = *std::max_element(samples.begin(), samples.end(), sampleWeightCompare);
          double maxSampleWeight = maxSample.WeightGet();

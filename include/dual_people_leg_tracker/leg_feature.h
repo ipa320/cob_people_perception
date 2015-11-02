@@ -35,12 +35,15 @@ typedef boost::shared_ptr<LegFeature> LegFeaturePtr;
 
 typedef std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > LegHistory;
 
+
 /**
  *  \brief The low level tracker to track each leg
  */
 class LegFeature
 {
 private:
+
+  static int nextid;           /**< Id counter */
 
   int int_id_;     /**< Id of the instance */
 
@@ -50,8 +53,6 @@ private:
 
   ros::Time time_meas_; /**< The time of the last measurement */
 
-  BFL::StatePosVel pos_vel_; /**< The currently estimated pos_vel_ */
-
   double reliability_; /**< Reliability */
 
   bool is_valid_; /**< True if valid (otherwise marked for deletion) */
@@ -60,17 +61,9 @@ private:
 
   std::string fixed_frame_;    /**< The fixed frame to use */
 
-  static int nextid;           /**< Id counter */
-
   std::vector<PeopleTrackerPtr> peopleTrackerList_; /**< List of associated people trackers */
 
   BFL::StatePosVel sys_sigma_; /**< System variance */
-
-public:
-
-  estimation::AdvancedTrackerParticle filter_; /**< The particle filter */
-
-  tf::TransformListener& tfl_; /**< Associated transform listener */
 
   tf::Stamped<tf::Point> meas_loc_last_update_; /**< The measurement used in the last update */
 
@@ -82,19 +75,25 @@ public:
 
   double leg_feature_measurement_cov_; /**< The leg measurement covariance */
 
-
-  bool use_highlevel_prediction; /**< Flag whether high level prediction should be used */
-
-  bool use_filter_; /**< Flag if the Filter should be used currently */
+  bool use_highlevel_prediction_; /**< Flag whether high level prediction should be used */
 
   tf::Stamped<tf::Point> position_; /**< The currently estimated leg position */
+
   tf::Stamped<tf::Point> position_predicted_; /**< The currently estimated leg position */
+
   tf::Stamped<tf::Point> position_updated_; /**< The currently estimated leg position */
 
   tf::Stamped<tf::Point> initial_position_; /**< The initial position */
 
   std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_; /**< History of this leg */
 
+  estimation::AdvancedTrackerParticle filter_; /**< The particle filter */
+
+  tf::TransformListener& tfl_; /**< Associated transform listener */
+
+  double min_people_probability_for_hl_prediction_; /**< Min Probability the Associated PeopleTracker needs for a highlevel update */
+
+  double static_threshold_distance_; /**< The distance the leg has to move at least to be considered dynamic */
 
 public:
   /**
@@ -102,24 +101,122 @@ public:
    * @param loc Initial location
    * @param tfl TransformListener to use
    */
-  LegFeature(tf::Stamped<tf::Point> loc, tf::TransformListener& tfl);
+  LegFeature(tf::Stamped<tf::Point> loc,
+             tf::TransformListener& tfl,
+             double leg_feature_predict_pos_cov,
+             double leg_feature_predict_vel_cov,
+             double leg_feature_update_cov,
+             double leg_feature_measurement_cov,
+             double initial_leg_feature_predict_pos_cov,
+             double initial_leg_feature_predict_vel_cov,
+             double min_people_probability_for_hl_prediction,
+             double static_threshold_distance);
 
   ~LegFeature();
+
+  /**
+   * Return the id
+   * @return id
+   */
+  int getId() const {
+    return this->int_id_;
+  }
 
   /**
    * Return the time of the last processed scan
    * @return
    */
-  ros::Time getLastScanTime(){
+  ros::Time getLastScanTime() const{
     return this->time_last_scan_;
+  }
+
+  /**
+   * Return the time of the last prediction
+   * @return
+   */
+  ros::Time getLastPredictionTime() const{
+    return this->time_prediction_;
   }
 
   /**
    * Return the last measurement time
    * @return
    */
-  ros::Time getLastMeasurementTime(){
+  ros::Time getLastMeasurementTime() const{
     return this->time_meas_;
+  }
+
+  /**
+   * Return the reliability of this legtracker
+   * @return
+   */
+  double getReliability() const
+  {
+    return reliability_;
+  }
+
+  /**
+   * Check if the leg tracker is valid
+   * @return True if tracker is valid, False otherwise
+   */
+  bool isValid() const{
+    return is_valid_;
+  }
+
+  /**
+   * Check if the leg is static (didn't move since detection)
+   * @return True if static
+   */
+  bool isStatic() const{
+    return is_static_;
+  }
+
+  /**
+   * Check if leg is dynamic (moved since detection)
+   * @return
+   */
+  bool isDynamic() const{
+    return !is_static_;
+  }
+
+  /**
+   * Return the fixed frame
+   * @return
+   */
+  std::string getFixedFrame() const{
+    return this->fixed_frame_;
+  }
+
+  /**
+   * Set the system variance
+   * @param system_sigma
+   */
+  void setSystemSigma(BFL::StatePosVel system_sigma){
+    this->sys_sigma_ = system_sigma;
+  }
+
+  /**
+   * Get the location of the last measurement (mostly used for visualization/debugging)
+   * @return Stamped Point of the last measurement position
+   */
+  tf::Stamped<tf::Point> getLocationOfLastMeasurementUpdate() const{
+    return this ->meas_loc_last_update_;
+  }
+
+  /**
+   * Return the current position of this leg
+   * @return The current position
+   */
+  tf::Stamped<tf::Point> getPosition() const{
+    return this->position_;
+  }
+
+  /**
+   * Return the current predicted position of this leg
+   * @return The current predicted position
+   */
+  tf::Stamped<tf::Point> getPredictedPosition() const{
+    return this->position_predicted_;
   }
 
   /**
@@ -147,7 +244,7 @@ public:
    * @param occlusionModel
    * @return
    */
-  double getOcclusionProbability(OcclusionModelPtr occlusionModel);
+  double getOcclusionProbability(OcclusionModelPtr occlusionModel) ;
 
   /**
    * Get the probability of a measurement given this leg
@@ -160,18 +257,9 @@ public:
    * Get the lifetime of this leg tracker
    * @return
    */
-  double getLifetime()
+  double getLifetime() const
   {
-    return filter_.getLifetime();
-  }
-
-  /**
-   * Return the reliability of this legtracker
-   * @return
-   */
-  double getReliability() const
-  {
-    return reliability_;
+    return this->getFilter().getLifetime();
   }
 
   /**
@@ -183,42 +271,22 @@ public:
   }
 
   /**
-   * Check if the leg tracker is valid
-   * @return True if tracker is valid, False otherwise
-   */
-  bool isValid() const{
-    return is_valid_;
-  }
-
-  /**
-   * Check if the leg is static (didnt move since detection)
-   * @return True if static
-   */
-  bool isStatic() const{
-    return is_static_;
-  }
-
-  /**
-   * Check if leg is dynamic (moved since detection)
+   * Return the estimation
    * @return
    */
-  bool isDynamic() const{
-    return !is_static_;
-  }
-
-  BFL::StatePosVel getEstimate(){
+  BFL::StatePosVel getEstimate() const{
     BFL::StatePosVel est;
     filter_.getEstimate(est);
     return est;
     //return pos_vel_;
   }
 
-  unsigned int getHistorySize(){
-    return position_history_.size();
+  const std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >&  getHistory() const{
+    return position_history_;
   }
 
-  std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  getHistory(){
-    return position_history_;
+  MCPdf<StatePosVel>* postGet() const{
+    return this->getFilter().getFilter()->PostGet();
   }
 
   /**
@@ -234,17 +302,13 @@ public:
    */
   void addPeopleTracker(PeopleTrackerPtr);
 
-  std::vector<PeopleTrackerPtr> getPeopleTracker(){
+  std::vector<PeopleTrackerPtr> getAssociatedPeopleTracker() const{
     return peopleTrackerList_;
   }
 
   void setOcclusionModel(OcclusionModelPtr ocm){
     occlusion_model_ = ocm;
-    this->filter_.setOcclusionModel(ocm);
-  }
-
-  std::string getFixedFrame() const{
-    return this->fixed_frame_;
+    this->getFilter().setOcclusionModel(ocm);
   }
 
   // Remove People Tracker that are invalid from the associations list
@@ -269,11 +333,7 @@ public:
    * Return the distance between the last two positions
    * @return distance between the last two positions
    */
-  double getLastPositionJumpWidth();
-
-  int getId() const {
-	  return this->int_id_;
-  }
+  double getLastPositionJumpWidth() const;
 
   std::string getIdStr() const{
     // Generate the string id
@@ -285,6 +345,24 @@ public:
 
 private:
   void updatePosition();
+
+  estimation::AdvancedTrackerParticle& getFilter() {
+    return this->filter_;
+  }
+
+  const estimation::AdvancedTrackerParticle& getFilter() const {
+    return this->filter_;
+  }
+
+  /**
+   * Return the most probable associated peopleTracker
+   * @return
+   */
+  PeopleTrackerPtr getMostProbableAssociatedPeopleTracker() const;
+
+
+
+
 
 
 };

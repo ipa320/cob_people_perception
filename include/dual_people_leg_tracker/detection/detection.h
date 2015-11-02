@@ -12,12 +12,15 @@
 #include <leg_detector/laser_processor.h>
 
 class Detection{
-  public:
+  private:
     bool is_real_; /**< Needed for 'fake' measurements */
+
     double fake_probability_;
 
     tf::Stamped<tf::Point> point_;          /**< Location of the detection, given within fixed frame */
+
     laser_processor::SampleSet* cluster_;
+
     unsigned int id_;                       /**< Unique id (within cycle)*/
 
   public:
@@ -50,6 +53,11 @@ class Detection{
       }
       return fake_probability_;
     }
+
+    tf::Stamped<tf::Point>& getLocation(){
+      return this->point_;
+    }
+
 
 };
 
