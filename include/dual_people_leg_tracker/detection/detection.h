@@ -29,7 +29,8 @@ class Detection{
       id_(id),
       point_(point),
       cluster_(cluster),
-      is_real_(true)
+      is_real_(true),
+      fake_probability_(0)
     {
 
     }
@@ -38,7 +39,8 @@ class Detection{
       id_(id),
       point_(point),
       fake_probability_(probability),
-      is_real_(false)
+      is_real_(false),
+      cluster_(NULL)
     {
 
     }
