@@ -635,35 +635,37 @@ public:
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
-    //// Global Nearest Neighbour
+    //// Global Nearest Neighbour (GNN)
     //////////////////////////////////////////////////////////////////////////
+    ROS_DEBUG("%sGNN [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer gnnTimer; gnnTimer.start();
 
     int nMeasurementsReal = detections.size();
-    int nMeasurementsFake = 0;
     int nLegsTracked = propagated.size();
 
     /// Fake measurement calculation
     vector<DetectionPtr> fakeDetections;
+
     if(use_fake_measurements_){
       boost::shared_ptr<std::vector<PeopleTrackerPtr> > ppls = people_trackers_.getList();
 
+      // Iterate the people tracker
       for(std::vector<PeopleTrackerPtr>::iterator pplIt = ppls->begin(); pplIt != ppls->end(); pplIt++){
 
-        //std::cout << "Checking if there should be a fake measurement for " << (*pplIt)->getName() << std::endl;
-
         if((*pplIt)->getTotalProbability() > filter_config.minFakeLegPersonProbability){ //TODO make probability variable
-          int numberOfMeasurementsWithinRange = 0;
-          double rangeThres = filter_config.fakeLegRangeThres;
+
+          // Number of possible measurements in range of this person
+          size_t numberOfMeasurementsWithinRange = 0;
 
           // For every detection check if a fake measurement should be created...
           for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
             detectionIt != detections.end();
             detectionIt++)
           {
-            Stamped<Point> loc = (*detectionIt)->getLocation();
-            double dist = loc.distance((*pplIt)->getEstimate().pos_);
+            // Euclidean distance between propagated position and detection
+            double dist = (*detectionIt)->getLocation().distance((*pplIt)->getEstimate().pos_);
 
-            if(dist < rangeThres){
+            if(dist < filter_config.fakeLegRangeThres){
               numberOfMeasurementsWithinRange++;
             }
 
@@ -671,59 +673,52 @@ public:
 
           // If there is only one measurement within range
           if(numberOfMeasurementsWithinRange == 1){
-            // Calculate a fake detection
+
+            // Calculate a normalized vector from the sensor center to the estimated position
             tf::Vector3 pplPos((*pplIt)->getEstimate().pos_);
             tf::Vector3 widthVec = pplPos - sensorCoord;
-            widthVec.normalize(); // Set size 1
+            widthVec.normalize();
 
+            // Increase with the distance the real and fake leg should have
             widthVec *= filter_config.fakeLegRealLegDistance;
 
+            // Append the vector to the person position
             tf::Stamped<tf::Vector3> fakeLoc = tf::Stamped<tf::Vector3>(pplPos + widthVec, scan->header.stamp, scan->header.frame_id);
 
             // Create the detection
             DetectionPtr fakeDetection(new Detection(fakeDetections.size() + detections.size(), fakeLoc, filter_config.fakeLegProb));
             fakeDetections.push_back(fakeDetection);
 
-            //std::cout << "Creating fake detection!" << std::endl;
-          }
-          else{
-            //std::cout << "No fake detection because numberOfMeasurementsWithinRange=" << numberOfMeasurementsWithinRange << std::endl;
           }
         }
 
       }
-
-      // Build Cost Matrix
-      nMeasurementsFake = fakeDetections.size();
     }
 
-
+    int nMeasurementsFake = fakeDetections.size();
 
 
     // costMatrixMAP is the actual costmatrix which is solved
     costMatrixMAP = Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic>::Zero(nLegsTracked,nMeasurementsReal + nMeasurementsFake);
-    costMatrixMAP.resize(nLegsTracked, nMeasurementsReal + nMeasurementsFake);
 
     // probMAPMat represents the probability and is used for visualization
     probMAPMat = Eigen::Matrix< double, Eigen::Dynamic, Eigen::Dynamic>::Zero(nLegsTracked,nMeasurementsReal + nMeasurementsFake);
-    probMAPMat.resize(nLegsTracked, nMeasurementsReal + nMeasurementsFake);
 
+    // Iterate the legs
     int row = 0;
     for (vector<LegFeaturePtr>::iterator legIt = propagated.begin(); legIt != propagated.end(); legIt++)
     {
-    	int col = 0;
-    	for (vector<DetectionPtr>::iterator detectionIt = detections.begin(); detectionIt != detections.end(); detectionIt++)
-    	{
-        Stamped<Point> loc = (*detectionIt)->getLocation();
 
-        double prob = (*legIt)->getMeasurementProbability(loc);
+      // Iterate the detections
+      int col = 0;
+      for (vector<DetectionPtr>::iterator detectionIt = detections.begin(); detectionIt != detections.end(); detectionIt++)
+      {
 
-        if(prob < 0.001) // TODO calculate this better
-          prob = 0.000001;
-        double negLogLike = -log(prob);
+        // Get the measurement probability
+        double prob = (*legIt)->getMeasurementProbability((*detectionIt)->getLocation());
 
-        if(negLogLike > 1000) negLogLike = 1000;
-        if(std::numeric_limits<double>::has_infinity ==negLogLike) negLogLike = 1000;
+        // Set the negloglikelihood (limit it to avoid infinity)
+        double negLogLike = -log( max(0.000001, prob) );
 
         costMatrixMAP(row,col) = (int) ((negLogLike) * 100);
         probMAPMat(row,col) = prob;
@@ -736,23 +731,15 @@ public:
     }
 
     //// FAKE MEASUREMENTS
-
+    // Iterate the fake measurements
     for(size_t col_f = 0; col_f < nMeasurementsFake; col_f++){
+
+        // Iterate the tracked legs
         for(size_t row_f = 0; row_f < nLegsTracked; row_f++){
-        	 Stamped<Point> loc = fakeDetections[col_f]->getLocation();
 
-            double prob = propagated[row_f]->getMeasurementProbability(loc) * filter_config.fakeLegMeasurementProbabiltyFactor;
-
-            if(prob < 0.001)
-              prob = 0.000001;
-
-            double negLogLike = -log(prob);
-
-            //std::cout << BOLDCYAN << "LT[" <<  propagated[row_f]->int_id_ << "] prob: " << prob << "negLogLike" << negLogLike << RESET << std::endl;
-
-            if(negLogLike > 1000) negLogLike = 1000;
-
-            if(std::numeric_limits<double>::has_infinity ==negLogLike) negLogLike = 1000;
+            // Calculate the measurement probability
+            double prob = propagated[row_f]->getMeasurementProbability( fakeDetections[col_f]->getLocation() ) * filter_config.fakeLegMeasurementProbabiltyFactor;
+            double negLogLike = -log( max(0.000001, prob) );
 
             costMatrixMAP(row_f,col_f  + nMeasurementsReal) = (int) ((negLogLike) * 100);
             probMAPMat(row_f,col_f  + nMeasurementsReal) = prob;
@@ -793,14 +780,14 @@ public:
     // Currently a vector of solutions is allowed but only the first is used
     // however using murty is possible to determine multiple associations and
     // use multiple of these for procedures such as JPDA
-    std::vector<Solution> solutionsMAP;
+    std::vector<Solution> associationSets;
 
     // Obtain multiple solutions using murty algorithm
     //solutionsMAP = murty(costMatrixMAP,1);
 
-    solutionsMAP.push_back(solvehungarian(costMatrixMAP));
+    associationSets.push_back(solvehungarian(costMatrixMAP));
 
-    ROS_ASSERT(solutionsMAP.size() == 1);
+    ROS_ASSERT(associationSets.size() == 1);
 
     /*
     std::cout << "Solutions are:" << std::endl;
@@ -824,7 +811,7 @@ public:
     for(int i = 0; i < nLegsTracked; i++){
       std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indicesMAP(i) << RESET <<"|";
       for(int j = 0; j < nMeasurementsReal + nMeasurementsFake; j++){
-          if(solutionsMAP[0].assignmentMatrix(i,j) == 1)
+          if(associationSets[0].assignmentMatrix(i,j) == 1)
             std::cout << YELLOW;
 
           std::cout << std::setw(6) << std::fixed << std::setprecision(6) << probMAPMat(i,j) << RESET "|";
@@ -832,18 +819,19 @@ public:
       std::cout << std::endl;
     }
 
+    ROS_DEBUG("%sGNN [Cycle %u] done", BOLDWHITE, cycle_);
+
     //////////////////////////////////////////////////////////////
     /// Update leg measurements based on the assigned measurements
     //////////////////////////////////////////////////////////////
-
-    std::cout << BOLDYELLOW << "Tracker Update:" << RESET << std::endl;
+    ROS_DEBUG("%sUpdate Trackers [Cycle %u]", BOLDWHITE, cycle_);
 
     // Get the best solution
     Eigen::Matrix<int,-1,-1> assignmentMat;
 
-    ROS_ASSERT(solutionsMAP.size() == 1);
+    ROS_ASSERT(associationSets.size() == 1);
 
-    assignmentMat = solutionsMAP[0].assignmentMatrix;
+    assignmentMat = associationSets[0].assignmentMatrix;
 
     if(nLegsTracked > 0 && nMeasurementsReal + nMeasurementsFake > 0){
 
@@ -897,6 +885,8 @@ public:
         }
       }
     }
+
+    ROS_DEBUG("%sUpdate Trackers [Cycle %u] done", BOLDWHITE, cycle_);
 
     /////////////////////////////////////////////////////////////////////////
     /// Tracker Creation - Create new trackers if no valid leg was found
