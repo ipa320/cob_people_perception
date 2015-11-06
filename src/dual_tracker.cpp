@@ -56,6 +56,7 @@
 #include <dual_people_leg_tracker/visualization/color_functions.h>
 #include <dual_people_leg_tracker/visualization/color_definitions.h>
 #include <dual_people_leg_tracker/visualization/visualization_conversions.h>
+#include <dual_people_leg_tracker/visualization/matrix_cout_helper.h>
 
 // OpenCV includes
 #include <opencv/cxcore.h>
@@ -739,6 +740,8 @@ public:
 
             // Calculate the measurement probability
             double prob = propagated[row_f]->getMeasurementProbability( fakeDetections[col_f]->getLocation() ) * filter_config.fakeLegMeasurementProbabiltyFactor;
+
+            // Set the negloglikelihood (limit it to avoid infinity)
             double negLogLike = -log( max(0.000001, prob) );
 
             costMatrixMAP(row_f,col_f  + nMeasurementsReal) = (int) ((negLogLike) * 100);
@@ -758,25 +761,6 @@ public:
       indices_counter_map++;
     }
 
-    // Print the probability matrix //TODO move this to a visualization
-    std::cout << "costMatrixMAP :____" << std::endl;
-    std::cout << "      ";
-    for(int j = 0; j < nMeasurementsReal; j++)
-      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< "  |";
-    std::cout << RESET;
-
-    for(int j = 0; j < nMeasurementsFake; j++)
-      std::cout << BOLDYELLOW << "LMF" << std::setw(2) << j<< "  |";
-    std::cout << RESET << std::endl;
-
-    for(int i = 0; i < nLegsTracked; i++){
-      std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indicesMAP(i) << RESET <<"|";
-      for(int j = 0; j < nMeasurementsReal + nMeasurementsFake; j++){
-          std::cout << std::setw(6) << std::fixed << std::setprecision(5) << costMatrixMAP(i,j) << "|";
-      }
-      std::cout << std::endl;
-    }
-
     // Currently a vector of solutions is allowed but only the first is used
     // however using murty is possible to determine multiple associations and
     // use multiple of these for procedures such as JPDA
@@ -789,35 +773,21 @@ public:
 
     ROS_ASSERT(associationSets.size() == 1);
 
-    /*
-    std::cout << "Solutions are:" << std::endl;
-    for(std::vector<Solution>::iterator solIt = solutionsMAP.begin(); solIt != solutionsMAP.end(); solIt++){
-      color_print_solution(costMatrixMAP,solIt->assignmentMatrix);
-      std::cout << "Costs "<< "\033[1m\033[31m" << solIt->cost_total << "\033[0m" << std::endl;
-    }
-    */
+    CoutMatrixHelper::cout_cost_matrix("CostMatrix",
+                                       costMatrixMAP,
+                                       associationSets[0].assignmentMatrix,
+                                       indicesMAP,
+                                       nLegsTracked,
+                                       nMeasurementsReal,
+                                       nMeasurementsFake);
 
-    // Print the probability matrix
-    std::cout << "probabilities :____" << std::endl;
-    std::cout << "      ";
-    for(int j = 0; j < nMeasurementsReal; j++)
-      std::cout << BOLDGREEN << "LM" << std::setw(2) << j<< "    |";
-    std::cout << RESET;
-
-    for(int j = 0; j < nMeasurementsFake; j++)
-      std::cout << BOLDYELLOW << "LMF" << std::setw(2) << j<< "    |";
-    std::cout << RESET << std::endl;
-
-    for(int i = 0; i < nLegsTracked; i++){
-      std::cout << BOLDMAGENTA << "LT" << std::setw(3) <<  indicesMAP(i) << RESET <<"|";
-      for(int j = 0; j < nMeasurementsReal + nMeasurementsFake; j++){
-          if(associationSets[0].assignmentMatrix(i,j) == 1)
-            std::cout << YELLOW;
-
-          std::cout << std::setw(6) << std::fixed << std::setprecision(6) << probMAPMat(i,j) << RESET "|";
-      }
-      std::cout << std::endl;
-    }
+    CoutMatrixHelper::cout_probability_matrix("Probabilities",
+                                              probMAPMat,
+                                              associationSets[0].assignmentMatrix,
+                                              indicesMAP,
+                                              nLegsTracked,
+                                              nMeasurementsReal,
+                                              nMeasurementsFake);
 
     ROS_DEBUG("%sGNN [Cycle %u] done", BOLDWHITE, cycle_);
 
@@ -891,8 +861,7 @@ public:
     /////////////////////////////////////////////////////////////////////////
     /// Tracker Creation - Create new trackers if no valid leg was found
     /////////////////////////////////////////////////////////////////////////
-
-    std::cout << BOLDYELLOW << "Tracker Creation:" << RESET << std::endl;
+    ROS_DEBUG("%sCreating Trackers [Cycle %u]", BOLDWHITE, cycle_);
 
     // Iterate the real measurements
     for(int lm = 0; lm < nMeasurementsReal; lm++){
@@ -954,7 +923,7 @@ public:
         //double probSum = probMAPMat.col(lm).sum()/ probMAPMat.rows();
 
         // If no track is assigned to this measurement (or only a unreliable one)
-        if(assignmentProb < 0.0001  && detectionProb > new_track_min_probability_){
+        if(assignmentProb < filter_config.minUpdateProbability  && detectionProb > new_track_min_probability_){
 
           // Check the distance to the next measurement
           double dist_min = 1000;
@@ -995,10 +964,11 @@ public:
           }
 
         }
+        // If no tracker was created for a measurement notify at least why
         else
         {
-          if(assignmentProb < 0.0001){
-            std::cout << "No tracker was created for LM[" << lm << "] because it is assigned to another tracker" << std::endl;
+          if(assignmentProb < filter_config.minUpdateProbability){
+            std::cout << "No tracker was created for LM[" << lm << "] because the assignment probability was to low (" << assignmentProb << ", min: " << filter_config.minUpdateProbability << ")" << std::endl;
           }else if(detectionProb <= new_track_min_probability_){
             std::cout << "No tracker was created for LM[" << lm << "] because its detection probability " << detectionProb << " is to low( must be at least " << new_track_min_probability_ << std::endl;
           }
@@ -1007,6 +977,7 @@ public:
 
       }
     }
+    ROS_DEBUG("%sCreating Trackers [Cycle %u] done", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
     //// High level Association: Combination of saved features to people tracker (takes approx. 0.8ms)
@@ -1021,9 +992,7 @@ public:
         legIt0++)
     {
       vector<LegFeaturePtr>::iterator legIt1 = boost::next(legIt0,1);
-      for (;
-          legIt1 != saved_leg_features.end();
-          legIt1++)
+      for (;legIt1 != saved_leg_features.end();legIt1++)
       {
 
         // Add the tracker to the list if it is new
@@ -1045,17 +1014,19 @@ public:
     //return;
     hlAssociationTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"High level association took %f ms", hlAssociationTimer.getElapsedTimeMs());
-    ROS_DEBUG("%sHigh Level Association done! [Cycle %u]", BOLDWHITE, cycle_);
+    ROS_DEBUG("%sHigh Level Association [Cycle %u] done", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
-    //// High level Update (Update of the people trackers
+    //// High level Update (Update of the people trackers)
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sHigh level update [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer hlUpdateTimer; hlUpdateTimer.start();
 
     // Update the probabilites of every people tracker
     people_trackers_.updateAllTrackers(scan->header.stamp);
 
-    ROS_DEBUG("%sHigh level update done [Cycle %u]", BOLDWHITE, cycle_);
+    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"High level update took %f ms", hlUpdateTimer.getElapsedTimeMs());
+    ROS_DEBUG("%sHigh level update [Cycle %u] done", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
     //// Publish data
@@ -1147,6 +1118,7 @@ public:
       publishFakeMeasPos(fakeDetections, scan->header.stamp, sensorCoord);
     }
 
+    ROS_DEBUG("%sPublishing [Cycle %u] done", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
     //// RMSE (for evaluation purposes)
@@ -1236,7 +1208,7 @@ public:
 
       publishEstimateNextVelocity(people_trackers_.getList(), scan->header.stamp, predictionTimeInterval);
     }
-    ROS_DEBUG("%sSocial interaction [Cycle %u]", BOLDWHITE, cycle_);
+    ROS_DEBUG("%sSocial interaction [Cycle %u] done", BOLDWHITE, cycle_);
     //////////////////////////////////////////////////////////////////////////
     //// Cleaning (Clear data)
     //////////////////////////////////////////////////////////////////////////
