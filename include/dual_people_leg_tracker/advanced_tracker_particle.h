@@ -127,9 +127,8 @@ public:
   MatrixWrapper::Matrix getHistogramPos(const tf::Vector3& min, const tf::Vector3& max, const tf::Vector3& step) const;
   MatrixWrapper::Matrix getHistogramVel(const tf::Vector3& min, const tf::Vector3& max, const tf::Vector3& step) const;
 
-  //// Get the filter
-  PeopleParticleFilter* getFilter() const{
-    return filter_;
+  MCPdf<StatePosVel>* postGet() const{
+    return this->getFilter()->PostGet();
   }
 
 
@@ -150,6 +149,11 @@ private:
   double filter_time_; /**< The last filter time */
   double quality_;
   unsigned int num_particles_;
+
+  //// Get the filter
+  PeopleParticleFilter* getFilter() const{
+    return filter_;
+  }
 
 }; // class
 

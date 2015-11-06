@@ -624,15 +624,6 @@ public:
 
     }
 
-    // Iterate through all detections
-    /*
-    for (vector<DetectionPtr>::iterator detectionIt = detections.begin();
-        detectionIt != detections.end();
-        detectionIt++)
-    {
-      std::cout << "LM " << std::setw(2) << (*detectionIt)->id_ << std::setw(3) << " x:" << (*detectionIt)->getLocation()[0] << " y:" << (*detectionIt)->getLocation()[1] << " prob:" << (*detectionIt)->cluster_->getProbability() << std::endl;
-    }*/
-
     ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
 
     //////////////////////////////////////////////////////////////////////////
@@ -751,15 +742,8 @@ public:
     }
 
     // Store the object indices, this is needed since the Leg Feature IDs will change with time due to creation and deletion of tracks
-    Eigen::VectorXi indicesMAP = Eigen::VectorXi::Zero(nLegsTracked,1);
-    int indices_counter_map = 0;
-    for (vector<LegFeaturePtr>::iterator legIt = propagated.begin();
-        legIt != propagated.end();
-        legIt++)
-    {
-      indicesMAP(indices_counter_map) = (*legIt)->getId();
-      indices_counter_map++;
-    }
+    Eigen::VectorXi indicesVec = Eigen::VectorXi::Zero(nLegsTracked,1);
+    for(size_t i = 0; i < propagated.size(); i++){ indicesVec(i) = propagated[i]->getId();}
 
     // Currently a vector of solutions is allowed but only the first is used
     // however using murty is possible to determine multiple associations and
@@ -776,7 +760,7 @@ public:
     CoutMatrixHelper::cout_cost_matrix("CostMatrix",
                                        costMatrixMAP,
                                        associationSets[0].assignmentMatrix,
-                                       indicesMAP,
+                                       indicesVec,
                                        nLegsTracked,
                                        nMeasurementsReal,
                                        nMeasurementsFake);
@@ -784,7 +768,7 @@ public:
     CoutMatrixHelper::cout_probability_matrix("Probabilities",
                                               probMAPMat,
                                               associationSets[0].assignmentMatrix,
-                                              indicesMAP,
+                                              indicesVec,
                                               nLegsTracked,
                                               nMeasurementsReal,
                                               nMeasurementsFake);
@@ -832,7 +816,7 @@ public:
             }
 
             //double minProbability = 0.003; // TODO implement variable
-            int idx = (int) indicesMAP(lt);
+            int idx = (int) indicesVec(lt);
 
             ROS_ASSERT_MSG(lt < propagated.size(), "Size propagated is %i", (int) propagated.size());
             // Calculate the distance
@@ -844,11 +828,11 @@ public:
               propagated[lt]->update(loc,1.0);
             }else{
               if(dist >= max_meas_jump_m){
-                std::cout << RED << "NOT Updating LT[" << idx << "]" << " with LM[" << lm << "] because the distance:" << dist << " is greate than the max_meas_jump: " << max_meas_jump_m << RESET << std::endl;
+                std::cout << YELLOW << "NOT Updating LT[" << idx << "]" << " with LM[" << lm << "] because the distance:" << dist << " is greate than the max_meas_jump: " << max_meas_jump_m << RESET << std::endl;
               }
 
               if(probMAPMat(lt,lm) <= filter_config.minUpdateProbability){
-                std::cout << RED << "NOT Updating LT[" << idx << "]" << " with LM[" << lm << "] because the assignment probability:" << probMAPMat(lt,lm) << " is too low(must be at least " << filter_config.minUpdateProbability << "): " << RESET << std::endl;
+                std::cout << YELLOW << "NOT Updating LT[" << idx << "]" << " with LM[" << lm << "] because the assignment probability:" << probMAPMat(lt,lm) << " is too low(must be at least " << filter_config.minUpdateProbability << "): " << RESET << std::endl;
               }
             }
           }
@@ -896,7 +880,7 @@ public:
           // Insert the leg feature into the propagated list
           saved_leg_features.push_back(newLegFeature);
 
-          std::cout << BOLDRED << " -> Creating new Tracker LT" << newLegFeature->getId() << RESET << std::endl;
+          std::cout << YELLOW << " -> Creating new Tracker LT" << newLegFeature->getId() << RESET << std::endl;
 
         }
 
@@ -960,7 +944,7 @@ public:
           // Insert the leg feature into the propagated list
           saved_leg_features.push_back(newLegFeature);
 
-          std::cout << BOLDRED << "LM[" << lm << "] -> Creating new Tracker LT[" << newLegFeature->getId() << "]" << RESET << std::endl;
+          std::cout << YELLOW << "LM[" << lm << "] -> Creating new Tracker LT[" << newLegFeature->getId() << "]" << RESET << std::endl;
           }
 
         }
@@ -1285,7 +1269,6 @@ public:
   // Publish
   array.people = legs;
   leg_measurements_pub_.publish(array);
-  ROS_DEBUG("Publishing legs positions on %s", array.header.frame_id.c_str());
   }
 
   /**

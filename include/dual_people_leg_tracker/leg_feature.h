@@ -286,7 +286,7 @@ public:
   }
 
   MCPdf<StatePosVel>* postGet() const{
-    return this->getFilter().getFilter()->PostGet();
+    return this->getFilter().postGet();
   }
 
   /**
