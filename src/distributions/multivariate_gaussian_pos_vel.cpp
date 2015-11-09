@@ -46,7 +46,7 @@ namespace BFL
 {
 
 /// Constructor
-MultivariateGaussianPosVel::MultivariateGaussianPosVel():
+MultivariateGaussianPosVel::MultivariateGaussianPosVel(double position_factor, double velocity_factor):
   sigma_(Eigen::Matrix<double,6,6>::Zero()),
   mu_(Eigen::Matrix<double,6,1>::Zero()),
   eigv1_(Eigen::Matrix<double,3,1>::Zero()),
@@ -54,7 +54,11 @@ MultivariateGaussianPosVel::MultivariateGaussianPosVel():
   sigma_changed_(false),
   dt_(0.0),
   sqrt_(0.0),
-  highLevelProbability_(0.0)
+  highLevelProbability_(0.0),
+  position_factor_(position_factor),
+  velocity_factor_(velocity_factor),
+  gaitFactor_(0.0)
+
 {
   //assert(false);
   //normX_solver_ = boost::shared_ptr<Eigen::EigenMultivariateNormal<double> >( new Eigen::EigenMultivariateNormal<double>(mu_,sigma_));
@@ -63,7 +67,10 @@ MultivariateGaussianPosVel::MultivariateGaussianPosVel():
   //mu_ = Eigen::Matrix<double,6,1>::Zero();
 }
 
-MultivariateGaussianPosVel::MultivariateGaussianPosVel(const Eigen::Matrix<double,6,1>& mu, const Eigen::Matrix<double,6,6>& sigma)
+MultivariateGaussianPosVel::MultivariateGaussianPosVel(const Eigen::Matrix<double,6,1>& mu,
+                                                       const Eigen::Matrix<double,6,6>& sigma,
+                                                       double position_factor,
+                                                       double velocity_factor)
   : Pdf<StatePosVel> (1),
     mu_(mu),
     sigma_(sigma),
@@ -71,7 +78,10 @@ MultivariateGaussianPosVel::MultivariateGaussianPosVel(const Eigen::Matrix<doubl
     dt_(0.0),
     sqrt_(0.0),
     highLevelProbability_(0.0),
-    gaitFactor_(0.0)
+    gaitFactor_(0.0),
+    position_factor_(position_factor),
+    velocity_factor_(velocity_factor)
+
     //gauss_pos_(mu.pos_, sigma.pos_),
     //gauss_vel_(mu.vel_, sigma.vel_)
 {
@@ -83,7 +93,7 @@ MultivariateGaussianPosVel::~MultivariateGaussianPosVel() {}
 
 MultivariateGaussianPosVel* MultivariateGaussianPosVel::Clone() const
 {
-  return new MultivariateGaussianPosVel(mu_, sigma_);
+  return new MultivariateGaussianPosVel(mu_, sigma_, position_factor_, velocity_factor_);
 }
 
 std::ostream& operator<< (std::ostream& os, const MultivariateGaussianPosVel& g)
@@ -205,33 +215,15 @@ MultivariateGaussianPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int meth
 
   // Generate sample for the velocity
   double vel_rand = rnorm(alpha_mu,alpha);
-
-
   double width_rand = rnorm(0,abs(vel_rand) * beta);
 
-  //std::cout << "vel_rand:" << vel_rand << " width_rand: " << width_rand << std::endl;
-  //std::cout << "velocity is changed by factor" << vel_rand << std::endl;
+  // Motion model with eigv1_ in direction of person
 
+  double position_factor = 0.8;
+  double velocity_factor = 1.6;
 
-  //sample_pos = eigv1_ * vel_rand * dt_ * 1.5 + eigv2_ * width_rand * dt_ * 2.3;
-
-
-  sample_pos = eigv1_ * vel_rand * dt_ * 0.8 + eigv2_ * width_rand * dt_ * 0.8;
-  sample_vel = eigv1_ * vel_rand * 1.6 + eigv2_ * width_rand * 1.6;
-
-
-  //sample_pos = eigv1_ * vel_rand * dt_ * 5 + eigv2_ * width_rand * dt_ * 5;
-  //std::cout << "dt_" << dt_ << std::endl;
-
-
-  //std::cout << "vel_rand: " << vel_rand << " width_rand: " << width_rand << std::endl;
-
-//  std::cout << "eigv1_" << std::endl << eigv1_ << std::endl;
-//  std::cout << "eigv2_" << std::endl << eigv2_ << std::endl;
-//  std::cout << "samples_pos" << std::endl << sample_pos << std::endl;
-//  std::cout << "samples_vel" << std::endl << sample_vel << std::endl;
-
-  //sample = normX_solver_->samples(1);
+  sample_pos = eigv1_ * vel_rand * dt_ * position_factor + eigv2_ * width_rand * dt_ * position_factor;
+  sample_vel = eigv1_ * vel_rand       * velocity_factor + eigv2_ * width_rand       * velocity_factor;
 
   one_sample.ValueSet(StatePosVel(Vector3(sample_pos[0],
                                           sample_pos[1],

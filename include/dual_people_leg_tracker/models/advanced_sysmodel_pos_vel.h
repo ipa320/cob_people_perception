@@ -63,7 +63,7 @@ class AdvancedSysPdfPosVel
 public:
 
   /// Constructor
-  AdvancedSysPdfPosVel(const StatePosVel& sigma, double v_max);
+  AdvancedSysPdfPosVel(const StatePosVel& sigma, double v_max, double position_factor, double velocity_factor);
 
   /// Destructor
   virtual ~AdvancedSysPdfPosVel();
@@ -107,8 +107,14 @@ public:
 
 
 private:
+
+  // Standart Gaussian noise
   GaussianPosVelMod noise_;
+
+  // Nonlinear noise, depending on high level update
   MultivariateGaussianPosVel noise_nl_;
+
+
   double dt_;
 
   double v_max_; /**< Maximum speed a particle can get */
@@ -127,8 +133,8 @@ public:
      * Constructor of the system Model
      * @param sigma The system noise
      */
-    AdvancedSysModelPosVel(const StatePosVel& sigma, double v_max)
-    : SystemModel<StatePosVel>(new AdvancedSysPdfPosVel(sigma, v_max))
+    AdvancedSysModelPosVel(const StatePosVel& sigma, double v_max, double position_factor, double velocity_factor)
+    : SystemModel<StatePosVel>(new AdvancedSysPdfPosVel(sigma, v_max, position_factor, velocity_factor))
   {};
 
   /// destructor

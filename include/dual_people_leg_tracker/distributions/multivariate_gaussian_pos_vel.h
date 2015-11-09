@@ -65,6 +65,10 @@ public:
 
     double gaitFactor_;
 
+    double position_factor_;
+
+    double velocity_factor_;
+
     // The Random Generator
     boost::shared_ptr<Eigen::EigenMultivariateNormal<double> > normX_solver_;
 
@@ -78,10 +82,13 @@ private:
 
 public:
   /// Constructor
-  MultivariateGaussianPosVel();
+  MultivariateGaussianPosVel(double position_factor, double velocity_factor);
 
   /// Constructor
-  MultivariateGaussianPosVel(const Eigen::Matrix<double,6,1>& mu, const Eigen::Matrix<double,6,6>& sigma);
+  MultivariateGaussianPosVel(const Eigen::Matrix<double,6,1>& mu,
+                             const Eigen::Matrix<double,6,6>& sigma,
+                             double position_factor,
+                             double velocity_factor);
 
   /// Destructor
   virtual ~MultivariateGaussianPosVel();

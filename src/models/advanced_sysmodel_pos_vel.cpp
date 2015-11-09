@@ -49,12 +49,13 @@ static const unsigned int DIM_SYS_POS_VEL           = 6;
 #define DEBUG_ADVANCEDSYSPDFPOSVEL 0
 
 // Constructor
-AdvancedSysPdfPosVel::AdvancedSysPdfPosVel(const StatePosVel& sigma, double v_max)
+AdvancedSysPdfPosVel::AdvancedSysPdfPosVel(const StatePosVel& sigma, double v_max, double position_factor, double velocity_factor)
   : ConditionalPdf<StatePosVel, StatePosVel>(DIM_SYS_POS_VEL, NUM_SYS_POS_VEL_COND_ARGS),
     noise_(StatePosVel(Vector3(0, 0, 0), Vector3(0, 0, 0)), sigma),
     dt_(0.0),
     useHighLevelPrediction_(false),
-    v_max_(v_max)
+    v_max_(v_max),
+    noise_nl_(position_factor, velocity_factor)
 {}
 
 
@@ -126,13 +127,13 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
   // apply its current velocity to itself, this is the prediction
   res.pos_ += (res.vel_ * dt_);
 
-  // add noise (Gaussian, scaled by the passed time!!!)
+  // Add Gaussian Noise
   Sample<StatePosVel> noise_sample;
   noise_.SetDt(dt_);
   noise_.SampleFrom(noise_sample, method, args);
   res += noise_sample.ValueGet();
 
-  // Only use the high level prediction if explicitly set true
+  // Add nonlinear noise if the HL - Prediction should be used
   if(useHighLevelPrediction_){
 
     Sample<StatePosVel> noise_sample_nl;
