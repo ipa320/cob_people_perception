@@ -46,14 +46,15 @@ using namespace tf;
 static const unsigned int NUM_SYS_POS_VEL_COND_ARGS = 1;
 static const unsigned int DIM_SYS_POS_VEL           = 6;
 
-#define DEBUG_ADVANCEDSYSPDFPOSVEL 1
+#define DEBUG_ADVANCEDSYSPDFPOSVEL 0
 
 // Constructor
-AdvancedSysPdfPosVel::AdvancedSysPdfPosVel(const StatePosVel& sigma)
+AdvancedSysPdfPosVel::AdvancedSysPdfPosVel(const StatePosVel& sigma, double v_max)
   : ConditionalPdf<StatePosVel, StatePosVel>(DIM_SYS_POS_VEL, NUM_SYS_POS_VEL_COND_ARGS),
     noise_(StatePosVel(Vector3(0, 0, 0), Vector3(0, 0, 0)), sigma),
     dt_(0.0),
-    useHighLevelPrediction_(false)
+    useHighLevelPrediction_(false),
+    v_max_(v_max)
 {}
 
 
@@ -116,7 +117,7 @@ AdvancedSysPdfPosVel::ProbabilityGet(const StatePosVel& state) const
 bool
 AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, void *args) const
 {
-  //ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"--------AdvancedSysPdfPosVel::%s",__func__);
+  ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"--------AdvancedSysPdfPosVel::%s",__func__);
 
   // Get the current sample state
   StatePosVel& res = one_sample.ValueGet();
@@ -124,12 +125,6 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
 
   // apply its current velocity to itself, this is the prediction
   res.pos_ += (res.vel_ * dt_);
-
-
-/*
-  if(res.vel_.length() > 0.1)
-    std::cout << "Particle Velocity on update" << res.vel_[0] << "|" << res.vel_[1] << std::endl;
-*/
 
   // add noise (Gaussian, scaled by the passed time!!!)
   Sample<StatePosVel> noise_sample;
@@ -146,20 +141,14 @@ AdvancedSysPdfPosVel::SampleFrom(Sample<StatePosVel>& one_sample, int method, vo
 
     res += noise_sample_nl.ValueGet();
 
-    //assert(false);
   }
 
-  double v_max = 4;
-  if(res.vel_.length() > v_max){
+  // Trim the speed
+  if(res.vel_.length() > v_max_){
 
-    //std::cout << "Trimming Speed of total " << res.vel_.length() << " now:";
+    res.vel_ = res.vel_ / v_max_;
 
-    res.vel_ = res.vel_ / v_max;
-    //std::cout << "res.vel_.length()" << std::endl;
   }
-
-
-
 
   return true;
 }

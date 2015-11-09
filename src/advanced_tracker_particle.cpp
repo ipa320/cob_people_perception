@@ -54,7 +54,7 @@ AdvancedTrackerParticle::AdvancedTrackerParticle(const string& name, unsigned in
   Tracker(name),
   prior_(num_particles),
   filter_(NULL),
-  sys_model_(sysnoise), // System noise, sysnoise is the sigma(variance) of this noise
+  sys_model_(sysnoise, 4.0), // System noise, sysnoise is the sigma(variance) of this noise, second parameter is v_max TODO
   meas_model_(tf::Vector3(0.01, 0.01, 0.01)), // Measurement model variance
   tracker_initialized_(false),
   num_particles_(num_particles)

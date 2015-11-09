@@ -33,6 +33,7 @@
 *********************************************************************/
 
 /* Author: Wim Meeussen */
+/* Modified by: frm-ag */
 
 #ifndef ADVANCED_SYSMODEL_POS_VEL_H
 #define ADVANCED_SYSMODEL_POS_VEL_H
@@ -62,7 +63,7 @@ class AdvancedSysPdfPosVel
 public:
 
   /// Constructor
-  AdvancedSysPdfPosVel(const StatePosVel& sigma);
+  AdvancedSysPdfPosVel(const StatePosVel& sigma, double v_max);
 
   /// Destructor
   virtual ~AdvancedSysPdfPosVel();
@@ -110,6 +111,8 @@ private:
   MultivariateGaussianPosVel noise_nl_;
   double dt_;
 
+  double v_max_; /**< Maximum speed a particle can get */
+
   bool useHighLevelPrediction_; /**< Update using the high level people tracker prediction */
 
 }; // class
@@ -124,8 +127,8 @@ public:
      * Constructor of the system Model
      * @param sigma The system noise
      */
-    AdvancedSysModelPosVel(const StatePosVel& sigma)
-    : SystemModel<StatePosVel>(new AdvancedSysPdfPosVel(sigma))
+    AdvancedSysModelPosVel(const StatePosVel& sigma, double v_max)
+    : SystemModel<StatePosVel>(new AdvancedSysPdfPosVel(sigma, v_max))
   {};
 
   /// destructor

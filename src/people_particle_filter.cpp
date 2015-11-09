@@ -23,6 +23,8 @@
 //
 // $Id: bootstrapfilter.cpp 29495 2008-08-13 12:57:49Z tdelaet $
 
+// Modified by frm-ag
+
 // ROS includes
 #include <ros/console.h>
 
@@ -39,6 +41,9 @@
 #define MeasVar MVar
 
 using namespace BFL;
+
+#define DEBUG_PARTICLES 0 // Set to 1 if you want to debug on particle level
+#define N_DEBUG_PARTICLES 10 // Number of particles to cout for debugging
 
 
 PeopleParticleFilter::PeopleParticleFilter(MCPdf<StatePosVel> * prior,
@@ -99,32 +104,24 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
 
     std::vector<WeightedSample<StatePosVel> > samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
 
-    //std::cout << "Samples before update" << std::endl;
-    for(int i = 0; i<10; i++){
-      StatePosVel sample = samples[i].ValueGet();
-      double weight = samples[i].WeightGet();
-      //std::cout << "Sample " << sample << "Weight: " << weight << std::endl;
+
+    #if DEBUG_PARTICLES
+    std::cout << "Samples before update" << std::endl;
+    for(int i = 0; i<N_DEBUG_PARTICLES; i++){
+      std::cout << "Sample " << samples[i].ValueGet() << "Weight: " << samples[i].WeightGet() << std::endl;
     }
-
-    //assert(this->_dynamicResampling == true); // TODO
-    //result = result && this->StaticResampleStep(); // TODO necessary?
-
-    //result = result && this->DynamicResampleStep();
+    #endif
 
     result = result && this->ProposalStepInternal(sysmodel,u,measmodel,z,s);
 
-    //result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(sysmodel,u,NULL,z,s) && result;
+    #if DEBUG_PARTICLES
+    std::cout << "Samples after update" << std::endl;
+    samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
+    for(int i = 0; i<N_DEBUG_PARTICLES; i++){
+      std::cout << "Sample " << samples[i].ValueGet() << "Weight: " << samples[i].WeightGet() << std::endl;
+    }
+    #endif
 
-//    std::cout << "Update ###############################" << std::endl;
-//    std::cout << "Update ###############################" << std::endl;
-//    std::cout << "Delta T: " << ((AdvancedSysPdfPosVel*) sysmodel->SystemPdfGet())->getDt() << std::endl;
-
-
-/*    samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
-
-    for(std::vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
-      //std::cout << (*sampleIt) << std::endl;
-    }*/
 
     ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s -> Internal Update done",__func__);
     //result = this->ParticleFilter<SVar,MVar>::UpdateInternal(sysmodel,u,NULL,z,s) && result;
@@ -138,25 +135,27 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
   if (measmodel != NULL){
     ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s -> Measurement Update with %f %f %f",__func__, z.getX(), z.getY(), z.getZ());
 
-    //result = this->ParticleFilter<StatePosVel,tf::Vector3>::UpdateInternal(NULL,u,measmodel,z,s) && result;
-
     result = result && this->UpdateWeightsInternal(sysmodel,u,measmodel,z,s);
 
     // If a occlusion model is set
+    /*
     if(occlusionmodel){
-      //result = result && this->UpdateWeightsUsingOcclusionModel(occlusionmodel);
+      result = result && this->UpdateWeightsUsingOcclusionModel(occlusionmodel);
     }
-    //result = result && this->ParticleFilter<StatePosVel,tf::Vector3>::DynamicResampleStep();
+    */
+
+    // Do dynamic resampling
     result = result && this->DynamicResampleStep();
 
-/*    samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
-    for(std::vector<WeightedSample<StatePosVel> >::iterator sampleIt = samples.begin(); sampleIt != samples.end(); sampleIt++){
-      std::cout << (*sampleIt) << std::endl;
-    }*/
+    #if DEBUG_PARTICLES
+    std::vector<WeightedSample<StatePosVel> > samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
+    std::cout << "Samples after measurement update" << std::endl;
+    for(int i = 0; i<N_DEBUG_PARTICLES; i++){
+      std::cout << "Sample " << samples[i].ValueGet() << "Weight: " << samples[i].WeightGet() << std::endl;
+    }
+    #endif
 
   }
-
-  //assert(false);
 
   return result;
 }
@@ -169,19 +168,7 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
 
   ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
 
-  //std::cout << " #### Update Weights JPDA" << std::endl;
-  //std::cout << "Assignment Probabilities" << std::endl << assignmentProbabilities << std::endl;
-
-
-  // Number of measurements
-  unsigned int m_k = assignmentProbabilities.rows();
-
-  for(unsigned int j = 1; j < m_k; j++){
-    //if(assignmentProbabilities[j] > 0.0)
-    //  std::cout << "Update is done with measurement " << j-1 << " at " << z[j-1]->point_[0] << "   " << z[j-1]->point_[1] << " with meas prob:" << assignmentProbabilities[j] << std::endl;
-  }
-
-  double weightfactor = 1;
+  double weightfactor = 1.0;
 
   // Get the posterior samples
   _new_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
@@ -202,7 +189,7 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
     }
 
     // Sum the weight over this sample using all measurement probabilities
-    for(unsigned int j = 1; j < m_k; j++){
+    for(unsigned int j = 1; j < assignmentProbabilities.rows(); j++){
       if(assignmentProbabilities[j] > 0.0){
 
 
@@ -213,15 +200,9 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
       }
     }
 
-    //std::cout << "Weight Update: " << _ns_it->WeightGet() << "    -->    ";
     //_ns_it->WeightSet(_ns_it->WeightGet() * weightSum);// <-- See Thrun "Probabilistic Robotics", p 99-100 eq (4.24) this method is inferior...
     _ns_it->WeightSet(weightSum);
-    //std::cout << _ns_it->WeightGet() << std::endl;
 
-    // _ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);
-
-    // OR //TODO
-    //_ns_it->WeightSet(weightfactor);
   }
 
   // Normalize the weight
@@ -259,19 +240,12 @@ PeopleParticleFilter::UpdateWeightsInternal(BFL::AdvancedSysModelPosVel* const s
   for ( _ns_it=_new_samples.begin(); _ns_it != _new_samples.end() ; _ns_it++){
 
     const StatePosVel& x_new = _ns_it->ValueGet();
-    //const StatePosVel& x_old = _os_it->ValueGet();
 
     weightfactor = measmodel->ProbabilityGet(z,x_new);
-    // TODO apply occlusion model here
-
-    //std::cout << "Weight Update: " << _ns_it->WeightGet() << "    -->     ";
-    //_ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);// <-- See Thrun "Probabilistic Robotics", p 99-100 eq (4.24) this method is inferior...
 
     _ns_it->WeightSet(weightfactor);
-    //if(weightfactor.getValue() > 0.01)
-    //std::cout << "weight set" << weightfactor.getValue() << std::endl;
-    //std::cout << _ns_it->WeightGet() << std::endl;
   }
+
   // Update the posterior
   bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
 
@@ -306,7 +280,6 @@ PeopleParticleFilter::UpdateWeightsJPDA(MeasurementModel<tf::Vector3,StatePosVel
     //const StatePosVel& x_old = _os_it->ValueGet();
 
     weightfactor = measmodel->ProbabilityGet(z,x_new);
-    // TODO apply occlusion model here
 
     //std::cout << "Weight Update: " << _ns_it->WeightGet() << "    -->     ";
     _ns_it->WeightSet(_ns_it->WeightGet() * weightfactor);
@@ -339,11 +312,6 @@ PeopleParticleFilter::getMeasurementProbability(
     // Get the probability of this particle
     Probability prop = measmodel->ProbabilityGet(z,x_new);
 
-    //std::cout << "prob " << prop.getValue() << std::endl;
-//
-//    assert(prop >= 0.0);
-//    assert(prop <= 1.0);
-
     probability_sum += prop;
 
   }
@@ -353,8 +321,6 @@ PeopleParticleFilter::getMeasurementProbability(
 
   // Mean
   probability = probability_sum/_new_samples.size();
-//
-//  std::cout << "Probability " << probability << " number of Samples" << _new_samples.size() << std::endl;
 
   return probability;
   }
@@ -389,12 +355,9 @@ bool
 PeopleParticleFilter::UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusionmodel){
   ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
 
-  //assert(false);
-
   double weightfactor = 1.0;
 
   unsigned int counter = 0;
-
 
   tf::Stamped<tf::Point> point;
   point.stamp_ = occlusionmodel->scan_.header.stamp; // TODO ugly!
@@ -412,15 +375,11 @@ PeopleParticleFilter::UpdateWeightsUsingOcclusionModel(OcclusionModelPtr occlusi
 
     point.setData(x_new.pos_);
 
-    weightfactor = occlusionmodel->getOcclusionProbability(point);
-    // TODO apply occlusion model here
-    weightfactor = min(0.8, weightfactor);
+    // weightfactor = occlusionmodel->getOcclusionProbability(point);
+
+    //weightfactor = min(0.8, weightfactor);
     weightfactor = 0.0;
 
-
-    if(weightfactor != 1.0){
-      std::cout << "Update using occlusion model weightfactor: " << weightfactor << "  " << _ns_it->WeightGet() << "  -->  ";
-    }
     //std::cout << "Weight Update: " << _ns_it->WeightGet() << "    -->     ";
     _ns_it->WeightSet(_ns_it->WeightGet() * (1-weightfactor));
     //std::cout << _ns_it->WeightGet() << std::endl;
@@ -524,33 +483,6 @@ PeopleParticleFilter::LowVarianceResample()
     _ns_it++;
 
   }
-
-  //std::cout << "LOW VARIANCE RESAMPLING!!!" << std::endl;
-
-
-
-/*  std::cout << "r: " << r << std::endl;
-
-  assert(false);
-
-  // Note: At this time only one sampling method is implemented!
-  switch(_resampleScheme)
-    {
-    case MULTINOMIAL_RS:
-      {
-        (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->SampleFrom(_new_samples_unweighted, NumSamples,RIPLEY,NULL);
-        break;
-      }
-    case SYSTEMATIC_RS:{break;}
-    case STRATIFIED_RS:{break;}
-    case RESIDUAL_RS:{break;}
-    default:
-      {
-        cerr << "Sampling method not supported" << endl;
-        break;
-      }
-    }*/
-  //bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples_unweighted);
 
   bool result = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesUpdate(_new_samples);
 

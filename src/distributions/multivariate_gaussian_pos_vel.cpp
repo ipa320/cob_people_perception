@@ -108,16 +108,13 @@ void MultivariateGaussianPosVel::sigmaSet(const Eigen::Matrix<double,6,6>& sigma
 void MultivariateGaussianPosVel::sigmaSet(const MatrixWrapper::SymmetricMatrix& cov)
 {
   // Transform the sigma into a eigen Matrix
-  // std::cout << "Sigma Before" << std::endl << sigma_ << std::endl;
 
   for (unsigned int i = 0; i < 6; i++){
     for (unsigned int j = 0; j < 6; j++){
       sigma_(i,j) = cov(i + 1, j + 1);
     }
   }
-  // std::cout << "Sigma After" << std::endl << sigma_ << std::endl;
 
-  //sigma_ = sigma;
   sigma_changed_ = true;
 
   normX_solver_->setCovar(sigma_);
