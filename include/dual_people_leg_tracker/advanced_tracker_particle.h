@@ -65,7 +65,12 @@ class AdvancedTrackerParticle: public Tracker
 {
 public:
   /// constructor
-    AdvancedTrackerParticle(const std::string& name, unsigned int num_particles, const BFL::StatePosVel& sysnoise);
+    AdvancedTrackerParticle(const std::string& name,
+                            unsigned int num_particles,
+                            const BFL::StatePosVel& sysnoise,
+                            double v_max,
+                            double position_factor,
+                            double velocity_factor);
 
   /// destructor
   virtual ~AdvancedTrackerParticle();

@@ -50,11 +50,16 @@ using namespace ros;
 namespace estimation
 {
 // constructor
-AdvancedTrackerParticle::AdvancedTrackerParticle(const string& name, unsigned int num_particles, const StatePosVel& sysnoise):
+AdvancedTrackerParticle::AdvancedTrackerParticle(const string& name,
+                                                 unsigned int num_particles,
+                                                 const StatePosVel& sysnoise,
+                                                 double v_max,
+                                                 double position_factor,
+                                                 double velocity_factor):
   Tracker(name),
   prior_(num_particles),
   filter_(NULL),
-  sys_model_(sysnoise, 4.0, 0.8, 1.6), // System noise, sysnoise is the sigma(variance) of this noise, second parameter is v_max TODO
+  sys_model_(sysnoise, v_max, position_factor, velocity_factor), // System noise, sysnoise is the sigma(variance) of this noise, second parameter is v_max TODO
   meas_model_(tf::Vector3(0.01, 0.01, 0.01)), // Measurement model variance
   tracker_initialized_(false),
   num_particles_(num_particles),

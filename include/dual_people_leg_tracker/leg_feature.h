@@ -110,7 +110,10 @@ public:
              double initial_leg_feature_predict_pos_cov,
              double initial_leg_feature_predict_vel_cov,
              double min_people_probability_for_hl_prediction,
-             double static_threshold_distance);
+             double static_threshold_distance,
+             double v_max,
+             double position_factor,
+             double velocity_factor);
 
   ~LegFeature();
 

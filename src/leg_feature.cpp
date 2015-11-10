@@ -27,7 +27,11 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc,
                        double initial_leg_feature_predict_pos_cov,
                        double initial_leg_feature_predict_vel_cov,
                        double min_people_probability_for_hl_prediction,
-                       double static_threshold_distance)
+                       double static_threshold_distance,
+                       double v_max,
+                       double position_factor,
+                       double velocity_factor
+                       )
   : tfl_(tfl),
     leg_feature_predict_pos_cov_(leg_feature_predict_pos_cov), //0.4 Around 0.05 // Variance of the
     leg_feature_predict_vel_cov_(leg_feature_predict_vel_cov),  //1.8 Around 1.0 should be fine, the bigger the more spread
@@ -36,7 +40,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc,
     min_people_probability_for_hl_prediction_(min_people_probability_for_hl_prediction),
     static_threshold_distance_(static_threshold_distance),
     sys_sigma_(tf::Vector3(leg_feature_predict_pos_cov_, leg_feature_predict_pos_cov_, 0.0), tf::Vector3(leg_feature_predict_vel_cov_, leg_feature_predict_vel_cov_, 0.0)), // The initialized system noise(the variance)
-    filter_("tracker_name", NumberOfParticles, sys_sigma_), // Name, NumberOfParticles, Noise
+    filter_("tracker_name", NumberOfParticles, sys_sigma_, 4.0, 0.8, 1.6), // Name, NumberOfParticles, Noise
     is_valid_(true), // On construction the leg feature is always valid
     is_static_(true) // At the beginning the leg feature is considered static
 {

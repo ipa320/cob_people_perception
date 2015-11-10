@@ -214,6 +214,10 @@ public:
   double min_people_probability_for_hl_prediction_;
   double static_threshold_distance_;
 
+  double v_max_;
+  double position_factor_;
+  double velocity_factor_;
+
   benchmarking::Timer cycleTimer; /**< Timer to measure the cycle time */
   benchmarking::Timer freeTimer; /**< Timer to measure the time left for calculations */
 
@@ -410,6 +414,10 @@ public:
 
     min_people_probability_for_hl_prediction_ = 0.6; // TODO make configable
     static_threshold_distance_ = 0.4; // TODO make configable
+
+    v_max_ = 4.0;
+    position_factor_ = 0.8;
+    velocity_factor_ = 1.6;
 
 
     if (fixed_frame.compare(config.fixed_frame) != 0)
@@ -870,7 +878,10 @@ public:
                              initial_leg_feature_predict_pos_cov_,
                              initial_leg_feature_predict_vel_cov_,
                              min_people_probability_for_hl_prediction_,
-                             static_threshold_distance_
+                             static_threshold_distance_,
+                             v_max_,
+                             position_factor_,
+                             velocity_factor_
                              )
           );
 
@@ -934,7 +945,10 @@ public:
                                initial_leg_feature_predict_pos_cov_,
                                initial_leg_feature_predict_vel_cov_,
                                min_people_probability_for_hl_prediction_,
-                               static_threshold_distance_)
+                               static_threshold_distance_,
+                               v_max_,
+                               position_factor_,
+                               velocity_factor_)
             );
 
 

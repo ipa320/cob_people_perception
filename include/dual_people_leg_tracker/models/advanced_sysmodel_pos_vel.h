@@ -114,7 +114,6 @@ private:
   // Nonlinear noise, depending on high level update
   MultivariateGaussianPosVel noise_nl_;
 
-
   double dt_;
 
   double v_max_; /**< Maximum speed a particle can get */
