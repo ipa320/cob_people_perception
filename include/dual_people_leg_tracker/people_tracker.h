@@ -173,6 +173,12 @@ class PeopleTracker{
     BFL::StatePosVel getEstimateKalman();
 
     /**
+     * Get the current propagation Time
+     * @return
+     */
+    ros::Time getPropagationTime() const{ return this->propagation_time_; }
+
+    /**
      * Get the size of the people history
      * @return Size of the History
      */

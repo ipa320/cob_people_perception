@@ -30,8 +30,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc,
                        double static_threshold_distance,
                        double v_max,
                        double position_factor,
-                       double velocity_factor
-                       )
+                       double velocity_factor)
   : tfl_(tfl),
     leg_feature_predict_pos_cov_(leg_feature_predict_pos_cov), //0.4 Around 0.05 // Variance of the
     leg_feature_predict_vel_cov_(leg_feature_predict_vel_cov),  //1.8 Around 1.0 should be fine, the bigger the more spread
@@ -127,7 +126,7 @@ void LegFeature::propagate(ros::Time time)
     ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i considers a high level filter for its update", __func__, int_id_);
 
     // Check that the high level filter was propagated to this time
-    ROS_ASSERT((mostProbableAssociatedPPL->propagation_time_  - time).isZero());
+    ROS_ASSERT((mostProbableAssociatedPPL->getPropagationTime()  - time).isZero());
 
     // Get the estimation of the associated people tracker
     StatePosVel est = mostProbableAssociatedPPL->getEstimate();

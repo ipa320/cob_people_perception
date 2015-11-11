@@ -347,77 +347,102 @@ public:
   void configure(dual_people_leg_tracker::DualTrackerConfig &config, uint32_t level)
   {
     // Clustering parameters
-    connected_thresh_           = config.connection_threshold;    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - connected_thresh_ %f", __func__, connected_thresh_ );
-    min_points_per_group_       = config.min_points_per_group;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - min_points_per_group %i", __func__, min_points_per_group_ );
-    new_track_min_probability_  = config.new_track_min_probability; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - new_track_min_probability %f", __func__, new_track_min_probability_ );
+    connected_thresh_           = config.connection_threshold;    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  connected_thresh_ %f", connected_thresh_ );
+    min_points_per_group_       = config.min_points_per_group;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  min_points_per_group %i", min_points_per_group_ );
+    new_track_min_probability_  = config.new_track_min_probability; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  new_track_min_probability %f", new_track_min_probability_ );
 
     // Leg Tracker Parameters
-    leg_reliability_limit_      = config.leg_reliability_limit;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, leg_reliability_limit_ );
+    leg_reliability_limit_      = config.leg_reliability_limit;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  leg_reliability_limit_ %f", leg_reliability_limit_ );
 
     // People Tracker Parameters
-    people_probability_limit_   = config.people_probability_limit; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - leg_reliability_limit_ %f", __func__, people_probability_limit_);
+    people_probability_limit_   = config.people_probability_limit; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  leg_reliability_limit_ %f", people_probability_limit_);
 
     // Publish clustering
-    publish_clusters_           = config.publish_clusters;        ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_clusters_ %d", __func__, publish_clusters_ );
+    publish_clusters_           = config.publish_clusters;        ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_clusters_ %d", publish_clusters_ );
 
     // Publish the leg trackers
-    publish_leg_measurements_   = config.publish_leg_measurements;            ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_measurements_ %d", __func__, publish_leg_measurements_ );
-    publish_leg_velocity_       = config.publish_leg_velocity; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_velocity_ %d", __func__, publish_leg_velocity_ );
-    publish_leg_markers_        = config.publish_leg_markers;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_markers_ %d", __func__, publish_leg_markers_ );
-    publish_leg_history_        = config.publish_leg_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_history_ %d", __func__, publish_leg_history_ );
-    publish_leg_labels_         = config.publish_leg_labels;      ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_leg_labels_ %d", __func__, publish_leg_labels_ );
-    publish_measurement_labels_ = config.publish_measurement_labels; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_measurement_labels_ %d", __func__, publish_measurement_labels_);
-    publish_predicted_leg_positions_ = config.publish_predicted_leg_positions; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_predicted_leg_positions_ %d", __func__, publish_predicted_leg_positions_);
-    publish_scans_lines_ 		= config.publish_scans_lines; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_scans_lines_ %d", __func__, publish_scans_lines_);
+    publish_leg_measurements_   = config.publish_leg_measurements;            ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_measurements_ %d", publish_leg_measurements_ );
+    publish_leg_velocity_       = config.publish_leg_velocity; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_velocity_ %d", publish_leg_velocity_ );
+    publish_leg_markers_        = config.publish_leg_markers;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_markers_ %d", publish_leg_markers_ );
+    publish_leg_history_        = config.publish_leg_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_history_ %d", publish_leg_history_ );
+    publish_leg_labels_         = config.publish_leg_labels;      ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_labels_ %d", publish_leg_labels_ );
+    publish_measurement_labels_ = config.publish_measurement_labels; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_measurement_labels_ %d", publish_measurement_labels_);
+    publish_predicted_leg_positions_ = config.publish_predicted_leg_positions; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_predicted_leg_positions_ %d", publish_predicted_leg_positions_);
+    publish_scans_lines_ 		= config.publish_scans_lines; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_scans_lines_ %d", publish_scans_lines_);
 
     // Publish the people tracker
-    publish_people_             = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_ %d", __func__, publish_people_ );
-    publish_people_markers_     = config.publish_people_markers;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_markers_ %d", __func__, publish_people_markers_ );
-    publish_people_tracker_     = config.publish_people_tracker;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_tracker_ %d", __func__, publish_people_tracker_ );
-    publish_static_people_trackers_ = config.publish_static_people_trackers; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_static_people_trackers_ %d", __func__, publish_static_people_trackers_);
-    publish_people_history_     = config.publish_people_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_history_ %d", __func__, publish_people_history_ );
-    publish_people_velocity_kalman_ = config.publish_people_velocity_kalman; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_velocity_kalman_ %d", __func__, publish_people_velocity_kalman_ );
-    publish_people_3d_          = config.publish_people_3d; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_people_3d_ %d", __func__, publish_people_3d_ );
-    publish_particle_arrows_    = config.publish_particle_arrows; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_particle_arrows_ %d", __func__, publish_particle_arrows_ );
+    publish_people_             = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_ %d", publish_people_ );
+    publish_people_markers_     = config.publish_people_markers;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_markers_ %d", publish_people_markers_ );
+    publish_people_tracker_     = config.publish_people_tracker;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_tracker_ %d", publish_people_tracker_ );
+    publish_static_people_trackers_ = config.publish_static_people_trackers; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_static_people_trackers_ %d", publish_static_people_trackers_);
+    publish_people_history_     = config.publish_people_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_history_ %d", publish_people_history_ );
+    publish_people_velocity_kalman_ = config.publish_people_velocity_kalman; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_velocity_kalman_ %d", publish_people_velocity_kalman_ );
+    publish_people_3d_          = config.publish_people_3d; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_3d_ %d", publish_people_3d_ );
+    publish_particle_arrows_    = config.publish_particle_arrows; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_particle_arrows_ %d", publish_particle_arrows_ );
 
-    publish_particles_          = config.publish_particles;       ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_particles_ %d", __func__, publish_particles_ );
-    publish_matches_            = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_matches_ %d", __func__, publish_matches_ );
+    publish_particles_          = config.publish_particles;       ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_particles_ %d", publish_particles_ );
+    publish_matches_            = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_matches_ %d", publish_matches_ );
 
-    publish_occlusion_model_    = config.publish_occlusion_model;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_occlusion_model_ %d", __func__, publish_occlusion_model_ );
+    publish_occlusion_model_    = config.publish_occlusion_model;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_occlusion_model_ %d", publish_occlusion_model_ );
 
     // JPDA Publications
-    publish_jpda_associations_  = config.publish_jpda_associations;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - publish_jpda_associations_ %d", __func__, publish_jpda_associations_ );
+    publish_jpda_associations_  = config.publish_jpda_associations;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_jpda_associations_ %d", publish_jpda_associations_ );
 
-    no_observation_timeout_s = config.no_observation_timeout;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - no_observation_timeout_s %f", __func__, no_observation_timeout_s );
+    no_observation_timeout_s = config.no_observation_timeout;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  no_observation_timeout_s %f", no_observation_timeout_s );
     max_second_leg_age_s     = config.max_second_leg_age;
     max_track_jump_m         = config.max_track_jump;
     max_meas_jump_m          = config.max_meas_jump;
     leg_pair_separation_m    = config.leg_pair_separation;
 
     // Set probabilties of the filter
-    use_fake_measurements_                            = config.use_fake_measurements; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "DualTracker::%s - use_fake_measurements_ %d", __func__, use_fake_measurements_ );
+    use_fake_measurements_                            = config.use_fake_measurements;
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  use_fake_measurements_ %d", use_fake_measurements_ );
 
-    filter_config.fakeLegProb                         = config.fake_leg_probability;
+    /*filter_config.fakeLegProb                         = config.fake_leg_probability;
+
     filter_config.minFakeLegPersonProbability         = config.min_fake_leg_person_probability;
     filter_config.fakeLegRealLegDistance              = config.fake_leg_real_leg_distance;
     filter_config.fakeLegRangeThres                   = config.fake_leg_range_thres;
     filter_config.fakeLegMeasurementProbabiltyFactor  = config.fake_leg_measurement_probabilty_factor;
 
     filter_config.minUpdateProbability                = config.min_update_probability; // TODO make cfg editable
+    */
 
-    leg_feature_predict_pos_cov_ = 0.2; // TODO make configable
-    leg_feature_predict_vel_cov_ = 1.2; // TODO make configable
-    leg_feature_update_cov_ = 0.05; // TODO make configable
-    leg_feature_measurement_cov_ = 0.004; // TODO make configable
-    initial_leg_feature_predict_pos_cov_ = 0.2; // TODO make configable
-    initial_leg_feature_predict_vel_cov_ = 1.5; // TODO make configable
+    // Leg Feature properties
+    leg_feature_update_cov_                           = config.leg_feature_update_cov; // default 0.05;
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t leg_feature_update_cov_ %g", leg_feature_update_cov_ );
 
-    min_people_probability_for_hl_prediction_ = 0.6; // TODO make configable
-    static_threshold_distance_ = 0.4; // TODO make configable
+    leg_feature_predict_pos_cov_                      = config.leg_feature_predict_pos_cov; // default 0.2;
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t leg_feature_predict_pos_cov_ %g", leg_feature_predict_pos_cov_ );
 
-    v_max_ = 4.0;
-    position_factor_ = 0.8;
-    velocity_factor_ = 1.6;
+    leg_feature_predict_vel_cov_                      = config.leg_feature_predict_vel_cov; // default 1.2;
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t leg_feature_predict_vel_cov_ %g", leg_feature_predict_vel_cov_ );
+
+    leg_feature_measurement_cov_                      = config.leg_feature_measurement_cov; // default 0.004;
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t leg_feature_measurement_cov_ %g", leg_feature_measurement_cov_ );
+
+    initial_leg_feature_predict_pos_cov_              = config.initial_leg_feature_predict_pos_cov; // default 0.2;
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t initial_leg_feature_predict_pos_cov_ %g", initial_leg_feature_predict_pos_cov_ );
+
+    initial_leg_feature_predict_vel_cov_              = config.initial_leg_feature_predict_vel_cov;       // default 1.5;   // TODO make configable
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t initial_leg_feature_predict_vel_cov_ %g", initial_leg_feature_predict_pos_cov_ );
+
+    min_people_probability_for_hl_prediction_         = config.min_people_probability_for_hl_prediction;  // default 0.6; // TODO make configable
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t min_people_probability_for_hl_prediction_ %g", min_people_probability_for_hl_prediction_ );
+
+    static_threshold_distance_                        = config.static_threshold_distance;                 // default 0.4; // TODO make configable
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t static_threshold_distance_ %g", static_threshold_distance_ );
+
+
+    // Filter properties
+    v_max_                                            = config.v_max;                                     // default 4.0;
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t v_max_ %g", v_max_ );
+
+    position_factor_                                  = config.position_factor;                           // default 0.8;
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t position_factor_ %g", position_factor_ );
+
+    velocity_factor_                                  = config.velocity_factor;                           // default 1.6;
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t velocity_factor_ %g", velocity_factor_ );
 
 
     if (fixed_frame.compare(config.fixed_frame) != 0)
