@@ -150,8 +150,6 @@ public:
   int feature_id_;
 
 
-
-
   //bool use_seeds_;
 
   // RMSE, Error stuff
@@ -495,26 +493,28 @@ public:
     //// Create clusters (takes approx 0.8ms)
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sCreating Clusters [Cycle %u]", BOLDWHITE, cycle_);
-    // Process the incoming scan
+
+    // Start the timer
     benchmarking::Timer processTimer; processTimer.start();
+
+    // Create the scan processor
     ScanProcessor processor(*scan, mask_);
     processor.splitConnected(connected_thresh_);
     //processor.splitConnectedRangeAware(connected_thresh_);
     processor.removeLessThan(min_points_per_group_);
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Process scan(clustering) took %f ms",__func__, processTimer.stopAndGetTimeMs());
 
-    ROS_DEBUG("%sCreating Clusters done! [Cycle %u]", BOLDWHITE, cycle_);
-
+    ROS_DEBUG("%sCreating Clusters done! [Cycle %u] - %f ms", BOLDWHITE, cycle_, processTimer.stopAndGetTimeMs());
 
     //////////////////////////////////////////////////////////////////////////
     //// Remove the invalid Trackers (takes approx 0.1ms)
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sRemoving old Trackers [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer removeTimer; removeTimer.start();
 
     // if no measurement matches to a tracker in the last <no_observation_timeout>  seconds: erase tracker
     ros::Time purge = scan->header.stamp + ros::Duration().fromSec(-no_observation_timeout_s);
 
-    benchmarking::Timer removeTimer; removeTimer.start();
+
     // Iterate through the saved features and remove those who havent been observed since (no_observation_timeout_s)
 
     //vector<LegFeaturePtr>::iterator sf_iter = saved_leg_features.begin();
@@ -546,10 +546,8 @@ public:
     int features_deleted = size_before - saved_leg_features.size();
 
     removeTimer.stop();
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Removed %i features because the havent been detected in the last %f seconds",__func__, features_deleted, no_observation_timeout_s);
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Removing features took %f ms",__func__, removeTimer.getElapsedTimeMs());
-
-    ROS_DEBUG("%sRemoving old Trackers done! [Cycle %u]", BOLDWHITE, cycle_);
+    ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Removed %i features not detected in the last %f seconds",__func__, features_deleted, no_observation_timeout_s);
+    ROS_DEBUG("%sRemoving old Trackers done! [Cycle %u] - %f ms", BOLDWHITE, cycle_, removeTimer.getElapsedTimeMs());
 
     boost::shared_ptr<std::vector<PeopleTrackerPtr> > pplTrackers = people_trackers_.getList();
 
@@ -557,6 +555,7 @@ public:
     //// Update the tracker configuration/parameters for existing trackers
     //////////////////////////////////////////////////////////////////////////
 
+    /*
     for(std::vector<PeopleTrackerPtr>::iterator pplTrackerIt = pplTrackers->begin();
         pplTrackerIt != pplTrackers->end();
         pplTrackerIt++)
@@ -570,6 +569,7 @@ public:
     {
       (*legIt)->configure(this->filter_config);
     }
+    */
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -579,6 +579,7 @@ public:
     benchmarking::Timer propagationTimer; propagationTimer.start();
 
     /// People Tracker Propagation
+    benchmarking::Timer propagationPeopleTrackerTimer; propagationPeopleTrackerTimer.start();
     // High level propagation
     for(std::vector<PeopleTrackerPtr>::iterator pplTrackerIt = pplTrackers->begin();
         pplTrackerIt != pplTrackers->end();
@@ -586,9 +587,13 @@ public:
     {
       (*pplTrackerIt)->propagate(scan->header.stamp);
     }
+    propagationPeopleTrackerTimer.stop();
+
 
     // System update of trackers, and copy updated ones in propagate list
     /// Leg Tracker propagation
+    benchmarking::Timer propagationLegTrackerTimer; propagationLegTrackerTimer.start();
+
     vector<LegFeaturePtr> propagated;
     for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin();
         legIt != saved_leg_features.end();
@@ -597,19 +602,22 @@ public:
       (*legIt)->propagate(scan->header.stamp); // Propagate <-> Predict the filters
       propagated.push_back(*legIt);
     }
+    propagationLegTrackerTimer.stop();
+
 
     propagationTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Propagated %i SavedFeatures",__func__, (int) propagated.size());
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"LegDetector::%s - Propagating took %f ms",__func__, propagationTimer.getElapsedTimeMs());
 
     //publishParticlesPrediction(propagated, scan->header.stamp);
     //publishParticlesPredArrows(propagated, scan->header.stamp);
 
-    ROS_DEBUG("%sPrediction done! [Cycle %u]", BOLDWHITE, cycle_);
+    ROS_DEBUG("%sPrediction done! [Cycle %u] - %f ms (%f People, %f Legs)", BOLDWHITE, cycle_, propagationTimer.getElapsedTimeMs(), propagationPeopleTrackerTimer.getElapsedTimeMs(), propagationLegTrackerTimer.getElapsedTimeMs());
+
     //////////////////////////////////////////////////////////////////////////
     //// Detection (Search for the existing trackers)
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sDetection [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer detectionTimer; detectionTimer.start();
 
     std::vector<DetectionPtr> detections; // vector of leg detections along with their probabilities
 
@@ -657,7 +665,9 @@ public:
 
     }
 
-    ROS_DEBUG("%sDetection done! [Cycle %u]", BOLDWHITE, cycle_);
+
+    detectionTimer.stop();
+    ROS_DEBUG("%sDetection done! [Cycle %u] - %f ms", BOLDWHITE, cycle_, detectionTimer.getElapsedTimeMs());
 
     //////////////////////////////////////////////////////////////////////////
     //// Global Nearest Neighbour (GNN)
@@ -721,6 +731,7 @@ public:
     }
 
     int nMeasurementsFake = fakeDetections.size();
+    ROS_DEBUG("Fake measurements took %f ms", gnnTimer.getElapsedTimeMs());
 
 
     // costMatrixMAP is the actual costmatrix which is solved
@@ -786,19 +797,20 @@ public:
     // Obtain multiple solutions using murty algorithm
     //solutionsMAP = murty(costMatrixMAP,1);
 
+    ROS_DEBUG("Preparing matrix took %f ms", gnnTimer.getElapsedTimeMs());
     associationSets.push_back(solvehungarian(costMatrixMAP));
 
     ROS_ASSERT(associationSets.size() == 1);
 
-    CoutMatrixHelper::cout_cost_matrix("CostMatrix",
+    /*CoutMatrixHelper::cout_cost_matrix("CostMatrix",
                                        costMatrixMAP,
                                        associationSets[0].assignmentMatrix,
                                        indicesVec,
                                        nLegsTracked,
                                        nMeasurementsReal,
                                        nMeasurementsFake);
-
-    CoutMatrixHelper::cout_probability_matrix("Probabilities",
+    */
+    /*CoutMatrixHelper::cout_probability_matrix("Probabilities",
                                               probMAPMat,
                                               associationSets[0].assignmentMatrix,
                                               indicesVec,
@@ -806,12 +818,15 @@ public:
                                               nMeasurementsReal,
                                               nMeasurementsFake);
 
-    ROS_DEBUG("%sGNN [Cycle %u] done", BOLDWHITE, cycle_);
+    */
+    gnnTimer.stop();
+    ROS_DEBUG("%sGNN [Cycle %u] done  - %f ms", BOLDWHITE, cycle_, gnnTimer.getElapsedTimeMs());
 
     //////////////////////////////////////////////////////////////
     /// Update leg measurements based on the assigned measurements
     //////////////////////////////////////////////////////////////
     ROS_DEBUG("%sUpdate Trackers [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer updateTimer; updateTimer.start();
 
     // Get the best solution
     Eigen::Matrix<int,-1,-1> assignmentMat;
@@ -873,12 +888,14 @@ public:
       }
     }
 
-    ROS_DEBUG("%sUpdate Trackers [Cycle %u] done", BOLDWHITE, cycle_);
+    updateTimer.stop();
+    ROS_DEBUG("%sUpdate Trackers [Cycle %u] done - %f ms", BOLDWHITE, cycle_, updateTimer.getElapsedTimeMs());
 
     /////////////////////////////////////////////////////////////////////////
     /// Tracker Creation - Create new trackers if no valid leg was found
     /////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sCreating Trackers [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer creationTimer; creationTimer.start();
 
     // Iterate the real measurements
     for(int lm = 0; lm < nMeasurementsReal; lm++){
@@ -1000,7 +1017,9 @@ public:
 
       }
     }
-    ROS_DEBUG("%sCreating Trackers [Cycle %u] done", BOLDWHITE, cycle_);
+
+    creationTimer.stop();
+    ROS_DEBUG("%sCreating Trackers [Cycle %u] done - %f ms", BOLDWHITE, cycle_, creationTimer.getElapsedTimeMs());
 
     //////////////////////////////////////////////////////////////////////////
     //// High level Association: Combination of saved features to people tracker (takes approx. 0.8ms)
@@ -1036,26 +1055,27 @@ public:
 
     //return;
     hlAssociationTimer.stop();
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"High level association took %f ms", hlAssociationTimer.getElapsedTimeMs());
-    ROS_DEBUG("%sHigh Level Association [Cycle %u] done", BOLDWHITE, cycle_);
+    ROS_DEBUG("%sHigh Level Association [Cycle %u] done -  %f ms", BOLDWHITE, cycle_, hlAssociationTimer.getElapsedTimeMs());
 
     //////////////////////////////////////////////////////////////////////////
     //// High level Update (Update of the people trackers)
     //////////////////////////////////////////////////////////////////////////
     ROS_DEBUG("%sHigh level update [Cycle %u]", BOLDWHITE, cycle_);
-    benchmarking::Timer hlUpdateTimer; hlUpdateTimer.start();
+    benchmarking::Timer hlUpdateTimer;
+    hlUpdateTimer.start();
 
     // Update the probabilites of every people tracker
     people_trackers_.updateAllTrackers(scan->header.stamp);
 
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"High level update took %f ms", hlUpdateTimer.getElapsedTimeMs());
-    ROS_DEBUG("%sHigh level update [Cycle %u] done", BOLDWHITE, cycle_);
+    hlUpdateTimer.stop();
+    ROS_DEBUG("%sHigh level update [Cycle %u] done - %f ms", BOLDWHITE, cycle_, hlUpdateTimer.getElapsedTimeMs());
 
     //////////////////////////////////////////////////////////////////////////
     //// Publish data
     //////////////////////////////////////////////////////////////////////////
 
     ROS_DEBUG("%sPublishing [Cycle %u]", BOLDWHITE, cycle_);
+    benchmarking::Timer publishTimer; publishTimer.start();
 
     // Publish the leg measurements
     if(publish_leg_measurements_){
@@ -1141,7 +1161,8 @@ public:
       publishFakeMeasPos(fakeDetections, scan->header.stamp, sensorCoord);
     }
 
-    ROS_DEBUG("%sPublishing [Cycle %u] done", BOLDWHITE, cycle_);
+    publishTimer.stop();
+    ROS_DEBUG("%sPublishing [Cycle %u] done - %f ms", BOLDWHITE, cycle_, publishTimer.getElapsedTimeMs());
 
     //////////////////////////////////////////////////////////////////////////
     //// RMSE (for evaluation purposes)

@@ -25,7 +25,7 @@
 #include <people_tracking_filter/rgb.h>
 
 // Default variables
-#define DEBUG_LEG_TRACKER 0
+#define DEBUG_LEG_TRACKER 1
 
 class PeopleTracker; // Forward declaration
 typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr; // Forward declaration
@@ -94,6 +94,10 @@ private:
   double min_people_probability_for_hl_prediction_; /**< Min Probability the Associated PeopleTracker needs for a highlevel update */
 
   double static_threshold_distance_; /**< The distance the leg has to move at least to be considered dynamic */
+
+  mutable BFL::StatePosVel current_estimate_;
+
+  mutable bool current_estimate_changed_;
 
 public:
   /**
@@ -278,9 +282,18 @@ public:
    * @return
    */
   BFL::StatePosVel getEstimate() const{
-    BFL::StatePosVel est;
-    filter_.getEstimate(est);
-    return est;
+
+    if(this->current_estimate_changed_){
+      BFL::StatePosVel est;
+      filter_.getEstimate(est);
+      current_estimate_ = est;
+      this->current_estimate_changed_ = false;
+    }
+    else{
+      //std::cout << "I was able to use old value" << std::endl;
+    }
+
+    return current_estimate_;
     //return pos_vel_;
   }
 

@@ -33,6 +33,7 @@
 *********************************************************************/
 
 #include <dual_people_leg_tracker/advanced_tracker_particle.h>
+#include <dual_people_leg_tracker/benchmarking/timer.h>
 //#include <people_tracking_filter/gaussian_pos_vel.h>
 //#include <people_tracking_filter/people_particle_filter.h>
 
@@ -134,6 +135,8 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
 {
   ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
+  benchmarking::Timer updatePredictionTimer; updatePredictionTimer.start();
+
   bool res = true;
   if (time > filter_time_)
   {
@@ -146,6 +149,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
 
     if (!res) quality_ = 0;
   }
+
   return res;
 };
 

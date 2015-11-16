@@ -97,6 +97,9 @@ void LegFeature::propagate(ros::Time time)
 {
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i", __func__, int_id_);
 
+  // Set the estimate change to true
+  current_estimate_changed_ = true;
+
   // Update the time
   time_last_scan_ = time;
   time_prediction_ = time;
@@ -178,6 +181,9 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature[%i]::%s",int_id_,__func__);
   //std::cout << "Received update: " << loc.getX() << "  " << loc.getY() << "  " << loc.getZ() << std::endl;
 
+  // Set estimate change to true
+  current_estimate_changed_ = true;
+
   meas_loc_last_update_ = loc;
 
   // Update the measurement time
@@ -237,6 +243,9 @@ double LegFeature::getMeasurementProbability(tf::Stamped<tf::Point> loc){
 void LegFeature::updatePosition()
 {
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature[%d]::%s",(int)int_id_,__func__);
+
+  // Set estimate change flag
+  current_estimate_changed_ = true;
 
   // Estimate using the weighted mean
   BFL::StatePosVel est;
