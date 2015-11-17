@@ -473,6 +473,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_perception_msgs::ColorD
 			bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], 0.5 * (float)head_bb.width, 0.5 * (float)head_bb.height, det.pose.pose.position, 6);
 			if (valid_3d_position == false)
 				continue;
+			det.pose.header = face_positions->header;
 			det.pose.pose.orientation.x = 0.;
 			det.pose.pose.orientation.y = 0.;
 			det.pose.pose.orientation.z = 0.;
@@ -504,6 +505,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_perception_msgs::ColorD
 						det.pose.pose.position, 6);
 				if (valid_3d_position == false)
 					continue;
+				det.pose.header = face_positions->header;
 				det.pose.pose.orientation.x = 0.;
 				det.pose.pose.orientation.y = 0.;
 				det.pose.pose.orientation.z = 0.;
