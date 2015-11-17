@@ -12,7 +12,6 @@ set(catkin_RUN_PACKAGES
   stereo_msgs
   image_transport
   image_geometry
-  image_view
   tf
   nodelet
   dynamic_reconfigure

@@ -1,70 +1,50 @@
 <?xml version="1.0"?>
-<package>
-  <name>cob_openni2_tracker</name>
-  <version>0.1.0</version>
-  <description>
-    The openni_tracker broadcasts the OpenNI skeleton frames using tf.
-    This new version of the openni_tracker uses OpenNI2 and Nite2</description>
-  <maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
-  
-  <license>BSD</license>
-  <url type="website">http://www.ros.org/wiki/openni_tracker</url>  
-  <author email="marcus.liebhardt@yujinrobot.com">Marcus Liebhardt</author> 
-  <author>Olha Meyer</author>
+<package format="2">
+	<name>cob_openni2_tracker</name>
+	<version>0.1.0</version>
+	<description>
+		The openni_tracker broadcasts the OpenNI skeleton frames using tf.
+		This new version of the openni_tracker uses OpenNI2 and Nite2</description>
+	<maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
+	
+	<license>BSD</license>
+	<url type="website">http://www.ros.org/wiki/openni_tracker</url>	
+	<author email="marcus.liebhardt@yujinrobot.com">Marcus Liebhardt</author> 
+	<author>Olha Meyer</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+	<buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>cmake_modules</build_depend>
-  <build_depend>libusb-1.0-dev</build_depend>
-  <!--  <build_depend>libopenni-nite-dev</build_depend> -->
-  <build_depend>libopenni-sensor-primesense-dev</build_depend> -->
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>orocos_kdl</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>roslib</build_depend>
-  <build_depend>visualization_msgs</build_depend>
-  <build_depend>tf</build_depend>
-  <build_depend>cob_perception_msgs</build_depend> 
-  <build_depend>libopenni2-dev</build_depend>
-  <build_depend>libnite2</build_depend>
-  <build_depend>nodelet</build_depend>
-  <build_depend>pcl_ros</build_depend>
-  <build_depend>image_transport</build_depend>
-  <build_depend>cv_bridge</build_depend>
-  <build_depend>std_msgs</build_depend>
-  
-  <build_depend>libopencv-dev</build_depend>
-  <build_depend>glut</build_depend>
-  <build_depend>opengl</build_depend>
+	<depend>cmake_modules</depend>
+	<depend>libusb-1.0-dev</depend>
+	<!--	<depend>libopenni-nite-dev</depend> -->
+	<!--	<depend>libopenni-sensor-primesense-dev</depend> -->
+	<depend>geometry_msgs</depend>
+	<depend>sensor_msgs</depend>
+	<depend>orocos_kdl</depend>
+	<depend>roscpp</depend>
+	<depend>roslib</depend>
+	<depend>visualization_msgs</depend>
+	<depend>tf</depend>
+	<depend>cob_perception_msgs</depend> 
+	<depend>libopenni2-dev</depend>
+	<depend>libnite2</depend>
+	<depend>nodelet</depend>
+	<depend>pcl_ros</depend>
+	<depend>image_transport</depend>
+	<depend>cv_bridge</depend>
+	<depend>std_msgs</depend>
+	
+	<depend>libopencv-dev</depend>
+	<depend>glut</depend>
+	<depend>opengl</depend>
 
-  <run_depend>libusb-1.0-dev</run_depend>
-<!--  <run_depend>libopenni-nite-dev</run_depend> -->
-  <run_depend>libopenni-sensor-primesense-dev</run_depend>
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>orocos_kdl</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>roslib</run_depend>
-  <run_depend>visualization_msgs</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>cob_perception_msgs</run_depend>
-  <run_depend>message_runtime</run_depend>  
-  <run_depend>libopenni2-dev</run_depend>
-  <run_depend>libnite2</run_depend>
-  <run_depend>nodelet</run_depend> 
-  <run_depend>pcl_ros</run_depend> 
-  <run_depend>image_transport</run_depend>
-  <run_depend>cv_bridge</run_depend>
-  <run_depend>std_msgs</run_depend>
-  
-  <run_depend>libopencv-dev</run_depend>
-  <run_depend>boost</run_depend>
-  <run_depend>glut</run_depend>
-  <run_depend>opengl</run_depend>
-  
-   <export>
-  <nodelet plugin="${prefix}/nodelet.xml" />	
-  </export>
-  
+	<!-- <run_depend>libopenni-nite-dev</run_depend> -->
+	<exec_depend>libopenni-sensor-primesense-dev</exec_depend>
+	<exec_depend>message_runtime</exec_depend>	
+	<exec_depend>boost</exec_depend>
+	
+	<export>
+		<nodelet plugin="${prefix}/nodelet.xml" />	
+	</export>
+	
 </package>
