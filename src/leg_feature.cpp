@@ -91,31 +91,15 @@ LegFeature::~LegFeature(){
 }
 
 /**
- * Propagate the Position of the Feature using the Particle Filter
+ * Prepare for multithreading propagation by gathering the necessary parameters
+ * @param time
  */
-void LegFeature::propagate(ros::Time time)
-{
+void LegFeature::preparePropagation(ros::Time time){
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i", __func__, int_id_);
-
-  // Set the estimate change to true
-  current_estimate_changed_ = true;
-
-  // Update the time
-  time_last_scan_ = time;
-  time_prediction_ = time;
+  benchmarking::Timer preparePropagationTimer; preparePropagationTimer.start();
 
   // Get the associated people tracker with the highest probability
   PeopleTrackerPtr mostProbableAssociatedPPL = getMostProbableAssociatedPeopleTracker();
-
-
-  MatrixWrapper::SymmetricMatrix cov(6);
-  cov = 0.0;
-  cov(1, 1) = leg_feature_predict_pos_cov_;//conf.leg_feature_predict_pos_cov;
-  cov(2, 2) = leg_feature_predict_pos_cov_;//conf.leg_feature_predict_pos_cov;
-  cov(3, 3) = 0.0;
-  cov(4, 4) = leg_feature_predict_vel_cov_;//conf.leg_feature_predict_vel_cov;
-  cov(5, 5) = leg_feature_predict_vel_cov_;//conf.leg_feature_predict_vel_cov;
-  cov(6, 6) = 0.0;
 
   // Update of the moving leg
   if(mostProbableAssociatedPPL                                          // If there is a associated PPLTracker
@@ -126,13 +110,13 @@ void LegFeature::propagate(ros::Time time)
   {
 
     //std::cout << RED << "Updating L" << this->int_id_ << " most probable associatet people tracker is" << *mostProbableAssociatedPPL << RESET << std::endl;
-    ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i considers a high level filter for its update", __func__, int_id_);
+    ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i is preparing for a hl update", __func__, int_id_);
 
     // Check that the high level filter was propagated to this time
     ROS_ASSERT((mostProbableAssociatedPPL->getPropagationTime()  - time).isZero());
 
     // Get the estimation of the associated people tracker
-    StatePosVel est = mostProbableAssociatedPPL->getEstimate();
+    prepared_estimation_ = mostProbableAssociatedPPL->getEstimate();
 
     // Get the current StepWidth
     double s = mostProbableAssociatedPPL->getStepWidth();
@@ -145,17 +129,18 @@ void LegFeature::propagate(ros::Time time)
 
     // Back leg and moving
     if(mostProbableAssociatedPPL->getBackLeg()->getId() == this->int_id_){
-      factor = s/s_max;
+      prepared_gait_factor_ = s/s_max;
       //std::cout << "LT[" << int_id_ << "] is the back leg and moving! " << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
     }
     // Front leg and moving
     else{
-      factor = - s/s_max;
+      prepared_gait_factor_ = - s/s_max;
       //std::cout << "LT[" << int_id_ << "] is the front leg and moving!" << s/s_max * 100 << "% done of this step, factor:" << factor << std::endl;
     }
 
+    prepared_do_hl_propagation_ = true;
     // Do the prediction with HighLevel Influence
-    filter_.updatePrediction(time.toSec(), cov, factor, est.vel_, mostProbableAssociatedPPL->getHipVec(), mostProbableAssociatedPPL->getTotalProbability());
+    //filter_.updatePrediction(time.toSec(), cov, factor, est.vel_, mostProbableAssociatedPPL->getHipVec(), mostProbableAssociatedPPL->getTotalProbability());
 
   }
 
@@ -163,7 +148,67 @@ void LegFeature::propagate(ros::Time time)
   // OR if this is the static leg
   else
   {
-    ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i does a simple update", __func__, int_id_);
+    ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i prepared for a simple update", __func__, int_id_);
+
+    //filter_.updatePrediction(time.toSec(),cov);
+    prepared_do_hl_propagation_ = false;
+  }
+
+  // set flag
+  prepared_for_propagation_ = true;
+
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s %s prepared for propagation - %f ms", __func__, getIdStr().c_str(), preparePropagationTimer.stopAndGetTimeMs());
+
+}
+
+/**
+ * Propagate the Position of the Feature using the Particle Filter
+ */
+void LegFeature::propagate(ros::Time time)
+{
+  //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i", __func__, int_id_);
+  //ROS_ASSERT(prepared_for_propagation_);
+
+  benchmarking::Timer propagationTimer; propagationTimer.start();
+
+  // Set the estimate change to true
+  current_estimate_changed_ = true;
+
+  // Update the time
+  time_last_scan_ = time;
+  time_prediction_ = time;
+
+  MatrixWrapper::SymmetricMatrix cov(6);
+  cov = 0.0;
+  cov(1, 1) = leg_feature_predict_pos_cov_;//conf.leg_feature_predict_pos_cov;
+  cov(2, 2) = leg_feature_predict_pos_cov_;//conf.leg_feature_predict_pos_cov;
+  cov(3, 3) = 0.0;
+  cov(4, 4) = leg_feature_predict_vel_cov_;//conf.leg_feature_predict_vel_cov;
+  cov(5, 5) = leg_feature_predict_vel_cov_;//conf.leg_feature_predict_vel_cov;
+  cov(6, 6) = 0.0;
+
+  // Update of the moving leg
+  if(prepared_do_hl_propagation_){
+
+    //std::cout << RED << "Updating L" << this->int_id_ << " most probable associatet people tracker is" << *mostProbableAssociatedPPL << RESET << std::endl;
+    //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i considers a high level filter for its update", __func__, int_id_);
+
+
+    // Do the prediction with HighLevel Influence
+    filter_.updatePrediction(time.toSec(),
+                             cov,
+                             prepared_gait_factor_,
+                             prepared_estimation_.vel_,
+                             prepared_hip_vector_,
+                             prepared_ppl_total_probability_);
+
+  }
+
+  // If there is no relevant people tracker assigned-> Consider only the low level filter
+  // OR if this is the static leg
+  else
+  {
+    //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i does a simple update", __func__, int_id_);
 
     filter_.updatePrediction(time.toSec(),cov);
   }
@@ -171,7 +216,9 @@ void LegFeature::propagate(ros::Time time)
   // Set the predicted Position of this tracker, mainly for debugging purposes
   position_predicted_ = position_;
 
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Done Propagating leg_tracker with ID %s", __func__, getIdStr().c_str());
+  prepared_for_propagation_ = false;
+
+  //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s %s - propgated - %f ms", __func__, getIdStr().c_str(), propagationTimer.stopAndGetTimeMs());
 
 }
 

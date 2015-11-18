@@ -7,6 +7,7 @@ project(dual_people_leg_tracker)
 # OpenCV
 find_package( OpenCV REQUIRED )
 
+
 # look for bfl (Bayesian Filtering Library)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
@@ -23,6 +24,15 @@ find_package(Eigen REQUIRED)
 
 include_directories(.)
 include_directories(${Eigen_INCLUDE_DIRS})
+
+# OpenMP
+find_package( OpenMP REQUIRED )
+if(OPENMP_FOUND)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+else(OPENMP_FOUND)
+  message (STATUS "OpenMP not found")
+endif()
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
@@ -41,6 +51,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   leg_detector
   people_tracking_filter
+
 )
 
 ## Specify additional locations of header files
@@ -98,7 +109,7 @@ add_dependencies(dual_tracker people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARG
 message(STATUS "DUAL TRACKER_LIBS" ${catkin_LIBRARIES})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES} hungarian)
+target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES} ${OpenMP_CXX_LIBRARIES} hungarian)
 
 ########################################################
 ## Demos

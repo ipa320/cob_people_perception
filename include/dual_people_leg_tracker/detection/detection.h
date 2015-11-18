@@ -60,6 +60,9 @@ class Detection{
       return this->point_;
     }
 
+    unsigned int getId() const{
+      return this->id_;
+    }
 
 };
 

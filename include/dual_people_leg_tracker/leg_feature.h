@@ -19,13 +19,14 @@
 #include <dual_people_leg_tracker/people_tracker.h>
 #include <dual_people_leg_tracker/detection/detection.h>
 #include <dual_people_leg_tracker/config_struct.h>
+#include <dual_people_leg_tracker/benchmarking/timer.h>
 
 // People Stack
 #include <people_tracking_filter/state_pos_vel.h>
 #include <people_tracking_filter/rgb.h>
 
 // Default variables
-#define DEBUG_LEG_TRACKER 1
+#define DEBUG_LEG_TRACKER 0
 
 class PeopleTracker; // Forward declaration
 typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr; // Forward declaration
@@ -98,6 +99,16 @@ private:
   mutable BFL::StatePosVel current_estimate_;
 
   mutable bool current_estimate_changed_;
+
+
+  // Variables used to enable multithread propagation
+  bool prepared_for_propagation_;
+
+  bool prepared_do_hl_propagation_;
+  double prepared_gait_factor_;
+  tf::Vector3 prepared_hip_vector_;
+  double prepared_ppl_total_probability_;
+  StatePosVel prepared_estimation_;
 
 public:
   /**
@@ -227,6 +238,12 @@ public:
   }
 
   /**
+   * Prepare the propagation for multithreading by gathering dependend variables into local member variables
+   * @param time
+   */
+  void preparePropagation(ros::Time time);
+
+  /**
    * Propagate/Predict to a given time
    * @param time
    */
@@ -354,7 +371,7 @@ public:
   std::string getIdStr() const{
     // Generate the string id
     char id[100];
-    snprintf(id, 100, "legtrack%d", this->int_id_);
+    snprintf(id, 100, "LT[%d]", this->int_id_);
 
     return std::string(id);
   }

@@ -41,6 +41,9 @@
 #include <people_tracking_filter/state_pos_vel.h>
 #include <leg_detector/laser_processor.h>
 
+// OMP
+#include <omp.h>
+
 using namespace std;
 using namespace laser_processor;
 using namespace ros;

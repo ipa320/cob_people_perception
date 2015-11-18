@@ -149,6 +149,10 @@ public:
 
   int feature_id_;
 
+  // Needed for old marker removal
+  int n_detections_last_cycle_;
+  int n_leg_trackers_last_cycle_;
+
 
   //bool use_seeds_;
 
@@ -264,7 +268,9 @@ public:
     laser_sub_(nh_, "scan", 10),
     people_notifier_(people_sub_, tfl_, fixed_frame, 10),
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
-    cycle_(0)//,
+    cycle_(0),
+    n_detections_last_cycle_(0),
+    n_leg_trackers_last_cycle_(0)
     //occlusionModel_(new OcclusionModel(tfl_)),
     //new_track_creation_likelihood_(0.5)
   {
@@ -594,21 +600,48 @@ public:
     /// Leg Tracker propagation
     benchmarking::Timer propagationLegTrackerTimer; propagationLegTrackerTimer.start();
 
-    vector<LegFeaturePtr> propagated;
-    for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin();
-        legIt != saved_leg_features.end();
-        legIt++)
+    // Prepare propagation
+    for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin(); legIt != saved_leg_features.end(); legIt++)
     {
-      (*legIt)->propagate(scan->header.stamp); // Propagate <-> Predict the filters
+      (*legIt)->preparePropagation(scan->header.stamp); // Propagate <-> Predict the filters
+    }
+
+
+    int nLegs = saved_leg_features.size();
+    //for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin(); legIt != saved_leg_features.end(); legIt++)
+
+#pragma omp parallel
+{
+    #pragma omp for
+    for(int i = 0; i < nLegs; ++i)
+    {
+      saved_leg_features[i]->getId(); // works
+      //saved_leg_features[i]->propagate(scan->header.stamp); // Propagate <-> Predict the filters
+
+      //printf("Propagation of loop %i",i);
+    }
+}
+    for(int i = 0; i < nLegs; ++i)
+    {
+      saved_leg_features[i]->propagate(scan->header.stamp); // Propagate <-> Predict the filters
+      //printf("Propagation of loop %i",i);
+    }
+
+    vector<LegFeaturePtr> propagated;
+    for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin(); legIt != saved_leg_features.end(); legIt++)
+    {
       propagated.push_back(*legIt);
     }
-    propagationLegTrackerTimer.stop();
 
+
+
+
+    propagationLegTrackerTimer.stop();
 
     propagationTimer.stop();
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Propagated %i SavedFeatures",__func__, (int) propagated.size());
 
-    //publishParticlesPrediction(propagated, scan->header.stamp);
+    publishParticlesPrediction(propagated, scan->header.stamp);
     //publishParticlesPredArrows(propagated, scan->header.stamp);
 
     ROS_DEBUG("%sPrediction done! [Cycle %u] - %f ms (%f People, %f Legs)", BOLDWHITE, cycle_, propagationTimer.getElapsedTimeMs(), propagationPeopleTrackerTimer.getElapsedTimeMs(), propagationLegTrackerTimer.getElapsedTimeMs());
@@ -664,6 +697,10 @@ public:
       }
 
     }
+
+    // Print the detections for debugging
+    for(size_t i = 0; i < detections.size(); ++i)
+      std::cout << "LM[" << detections[i]->getId() << "] - " << detections[i]->getProbability() << std::endl;
 
 
     detectionTimer.stop();
@@ -810,7 +847,7 @@ public:
                                        nMeasurementsReal,
                                        nMeasurementsFake);
     */
-    /*CoutMatrixHelper::cout_probability_matrix("Probabilities",
+    CoutMatrixHelper::cout_probability_matrix("Probabilities",
                                               probMAPMat,
                                               associationSets[0].assignmentMatrix,
                                               indicesVec,
@@ -818,7 +855,7 @@ public:
                                               nMeasurementsReal,
                                               nMeasurementsFake);
 
-    */
+
     gnnTimer.stop();
     ROS_DEBUG("%sGNN [Cycle %u] done  - %f ms", BOLDWHITE, cycle_, gnnTimer.getElapsedTimeMs());
 
@@ -897,8 +934,12 @@ public:
     ROS_DEBUG("%sCreating Trackers [Cycle %u]", BOLDWHITE, cycle_);
     benchmarking::Timer creationTimer; creationTimer.start();
 
-    // Iterate the real measurements
+    // Iterate the real measurements (no trackers for fake measurements!)
     for(int lm = 0; lm < nMeasurementsReal; lm++){
+
+      std::stringstream status_stream;
+
+      status_stream << "LM["<< detections[lm]->getId() << "] ";
 
       // If there are no trackers at all create a new tracker for every measurement
       if(nLegsTracked == 0){
@@ -907,6 +948,7 @@ public:
         ROS_ASSERT(lm < nMeasurementsReal); // TODO better
         ROS_ASSERT(lm < assignmentMat.cols());
         ROS_ASSERT(lm < detections.size());
+
 
         if(detections[lm]->getProbability() > new_track_min_probability_){
 
@@ -927,13 +969,20 @@ public:
                              )
           );
 
+          std::cout << "Created new leg feature id: " << newLegFeature->getIdStr() << std::endl;
+
           // Set the occlusion model // Set the occlusion model (Currently no occlusion model is used!)
           // newLegFeature->setOcclusionModel(occlusionModel_);
 
           // Insert the leg feature into the propagated list
           saved_leg_features.push_back(newLegFeature);
 
-          std::cout << YELLOW << " -> Creating new Tracker LT" << newLegFeature->getId() << RESET << std::endl;
+          status_stream << YELLOW << " -> Creating new Tracker LT" << newLegFeature->getId() << RESET;
+
+        }
+        // if the detection is below the new_track_min_probability
+        else{
+          status_stream << YELLOW << " -> Detection Probability (" << detections[lm]->getProbability() << ") to low, must be at least " << new_track_min_probability_ << RESET << std::endl;
 
         }
 
@@ -952,6 +1001,7 @@ public:
         double colSum = assignmentMat.col(lm).sum();
         double detectionProb = detections[lm]->getProbability();
 
+        // Extract the probability of the assignment, if to low a new tracker will be created
         double assignmentProb = 0;
         for(size_t i = 0; i < probMAPMat.rows(); i++){
           if(assignmentMat(i,lm) == 1)
@@ -959,15 +1009,21 @@ public:
         }
         //double probSum = probMAPMat.col(lm).sum()/ probMAPMat.rows();
 
+        double maxAssignmentProbForNewTracker = 0.003;
+
+        bool assignmentProbCondition = assignmentProb < maxAssignmentProbForNewTracker; // TODO make variable
+        bool newTrackMinProbCondition = detectionProb > new_track_min_probability_;
+
+
         // If no track is assigned to this measurement (or only a unreliable one)
-        if(assignmentProb < filter_config.minUpdateProbability  && detectionProb > new_track_min_probability_){
+        if(newTrackMinProbCondition && assignmentProbCondition){
 
           // Check the distance to the next measurement
           double dist_min = 1000;
           for(size_t i = 0; i < nMeasurementsReal; i++){
             if(i != lm){
               double dist = (detections[i]->getLocation() - detections[lm]->getLocation()).length();
-              std::cout << "Dist LM[" << i << "] <-> LM[" << lm << "]" << dist << std::endl;
+              status_stream << "Dist LM[" << i << "] <-> LM[" << lm << "]" << dist << std::endl;
 
               if(dist < dist_min){
                 dist_min = dist;
@@ -975,8 +1031,11 @@ public:
             }
           }
 
+          bool distCondition = dist_min > 0.2;
+
           // Create only if the distance to between two detections is below a certain threshold
-          if(dist_min > 0.2){
+          if(distCondition)
+          { // TODO make this variable
             LegFeaturePtr newLegFeature = boost::shared_ptr<LegFeature>(
                 new LegFeature(detections[lm]->getLocation(),
                                tfl_,
@@ -994,29 +1053,39 @@ public:
             );
 
 
-          // Set the occlusion model (Currently no occlusion model is used!)
-          // newLegFeature->setOcclusionModel(occlusionModel_);
+            // Set the occlusion model (Currently no occlusion model is used!)
+            // newLegFeature->setOcclusionModel(occlusionModel_);
 
-          // Insert the leg feature into the propagated list
-          saved_leg_features.push_back(newLegFeature);
+            // Insert the leg feature into the propagated list
+            saved_leg_features.push_back(newLegFeature);
 
-          std::cout << YELLOW << "LM[" << lm << "] -> Creating new Tracker LT[" << newLegFeature->getId() << "]" << RESET << std::endl;
+            status_stream << YELLOW << " -> Creating new Tracker LT[" << newLegFeature->getId() << "]" << RESET;
+          }
+          //if(dist_min > 0.2)
+          else
+          {
+            status_stream << YELLOW << " -> no Tracker because distance criteria dist_min: (" << dist_min << ")" << RESET;
           }
 
         }
+
         // If no tracker was created for a measurement notify at least why
         else
         {
-          if(assignmentProb < filter_config.minUpdateProbability){
-            std::cout << "No tracker was created for LM[" << lm << "] because the assignment probability was to low (" << assignmentProb << ", min: " << filter_config.minUpdateProbability << ")" << std::endl;
-          }else if(detectionProb <= new_track_min_probability_){
-            std::cout << "No tracker was created for LM[" << lm << "] because its detection probability " << detectionProb << " is to low( must be at least " << new_track_min_probability_ << std::endl;
-          }
+          if(!assignmentProbCondition)
+            status_stream << " -> assignment probability was to high (" << assignmentProb << ", max: " << maxAssignmentProbForNewTracker << ")";
+
+          if(!newTrackMinProbCondition)
+            status_stream << " -> no tracker its detection probability " << detectionProb << " is to low( must be at least " << new_track_min_probability_;
         }
 
 
       }
+
+      std::cout << status_stream.str() << std::endl;
     }
+
+
 
     creationTimer.stop();
     ROS_DEBUG("%sCreating Trackers [Cycle %u] done - %f ms", BOLDWHITE, cycle_, creationTimer.getElapsedTimeMs());
@@ -2302,6 +2371,20 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       counter++;
 
     }
+    // Delete old labels
+    for(int i = 0; i < n_leg_trackers_last_cycle_ - ((int)legFeatures.size()); ++i){
+      visualization_msgs::Marker delete_label;
+      delete_label.header.stamp = time;
+      delete_label.header.frame_id = fixed_frame;
+      delete_label.id = counter;
+      delete_label.ns = "meas_label";
+      delete_label.type = delete_label.DELETE;
+
+      labelArray.markers.push_back(delete_label);
+      counter++;
+    }
+    n_leg_trackers_last_cycle_ = legFeatures.size();
+
     // Publish
     leg_label_pub_.publish(labelArray);
   }
@@ -2919,6 +3002,8 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       label.color.a = 1.0;
       //label.lifetime = ros::Duration(0.5);
 
+      std::cout << "Adding measurement label with id" << counter << std::endl;
+
       // Add text
       char buf[100];
       sprintf(buf, "#%i-%g", counter, (*detectionsIt)->getProbability());
@@ -2929,6 +3014,22 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       counter++;
 
     }
+
+    // Delete old labels
+    for(int i = 0; i < n_detections_last_cycle_ - ((int)detections.size()); ++i){
+      visualization_msgs::Marker delete_label;
+      delete_label.header.stamp = time;
+      delete_label.header.frame_id = fixed_frame;
+      delete_label.id = counter;
+      delete_label.ns = "meas_label";
+      delete_label.type = delete_label.DELETE;
+
+      labelArray.markers.push_back(delete_label);
+      counter++;
+    }
+
+    n_detections_last_cycle_ = detections.size();
+
     // Publish
     measurement_label_pub_.publish(labelArray);
 

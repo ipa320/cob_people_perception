@@ -81,6 +81,9 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
              const StatePosVel& s,
              OcclusionModelPtr occlusionmodel)
 {
+
+
+
   ROS_DEBUG_COND(DEBUG_PEOPLE_PARTICLE_FILTER, "----PeopleParticleFilter::%s",__func__);
 
   bool result = true;
@@ -98,11 +101,14 @@ PeopleParticleFilter::UpdateInternal(BFL::AdvancedSysModelPosVel* const sysmodel
     // Proposal is the same as the SystemPdf
     this->ProposalSet(sysmodel->SystemPdfGet());
 
+
+
     // Check this before next
     assert(this->_proposal != NULL);
     assert(this->_post != NULL);
 
     std::vector<WeightedSample<StatePosVel> > samples = ((MCPdf<StatePosVel> *) this->_post)->ListOfSamplesGet();
+
 
 
     #if DEBUG_PARTICLES
@@ -417,7 +423,7 @@ PeopleParticleFilter::DynamicResampleStep()
       }
 
     double effectiveSampleSize = 1.0 / sum_sq_weigths;
-    //std::cout << "effectiveSampleSize " << effectiveSampleSize << " threshold(" << _resampleThreshold << ")" << std::endl;
+    std::cout << "effectiveSampleSize " << effectiveSampleSize << " threshold(" << _resampleThreshold << ")" << std::endl;
 
     if (effectiveSampleSize < _resampleThreshold)
       {
@@ -426,7 +432,7 @@ PeopleParticleFilter::DynamicResampleStep()
       }
   }
     if (resampling == true){
-      //std::cout << RED << "RESAMPLE! " << RESET << std::endl;
+      std::cout << RED << "RESAMPLE! " << RESET << std::endl;
       return this->LowVarianceResample();
       //return this->Resample();
     }
@@ -506,11 +512,15 @@ PeopleParticleFilter::ProposalStepInternal(SystemModel<StatePosVel> * const sysm
               const StatePosVel & s)
 {
 
+
+
   // Set old samples to the posterior of the previous run
   _old_samples = (dynamic_cast<MCPdf<StatePosVel> *>(this->_post))->ListOfSamplesGet();
 
   // Get pointer to the new samples
   _ns_it = _new_samples.begin();
+
+
 
   // Iteratively update the new samples by sampling from the proposal
   for ( _os_it=_old_samples.begin(); _os_it != _old_samples.end() ; _os_it++)
@@ -533,7 +543,12 @@ PeopleParticleFilter::ProposalStepInternal(SystemModel<StatePosVel> * const sysm
 
       // Go to the next iterator
       _ns_it++;
+
+      // <--- Segfault --->
+      //std::cout << "PeopleParticleFilter::ProposalStepInternal" << std::endl;
+      //return true;
     }
+
 
   (this->_timestep)++; // TODO needed?
 

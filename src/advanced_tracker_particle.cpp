@@ -133,7 +133,10 @@ void AdvancedTrackerParticle::initialize(const StatePosVel& mu, const StatePosVe
 // Perform prediction using the motion model
 bool AdvancedTrackerParticle::updatePrediction(const double time)
 {
-  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+  //ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+
+  //std::cout << "AdvancedTrackerParticle::updatePrediction" << std::endl;
+
 
   benchmarking::Timer updatePredictionTimer; updatePredictionTimer.start();
 
@@ -160,7 +163,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time)
  */
 bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov)
 {
-  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+  //ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
 
   // Set the covariances of the System Model
@@ -181,7 +184,7 @@ bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWr
  * @return
  */
 bool AdvancedTrackerParticle::updatePrediction(const double time, const MatrixWrapper::SymmetricMatrix& cov, double gaitFactor, tf::Vector3 velVec, tf::Vector3 hipVec, double pplTrackerProbability){
-  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
+  //ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s",__func__);
 
 
   // Set the covariances of the System Model

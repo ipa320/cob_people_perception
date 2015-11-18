@@ -94,7 +94,7 @@ AdvancedSysPdfPosVel::MultivariateCovarianceSet(const MatrixWrapper::SymmetricMa
 void
 AdvancedSysPdfPosVel::HighLevelInformationSet(tf::Vector3 vel, tf::Vector3 hipVec, double gaitFactor, double pplTrackerProbability)
 {
-  ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"AdvancedSysPdfPosVel::%s",__func__);
+  //ROS_DEBUG_COND(DEBUG_ADVANCEDSYSPDFPOSVEL,"AdvancedSysPdfPosVel::%s",__func__);
   noise_nl_.eigenvectorsSet(vel, hipVec);
   noise_nl_.setGaitFactor(gaitFactor);
   noise_nl_.highLevelProbabilitySet(pplTrackerProbability);
