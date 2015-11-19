@@ -48,7 +48,7 @@ private:
 
   int int_id_;     /**< Id of the instance */
 
-  ros::Time time_last_scan_; /**< Time of the last scan */
+  ros::Time time_last_update_; /**< Time of the last scan */
 
   ros::Time time_prediction_; /**< The time the prediction was made to */
 
@@ -145,7 +145,7 @@ public:
    * @return
    */
   ros::Time getLastScanTime() const{
-    return this->time_last_scan_;
+    return this->time_last_update_;
   }
 
   /**

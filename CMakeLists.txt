@@ -79,6 +79,7 @@ add_library(dual_people_leg_tracker
             src/leg_feature.cpp
             src/people_tracker.cpp
             src/kalman/kalman_filter.cpp
+            src/association/association.cpp
             )
 
 catkin_package(INCLUDE_DIRS 

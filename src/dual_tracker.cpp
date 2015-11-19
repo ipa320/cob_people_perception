@@ -52,6 +52,7 @@
 #include <dual_people_leg_tracker/leg_feature.h>
 #include <dual_people_leg_tracker/people_tracker.h>
 #include <dual_people_leg_tracker/models/occlusion_model.h>
+#include <dual_people_leg_tracker/association/association.h>
 
 #include <dual_people_leg_tracker/visualization/color_functions.h>
 #include <dual_people_leg_tracker/visualization/color_definitions.h>
@@ -244,7 +245,7 @@ public:
   ros::Publisher scan_lines_pub_; /**< Publish the laserscan as lines for debugging */
   ros::Publisher leg_label_pub_; /**< Publish leg labels */
   ros::Publisher jpda_association_pub_; /**< Publish the jpda association probability for debugging purposes */
-  ros::Publisher measurement_label_pub_; /**< Publish measurements */
+  ros::Publisher leg_visualization_pub_; /**< Publish measurements */
   ros::Publisher particles_arrow_pub_; /** < Publish some particles velocity */
   ros::Publisher people_3d_pub_; /**< Publish persons in 3d */
   ros::Publisher particles_pred_pub_; /** <Publish the predicted particles */
@@ -310,7 +311,7 @@ public:
     scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
     leg_label_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("leg_labels", 0);
     jpda_association_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("jpda_association", 0);
-    measurement_label_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("measurement_label", 0);
+    leg_visualization_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("leg_visualization", 0);
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
     map_pub_                      = nh_.advertise<visualization_msgs::MarkerArray>("fake_measurements", 0);
     people_3d_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("persons3d", 0);
@@ -508,6 +509,18 @@ public:
     processor.splitConnected(connected_thresh_);
     //processor.splitConnectedRangeAware(connected_thresh_);
     processor.removeLessThan(min_points_per_group_);
+    std::list<SampleSet*> clusters_temp = processor.getClusters();
+
+    // Set ids
+    int cluster_id_counter = 0;
+    for (list<SampleSet*>::iterator i = clusters_temp.begin();
+         i != clusters_temp.end();
+         i++)
+    {
+      (*i)->id_ = cluster_id_counter;
+      cluster_id_counter++;
+    }
+
 
     ROS_DEBUG("%sCreating Clusters done! [Cycle %u] - %f ms", BOLDWHITE, cycle_, processTimer.stopAndGetTimeMs());
 
@@ -712,6 +725,8 @@ public:
     ROS_DEBUG("%sGNN [Cycle %u]", BOLDWHITE, cycle_);
     benchmarking::Timer gnnTimer; gnnTimer.start();
 
+
+
     int nMeasurementsReal = detections.size();
     int nLegsTracked = propagated.size();
 
@@ -872,58 +887,43 @@ public:
 
     assignmentMat = associationSets[0].assignmentMatrix;
 
-    if(nLegsTracked > 0 && nMeasurementsReal + nMeasurementsFake > 0){
+    // Reformulate into Association set
+    std::vector<Association*> associationSet;
+    for(int r = 0; r < assignmentMat.rows(); r++){
+      // Extract the leg
+      LegFeaturePtr lt = propagated[r];
+      for(int c = 0; c < assignmentMat.cols(); c++){
+        if(assignmentMat(r,c) ==  1){
+          DetectionPtr dt = detections[c];
 
-      ROS_ASSERT(nLegsTracked == assignmentMat.rows());
-      ROS_ASSERT(nMeasurementsReal + nMeasurementsFake == assignmentMat.cols());
-
-      for(int lt = 0; lt < assignmentMat.rows(); lt++){
-        for(int lm = 0; lm < assignmentMat.cols(); lm++){
-
-          // If there is an assignment
-          ROS_ASSERT(lm < assignmentMat.cols());
-          ROS_ASSERT(lt < assignmentMat.rows());
-          if(assignmentMat(lt,lm) != 0){
-
-            Stamped<Point> loc;
-            // Get the location
-            if(lm < nMeasurementsReal){
-
-              ROS_ASSERT(lm < detections.size());
-              loc = detections[lm]->getLocation();
-              //ROS_ASSERT(loc.frame_id_ == fixed_frame);
-
-            // Fake updates
-            }else{
-
-              ROS_ASSERT(lm-nMeasurementsReal < fakeDetections.size());
-              loc = fakeDetections[lm-nMeasurementsReal]->getLocation();
-            }
-
-            //double minProbability = 0.003; // TODO implement variable
-            int idx = (int) indicesVec(lt);
-
-            ROS_ASSERT_MSG(lt < propagated.size(), "Size propagated is %i", (int) propagated.size());
-            // Calculate the distance
-            tf::Vector3 leg_pos = propagated[lt]->getEstimate().pos_;
-            double dist = (leg_pos - loc).length();
-
-            if(probMAPMat(lt,lm) > filter_config.minUpdateProbability && dist < max_meas_jump_m){ // TODO make variable
-              std::cout << "Updating LT[" << idx << "]" << " with LM[" << lm << "]" << std::endl;
-              propagated[lt]->update(loc,1.0);
-            }else{
-              if(dist >= max_meas_jump_m){
-                std::cout << YELLOW << "NOT Updating LT[" << idx << "]" << " with LM[" << lm << "] because the distance:" << dist << " is greate than the max_meas_jump: " << max_meas_jump_m << RESET << std::endl;
-              }
-
-              if(probMAPMat(lt,lm) <= filter_config.minUpdateProbability){
-                std::cout << YELLOW << "NOT Updating LT[" << idx << "]" << " with LM[" << lm << "] because the assignment probability:" << probMAPMat(lt,lm) << " is too low(must be at least " << filter_config.minUpdateProbability << "): " << RESET << std::endl;
-              }
-            }
-          }
+          associationSet.push_back(new Association(lt,dt,probMAPMat(r,c)));
         }
       }
     }
+
+    // Print the Associations
+    for(int i = 0; i < associationSet.size(); ++i){
+
+      Association* association = associationSet[i];
+      std::cout << association->toString() << std::endl;
+
+      if(association->getAssociationProbability() > filter_config.minUpdateProbability && association->getDistance() < max_meas_jump_m){ // TODO make variable
+        std::cout << association->toString() << " doing update!" << std::endl;
+        //propagated[lt]->update(loc,1.0);
+
+        association->getLeg()->update(association->getDetection()->getLocation(), 1.0);
+
+      }else{
+        if(association->getDistance() >= max_meas_jump_m){
+          std::cout << YELLOW << " NOT updating " << association->getLeg()->getIdStr() << " with " << association->getDetection()->getIdStr() << " because the distance:" << association->getDistance() << " is greate than the max_meas_jump: " << max_meas_jump_m << RESET << std::endl;
+        }
+
+        if(association->getAssociationProbability() <= filter_config.minUpdateProbability){
+          std::cout << YELLOW << " NOT updating " << association->getLeg()->getIdStr() << " with " << association->getDetection()->getIdStr() << " because the assignment probability:" << association->getAssociationProbability() << " is too low(must be at least " << filter_config.minUpdateProbability << "): " << RESET << std::endl;
+        }
+      }
+    }
+
 
     updateTimer.stop();
     ROS_DEBUG("%sUpdate Trackers [Cycle %u] done - %f ms", BOLDWHITE, cycle_, updateTimer.getElapsedTimeMs());
@@ -1223,7 +1223,7 @@ public:
     //}
 
     if(publish_measurement_labels_){
-      publishMeasurementsLabels(detections, scan->header.stamp);
+      publishLegMeasurementsVisualization(detections, scan->header.stamp);
     }
 
     if(publish_fake_measurements_){
@@ -1461,6 +1461,111 @@ public:
 
     // Publish the pointcloud
     leg_measurements_vis_pub_.publish(clusterPcl);
+
+    ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
+  }
+
+  /**
+   * Publish visualization of the detections/measurements
+   * @param detections
+   * @param time
+   */
+  void publishLegMeasurementsVisualization(vector<DetectionPtr>& detections, ros::Time time){
+
+    // The marker Array, collecting Label and Marker
+    visualization_msgs::MarkerArray markerArray;
+
+    // Parameters
+    double height = 0.3; // User for Cyclinder height and Label position
+    double label_z_offset = 0.05; // Distance label to cylinder
+
+    int counter = 0;
+    // Iterate the detections
+    for (vector<DetectionPtr>::iterator detectionsIt = detections.begin();
+        detectionsIt != detections.end();
+        detectionsIt++)
+    {
+
+      visualization_msgs::Marker leg_measurement_label_marker;
+      leg_measurement_label_marker.header.stamp = time;
+      leg_measurement_label_marker.header.frame_id = fixed_frame;
+      leg_measurement_label_marker.ns = "labels";
+      leg_measurement_label_marker.id = counter;
+      leg_measurement_label_marker.type = leg_measurement_label_marker.TEXT_VIEW_FACING;
+      leg_measurement_label_marker.pose.position.x = (*detectionsIt)->getLocation()[0];
+      leg_measurement_label_marker.pose.position.y = (*detectionsIt)->getLocation()[1];
+      leg_measurement_label_marker.pose.position.z = height + label_z_offset;
+
+      // Choose the color
+      int r,g,b;
+      getCycledColor((*detectionsIt)->getCluster()->id_,r,g,b);
+
+      leg_measurement_label_marker.scale.z = .1;
+      leg_measurement_label_marker.color.r = r / 255.0;
+      leg_measurement_label_marker.color.g = g / 255.0;
+      leg_measurement_label_marker.color.b = b / 255.0;
+      leg_measurement_label_marker.color.a = 1.0;
+
+      // Add text
+      char buf[100];
+      sprintf(buf, "#%i-%g", counter, (*detectionsIt)->getProbability());
+      leg_measurement_label_marker.text = buf;
+
+      markerArray.markers.push_back(leg_measurement_label_marker);
+
+      // Add a marker
+      visualization_msgs::Marker leg_measurement_maker;
+
+      leg_measurement_maker.header.stamp = time;
+      leg_measurement_maker.header.frame_id = fixed_frame;
+      leg_measurement_maker.ns = "measurement_pos";
+      leg_measurement_maker.id = counter;
+      leg_measurement_maker.type = leg_measurement_label_marker.CYLINDER;
+      leg_measurement_maker.pose.position.x = (*detectionsIt)->getLocation()[0];
+      leg_measurement_maker.pose.position.y = (*detectionsIt)->getLocation()[1];
+      leg_measurement_maker.pose.position.z = height/2;
+      leg_measurement_maker.scale.x = .1;
+      leg_measurement_maker.scale.y = .1;
+      leg_measurement_maker.scale.z = height;
+      leg_measurement_maker.color.r = r / 255.0;
+      leg_measurement_maker.color.g = g / 255.0;
+      leg_measurement_maker.color.b = b / 255.0;
+      leg_measurement_maker.color.a = 1.0;
+
+      markerArray.markers.push_back(leg_measurement_maker);
+
+      counter++;
+
+    }
+
+    // Delete old labels and markers
+    for(int i = 0; i < n_detections_last_cycle_ - ((int)detections.size()); ++i){
+      visualization_msgs::Marker delete_label;
+      delete_label.header.stamp = time;
+      delete_label.header.frame_id = fixed_frame;
+      delete_label.id = counter;
+      delete_label.ns = "labels";
+      delete_label.type = delete_label.DELETE;
+
+      markerArray.markers.push_back(delete_label);
+
+      visualization_msgs::Marker delete_marker;
+      delete_marker.header.stamp = time;
+      delete_marker.header.frame_id = fixed_frame;
+      delete_marker.id = counter;
+      delete_marker.ns = "measurement_pos";
+      delete_marker.type = delete_label.DELETE;
+
+      markerArray.markers.push_back(delete_marker);
+
+
+      counter++;
+    }
+
+    n_detections_last_cycle_ = detections.size();
+
+    // Publish
+    leg_visualization_pub_.publish(markerArray);
 
     ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
   }
@@ -1880,9 +1985,7 @@ public:
         {
             int r,g,b;
 
-            getCycledColor(count, r, g, b);
-            //std::cout << "value: " << (*i)->id_ << std::endl;
-            //std::cout << "r: " << r << " g: " << g << " b: " << b << std::endl;
+            getCycledColor((*i)->id_, r, g, b);
             count++;
 
             (*i)->appendToCloud(clusterPCL,r,g,b);
@@ -2970,65 +3073,6 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     }
 
     jpda_association_pub_.publish(markerArray);
-
-    ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
-  }
-
-  void publishMeasurementsLabels(vector<DetectionPtr>& detections, ros::Time time){
-
-    // The marker Array
-    visualization_msgs::MarkerArray labelArray;
-
-    int counter = 0;
-    for (vector<DetectionPtr>::iterator detectionsIt = detections.begin();
-        detectionsIt != detections.end();
-        detectionsIt++)
-    {
-
-      visualization_msgs::Marker label;
-      label.header.stamp = time;
-      label.header.frame_id = fixed_frame;
-      label.ns = "meas_label";
-      label.id = counter;
-      label.type = label.TEXT_VIEW_FACING;
-      label.pose.position.x = (*detectionsIt)->getLocation()[0];
-      label.pose.position.y = (*detectionsIt)->getLocation()[1];
-      label.pose.position.z = 0.3;
-      label.scale.z = .1;
-      label.color.b = 1;
-      label.color.a = 1.0;
-      //label.lifetime = ros::Duration(0.5);
-
-      std::cout << "Adding measurement label with id" << counter << std::endl;
-
-      // Add text
-      char buf[100];
-      sprintf(buf, "#%i-%g", counter, (*detectionsIt)->getProbability());
-      label.text = buf;
-
-      labelArray.markers.push_back(label);
-
-      counter++;
-
-    }
-
-    // Delete old labels
-    for(int i = 0; i < n_detections_last_cycle_ - ((int)detections.size()); ++i){
-      visualization_msgs::Marker delete_label;
-      delete_label.header.stamp = time;
-      delete_label.header.frame_id = fixed_frame;
-      delete_label.id = counter;
-      delete_label.ns = "meas_label";
-      delete_label.type = delete_label.DELETE;
-
-      labelArray.markers.push_back(delete_label);
-      counter++;
-    }
-
-    n_detections_last_cycle_ = detections.size();
-
-    // Publish
-    measurement_label_pub_.publish(labelArray);
 
     ROS_DEBUG("DualTracker::%s Publishing Clusters on %s", __func__, fixed_frame.c_str());
   }

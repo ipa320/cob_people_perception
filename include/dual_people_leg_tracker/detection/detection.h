@@ -64,6 +64,17 @@ class Detection{
       return this->id_;
     }
 
+    std::string getIdStr() const{
+      // Generate the string id
+      char id[100];
+      snprintf(id, 100, "LM[%d]", this->id_);
+
+      return std::string(id);
+    }
+    laser_processor::SampleSet* getCluster() const{
+      return this->cluster_;
+    }
+
 };
 
 typedef boost::shared_ptr<Detection> DetectionPtr;

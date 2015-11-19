@@ -49,7 +49,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc,
   ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s Created <NEW_LEGFEATURE %s> at %f - %f - %f", __func__, getIdStr().c_str(), loc.getX(), loc.getY(), loc.getZ());
 
   // Set the times to the initialization location
-  time_last_scan_ = loc.stamp_;
+  time_last_update_ = loc.stamp_;
   time_meas_ = loc.stamp_;
 
   // Transform to local frame
@@ -77,7 +77,7 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc,
 
   // Initialization is around the measurement which initialized this leg feature using a uniform distribution
   BFL::StatePosVel mu(loc);
-  filter_.initialize(mu, prior_sigma, time_last_scan_.toSec());
+  filter_.initialize(mu, prior_sigma, time_last_update_.toSec());
 
   // Update the position of this leg feature
   updatePosition();
@@ -175,7 +175,7 @@ void LegFeature::propagate(ros::Time time)
   current_estimate_changed_ = true;
 
   // Update the time
-  time_last_scan_ = time;
+  time_last_update_ = time;
   time_prediction_ = time;
 
   MatrixWrapper::SymmetricMatrix cov(6);
@@ -235,7 +235,7 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 
   // Update the measurement time
   time_meas_ = loc.stamp_;
-  time_last_scan_ = time_meas_;
+  time_last_update_ = time_meas_;
 
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
@@ -304,7 +304,7 @@ void LegFeature::updatePosition()
   position_[0] = est.pos_[0];
   position_[1] = est.pos_[1];
   position_[2] = est.pos_[2];
-  position_.stamp_ = time_last_scan_;
+  position_.stamp_ = time_last_update_;
   position_.frame_id_ = fixed_frame_;
 
   // Check if static
@@ -321,7 +321,7 @@ void LegFeature::updateHistory(){
   filter_.getEstimate(est);
 
   boost::shared_ptr<tf::Stamped<tf::Point> > point(
-      new tf::Stamped<tf::Point>(est.pos_, time_last_scan_, fixed_frame_)
+      new tf::Stamped<tf::Point>(est.pos_, time_last_update_, fixed_frame_)
   );
 
   position_history_.push_back(point);
