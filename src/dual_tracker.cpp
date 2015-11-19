@@ -1878,17 +1878,14 @@ public:
              i != clusters.end();
              i++)
         {
+            int r,g,b;
 
-            int r[3] = { 0, 125, 255};
-            int g[3] = { 0, 125, 255};
-            int b[3] = { 0, 125, 255};
-
-            int r_ind = count % 3;
-            int g_ind = (count/3) % 3;
-            int b_ind = (count/9) % 3;
+            getCycledColor(count, r, g, b);
+            //std::cout << "value: " << (*i)->id_ << std::endl;
+            //std::cout << "r: " << r << " g: " << g << " b: " << b << std::endl;
             count++;
 
-            (*i)->appendToCloud(clusterPCL,r[r_ind],g[g_ind],b[b_ind]);
+            (*i)->appendToCloud(clusterPCL,r,g,b);
         }
 
         // Publish the clustering
