@@ -153,6 +153,7 @@ public:
   // Needed for old marker removal
   int n_detections_last_cycle_;
   int n_leg_trackers_last_cycle_;
+  int n_people_markers_last_published_;
 
 
   //bool use_seeds_;
@@ -271,7 +272,8 @@ public:
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
     cycle_(0),
     n_detections_last_cycle_(0),
-    n_leg_trackers_last_cycle_(0)
+    n_leg_trackers_last_cycle_(0),
+    n_people_markers_last_published_(0)
     //occlusionModel_(new OcclusionModel(tfl_)),
     //new_track_creation_likelihood_(0.5)
   {
@@ -2471,6 +2473,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       counter++;
 
     }
+
     // Delete old labels
     for(int i = 0; i < n_leg_trackers_last_cycle_ - ((int)legFeatures.size()); ++i){
       visualization_msgs::Marker delete_label;
@@ -2712,6 +2715,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     visualization_msgs::MarkerArray personsArray;
 
     int counter = 0;
+
     for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
         peopleTrackerIt != people_trackers_.getList()->end();
         peopleTrackerIt++){
@@ -2737,7 +2741,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       person3d.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
       person3d.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
       person3d.pose.position.z = personHeight/4;
-      person3d.ns = "person3d";
+      person3d.ns = "person3d_body";
       person3d.scale.x = personWidth;
       person3d.scale.y = personWidth;
       person3d.scale.z = personHeight/2;
@@ -2745,11 +2749,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       person3d.color.r = 0;
       person3d.color.g = 0;
       person3d.color.b = 1;
-      person3d.lifetime = ros::Duration(8);
-
-
-      counter++;
-
+     // person3d.lifetime = ros::Duration(8);
 
 
       // Set the color as the mixture of both leg track colors
@@ -2769,30 +2769,58 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
       personHead.color.r = (r0+r1)/(2*255.0);
       personHead.color.g = (g0+g1)/(2*255.0);
       personHead.color.b = (b0+b1)/(2*255.0);
-      personHead.lifetime = ros::Duration(8);
+      //personHead.lifetime = ros::Duration(8);
 
       // Static / Dynamic
       if((*peopleTrackerIt)->isDynamic()){
-        person3d.ns = "dynamic";
         person3d.color.a = 0.75;
         personHead.color.a = 0.75;
 
       }
       else{
-        person3d.ns = "static";
-        person3d.color.a = 0.5;
-        personHead.color.a = 0.5;
+        person3d.color.a = 0.4;
+        personHead.color.a = 0.4;
       }
 
 
       personsArray.markers.push_back(person3d);
       personsArray.markers.push_back(personHead);
 
+      std::cout << "Publish Marker with id:" << counter << std::endl;
+
       counter++;
       }
     }
+
+
+    // Publish deletion markers
+    for(int i = 0; i < n_people_markers_last_published_ - counter; i++){
+      visualization_msgs::Marker deletionMarker0;
+      deletionMarker0.header.stamp = time;
+      deletionMarker0.header.frame_id = fixed_frame;
+      deletionMarker0.id = counter + i;
+      deletionMarker0.ns = "person3d_body";
+      deletionMarker0.type = visualization_msgs::Marker::DELETE;
+
+      personsArray.markers.push_back(deletionMarker0);
+
+      visualization_msgs::Marker deletionMarker1;
+      deletionMarker1.header.stamp = time;
+      deletionMarker1.header.frame_id = fixed_frame;
+      deletionMarker1.id = counter + i;
+      deletionMarker1.ns = "person3d_head";
+      deletionMarker1.type = visualization_msgs::Marker::DELETE;
+
+      personsArray.markers.push_back(deletionMarker1);
+
+
+    }
+
+    n_people_markers_last_published_ = counter;
+
     // Publish
     people_3d_pub_.publish(personsArray);
+
   }
 
   // Add Labels to the People Trackers
