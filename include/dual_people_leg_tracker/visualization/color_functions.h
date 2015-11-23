@@ -31,8 +31,6 @@ void getCycledColor(int value, int &r, int &g, int &b)
   int g_ind = ((value/3) % n) ;
   int b_ind = ((value/9) % n) ;
 
-  std::cout << r_ind << " " << g_ind << " " << b_ind << std::endl;
-
   r = (int) 255 * (1.0 / (n-1)) * r_ind;
   g = (int) 255 * (1.0 / (n-1)) * g_ind;
   b = (int) 255 * (1.0 / (n-1)) * b_ind;
