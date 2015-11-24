@@ -21,4 +21,8 @@
 	
 	<buildtool_depend>catkin</buildtool_depend>
 	
+	<depend>mk</depend>
+	<depend>roslib</depend>
+	<depend>rospack</depend>
+	
 </package>
