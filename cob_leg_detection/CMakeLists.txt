@@ -2,19 +2,21 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cob_leg_detection)
 
 set(catkin_RUN_PACKAGES
+	cob_people_tracking_filter
+	cob_perception_msgs
+	dynamic_reconfigure
+	geometry_msgs
+	image_geometry
+	laser_geometry
 	roscpp
 	rospy
-	std_msgs
-	geometry_msgs
-	std_srvs
 	sensor_msgs
-	laser_geometry
+	std_msgs
+	std_srvs
 	tf
 	visualization_msgs
-	cob_perception_msgs
-	cob_people_tracking_filter
-	image_geometry
-	dynamic_reconfigure
+
+
 )
 
 set(catkin_BUILD_PACKAGES

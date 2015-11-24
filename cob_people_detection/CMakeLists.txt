@@ -2,25 +2,25 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cob_people_detection)
 
 set(catkin_RUN_PACKAGES
-  roscpp
-  std_msgs
-  std_srvs
   actionlib
-  sensor_msgs
   actionlib_msgs
-  geometry_msgs
-  stereo_msgs
-  image_transport
-  image_geometry
-  tf
-  nodelet
-  dynamic_reconfigure
-  pcl_ros
   cv_bridge
   cob_image_flip
-  cob_vision_utils
   cob_perception_msgs
+  cob_vision_utils
+  dynamic_reconfigure
+  geometry_msgs
+  image_transport
+  image_geometry
   #kdl_parser
+  nodelet
+  pcl_ros
+  roscpp
+  sensor_msgs
+  std_msgs
+  std_srvs
+  stereo_msgs
+  tf
 )
 
 set(catkin_BUILD_PACKAGES

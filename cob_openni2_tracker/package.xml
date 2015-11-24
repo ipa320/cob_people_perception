@@ -15,33 +15,32 @@
 	<buildtool_depend>catkin</buildtool_depend>
 
 	<depend>cmake_modules</depend>
-	<depend>libusb-1.0-dev</depend>
+	<depend>cob_perception_msgs</depend> 
+	<depend>cv_bridge</depend>
+	<depend>geometry_msgs</depend>
+	<depend>glut</depend>
+	<depend>image_transport</depend>
+	<depend>opengl</depend>
+	<depend>orocos_kdl</depend>
+	<depend>libnite2</depend>
+	<depend>libopencv-dev</depend>
 	<!--	<depend>libopenni-nite-dev</depend> -->
 	<!--	<depend>libopenni-sensor-primesense-dev</depend> -->
-	<depend>geometry_msgs</depend>
-	<depend>sensor_msgs</depend>
-	<depend>orocos_kdl</depend>
+	<depend>libopenni2-dev</depend>
+	<depend>libusb-1.0-dev</depend>
 	<depend>roscpp</depend>
 	<depend>roslib</depend>
-	<depend>visualization_msgs</depend>
+	<depend>sensor_msgs</depend>
+	<depend>std_msgs</depend>
 	<depend>tf</depend>
-	<depend>cob_perception_msgs</depend> 
-	<depend>libopenni2-dev</depend>
-	<depend>libnite2</depend>
 	<depend>nodelet</depend>
 	<depend>pcl_ros</depend>
-	<depend>image_transport</depend>
-	<depend>cv_bridge</depend>
-	<depend>std_msgs</depend>
-	
-	<depend>libopencv-dev</depend>
-	<depend>glut</depend>
-	<depend>opengl</depend>
+	<depend>visualization_msgs</depend>
 
-	<!-- <run_depend>libopenni-nite-dev</run_depend> -->
-	<exec_depend>libopenni-sensor-primesense-dev</exec_depend>
-	<exec_depend>message_runtime</exec_depend>	
 	<exec_depend>boost</exec_depend>
+	<!--exec_depend>libopenni-nite-dev</exec_depend> -->
+	<!--exec_depend>libopenni-sensor-primesense-dev</exec_depend-->
+	<exec_depend>message_runtime</exec_depend>
 	
 	<export>
 		<nodelet plugin="${prefix}/nodelet.xml" />	
