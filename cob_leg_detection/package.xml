@@ -11,30 +11,25 @@
 	<buildtool_depend>catkin</buildtool_depend>
 	<!--buildtool_depend>catkin_simple</buildtool_depend-->
 
+	<depend>bfl</depend>
 	<depend>cmake_modules</depend>
+	<depend>cob_people_tracking_filter</depend>
+	<depend>cob_perception_msgs</depend>
+	<depend>dynamic_reconfigure</depend>
+	<depend>eigen</depend>
+	<depend>geometry_msgs</depend>
+	<depend>image_geometry</depend>
+	<depend>laser_geometry</depend>
+	<depend>libopencv-dev</depend>
+	<depend>orocos_kdl</depend>
 	<depend>roscpp</depend>
 	<depend>rospy</depend>
-	<depend>std_msgs</depend>
-	<depend>geometry_msgs</depend>
-	<depend>std_srvs</depend>
 	<depend>sensor_msgs</depend>
-	<depend>laser_geometry</depend>
+	<depend>std_msgs</depend>
+	<depend>std_srvs</depend>
 	<depend>tf</depend>
-	<depend>bfl</depend>
 	<depend>visualization_msgs</depend>
-	<depend>cob_perception_msgs</depend>
-	<depend>cob_people_tracking_filter</depend>
-	<depend>image_geometry</depend>
-	<depend>dynamic_reconfigure</depend>
-	<!--depend>python_module</depend-->
-	<!--depend>numpy_eigen</depend-->
-	<!--depend>eigen_catkin</depend-->
-	<depend>orocos_kdl</depend>
-	
-	<depend>libopencv-dev</depend>
-	<depend>eigen</depend>
 
 	<exec_depend>laser_filters</exec_depend>
-
 
 </package>
