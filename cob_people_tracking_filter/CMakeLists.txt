@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cob_people_tracking_filter)
 
 set(catkin_RUN_PACKAGES
-  roscpp
-  std_msgs
-  geometry_msgs
-  tf
-  message_filters
   cob_perception_msgs
+  geometry_msgs
+  message_filters
+  roscpp
   sensor_msgs
+  std_msgs
+  tf
 )
 
 set(catkin_BUILD_PACKAGES

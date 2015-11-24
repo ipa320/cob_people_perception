@@ -2,19 +2,19 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cob_openni2_tracker)
 
 set(catkin_RUN_PACKAGES
-	geometry_msgs
-	sensor_msgs
-	visualization_msgs
 	cob_perception_msgs
-	image_transport
 	cv_bridge
-	std_msgs
+	geometry_msgs
+	image_transport
+	libnite2
 	roscpp
 	roslib
+	sensor_msgs
+	std_msgs
 	tf
-	libnite2
 	nodelet
 	pcl_ros
+	visualization_msgs
 )
 
 set(catkin_BUILD_PACKAGES

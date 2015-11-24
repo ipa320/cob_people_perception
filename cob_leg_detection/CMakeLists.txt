@@ -2,19 +2,19 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cob_leg_detection)
 
 set(catkin_RUN_PACKAGES
+	cob_people_tracking_filter
+	cob_perception_msgs
+	dynamic_reconfigure
+	geometry_msgs
+	image_geometry
+	laser_geometry
 	roscpp
 	rospy
-	std_msgs
-	geometry_msgs
-	std_srvs
 	sensor_msgs
-	laser_geometry
+	std_msgs
+	std_srvs
 	tf
 	visualization_msgs
-	cob_perception_msgs
-	cob_people_tracking_filter
-	image_geometry
-	dynamic_reconfigure
 )
 
 set(catkin_BUILD_PACKAGES
@@ -30,37 +30,15 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(OpenCV REQUIRED)	
 find_package(orocos_kdl REQUIRED)
 find_package(Eigen REQUIRED)
-
 find_package(PkgConfig)
-pkg_check_modules(BFL REQUIRED orocos-bfl)
-
-#message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
-#message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
-
+pkg_check_modules(BFL REQUIRED bfl)
 
 ## dynamic reconfigure config
 generate_dynamic_reconfigure_options(
   cfg/LegDetection.cfg
 )
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-INCLUDE_DIRS
-	include
-LIBRARIES
-CATKIN_DEPENDS
-	${catkin_RUN_PACKAGES}
-DEPENDS
-	orocos_kdl
-)
+catkin_package()
 
 ## Specify additional locations of header files
 include_directories(
@@ -91,9 +69,8 @@ target_link_libraries(leg_detection
    ${catkin_LIBRARIES}
    ${OpenCV_LIBRARIES}
    ${orocos_kdl_LIBRARIES}
+   ${BFL_LIBRARIES}
 )
-
-
 
 #############
 ## Install ##
