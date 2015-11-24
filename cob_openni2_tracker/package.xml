@@ -21,6 +21,7 @@
 	<depend>glut</depend>
 	<depend>image_transport</depend>
 	<depend>opengl</depend>
+	<depend>openni2_camera</depend>
 	<depend>orocos_kdl</depend>
 	<depend>libnite2</depend>
 	<depend>libopencv-dev</depend>
