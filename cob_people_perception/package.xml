@@ -1,30 +1,30 @@
-<package>
-  <name>cob_people_perception</name>
-  <version>1.0.0</version>
-  
-  <description>
-     Contains several packages for detecting and identifying faces, and detecting and tracking humans with RGB-D sensors or laser scanners. 
-     Detects persons through head and face detection and identifies the detected faces. The results are tracked over time to increase confidence. The system is optimized to be used with a Microsoft Kinect or Asus Xtion Pro Live sensor but could also handle different sensors as long as depth and color images are provided.
-  </description>
-  
-  <license>LGPL</license>
-  
-  <maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
-  <author email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</author>
-  <author>Thomas Zwölfer, Olha Meyer</author>
-  
-  <url type="website">http://ros.org/wiki/cob_people_perception</url>
+<package format="2">
+	<name>cob_people_perception</name>
+	<version>1.0.0</version>
+	
+	<description>
+		 Contains several packages for detecting and identifying faces, and detecting and tracking humans with RGB-D sensors or laser scanners. 
+		 Detects persons through head and face detection and identifies the detected faces. The results are tracked over time to increase confidence. The system is optimized to be used with a Microsoft Kinect or Asus Xtion Pro Live sensor but could also handle different sensors as long as depth and color images are provided.
+	</description>
+	
+	<license>LGPL</license>
+	
+	<maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
+	<author email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</author>
+	<author>Thomas Zwölfer, Olha Meyer</author>
+	
+	<url type="website">http://ros.org/wiki/cob_people_perception</url>
 
-  <buildtool_depend>catkin</buildtool_depend>
+	<buildtool_depend>catkin</buildtool_depend>
 
-  <run_depend>cob_leg_detection</run_depend>
-  <run_depend>cob_openni2_tracker</run_depend>
-  <run_depend>cob_people_detection</run_depend>
-  <run_depend>cob_people_tracking_filter</run_depend>
-  <run_depend>libnite2</run_depend>
+	<exec_depend>cob_leg_detection</exec_depend>
+	<exec_depend>cob_openni2_tracker</exec_depend>
+	<exec_depend>cob_people_detection</exec_depend>
+	<exec_depend>cob_people_tracking_filter</exec_depend>
+	<exec_depend>libnite2</exec_depend>
 
-  <export>
-    <metapackage />
-  </export>
-  
+	<export>
+		<metapackage />
+	</export>
+	
 </package>

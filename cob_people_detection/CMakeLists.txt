@@ -12,7 +12,6 @@ set(catkin_RUN_PACKAGES
   stereo_msgs
   image_transport
   image_geometry
-  image_view
   tf
   nodelet
   dynamic_reconfigure
@@ -364,7 +363,8 @@ add_dependencies(tracking_evaluator ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}
 #############
 ## Mark executables and/or libraries for installation
 install(TARGETS people_detection_client head_detector_node face_detector_node face_recognizer_node detection_tracker_node people_detection_display_node
-		face_capture_node sensor_message_gateway_node sensor_message_gateway_nodelet coordinator_node
+		face_capture_node sensor_message_gateway_node sensor_message_gateway_nodelet coordinator_node decomposition subspace_analysis face_normalizer
+		face_recognizer_algorithms tracking_evaluator
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -379,4 +379,8 @@ install(DIRECTORY common/include/${PROJECT_NAME}/ ros/include/${PROJECT_NAME}/
 install(DIRECTORY ros/launch
 	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/ros
 	PATTERN ".svn" EXCLUDE
+)
+
+install(FILES nodelet_plugins.xml
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
