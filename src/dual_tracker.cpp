@@ -892,13 +892,13 @@ public:
     for(int i = 0; i < associationSet.size(); ++i){
 
       Association* association = associationSet[i];
-      std::cout << association->toString() << std::endl;
 
       if(association->getAssociationProbability() > filter_config.minUpdateProbability && association->getDistance() < max_meas_jump_m){ // TODO make variable
-        std::cout << association->toString() << " doing update!" << std::endl;
+        std::cout << association->toString() << " doing update! (prob: " << association->getAssociationProbability() << ", dist: " << association->getDistance() << ")" << std::endl;
         //propagated[lt]->update(loc,1.0);
 
         association->getLeg()->update(association->getDetection()->getLocation(), 1.0);
+        association->getDetection()->setUsedForUpdate(true);
 
       }else{
         if(association->getDistance() >= max_meas_jump_m){
@@ -910,6 +910,8 @@ public:
         }
       }
     }
+
+
 
 
     updateTimer.stop();
@@ -998,19 +1000,21 @@ public:
 
         double maxAssignmentProbForNewTracker = 0.003;
 
+
+        bool usedBeforeCondition = detections[lm]->usedForUpdate();
         bool assignmentProbCondition = assignmentProb < maxAssignmentProbForNewTracker; // TODO make variable
         bool newTrackMinProbCondition = detectionProb > new_track_min_probability_;
 
 
         // If no track is assigned to this measurement (or only a unreliable one)
-        if(newTrackMinProbCondition && assignmentProbCondition){
+        if(!usedBeforeCondition && newTrackMinProbCondition && assignmentProbCondition){
 
           // Check the distance to the next measurement
           double dist_min = 1000;
           for(size_t i = 0; i < nMeasurementsReal; i++){
             if(i != lm){
               double dist = (detections[i]->getLocation() - detections[lm]->getLocation()).length();
-              status_stream << "Dist LM[" << i << "] <-> LM[" << lm << "]" << dist << std::endl;
+              //status_stream << "Dist LM[" << i << "] <-> LM[" << lm << "]" << dist << std::endl;
 
               if(dist < dist_min){
                 dist_min = dist;
@@ -1149,7 +1153,7 @@ public:
     }
 
     if(publish_measurement_labels_){
-      publishLegMeasurementsVisualization(detections, scan->header.stamp);
+      publishMeasurementsVisualization(detections, scan->header.stamp);
     }
 
     //// Leg related publication
@@ -1458,7 +1462,7 @@ public:
    * @param detections
    * @param time
    */
-  void publishLegMeasurementsVisualization(vector<DetectionPtr>& detections, ros::Time time){
+  void publishMeasurementsVisualization(vector<DetectionPtr>& detections, ros::Time time){
 
     // The marker Array, collecting Label and Marker
     visualization_msgs::MarkerArray markerArray;
@@ -2320,6 +2324,9 @@ public:
 
   void publishLegVisualization(vector<LegFeaturePtr>& legFeatures, ros::Time time){
 
+    // Parameters
+    double heightCreationLabel = 1.5;
+
     // Marker Array
     visualization_msgs::MarkerArray markerArray;
 
@@ -2397,6 +2404,54 @@ public:
       markerMsgArrow.points.push_back(point1);
 
       markerArray.markers.push_back(markerMsgArrow);
+
+      //// Initial position (Arrow)
+      visualization_msgs::Marker creationMarkerArrow;
+
+      creationMarkerArrow.header.frame_id = fixed_frame;
+      creationMarkerArrow.header.stamp = time;
+      creationMarkerArrow.ns = "arrow_creation";
+      creationMarkerArrow.id = counter;
+      creationMarkerArrow.type = visualization_msgs::Marker::ARROW;
+      creationMarkerArrow.scale.x = 0.02;
+      creationMarkerArrow.scale.y = 0.02;
+      creationMarkerArrow.color.a = 0.8;
+
+      geometry_msgs::Point point0_created, point1_created;
+      point0_created.x = (*legIt)->getInitialPosition().getX();
+      point0_created.y = (*legIt)->getInitialPosition().getY();
+      point0_created.z = (*legIt)->getInitialPosition().getZ();
+
+      point1_created = point0_created;
+      point1_created.z = heightCreationLabel;
+
+      creationMarkerArrow.points.push_back(point0_created);
+      creationMarkerArrow.points.push_back(point1_created);
+
+      markerArray.markers.push_back(creationMarkerArrow);
+
+      //// Initial position (Label)
+      visualization_msgs::Marker initial_label;
+      initial_label.header.stamp = time;
+      initial_label.header.frame_id = fixed_frame;
+      initial_label.ns = "initial_creation_label";
+      initial_label.id = counter;
+      initial_label.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+      initial_label.pose.position.x = (*legIt)->getInitialPosition().getX();
+      initial_label.pose.position.y = (*legIt)->getInitialPosition().getY();
+      initial_label.pose.position.z = 1.1 * heightCreationLabel;
+      initial_label.scale.z = 0.1;
+      initial_label.color.a = 1;
+      //label.lifetime = ros::Duration(0.5);
+
+      // Add text
+      char buf[100];
+      sprintf(buf, "L%d Creation", (*legIt)->getId());
+      initial_label.text = buf;
+
+      markerArray.markers.push_back(initial_label);
+
+
       counter++;
 
     }
