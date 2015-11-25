@@ -155,6 +155,7 @@ public:
   int n_leg_trackers_last_cycle_;
   int n_people_markers_last_published_;
   int n_leg_tracker_last_published_;
+  int n_associations_last_published_;
 
 
   //bool use_seeds_;
@@ -243,7 +244,7 @@ public:
   ros::Publisher measurement_visualization_pub_; /**< Publish leg visualizations */
   ros::Publisher people_visualization_pub_;/**< Visualization of people tracks */
   ros::Publisher leg_visualization_pub_; /**< Publish measurements */
-
+  ros::Publisher association_visualization_pub_; /**< Publish association */
 
 
 
@@ -267,7 +268,8 @@ public:
     n_detections_last_cycle_(0),
     n_leg_trackers_last_cycle_(0),
     n_people_markers_last_published_(0),
-    n_leg_tracker_last_published_(0)
+    n_leg_tracker_last_published_(0),
+    n_associations_last_published_(0)
     //occlusionModel_(new OcclusionModel(tfl_)),
     //new_track_creation_likelihood_(0.5)
   {
@@ -296,9 +298,9 @@ public:
     measurement_visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("measurement_visualization", 0);
     leg_visualization_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("leg_visualization", 0);
     people_visualization_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("peoples", 0);
+    association_visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("association_visualization", 0);
     scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
-    data_association_pub_         = nh_.advertise<visualization_msgs::MarkerArray>("fake_measurements", 0);
     //people_3d_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("persons3d", 0);
     particles_pred_pub_           = nh_.advertise<sensor_msgs::PointCloud>("particles_pred", 0);
     particles_pred_arrow_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows_pred", 0);
@@ -1192,6 +1194,9 @@ public:
       publishPeopleHistory(people_trackers_.getList(), scan->header.stamp);
     }
 
+    //// Association related publication
+    publishDataAssociationVisualization(associationSet, scan->header.stamp);
+
     //// Particle related publication
     if(publish_particle_arrows_){
       publishParticlesArrows(saved_leg_features, scan->header.stamp);
@@ -1204,6 +1209,9 @@ public:
     if(publish_fake_measurements_){
       publishFakeMeasPos(fakeDetections, scan->header.stamp, sensorCoord);
     }
+
+
+
 
     publishTimer.stop();
     ROS_DEBUG("%sPublishing [Cycle %u] done - %f ms", BOLDWHITE, cycle_, publishTimer.getElapsedTimeMs());
@@ -1981,46 +1989,46 @@ public:
  * @param time
  * @param frame
  */
-void publishScanLines(const sensor_msgs::LaserScan & scan){
+  void publishScanLines(const sensor_msgs::LaserScan & scan){
 
-  visualization_msgs::Marker linesMsg;
-  linesMsg.header.frame_id = scan.header.frame_id;
-  linesMsg.header.stamp = scan.header.stamp;
-  linesMsg.ns = "lines_ns";
-  linesMsg.id = 0;
-  linesMsg.type = visualization_msgs::Marker::LINE_LIST;
-  linesMsg.scale.x = 0.003;
-  linesMsg.scale.y = 0.01;
-  linesMsg.scale.z = 0.01;
-  linesMsg.color.a = 0.7; // Don't forget to set the alpha!
-  linesMsg.color.r = 0.0;
-  linesMsg.color.g = 1.0;
-  linesMsg.color.b = 0.0;
+    visualization_msgs::Marker linesMsg;
+    linesMsg.header.frame_id = scan.header.frame_id;
+    linesMsg.header.stamp = scan.header.stamp;
+    linesMsg.ns = "lines_ns";
+    linesMsg.id = 0;
+    linesMsg.type = visualization_msgs::Marker::LINE_LIST;
+    linesMsg.scale.x = 0.003;
+    linesMsg.scale.y = 0.01;
+    linesMsg.scale.z = 0.01;
+    linesMsg.color.a = 0.7; // Don't forget to set the alpha!
+    linesMsg.color.r = 0.0;
+    linesMsg.color.g = 1.0;
+    linesMsg.color.b = 0.0;
 
-  // Iterate the scan
-  for (uint32_t i = 0; i < scan.ranges.size(); i++)
-  {
-    laser_processor::Sample* s = laser_processor::Sample::Extract(i, scan);
-    if (s != NULL)
+    // Iterate the scan
+    for (uint32_t i = 0; i < scan.ranges.size(); i++)
     {
+      laser_processor::Sample* s = laser_processor::Sample::Extract(i, scan);
+      if (s != NULL)
+      {
 
-      geometry_msgs::Point startPoint;
-      startPoint.x = 0.0;
-      startPoint.y = 0.0;
-      startPoint.z = 0.0;
+        geometry_msgs::Point startPoint;
+        startPoint.x = 0.0;
+        startPoint.y = 0.0;
+        startPoint.z = 0.0;
 
-      geometry_msgs::Point endPoint;
-      startPoint.x = s->x;
-      startPoint.y = s->y;
-      startPoint.z = 0.0;
+        geometry_msgs::Point endPoint;
+        startPoint.x = s->x;
+        startPoint.y = s->y;
+        startPoint.z = 0.0;
 
-      linesMsg.points.push_back(startPoint);
-      linesMsg.points.push_back(endPoint);
+        linesMsg.points.push_back(startPoint);
+        linesMsg.points.push_back(endPoint);
+      }
     }
-  }
 
-  // Publish the clustering
-  scan_lines_pub_.publish(linesMsg);
+    // Publish the clustering
+    scan_lines_pub_.publish(linesMsg);
 }
 
   /**
@@ -2877,7 +2885,7 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
 
     }
 
-    data_association_pub_.publish(msgArray);
+    leg_visualization_pub_.publish(msgArray);
     //leg_features_history_vis_pub_.publish(line_list);
 
 
@@ -2965,7 +2973,154 @@ void publishScanLines(const sensor_msgs::LaserScan & scan){
     ROS_DEBUG("DualTracker::%s Publishing Leg History on %s", __func__, fixed_frame.c_str());
   }
 
+  void publishDataAssociationVisualization(std::vector<Association*> associationSet, ros::Time time){
 
+    // Parameters
+    double associationLineHeight = 0;
+    double associationLabelHeight = 1;
+
+    // Parameters for the cylinder connecting line and label
+    double cylinderDiameter = 0.02;
+    double cylinderAlpha = 0.5;
+
+    // Create a marker array
+    visualization_msgs::MarkerArray markerArray;
+
+    // Iterate the associations
+    // Print the Associations
+    int counter = 0;
+    for(int i = 0; i < associationSet.size(); ++i){
+
+      // Get the association
+      Association* association = associationSet[i];
+
+      // Get the LegFeaturePtr
+      LegFeaturePtr leg = association->getLeg();
+
+      // Get the detection
+      DetectionPtr detection = association->getDetection();
+
+      // Create a marker connecting leg and detection
+      visualization_msgs::Marker line;
+
+      line.header.frame_id = fixed_frame;
+      line.header.stamp = time;
+      line.ns = "association";
+      line.id = i;
+      line.type = visualization_msgs::Marker::LINE_LIST;
+      line.scale.x = 0.05;
+      line.scale.y = 0.05;
+      line.color.a = 0.8;
+
+      geometry_msgs::Point point0, point1;
+      point0.x = leg->getPredictedPosition().getX();
+      point0.y = leg->getPredictedPosition().getY();
+      point0.z = associationLineHeight;
+
+      line.points.push_back(point0);
+
+      point1.x = detection->getLocation().getX();
+      point1.y = detection->getLocation().getY();
+      point1.z = associationLineHeight;
+
+      line.points.push_back(point1);
+
+      // Push the line into the array
+      markerArray.markers.push_back(line);
+
+      //// Add a label in the center of the connecting line
+      visualization_msgs::Marker associationLabel;
+
+      associationLabel.header.frame_id = fixed_frame;
+      associationLabel.header.stamp = time;
+      associationLabel.ns = "association_label";
+      associationLabel.id = i;
+      associationLabel.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+
+      // Add text
+      char buf[100];
+      sprintf(buf, "as<L%i-M%i>: %g", leg->getId(), detection->getId(), detection->getProbability());
+      associationLabel.text = buf;
+
+      // Set the position as center of the line
+      associationLabel.pose.position.x = 0.5 * (leg->getPredictedPosition().getX() + detection->getLocation().getX());
+      associationLabel.pose.position.y = 0.5 * (leg->getPredictedPosition().getY() + detection->getLocation().getY());
+      associationLabel.pose.position.z = associationLabelHeight;
+
+      associationLabel.scale.z = .1;
+      associationLabel.color.r = 0;
+      associationLabel.color.g = 0;
+      associationLabel.color.b = 0;
+      associationLabel.color.a = 1.0;
+
+      markerArray.markers.push_back(associationLabel);
+
+      //// Add a cylinder from the line center to the label
+      visualization_msgs::Marker associationLineLabelCylinderMarker;
+      associationLineLabelCylinderMarker.header.frame_id = fixed_frame;
+      associationLineLabelCylinderMarker.header.stamp = time;
+      associationLineLabelCylinderMarker.ns = "association_label_line_connection";
+      associationLineLabelCylinderMarker.id = i;
+      associationLineLabelCylinderMarker.type = visualization_msgs::Marker::CYLINDER;
+
+      double cylinderHeight = 0.9 * associationLabelHeight;
+
+      // Set the position as center of the line
+      associationLineLabelCylinderMarker.pose.position.x = 0.5 * (leg->getPredictedPosition().getX() + detection->getLocation().getX());
+      associationLineLabelCylinderMarker.pose.position.y = 0.5 * (leg->getPredictedPosition().getY() + detection->getLocation().getY());
+      associationLineLabelCylinderMarker.pose.position.z = associationLineHeight + 0.5 * cylinderHeight;
+      associationLineLabelCylinderMarker.scale.x = cylinderDiameter;
+      associationLineLabelCylinderMarker.scale.y = cylinderDiameter;
+      associationLineLabelCylinderMarker.scale.z = cylinderHeight;
+
+      associationLineLabelCylinderMarker.color.r = 0;
+      associationLineLabelCylinderMarker.color.g = 0;
+      associationLineLabelCylinderMarker.color.b = 0;
+      associationLineLabelCylinderMarker.color.a = cylinderAlpha;
+
+      markerArray.markers.push_back(associationLineLabelCylinderMarker);
+
+      counter++;
+
+    }
+
+    // Publish deletion markers
+    for(int i = 0; i < n_associations_last_published_ - counter; i++){
+      visualization_msgs::Marker deletionMarker0;
+      deletionMarker0.header.stamp = time;
+      deletionMarker0.header.frame_id = fixed_frame;
+      deletionMarker0.id = counter + i;
+      deletionMarker0.ns = "association";
+      deletionMarker0.type = visualization_msgs::Marker::DELETE;
+
+      markerArray.markers.push_back(deletionMarker0);
+
+      visualization_msgs::Marker deletionMarker1;
+      deletionMarker1.header.stamp = time;
+      deletionMarker1.header.frame_id = fixed_frame;
+      deletionMarker1.id = counter + i;
+      deletionMarker1.ns = "association_label";
+      deletionMarker1.type = visualization_msgs::Marker::DELETE;
+
+      markerArray.markers.push_back(deletionMarker1);
+
+      visualization_msgs::Marker deletionMarker2;
+      deletionMarker2.header.stamp = time;
+      deletionMarker2.header.frame_id = fixed_frame;
+      deletionMarker2.id = counter + i;
+      deletionMarker2.ns = "association_label_line_connection";
+      deletionMarker2.type = visualization_msgs::Marker::DELETE;
+
+      markerArray.markers.push_back(deletionMarker2);
+
+      std::cout << "Publishing Deletion marker" << std::endl;
+    }
+
+    n_associations_last_published_ = counter;
+
+    association_visualization_pub_.publish(markerArray);
+
+  }
 
   // Publish the occlusion model for debugging purposes
   void publishOcclusionModel(vector<LegFeaturePtr>& legFeatures, ros::Time time){
