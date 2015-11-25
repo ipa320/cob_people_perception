@@ -237,6 +237,10 @@ public:
     return this->position_predicted_;
   }
 
+  tf::Stamped<tf::Point> getInitialPosition() const{
+    return this->initial_position_;
+  }
+
   /**
    * Prepare the propagation for multithreading by gathering dependend variables into local member variables
    * @param time

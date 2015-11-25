@@ -23,6 +23,8 @@ class Detection{
 
     unsigned int id_;                       /**< Unique id (within cycle)*/
 
+    bool used_for_update_; /** Check if this has been used for a update */
+
   public:
     // Detection for real
     Detection(int id, tf::Stamped<tf::Point> point, laser_processor::SampleSet* cluster):
@@ -30,7 +32,8 @@ class Detection{
       point_(point),
       cluster_(cluster),
       is_real_(true),
-      fake_probability_(0)
+      fake_probability_(0),
+      used_for_update_(false)
     {
 
     }
@@ -40,7 +43,8 @@ class Detection{
       point_(point),
       fake_probability_(probability),
       is_real_(false),
-      cluster_(NULL)
+      cluster_(NULL),
+      used_for_update_(false)
     {
 
     }
@@ -71,9 +75,20 @@ class Detection{
 
       return std::string(id);
     }
+
     laser_processor::SampleSet* getCluster() const{
       return this->cluster_;
     }
+
+    void setUsedForUpdate(bool used){
+      this->used_for_update_ = used;
+    }
+
+    bool usedForUpdate() const{
+      return this->used_for_update_;
+    }
+
+
 
 };
 
