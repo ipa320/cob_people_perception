@@ -267,11 +267,23 @@ void PeopleTracker::updateTrackerState(ros::Time time){
     // DEBUG
     tf::Vector3 a_vec = pos_vel_estimation_.pos_ - hipPosLeft_;
     tf::Vector3 b_vec = leftLeg_->getEstimate().pos_ - hipPosLeft_;
-    ROS_ASSERT(a_vec.dot(b_vec) < 0.0001);
+    if(a_vec.dot(b_vec) < 0.0001){
+      //std::cout << "a_vec = [" << a_vec[0] << " " << a_vec[1] << " " << a_vec[2] << std::endl;
+      //std::cout << "b_vec " << b_vec[0] << " " << b_vec[1] << " " << b_vec[2] << std::endl;
+
+      //ROS_ASSERT(false);
+    }
+    //ROS_ASSERT(a_vec.dot(b_vec) < 0.0001);
 
     tf::Vector3 c_vec = pos_vel_estimation_.pos_ - hipPosRight_;
     tf::Vector3 d_vec = rightLeg_->getEstimate().pos_ - hipPosRight_;
-    ROS_ASSERT(c_vec.dot(d_vec) < 0.0001);
+    //ROS_ASSERT(c_vec.dot(d_vec) < 0.0001);
+    if(c_vec.dot(d_vec) < 0.0001){
+      //std::cout << "c_vec " << c_vec << std::endl;
+      //std::cout << "d_vec " << d_vec << std::endl;
+
+      //ROS_ASSERT(false);
+    }
 
 
 

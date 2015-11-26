@@ -3055,6 +3055,9 @@ public:
       // Get the detection
       DetectionPtr detection = association->getDetection();
 
+      // Abort if the detection was not used in the data association
+      if(!detection->usedForUpdate()) continue;
+
       // Create a marker connecting leg and detection
       visualization_msgs::Marker line;
 
