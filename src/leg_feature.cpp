@@ -166,7 +166,7 @@ void LegFeature::preparePropagation(ros::Time time){
  */
 void LegFeature::propagate(ros::Time time)
 {
-  //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i", __func__, int_id_);
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i", __func__, int_id_);
   //ROS_ASSERT(prepared_for_propagation_);
 
   benchmarking::Timer propagationTimer; propagationTimer.start();

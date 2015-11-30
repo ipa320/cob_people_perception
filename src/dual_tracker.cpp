@@ -3171,7 +3171,7 @@ public:
 
       markerArray.markers.push_back(deletionMarker2);
 
-      std::cout << "Publishing Deletion marker" << std::endl;
+      std::cout << "Publishing Data Association Deletion marker" << std::endl;
     }
 
     n_associations_last_published_ = counter;

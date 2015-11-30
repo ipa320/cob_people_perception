@@ -214,10 +214,15 @@ void PeopleTracker::updateTrackerState(ros::Time time){
     hip_vec_[2] =  0.0;
     hip_vec_ = hip_vec_.normalize(); //Normalize
 
-    //std::cout << "pos_vel = [" << pos_vel_estimation_.vel_.getX() << ", " << pos_vel_estimation_.vel_.getY() << "," << pos_vel_estimation_.vel_.getZ() << "]" << std::endl;
-    //std::cout << "hip_vec = [" << hip_vec_.getX() << ", " << hip_vec_.getY() << ", " << hip_vec_.getZ() << "]" << std::endl;
+    // Check if the vectors are orthogonal
+    double orthogonalCheckDotProductValue = hip_vec_.dot(pos_vel_estimation_.vel_);
+    if(orthogonalCheckDotProductValue > 0.000001){
+      std::cout << "pos_vel = [" << pos_vel_estimation_.vel_.getX() << ", " << pos_vel_estimation_.vel_.getY() << "," << pos_vel_estimation_.vel_.getZ() << "]" << std::endl;
+      std::cout << "hip_vec = [" << hip_vec_.getX() << ", " << hip_vec_.getY() << ", " << hip_vec_.getZ() << "]" << std::endl;
+      std::cout << RED << " The hip vector and the velocity vector are no orthogonal!" << RESET << std::endl;
+      ROS_ASSERT(false);
+    }
 
-    ROS_ASSERT(hip_vec_.dot(pos_vel_estimation_.vel_) < 0.000001);
 
     // Calculate the hip distance
     double d = distance(estLeg0.pos_, pos_vel_estimation_.pos_, pos_vel_estimation_.vel_);
