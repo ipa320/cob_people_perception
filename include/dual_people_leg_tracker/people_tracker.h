@@ -30,6 +30,16 @@ typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr;
 class PeopleTrackerList; //Forward
 
 /**
+ * A struct defining a entry of the people history
+ */
+struct people_history_entry{
+
+    boost::shared_ptr< tf::Stamped<tf::Point> > position_;
+
+    double probability_;
+};
+
+/**
  * High level People Tracker consisting of two low level leg tracks
  */
 class PeopleTracker{
@@ -76,7 +86,7 @@ class PeopleTracker{
     double stepWidth_;
     double stepWidthMax_;
 
-    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > > position_history_; /**< The position history of the people tracker */
+    std::vector< people_history_entry > history_; /**< The position history of the people tracker */
 
     tf::Vector3 hipPos0_, hipPos1_; /**< Vector of the endpoints of vector */
     tf::Vector3 hipPosLeft_, hipPosRight_; /**< Vector of the endpoints of vector */
@@ -188,7 +198,7 @@ class PeopleTracker{
      * Get the history of this people tracker
      * @return Vector of Shared Pointers of Stamped Points
      */
-    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  getHistory() const;
+    std::vector< people_history_entry >  getHistory() const;
 
     /**
      * Return the hip Vector
@@ -246,8 +256,8 @@ class PeopleTracker{
       return name.str();
     }
 
-    std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >& getPositionHistory(){
-      return this->position_history_;
+    std::vector< people_history_entry >& getPositionHistory(){
+      return this->history_;
     }
 
     tf::Vector3 getHipPosRight() const{

@@ -528,7 +528,7 @@ public:
         sf_iter != saved_leg_features.end();
         sf_iter++)
     {
-      if ((*sf_iter)->getLastMeasurementTime() < purge)
+      if ((*sf_iter)->getLastUpdateTime() < purge)
       {
         (*sf_iter)->setValidity(false);
       }
@@ -1355,7 +1355,7 @@ public:
       if ((*sf_iter)->getReliability() > leg_reliability_limit_ && publish_leg_measurements_)
       {
         people_msgs::PositionMeasurement pos;
-        pos.header.stamp = legFeatures.front()->getLastMeasurementTime();
+        pos.header.stamp = legFeatures.front()->getLastUpdateTime();
         pos.header.frame_id = legFeatures.front()->getFixedFrame();
         pos.name = "leg_detector";
         pos.object_id = (*sf_iter)->getIdStr();
@@ -2596,8 +2596,8 @@ public:
         geometry_msgs::Point pointLeftLeg, pointLegRight, pointHipLeft, pointHipRight, pointCenter;
 
         // Leg 0
-        pointLeftLeg.x = (*peopleTrackerIt)->getLeftLeg()->getPosition()[0];
-        pointLeftLeg.y = (*peopleTrackerIt)->getLeftLeg()->getPosition()[1];
+        pointLeftLeg.x = (*peopleTrackerIt)->getLeftLeg()->getEstimate().pos_[0];
+        pointLeftLeg.y = (*peopleTrackerIt)->getLeftLeg()->getEstimate().pos_[1];
         pointLeftLeg.z = 0;
 
         // Hip 0
@@ -2616,8 +2616,8 @@ public:
         pointHipRight.z = 0.0;
 
         // Leg 1
-        pointLegRight.x = (*peopleTrackerIt)->getRightLeg()->getPosition()[0];
-        pointLegRight.y = (*peopleTrackerIt)->getRightLeg()->getPosition()[1];
+        pointLegRight.x = (*peopleTrackerIt)->getRightLeg()->getEstimate().pos_[0];
+        pointLegRight.y = (*peopleTrackerIt)->getRightLeg()->getEstimate().pos_[1];
         pointLegRight.z = 0;
 
         if((*peopleTrackerIt)->getEstimate().vel_.length() > 0.2){
@@ -2843,8 +2843,6 @@ public:
       personsArray.markers.push_back(person3d);
       personsArray.markers.push_back(personHead);
 
-      std::cout << "Publish Marker with id:" << counter << std::endl;
-
       counter++;
       }
     }
@@ -2959,9 +2957,7 @@ public:
 
       if
       (
-          (*peopleIt)->getHistorySize() > 1 &&
-          (*peopleIt)->getTotalProbability() > 0.85 &&
-          (*peopleIt)->isDynamic()
+          (*peopleIt)->getHistorySize() > 1
       )
       {
 
@@ -2988,8 +2984,8 @@ public:
         line_list.color.b = 0;
         line_list.color.a = 1.0;
 
-        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator prevPointIt;
-        std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >::iterator nextPointIt;
+        std::vector< people_history_entry >::iterator prevPointIt;
+        std::vector< people_history_entry >::iterator nextPointIt;
 
         prevPointIt = (*peopleIt)->getPositionHistory().begin();
         nextPointIt = (*peopleIt)->getPositionHistory().begin();
@@ -2997,16 +2993,19 @@ public:
 
         while(nextPointIt != (*peopleIt)->getPositionHistory().end()){
           geometry_msgs::Point point0, point1;
-          point0.x = (*prevPointIt)->getX();
-          point0.y = (*prevPointIt)->getY();
+          point0.x = (*prevPointIt).position_->getX();
+          point0.y = (*prevPointIt).position_->getY();
           point0.z = 0;
 
-          point1.x = (*nextPointIt)->getX();
-          point1.y = (*nextPointIt)->getY();
+          point1.x = (*nextPointIt).position_->getX();
+          point1.y = (*nextPointIt).position_->getY();
           point1.z = 0;
 
           line_list.points.push_back(point0);
           line_list.points.push_back(point1);
+
+          // Set alpha depending on velocity
+          line_list.color.a = sigmoid((*nextPointIt).probability_, 10.0, 0.8);
 
           //std::cout << "[" << counter << "]" << point0.x << " " << point0.y << "---->" << point1.x << " " << point1.y << std::endl;
 
@@ -3171,7 +3170,6 @@ public:
 
       markerArray.markers.push_back(deletionMarker2);
 
-      std::cout << "Publishing Data Association Deletion marker" << std::endl;
     }
 
     n_associations_last_published_ = counter;

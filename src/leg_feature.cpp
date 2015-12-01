@@ -50,7 +50,6 @@ LegFeature::LegFeature(tf::Stamped<tf::Point> loc,
 
   // Set the times to the initialization location
   time_last_update_ = loc.stamp_;
-  time_meas_ = loc.stamp_;
 
   // Transform to local frame
   try
@@ -166,7 +165,7 @@ void LegFeature::preparePropagation(ros::Time time){
  */
 void LegFeature::propagate(ros::Time time)
 {
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i", __func__, int_id_);
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature[%i]::%s", int_id_, __func__);
   //ROS_ASSERT(prepared_for_propagation_);
 
   benchmarking::Timer propagationTimer; propagationTimer.start();
@@ -175,8 +174,7 @@ void LegFeature::propagate(ros::Time time)
   current_estimate_changed_ = true;
 
   // Update the time
-  time_last_update_ = time;
-  time_prediction_ = time;
+  time_last_prediction_ = time;
 
   MatrixWrapper::SymmetricMatrix cov(6);
   cov = 0.0;
@@ -190,8 +188,8 @@ void LegFeature::propagate(ros::Time time)
   // Update of the moving leg
   if(prepared_do_hl_propagation_){
 
-    //std::cout << RED << "Updating L" << this->int_id_ << " most probable associatet people tracker is" << *mostProbableAssociatedPPL << RESET << std::endl;
-    //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i considers a high level filter for its update", __func__, int_id_);
+    //std::cout << RED << "Updating L" << this->int_id_ << " most probable associated people tracker is" << *mostProbableAssociatedPPL << RESET << std::endl;
+    ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i considers a high level filter for its update", __func__, int_id_);
 
 
     // Do the prediction with HighLevel Influence
@@ -208,7 +206,7 @@ void LegFeature::propagate(ros::Time time)
   // OR if this is the static leg
   else
   {
-    //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i does a simple update", __func__, int_id_);
+    ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i does a simple update", __func__, int_id_);
 
     filter_.updatePrediction(time.toSec(),cov);
   }
@@ -225,7 +223,7 @@ void LegFeature::propagate(ros::Time time)
 // Here the measurement is used to update the filter location
 void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
 {
-  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature[%i]::%s",int_id_,__func__);
+  ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature[%i]::%s - (%f, %f, %f)", int_id_, __func__, loc.getX(), loc.getY(), loc.getZ());
   //std::cout << "Received update: " << loc.getX() << "  " << loc.getY() << "  " << loc.getZ() << std::endl;
 
   // Set estimate change to true
@@ -234,8 +232,8 @@ void LegFeature::update(tf::Stamped<tf::Point> loc, double probability)
   meas_loc_last_update_ = loc;
 
   // Update the measurement time
-  time_meas_ = loc.stamp_;
-  time_last_update_ = time_meas_;
+  //time_update_ = loc.stamp_;
+  time_last_update_ = loc.stamp_;
 
   // Covariance of the Measurement
   MatrixWrapper::SymmetricMatrix cov(3);
@@ -300,6 +298,7 @@ void LegFeature::updatePosition()
 
   // Estimate using the most likely particle
   // filter_.getMostLikelyPosition(est);
+  ROS_ASSERT(est.pos_.length() < 10000);
 
   position_[0] = est.pos_[0];
   position_[1] = est.pos_[1];

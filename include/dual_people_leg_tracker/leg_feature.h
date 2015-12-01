@@ -50,9 +50,9 @@ private:
 
   ros::Time time_last_update_; /**< Time of the last scan */
 
-  ros::Time time_prediction_; /**< The time the prediction was made to */
+  ros::Time time_last_prediction_; /**< The time the prediction was made to */
 
-  ros::Time time_meas_; /**< The time of the last measurement */
+  //ros::Time time_update_; /**< The time of the last measurement */
 
   double reliability_; /**< Reliability */
 
@@ -153,15 +153,15 @@ public:
    * @return
    */
   ros::Time getLastPredictionTime() const{
-    return this->time_prediction_;
+    return this->time_last_prediction_;
   }
 
   /**
    * Return the last measurement time
    * @return
    */
-  ros::Time getLastMeasurementTime() const{
-    return this->time_meas_;
+  ros::Time getLastUpdateTime() const{
+    return this->time_last_update_;
   }
 
   /**
@@ -304,6 +304,8 @@ public:
    */
   BFL::StatePosVel getEstimate() const{
 
+    //ROS_DEBUG_COND(DEBUG_LEG_TRACKER,"LegFeature::%s ID:%i", __func__, int_id_);
+
     if(this->current_estimate_changed_){
       BFL::StatePosVel est;
       filter_.getEstimate(est);
@@ -313,6 +315,13 @@ public:
     else{
       //std::cout << "I was able to use old value" << std::endl;
     }
+
+    if(abs(current_estimate_.pos_.getX()) >= 10000 || abs(current_estimate_.pos_.getX()) >= 10000){
+      std::cout << RED << "Something went wrong with LegFeature[" << int_id_ << "]" << RESET << std::endl;
+    }
+
+    ROS_ASSERT(abs(current_estimate_.pos_.getX()) < 10000);
+    ROS_ASSERT(abs(current_estimate_.pos_.getY()) < 10000);
 
     return current_estimate_;
     //return pos_vel_;

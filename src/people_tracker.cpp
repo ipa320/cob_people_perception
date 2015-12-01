@@ -611,8 +611,6 @@ void PeopleTracker::updateProbabilities(ros::Time time){
 
 void PeopleTracker::updateHistory(ros::Time time){
 
-  if(this->getTotalProbability() > 0.5){ // TODO remove or make variable
-
   BFL::StatePosVel est = getEstimate();
 
   boost::shared_ptr<tf::Stamped<tf::Point> > point(new tf::Stamped<tf::Point>());
@@ -621,8 +619,12 @@ void PeopleTracker::updateHistory(ros::Time time){
   point->setZ( est.pos_[2]);
   point->stamp_ = time;
 
-  position_history_.push_back(point);
-  }
+  people_history_entry hist_entry;
+  hist_entry.position_ = point;
+  hist_entry.probability_ = this->getTotalProbability();
+
+  history_.push_back(hist_entry);
+
 }
 
 /**
@@ -676,11 +678,11 @@ BFL::StatePosVel PeopleTracker::getEstimateKalman(){
 }
 
 unsigned int PeopleTracker::getHistorySize(){
-  return position_history_.size();
+  return history_.size();
 }
 
-std::vector<boost::shared_ptr<tf::Stamped<tf::Point> > >  PeopleTracker::getHistory() const{
-  return position_history_;
+std::vector< people_history_entry >  PeopleTracker::getHistory() const{
+  return history_;
 }
 
 /***

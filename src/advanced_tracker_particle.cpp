@@ -300,12 +300,12 @@ void AdvancedTrackerParticle::getEstimate(StatePosVel& est) const
   //est = prior_.ExpectedValueGet();
 
 
-  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s - Doing update prediction of %u particles",__func__, prior_.NumSamplesGet());
+  ROS_DEBUG_COND(DEBUG_ADVANCEDTRACKERPARTICLE,"--AdvancedTrackerParticle::%s - Getting estmation of %u particles",__func__, prior_.NumSamplesGet());
 
   est = ((MCPdfPosVel*)(filter_->PostGet()))->ExpectedValueGet();
 
-#ifdef DEBUG_ADVANCEDTRACKERPARTICLE
-  //std::cout << "Estimation: " << est << std::endl;
+#if DEBUG_ADVANCEDTRACKERPARTICLE
+  std::cout << "Estimation: " << est << std::endl;
 #endif
 };
 
