@@ -51,9 +51,7 @@ using namespace tf;
 using namespace BFL;
 
 static double no_observation_timeout_s = 0.5;
-static double max_second_leg_age_s     = 2.0;
-static double max_track_jump_m         = 1.0; //Maximale jump distance for a track
-static double max_meas_jump_m          = 0.75; // 1.0
-static double leg_pair_separation_m    = 1.0;
+static double max_meas_jump_           = 0.75; // 1.0
+
 
 #endif /* DUAL_TRACKER_H_ */

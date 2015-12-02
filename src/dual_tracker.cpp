@@ -101,6 +101,11 @@ static string fixed_frame              = "odom_combined";  // The fixed frame
 #define DUALTRACKER_DEBUG 1         // Debug the leg detector
 #define DUALTRACKER_TIME_DEBUG 1    // Debug the calculation time inside the leg_detector
 
+// Param output
+#define ROS_PARAM_OUT(param) \
+    ROS_DEBUG_STREAM_COND(DUALTRACKER_DEBUG, "\t" << #param << " " << param);
+    //ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t%s %d", #param, param);
+
 int g_argc;
 char** g_argv;
 
@@ -196,6 +201,17 @@ public:
   bool publish_fake_measurements_; /**< Publish a visualization of the fake measurements */
   bool publish_predicted_leg_positions_; /**< Publish the estimated position of the legs due to the prediction of the associated people tracker */
   bool publish_scans_lines_; /**< Publish laserscan as lines */
+
+  bool publish_measurements_visualizations_; /**< Publish leg measurements visualizations */
+  bool publish_measurements_visualizations_debug_; /**< Publish leg measurements visualizations (debug) */
+
+  bool publish_leg_visualizations_; /**< Publish leg visualizations */
+  bool publish_leg_visualizations_debug_; /**< Publish leg visualizations (debug) */
+
+  bool publish_people_visualizations_; /**< Publish people visualizations */
+  bool publish_people_visualizations_debug_; /**< Publish people visualizations (debug) */
+
+  bool publish_particles_visualizations_debug_; /**< Publish particles visualization (debug) */
 
   int next_p_id_;
 
@@ -301,17 +317,8 @@ public:
     association_visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("association_visualization", 0);
     scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
-    //people_3d_pub_                = nh_.advertise<visualization_msgs::MarkerArray>("persons3d", 0);
     particles_pred_pub_           = nh_.advertise<sensor_msgs::PointCloud>("particles_pred", 0);
     particles_pred_arrow_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows_pred", 0);
-    //people_next_velocity_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("next_velocity_pred", 0);
-
-
-    //if (use_seeds_)
-    //{
-      //people_notifier_.registerCallback(boost::bind(&DualTracker::peopleCallback, this, _1));
-      //people_notifier_.setTolerance(ros::Duration(0.01));
-    //}
 
     // Set the laserCallback
     laser_notifier_.registerCallback(boost::bind(&DualTracker::laserCallback, this, _1));
@@ -339,56 +346,61 @@ public:
   void configure(dual_people_leg_tracker::DualTrackerConfig &config, uint32_t level)
   {
     // Clustering parameters
-    connected_thresh_           = config.connection_threshold;    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  connected_thresh_ %f", connected_thresh_ );
-    min_points_per_group_       = config.min_points_per_group;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  min_points_per_group %i", min_points_per_group_ );
-    new_track_min_probability_  = config.new_track_min_probability; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  new_track_min_probability %f", new_track_min_probability_ );
+    connected_thresh_           = config.connection_threshold;
+    ROS_PARAM_OUT(connected_thresh_);(connected_thresh_);
+
+    min_points_per_group_       = config.min_points_per_group;
+    ROS_PARAM_OUT(min_points_per_group_);
+
+    new_track_min_probability_  = config.new_track_min_probability;
+    ROS_PARAM_OUT(new_track_min_probability_);
+
 
     // Leg Tracker Parameters
-    leg_reliability_limit_      = config.leg_reliability_limit;   ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  leg_reliability_limit_ %f", leg_reliability_limit_ );
+    leg_reliability_limit_      = config.leg_reliability_limit;
+    ROS_PARAM_OUT(leg_reliability_limit_);
+
 
     // People Tracker Parameters
-    people_probability_limit_   = config.people_probability_limit; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  leg_reliability_limit_ %f", people_probability_limit_);
+    people_probability_limit_   = config.people_probability_limit;
+    ROS_PARAM_OUT(people_probability_limit_);
 
-    // Publish clustering
-    publish_clusters_           = config.publish_clusters;        ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_clusters_ %d", publish_clusters_ );
 
-    // Publish the leg trackers
-    publish_leg_measurements_   = config.publish_leg_measurements;            ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_measurements_ %d", publish_leg_measurements_ );
-    publish_leg_velocity_       = config.publish_leg_velocity; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_velocity_ %d", publish_leg_velocity_ );
-    publish_leg_markers_        = config.publish_leg_markers;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_markers_ %d", publish_leg_markers_ );
-    publish_leg_history_        = config.publish_leg_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_history_ %d", publish_leg_history_ );
-    publish_leg_labels_         = config.publish_leg_labels;      ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_leg_labels_ %d", publish_leg_labels_ );
-    publish_measurement_labels_ = config.publish_measurement_labels; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_measurement_labels_ %d", publish_measurement_labels_);
-    publish_predicted_leg_positions_ = config.publish_predicted_leg_positions; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_predicted_leg_positions_ %d", publish_predicted_leg_positions_);
-    publish_scans_lines_ 		= config.publish_scans_lines; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_scans_lines_ %d", publish_scans_lines_);
+    // Visualizations (Measurements)
+    publish_measurements_visualizations_ = config.publish_measurements_visualizations;
+    ROS_PARAM_OUT(publish_measurements_visualizations_);
 
-    // Publish the people tracker
-    publish_people_             = config.publish_people;          ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_ %d", publish_people_ );
-    publish_people_markers_     = config.publish_people_markers;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_markers_ %d", publish_people_markers_ );
-    publish_people_tracker_     = config.publish_people_tracker;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_tracker_ %d", publish_people_tracker_ );
-    publish_static_people_trackers_ = config.publish_static_people_trackers; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_static_people_trackers_ %d", publish_static_people_trackers_);
-    publish_people_history_     = config.publish_people_history;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_history_ %d", publish_people_history_ );
-    publish_people_velocity_kalman_ = config.publish_people_velocity_kalman; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_velocity_kalman_ %d", publish_people_velocity_kalman_ );
-    publish_people_3d_          = config.publish_people_3d; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_people_3d_ %d", publish_people_3d_ );
-    publish_particle_arrows_    = config.publish_particle_arrows; ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_particle_arrows_ %d", publish_particle_arrows_ );
+    publish_measurements_visualizations_debug_ = config.publish_measurements_visualizations_debug;
+    ROS_PARAM_OUT(publish_measurements_visualizations_debug_);
 
-    publish_particles_          = config.publish_particles;       ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_particles_ %d", publish_particles_ );
-    publish_matches_            = config.publish_matches;         ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_matches_ %d", publish_matches_ );
+    // Visualizations (Legs)
+    publish_leg_visualizations_ = config.publish_leg_visualizations;
+    ROS_PARAM_OUT(publish_leg_visualizations_);
 
-    publish_occlusion_model_    = config.publish_occlusion_model;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_occlusion_model_ %d", publish_occlusion_model_ );
+    publish_leg_visualizations_debug_ = config.publish_leg_visualizations_debug;
+    ROS_PARAM_OUT(publish_leg_visualizations_debug_);
 
-    // JPDA Publications
-    publish_jpda_associations_  = config.publish_jpda_associations;     ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  publish_jpda_associations_ %d", publish_jpda_associations_ );
+    // Visualizations (People)
+    publish_people_visualizations_ = config.publish_people_visualizations;
+    ROS_PARAM_OUT(publish_people_visualizations_);
 
-    no_observation_timeout_s = config.no_observation_timeout;  ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  no_observation_timeout_s %f", no_observation_timeout_s );
-    max_second_leg_age_s     = config.max_second_leg_age;
-    max_track_jump_m         = config.max_track_jump;
-    max_meas_jump_m          = config.max_meas_jump;
-    leg_pair_separation_m    = config.leg_pair_separation;
+    publish_people_visualizations_debug_ = config.publish_people_visualizations_debug;
+    ROS_PARAM_OUT(publish_people_visualizations_debug_);
+
+    // Visualizations (Particles)
+    publish_particles_visualizations_debug_ = config.publish_particles_visualizations_debug;
+    ROS_PARAM_OUT(publish_particles_visualizations_debug_);
+
+
+    no_observation_timeout_s = config.no_observation_timeout;
+    ROS_PARAM_OUT(no_observation_timeout_s);
+
+    max_meas_jump_          = config.max_meas_jump;
+    ROS_PARAM_OUT(max_meas_jump_);
 
     // Set probabilties of the filter
     use_fake_measurements_                            = config.use_fake_measurements;
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t  use_fake_measurements_ %d", use_fake_measurements_ );
+    ROS_PARAM_OUT(use_fake_measurements_);
 
     /*filter_config.fakeLegProb                         = config.fake_leg_probability;
 
@@ -402,40 +414,38 @@ public:
 
     // Leg Feature properties
     leg_feature_update_cov_                           = config.leg_feature_update_cov; // default 0.05;
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t leg_feature_update_cov_ %g", leg_feature_update_cov_ );
+    ROS_PARAM_OUT(leg_feature_update_cov_);
 
     leg_feature_predict_pos_cov_                      = config.leg_feature_predict_pos_cov; // default 0.2;
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t leg_feature_predict_pos_cov_ %g", leg_feature_predict_pos_cov_ );
+    ROS_PARAM_OUT(leg_feature_predict_pos_cov_);
 
     leg_feature_predict_vel_cov_                      = config.leg_feature_predict_vel_cov; // default 1.2;
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t leg_feature_predict_vel_cov_ %g", leg_feature_predict_vel_cov_ );
+    ROS_PARAM_OUT(leg_feature_predict_vel_cov_);
 
     leg_feature_measurement_cov_                      = config.leg_feature_measurement_cov; // default 0.004;
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t leg_feature_measurement_cov_ %g", leg_feature_measurement_cov_ );
+    ROS_PARAM_OUT(leg_feature_measurement_cov_);
 
     initial_leg_feature_predict_pos_cov_              = config.initial_leg_feature_predict_pos_cov; // default 0.2;
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t initial_leg_feature_predict_pos_cov_ %g", initial_leg_feature_predict_pos_cov_ );
+    ROS_PARAM_OUT(initial_leg_feature_predict_pos_cov_);
 
     initial_leg_feature_predict_vel_cov_              = config.initial_leg_feature_predict_vel_cov;       // default 1.5;   // TODO make configable
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t initial_leg_feature_predict_vel_cov_ %g", initial_leg_feature_predict_pos_cov_ );
+    ROS_PARAM_OUT(initial_leg_feature_predict_vel_cov_);
 
     min_people_probability_for_hl_prediction_         = config.min_people_probability_for_hl_prediction;  // default 0.6; // TODO make configable
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t min_people_probability_for_hl_prediction_ %g", min_people_probability_for_hl_prediction_ );
+    ROS_PARAM_OUT(min_people_probability_for_hl_prediction_);
 
     static_threshold_distance_                        = config.static_threshold_distance;                 // default 0.4; // TODO make configable
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t static_threshold_distance_ %g", static_threshold_distance_ );
-
+    ROS_PARAM_OUT(static_threshold_distance_);
 
     // Filter properties
     v_max_                                            = config.v_max;                                     // default 4.0;
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t v_max_ %g", v_max_ );
+    ROS_PARAM_OUT(v_max_);
 
     position_factor_                                  = config.position_factor;                           // default 0.8;
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t position_factor_ %g", position_factor_ );
+    ROS_PARAM_OUT(position_factor_);
 
     velocity_factor_                                  = config.velocity_factor;                           // default 1.6;
-    ROS_DEBUG_COND(DUALTRACKER_DEBUG, "\t velocity_factor_ %g", velocity_factor_ );
-
+    ROS_PARAM_OUT(velocity_factor_);
 
     if (fixed_frame.compare(config.fixed_frame) != 0)
     {
@@ -893,7 +903,7 @@ public:
 
       Association* association = associationSet[i];
 
-      if(association->getAssociationProbability() > filter_config.minUpdateProbability && association->getDistance() < max_meas_jump_m){ // TODO make variable
+      if(association->getAssociationProbability() > filter_config.minUpdateProbability && association->getDistance() < max_meas_jump_){ // TODO make variable
         std::cout << association->toString() << " doing update! (prob: " << association->getAssociationProbability() << ", dist: " << association->getDistance() << ")" << std::endl;
         //propagated[lt]->update(loc,1.0);
 
@@ -901,8 +911,8 @@ public:
         association->getDetection()->setUsedForUpdate(true);
 
       }else{
-        if(association->getDistance() >= max_meas_jump_m){
-          std::cout << YELLOW << " NOT updating " << association->getLeg()->getIdStr() << " with " << association->getDetection()->getIdStr() << " because the distance:" << association->getDistance() << " is greate than the max_meas_jump: " << max_meas_jump_m << RESET << std::endl;
+        if(association->getDistance() >= max_meas_jump_){
+          std::cout << YELLOW << " NOT updating " << association->getLeg()->getIdStr() << " with " << association->getDetection()->getIdStr() << " because the distance:" << association->getDistance() << " is greate than the max_meas_jump: " << max_meas_jump_ << RESET << std::endl;
         }
 
         if(association->getAssociationProbability() <= filter_config.minUpdateProbability){
@@ -1138,32 +1148,31 @@ public:
     benchmarking::Timer publishTimer; publishTimer.start();
 
     // Publish the leg measurements
-    if(publish_leg_measurements_){
+    if(publish_measurements_visualizations_){
       //publishLegMeasurements(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
     }
 
     //// Measurement related publication
-    if(publish_scans_lines_){
-      publishScanLines(*scan);
-    }
+    //publishScanLines(*scan); (Not used anymore)
+
 
     // Publish the clustering
-    if(publish_clusters_){
+    if(publish_measurements_visualizations_debug_){
       publishClusters(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
     }
 
-    if(publish_measurement_labels_){
+    if(publish_measurements_visualizations_debug_){
       publishMeasurementsVisualization(detections, scan->header.stamp);
     }
 
     //// Leg related publication
     // Publish the detections of legs
-    if(publish_leg_velocity_){
+    if(publish_leg_visualizations_debug_){
       publishLegVelocities(people_trackers_.getList(), scan->header.stamp);
     }
 
     // Publish the history of each leg
-    if(publish_leg_history_){
+    if(publish_leg_visualizations_debug_){
       publishLegHistory(saved_leg_features, scan->header.stamp);
     }
 
@@ -1171,11 +1180,11 @@ public:
    //   publishMatches(saved_leg_features, scan->header.stamp);
    // }
 
-    if(publish_leg_labels_){
+    if(publish_leg_visualizations_debug_){
       publishLegLabels(saved_leg_features, scan->header.stamp);
     }
 
-    if(publish_predicted_leg_positions_){
+    if(publish_leg_visualizations_debug_){
       publishLegVisualization(saved_leg_features, scan->header.stamp);
     }
 
@@ -1186,15 +1195,15 @@ public:
       publishPeopleTrackerLabels(scan->header.stamp);
     }
 
-    if(publish_people_velocity_kalman_){
+    if(publish_people_visualizations_){
       publishPeopleVelocityKalman(people_trackers_.getList(), scan->header.stamp);
     }
 
-    if(publish_people_3d_){
+    if(publish_people_visualizations_){
       publishPeople3d(scan->header.stamp);
     }
 
-    if(publish_people_history_){
+    if(publish_people_visualizations_){
       publishPeopleHistory(people_trackers_.getList(), scan->header.stamp);
     }
 
@@ -1202,11 +1211,11 @@ public:
     publishDataAssociationVisualization(associationSet, scan->header.stamp);
 
     //// Particle related publication
-    if(publish_particle_arrows_){
+    if(publish_particles_visualizations_debug_){
       publishParticlesArrows(saved_leg_features, scan->header.stamp);
     }
 
-    if(publish_particles_){
+    if(publish_particles_visualizations_debug_){
       publishParticles(saved_leg_features, scan->header.stamp);
     }
 
@@ -1352,7 +1361,7 @@ public:
       // reliability
       double reliability = (*sf_iter)->getReliability();
 
-      if ((*sf_iter)->getReliability() > leg_reliability_limit_ && publish_leg_measurements_)
+      if ((*sf_iter)->getReliability() > leg_reliability_limit_ && publish_measurements_visualizations_)
       {
         people_msgs::PositionMeasurement pos;
         pos.header.stamp = legFeatures.front()->getLastUpdateTime();
