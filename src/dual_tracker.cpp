@@ -1184,7 +1184,7 @@ public:
       publishLegLabels(saved_leg_features, scan->header.stamp);
     }
 
-    if(publish_leg_visualizations_debug_){
+    if(publish_leg_visualizations_){
       publishLegVisualization(saved_leg_features, scan->header.stamp);
     }
 
