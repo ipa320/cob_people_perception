@@ -313,7 +313,7 @@ public:
 
     measurement_visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("measurement_visualization", 0);
     leg_visualization_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("leg_visualization", 0);
-    people_visualization_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("peoples_visualization", 0);
+    people_visualization_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("people_visualization", 0);
     association_visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("association_visualization", 0);
     scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
@@ -1501,6 +1501,8 @@ public:
       int r,g,b;
       getCycledColor((*detectionsIt)->getCluster()->id_,r,g,b);
 
+      leg_measurement_label_marker.scale.x = .1;
+      leg_measurement_label_marker.scale.y = .1;
       leg_measurement_label_marker.scale.z = .1;
       leg_measurement_label_marker.color.r = r / 255.0;
       leg_measurement_label_marker.color.g = g / 255.0;
@@ -1519,7 +1521,7 @@ public:
 
       leg_measurement_maker.header.stamp = time;
       leg_measurement_maker.header.frame_id = fixed_frame;
-      leg_measurement_maker.ns = "position";
+      leg_measurement_maker.ns = "meas_position";
       leg_measurement_maker.id = counter;
       leg_measurement_maker.type = leg_measurement_label_marker.CYLINDER;
       leg_measurement_maker.pose.position.x = (*detectionsIt)->getLocation()[0];
@@ -1545,6 +1547,9 @@ public:
       delete_label.header.stamp = time;
       delete_label.header.frame_id = fixed_frame;
       delete_label.id = counter;
+      delete_label.scale.x = 1;
+      delete_label.scale.y = 1;
+      delete_label.scale.z = 1;
       delete_label.ns = "meas_labels";
       delete_label.type = delete_label.DELETE;
 
@@ -1553,8 +1558,11 @@ public:
       visualization_msgs::Marker delete_marker;
       delete_marker.header.stamp = time;
       delete_marker.header.frame_id = fixed_frame;
+      delete_marker.scale.x = 1;
+      delete_marker.scale.y = 1;
+      delete_marker.scale.z = 1;
       delete_marker.id = counter;
-      delete_marker.ns = "position";
+      delete_marker.ns = "meas_position";
       delete_marker.type = delete_label.DELETE;
 
       markerArray.markers.push_back(delete_marker);
