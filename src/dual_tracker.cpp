@@ -313,7 +313,7 @@ public:
 
     measurement_visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("measurement_visualization", 0);
     leg_visualization_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("leg_visualization", 0);
-    people_visualization_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("peoples", 0);
+    people_visualization_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("peoples_visualization", 0);
     association_visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("association_visualization", 0);
     scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
@@ -1157,11 +1157,11 @@ public:
 
 
     // Publish the clustering
-    if(publish_measurements_visualizations_debug_){
+    if(publish_measurements_visualizations_){
       publishClusters(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
     }
 
-    if(publish_measurements_visualizations_debug_){
+    if(publish_measurements_visualizations_){
       publishMeasurementsVisualization(detections, scan->header.stamp);
     }
 
