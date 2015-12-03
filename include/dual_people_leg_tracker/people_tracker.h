@@ -337,24 +337,28 @@ class PeopleTracker{
 
       os << "PeopleTracker: " << s.id_[0] << " - " << s.id_[1];
 
+      os << std::fixed << std::setprecision(3);
+
       if(s.getTotalProbability() > 0.5) // TODO make this dependend on some reliability limit
         os << BOLDMAGENTA;
       os  << " p_t: " << s.getTotalProbability();
 
       if(s.isValid())
-        os << BOLDGREEN << " [valid]" << RESET;
+        os << BOLDGREEN << " [valid]  " << RESET;
       else
-        os << BOLDRED << " [invalid]" << RESET;
+        os << BOLDRED   << " [invalid]" << RESET;
 
       if(s.isDynamic()){
-        os << " [dyn]";
+        os << " [dyn] ";
       }else{
         os << " [stat]";
       }
 
       // Print Parameters
-      os << " | hipWidth: " << s.hipWidth_ << " | stepWidth:" << s.getStepWidth() << " | maxStepWidth:" << s.getStepWidthMax() << " | vAbs:" << s.getEstimate().vel_.length();
-
+      os << " | hipW: " << s.getHipWidth();
+      os << " | stepW:" << s.getStepWidth();
+      os << " | maxStepW:" << s.getStepWidthMax();
+      os << " | vAbs:" << s.getEstimate().vel_.length();
       return os;
 
     };

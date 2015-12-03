@@ -159,6 +159,7 @@ public:
   int n_detections_last_cycle_;
   int n_leg_trackers_last_cycle_;
   int n_people_markers_last_published_;
+  int n_people_label_markers_last_published_;
   int n_leg_tracker_last_published_;
   int n_associations_last_published_;
 
@@ -284,6 +285,7 @@ public:
     n_detections_last_cycle_(0),
     n_leg_trackers_last_cycle_(0),
     n_people_markers_last_published_(0),
+    n_people_label_markers_last_published_(0),
     n_leg_tracker_last_published_(0),
     n_associations_last_published_(0)
     //occlusionModel_(new OcclusionModel(tfl_)),
@@ -347,7 +349,7 @@ public:
   {
     // Clustering parameters
     connected_thresh_           = config.connection_threshold;
-    ROS_PARAM_OUT(connected_thresh_);(connected_thresh_);
+    ROS_PARAM_OUT(connected_thresh_);
 
     min_points_per_group_       = config.min_points_per_group;
     ROS_PARAM_OUT(min_points_per_group_);
@@ -1180,19 +1182,19 @@ public:
    //   publishMatches(saved_leg_features, scan->header.stamp);
    // }
 
-    if(publish_leg_visualizations_debug_){
+    if(publish_leg_visualizations_){
       publishLegLabels(saved_leg_features, scan->header.stamp);
     }
 
     if(publish_leg_visualizations_){
-      publishLegVisualization(saved_leg_features, scan->header.stamp);
+      publishLegTracker(saved_leg_features, scan->header.stamp);
     }
 
     //// People related publication
     if(publish_people_tracker_){
       publishPeopleTracker(scan->header.stamp);
       publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
-      publishPeopleTrackerLabels(scan->header.stamp);
+      publishPeopleLabels(scan->header.stamp);
     }
 
     if(publish_people_visualizations_){
@@ -1222,6 +1224,9 @@ public:
     if(publish_fake_measurements_){
       publishFakeMeasPos(fakeDetections, scan->header.stamp, sensorCoord);
     }
+
+    // Print all the people trackers
+    people_trackers_.printTrackerList();
 
 
 
@@ -2339,10 +2344,11 @@ public:
     ROS_DEBUG("DualTracker::%s Publishing Leg History on %s", __func__, fixed_frame.c_str());
   }
 
-  void publishLegVisualization(vector<LegFeaturePtr>& legFeatures, ros::Time time){
+  void publishLegTracker(vector<LegFeaturePtr>& legFeatures, ros::Time time){
 
     // Parameters
-    double heightCreationLabel = 1.5;
+    double heightCreationLabel = 1.7;
+    double cylinderHeight = 0.7;
 
     // Marker Array
     visualization_msgs::MarkerArray markerArray;
@@ -2363,13 +2369,12 @@ public:
       markerMsgCylinder.type = visualization_msgs::Marker::CYLINDER;
       markerMsgCylinder.scale.x = 0.03; // diameter x
       markerMsgCylinder.scale.y = 0.03; // diameter y
-      markerMsgCylinder.scale.z = 0.4;  // height
-      markerMsgCylinder.color.b = 1.0;
-      markerMsgCylinder.color.a = 0.4;
+      markerMsgCylinder.scale.z = cylinderHeight;  // height
+      markerMsgCylinder.color.a = 0.7;
 
       markerMsgCylinder.pose.position.x = (*legIt)->getPredictedPosition().getX();
       markerMsgCylinder.pose.position.y = (*legIt)->getPredictedPosition().getY();
-      markerMsgCylinder.pose.position.z = 0.0;
+      markerMsgCylinder.pose.position.z = cylinderHeight / 2;
 
       markerArray.markers.push_back(markerMsgCylinder);
 
@@ -2384,8 +2389,7 @@ public:
       markerEstimation.scale.x = 0.07; // diameter x
       markerEstimation.scale.y = 0.07; // diameter y
       markerEstimation.scale.z = 0.3;  // height
-      markerEstimation.color.b = 1.0;
-      markerEstimation.color.a = 0.8;
+      markerEstimation.color.a = 0.9;
 
       markerEstimation.pose.position.x = (*legIt)->getEstimate().pos_.getX();
       markerEstimation.pose.position.y = (*legIt)->getEstimate().pos_.getY();
@@ -2404,6 +2408,7 @@ public:
       markerMsgArrow.type = visualization_msgs::Marker::ARROW;
       markerMsgArrow.scale.x = 0.02;
       markerMsgArrow.scale.y = 0.03;
+      markerMsgArrow.scale.z = 0.03;
       markerMsgArrow.color.b = 1.0;
       markerMsgArrow.color.a = 0.8;
 
@@ -2432,6 +2437,7 @@ public:
       creationMarkerArrow.type = visualization_msgs::Marker::ARROW;
       creationMarkerArrow.scale.x = 0.02;
       creationMarkerArrow.scale.y = 0.02;
+      creationMarkerArrow.scale.z = 0.02;
       creationMarkerArrow.color.a = 0.8;
 
       geometry_msgs::Point point0_created, point1_created;
@@ -2457,6 +2463,8 @@ public:
       initial_label.pose.position.x = (*legIt)->getInitialPosition().getX();
       initial_label.pose.position.y = (*legIt)->getInitialPosition().getY();
       initial_label.pose.position.z = 1.1 * heightCreationLabel;
+      initial_label.scale.x = 0.1;
+      initial_label.scale.y = 0.1;
       initial_label.scale.z = 0.1;
       initial_label.color.a = 1;
       //label.lifetime = ros::Duration(0.5);
@@ -2481,6 +2489,9 @@ public:
       deletionMarker0.id = counter + i;
       deletionMarker0.ns = "predictions";
       deletionMarker0.type = visualization_msgs::Marker::DELETE;
+      deletionMarker0.scale.x = 0.1;
+      deletionMarker0.scale.y = 0.1;
+      deletionMarker0.scale.z = 0.1;
 
       markerArray.markers.push_back(deletionMarker0);
 
@@ -2490,6 +2501,9 @@ public:
       deletionMarker1.id = counter + i;
       deletionMarker1.ns = "estimation";
       deletionMarker1.type = visualization_msgs::Marker::DELETE;
+      deletionMarker1.scale.x = 0.1;
+      deletionMarker1.scale.y = 0.1;
+      deletionMarker1.scale.z = 0.1;
 
       markerArray.markers.push_back(deletionMarker1);
 
@@ -2499,6 +2513,9 @@ public:
       deletionMarker2.id = counter + i;
       deletionMarker2.ns = "arrow_pred_corr";
       deletionMarker2.type = visualization_msgs::Marker::DELETE;
+      deletionMarker2.scale.x = 0.1;
+      deletionMarker2.scale.y = 0.1;
+      deletionMarker2.scale.z = 0.1;
 
       markerArray.markers.push_back(deletionMarker2);
     }
@@ -2530,7 +2547,9 @@ public:
       label.type = label.TEXT_VIEW_FACING;
       label.pose.position.x = (*legFeatureIt)->getEstimate().pos_[0];
       label.pose.position.y = (*legFeatureIt)->getEstimate().pos_[1];
-      label.pose.position.z = 0.4;
+      label.pose.position.z = 0.8;
+      label.scale.x = .1;
+      label.scale.y = .1;
       label.scale.z = .1;
       label.color.a = 1;
       //label.lifetime = ros::Duration(0.5);
@@ -2547,18 +2566,21 @@ public:
     }
 
     // Delete old labels
-    for(int i = 0; i < n_leg_trackers_last_cycle_ - ((int)legFeatures.size()); ++i){
+    for(int i = 0; i < n_leg_trackers_last_cycle_ - counter; ++i){
       visualization_msgs::Marker delete_label;
       delete_label.header.stamp = time;
       delete_label.header.frame_id = fixed_frame;
       delete_label.id = counter;
       delete_label.ns = "leg_label";
       delete_label.type = delete_label.DELETE;
+      delete_label.scale.x = 1;
+      delete_label.scale.y = 1;
+      delete_label.scale.z = 1;
 
       labelArray.markers.push_back(delete_label);
-      counter++;
+
     }
-    n_leg_trackers_last_cycle_ = legFeatures.size();
+    n_leg_trackers_last_cycle_ = counter;
 
     // Publish
     leg_visualization_pub_.publish(labelArray);
@@ -2579,8 +2601,6 @@ public:
          && (*peopleTrackerIt)->getTotalProbability() > 0.5 // Tracker must have certain probability
          && (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()) // Publish static Trackers
          ){
-
-        std::cout << BOLDRED << "Publishing people tracker" << (**peopleTrackerIt) << RESET << std::endl;
 
         // The geometry message
         visualization_msgs::Marker line_list0;
@@ -2726,10 +2746,10 @@ public:
   }
 
   // Add Labels to the People Trackers
-  void publishPeopleTrackerLabels(ros::Time time){
+  void publishPeopleLabels(ros::Time time){
 
     // The marker Array
-    visualization_msgs::MarkerArray labelArray;
+    visualization_msgs::MarkerArray markerArray;
 
     int counter = 0;
     for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
@@ -2742,13 +2762,7 @@ public:
       visualization_msgs::Marker label;
       label.header.stamp = time;
       label.header.frame_id = fixed_frame;
-      if((*peopleTrackerIt)->isDynamic()){
-        label.ns = "dynamic";
-      }
-      else{
-        label.ns = "static";
-      }
-
+      label.ns = "people_label";
       label.id = counter;
       label.type = label.TEXT_VIEW_FACING;
       label.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
@@ -2756,7 +2770,6 @@ public:
       label.pose.position.z = 0.5;
       label.scale.z = .1;
       label.color.a = 1;
-      label.lifetime = ros::Duration(0.5);
 
       // Add text
       string state;
@@ -2771,13 +2784,34 @@ public:
       sprintf(buf, "#PT%d-%d-p%.2f(%s)", (*peopleTrackerIt)->getId()[0], (*peopleTrackerIt)->getId()[1], (*peopleTrackerIt)->getTotalProbability(), state.c_str());
       label.text = buf;
 
-      labelArray.markers.push_back(label);
+      markerArray.markers.push_back(label);
 
       counter++;
       }
     }
+
+    // Publish deletion markers
+    for(int i = 0; i < n_people_label_markers_last_published_ - counter; i++){
+      visualization_msgs::Marker deletionMarker0;
+      deletionMarker0.header.stamp = time;
+      deletionMarker0.header.frame_id = fixed_frame;
+      deletionMarker0.id = counter + i;
+      deletionMarker0.ns = "people_label";
+      deletionMarker0.type = visualization_msgs::Marker::DELETE;
+      deletionMarker0.scale.x = 1;
+      deletionMarker0.scale.y = 1;
+      deletionMarker0.scale.z = 1;
+
+      markerArray.markers.push_back(deletionMarker0);
+
+    }
+
+    n_people_label_markers_last_published_ = counter;
+
     // Publish
-    people_visualization_pub_.publish(labelArray);
+    people_visualization_pub_.publish(markerArray);
+
+
   }
 
   // Add Labels to the People Trackers
@@ -2792,7 +2826,8 @@ public:
         peopleTrackerIt != people_trackers_.getList()->end();
         peopleTrackerIt++){
 
-      if((*peopleTrackerIt)->getTotalProbability() > 0.75 &&
+      if( (*peopleTrackerIt)->isValid() &&
+          (*peopleTrackerIt)->getTotalProbability() > 0.75 &&
           (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()))
       {
       visualization_msgs::Marker person3d;
@@ -2873,6 +2908,9 @@ public:
       deletionMarker0.id = counter + i;
       deletionMarker0.ns = "person3d";
       deletionMarker0.type = visualization_msgs::Marker::DELETE;
+      deletionMarker0.scale.x = 1;
+      deletionMarker0.scale.y = 1;
+      deletionMarker0.scale.z = 1;
 
       personsArray.markers.push_back(deletionMarker0);
 
@@ -2882,9 +2920,11 @@ public:
       deletionMarker1.id = counter + i;
       deletionMarker1.ns = "person3d";
       deletionMarker1.type = visualization_msgs::Marker::DELETE;
+      deletionMarker1.scale.x = 1;
+      deletionMarker1.scale.y = 1;
+      deletionMarker1.scale.z = 1;
 
       personsArray.markers.push_back(deletionMarker1);
-
 
     }
 
