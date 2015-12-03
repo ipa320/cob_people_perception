@@ -2868,7 +2868,7 @@ public:
       personHead.header.frame_id = fixed_frame;
       personHead.id = counter;
       personHead.ns = "person3d";
-      personHead.type = visualization_msgs::Marker::SPHERE;
+      personHead.type = visualization_msgs::Marker::CYLINDER;
       personHead.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
       personHead.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
       personHead.pose.position.z = personHeight/2 * 1.2;
@@ -2917,7 +2917,7 @@ public:
       visualization_msgs::Marker deletionMarker1;
       deletionMarker1.header.stamp = time;
       deletionMarker1.header.frame_id = fixed_frame;
-      deletionMarker1.id = counter + i;
+      deletionMarker1.id = counter + i + 1;
       deletionMarker1.ns = "person3d";
       deletionMarker1.type = visualization_msgs::Marker::DELETE;
       deletionMarker1.scale.x = 1;
