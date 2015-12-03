@@ -2550,7 +2550,7 @@ public:
       label.pose.position.z = 0.8;
       label.scale.x = .1;
       label.scale.y = .1;
-      label.scale.z = .1;
+      label.scale.z = .2;
       label.color.a = 1;
       //label.lifetime = ros::Duration(0.5);
 
@@ -3025,7 +3025,7 @@ public:
         line_list.header.stamp = time;
         line_list.id = (*peopleIt)->getLeg0()->getId()* 1000 + (*peopleIt)->getLeg1()->getId();
         line_list.ns = "people_history";
-        line_list.lifetime = ros::Duration(4);
+        //line_list.lifetime = ros::Duration(4);
 
         // width
         line_list.scale.x = 0.03;
