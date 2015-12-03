@@ -3014,7 +3014,7 @@ public:
 
       if
       (
-          (*peopleIt)->getHistorySize() > 1
+          (*peopleIt)->getHistorySize() > 1 && (*peopleIt)->getTotalProbability() > 0.5
       )
       {
 
@@ -3041,14 +3041,14 @@ public:
         line_list.color.b = 0;
         line_list.color.a = 1.0;
 
-        std::vector< people_history_entry >::iterator prevPointIt;
-        std::vector< people_history_entry >::iterator nextPointIt;
+        std::list< people_history_entry >::iterator prevPointIt;
+        std::list< people_history_entry >::iterator nextPointIt;
 
-        prevPointIt = (*peopleIt)->getPositionHistory().begin();
-        nextPointIt = (*peopleIt)->getPositionHistory().begin();
+        prevPointIt = (*peopleIt)->getHistory().begin();
+        nextPointIt = (*peopleIt)->getHistory().begin();
         nextPointIt++;
 
-        while(nextPointIt != (*peopleIt)->getPositionHistory().end()){
+        while(nextPointIt != (*peopleIt)->getHistory().end()){
           geometry_msgs::Point point0, point1;
           point0.x = (*prevPointIt).position_->getX();
           point0.y = (*prevPointIt).position_->getY();

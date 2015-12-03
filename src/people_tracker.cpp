@@ -625,6 +625,10 @@ void PeopleTracker::updateHistory(ros::Time time){
 
   history_.push_back(hist_entry);
 
+  // Trim the history
+  while(history_.size() > historySize)
+    history_.pop_front();
+
 }
 
 /**
@@ -681,7 +685,7 @@ unsigned int PeopleTracker::getHistorySize(){
   return history_.size();
 }
 
-std::vector< people_history_entry >  PeopleTracker::getHistory() const{
+std::list< people_history_entry >&  PeopleTracker::getHistory(){
   return history_;
 }
 

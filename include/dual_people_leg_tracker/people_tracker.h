@@ -29,6 +29,8 @@ typedef boost::shared_ptr<PeopleTracker> PeopleTrackerPtr;
 
 class PeopleTrackerList; //Forward
 
+static unsigned int historySize = 50;
+
 /**
  * A struct defining a entry of the people history
  */
@@ -86,7 +88,7 @@ class PeopleTracker{
     double stepWidth_;
     double stepWidthMax_;
 
-    std::vector< people_history_entry > history_; /**< The position history of the people tracker */
+    std::list< people_history_entry > history_; /**< The position history of the people tracker */
 
     tf::Vector3 hipPos0_, hipPos1_; /**< Vector of the endpoints of vector */
     tf::Vector3 hipPosLeft_, hipPosRight_; /**< Vector of the endpoints of vector */
@@ -198,7 +200,7 @@ class PeopleTracker{
      * Get the history of this people tracker
      * @return Vector of Shared Pointers of Stamped Points
      */
-    std::vector< people_history_entry >  getHistory() const;
+    std::list< people_history_entry >&  getHistory();
 
     /**
      * Return the hip Vector
@@ -254,10 +256,6 @@ class PeopleTracker{
       name << "ppl" << this->id_[0] << "_" << this->id_[1];
 
       return name.str();
-    }
-
-    std::vector< people_history_entry >& getPositionHistory(){
-      return this->history_;
     }
 
     tf::Vector3 getHipPosRight() const{
