@@ -157,6 +157,7 @@ public:
 
   // Needed for old marker removal
   int n_detections_last_cycle_;
+  int n_fake_detections_last_cycle_;
   int n_leg_trackers_last_cycle_;
   int n_people_markers_last_published_;
   int n_people_label_markers_last_published_;
@@ -200,6 +201,14 @@ public:
   double new_track_creation_likelihood_; /** If a measurement */
 
   bool use_fake_measurements_; /** True if fake leg measurements should be used */
+
+  double fake_leg_range_threshold_; /**< Distance condition for fake leg measurement creation */
+
+  double fake_leg_real_leg_distance_; /**< Distance of the fake leg to the real leg */
+
+  double fake_leg_min_person_probability_; /**< Probability a person tracker need to qualify for a fake leg creation */
+
+  double fake_leg_probability_; /**< Probability of fake legs */
 
   double people_probability_limit_; /**< Min Value for people to be considered true  */
 
@@ -262,12 +271,17 @@ public:
     laser_notifier_(laser_sub_, tfl_, fixed_frame, 10),
     cycle_(0),
     n_detections_last_cycle_(0),
+    n_fake_detections_last_cycle_(0),
     n_leg_trackers_last_cycle_(0),
     n_people_markers_last_published_(0),
     n_people_label_markers_last_published_(0),
     n_people_history_line_lists_last_published_(0),
     n_leg_tracker_last_published_(0),
-    n_associations_last_published_(0)
+    n_associations_last_published_(0),
+    fake_leg_range_threshold_(2),
+    fake_leg_real_leg_distance_(0.1),
+    fake_leg_min_person_probability_(0.75),
+    fake_leg_probability_(0.8)
     //occlusionModel_(new OcclusionModel(tfl_)),
     //new_track_creation_likelihood_(0.5)
   {
@@ -383,6 +397,18 @@ public:
     // Set probabilties of the filter
     use_fake_measurements_                            = config.use_fake_measurements;
     ROS_PARAM_OUT(use_fake_measurements_);
+
+    fake_leg_range_threshold_                         = config.fake_leg_range_thres;
+    ROS_PARAM_OUT(fake_leg_range_threshold_);
+
+    fake_leg_real_leg_distance_                       = config.fake_leg_real_leg_distance;
+    ROS_PARAM_OUT(fake_leg_real_leg_distance_);
+
+    fake_leg_min_person_probability_                  = config.fake_leg_min_person_probability;
+    ROS_PARAM_OUT(fake_leg_min_person_probability_);
+
+    fake_leg_probability_                             = config.fake_leg_probability;
+    ROS_PARAM_OUT(fake_leg_probability_);
 
     /*filter_config.fakeLegProb                         = config.fake_leg_probability;
 
@@ -718,7 +744,7 @@ public:
       // Iterate the people tracker
       for(std::vector<PeopleTrackerPtr>::iterator pplIt = ppls->begin(); pplIt != ppls->end(); pplIt++){
 
-        if((*pplIt)->getTotalProbability() > filter_config.minFakeLegPersonProbability){ //TODO make probability variable
+        if((*pplIt)->getTotalProbability() > fake_leg_min_person_probability_){ //TODO make probability variable
 
           // Number of possible measurements in range of this person
           size_t numberOfMeasurementsWithinRange = 0;
@@ -731,7 +757,7 @@ public:
             // Euclidean distance between propagated position and detection
             double dist = (*detectionIt)->getLocation().distance((*pplIt)->getEstimate().pos_);
 
-            if(dist < filter_config.fakeLegRangeThres){
+            if(dist < fake_leg_range_threshold_){
               numberOfMeasurementsWithinRange++;
             }
 
@@ -746,13 +772,13 @@ public:
             widthVec.normalize();
 
             // Increase with the distance the real and fake leg should have
-            widthVec *= filter_config.fakeLegRealLegDistance;
+            widthVec *= fake_leg_real_leg_distance_;
 
             // Append the vector to the person position
             tf::Stamped<tf::Vector3> fakeLoc = tf::Stamped<tf::Vector3>(pplPos + widthVec, scan->header.stamp, scan->header.frame_id);
 
             // Create the detection
-            DetectionPtr fakeDetection(new Detection(fakeDetections.size() + detections.size(), fakeLoc, filter_config.fakeLegProb));
+            DetectionPtr fakeDetection(new Detection(fakeDetections.size() + detections.size(), fakeLoc, fake_leg_probability_));
             fakeDetections.push_back(fakeDetection);
 
           }
@@ -2913,22 +2939,9 @@ public:
   // Add Labels to the People Trackers
   void publishFakeMeasPos(std::vector<DetectionPtr> fakeDetections, ros::Time time, tf::Stamped<tf::Point> sensorCoord){
 
-    visualization_msgs::MarkerArray msgArray;
+    visualization_msgs::MarkerArray markerArray;
 
-    if(fakeDetections.size() == 0){
-      // The geometry message
-      visualization_msgs::Marker sphere;
-      sphere.type = visualization_msgs::Marker::DELETE;
-      sphere.header.frame_id = fixed_frame;
-      sphere.header.stamp = time;
-      sphere.id = 0;
-      // width
-      sphere.scale.x = 0.2;
-      sphere.scale.y = 0.2;
-      sphere.scale.z = 0.2;
-      sphere.ns = "FakeMeasurements";
-      msgArray.markers.push_back(sphere);
-    }
+    const double sizeSphere = 0.3;
 
     int counter = 0;
     for (vector<DetectionPtr>::iterator detectionIt = fakeDetections.begin();
@@ -2942,35 +2955,48 @@ public:
         sphere.header.frame_id = fixed_frame;
         sphere.header.stamp = time;
         sphere.id = counter;
-        sphere.ns = "FakeMeasurements";
+        sphere.ns = "fake_measurements";
         sphere.pose.position.x = (*detectionIt)->getLocation()[0];
         sphere.pose.position.y = (*detectionIt)->getLocation()[1];
         sphere.pose.position.z = 0;
+
         sphere.color.r = 0.8;
         sphere.color.g = 0;
         sphere.color.b = 0;
         sphere.color.a = 0.8;
 
-        // width
-        sphere.scale.x = 0.2;
-        sphere.scale.y = 0.2;
-        sphere.scale.z = 0.2;
+        sphere.scale.x = sizeSphere;
+        sphere.scale.y = sizeSphere;
+        sphere.scale.z = sizeSphere;
 
-        // Set the color
-
-        int r,g,b;
-        r = 255;
-        //getColor((*legFeatureIt)->int_id_,r,g,b);
 
         counter++;
 
         // Publish the pointcloud
-        msgArray.markers.push_back(sphere);
+        markerArray.markers.push_back(sphere);
 
 
     }
 
-    leg_visualization_pub_.publish(msgArray);
+    // Publish deletion markers
+    for(int i = 0; i < n_fake_detections_last_cycle_ - counter; i++){
+      visualization_msgs::Marker deletionMarker0;
+      deletionMarker0.header.stamp = time;
+      deletionMarker0.header.frame_id = fixed_frame;
+      deletionMarker0.id = counter + i;
+      deletionMarker0.ns = "fake_measurements";
+      deletionMarker0.type = visualization_msgs::Marker::DELETE;
+      deletionMarker0.scale.x = 1;
+      deletionMarker0.scale.y = 1;
+      deletionMarker0.scale.z = 1;
+
+      markerArray.markers.push_back(deletionMarker0);
+
+    }
+
+    n_fake_detections_last_cycle_ = counter;
+
+    leg_visualization_pub_.publish(markerArray);
     //leg_features_history_vis_pub_.publish(line_list);
 
 
