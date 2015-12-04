@@ -737,6 +737,7 @@ public:
 
     /// Fake measurement calculation
     vector<DetectionPtr> fakeDetections;
+    int nMeasurementsFake = 0;
 
     if(use_fake_measurements_){
       boost::shared_ptr<std::vector<PeopleTrackerPtr> > ppls = people_trackers_.getList();
@@ -744,7 +745,7 @@ public:
       // Iterate the people tracker
       for(std::vector<PeopleTrackerPtr>::iterator pplIt = ppls->begin(); pplIt != ppls->end(); pplIt++){
 
-        if((*pplIt)->getTotalProbability() > fake_leg_min_person_probability_){ //TODO make probability variable
+        if((*pplIt)->getTotalProbability() > fake_leg_min_person_probability_){
 
           // Number of possible measurements in range of this person
           size_t numberOfMeasurementsWithinRange = 0;
@@ -779,7 +780,9 @@ public:
 
             // Create the detection
             DetectionPtr fakeDetection(new Detection(fakeDetections.size() + detections.size(), fakeLoc, fake_leg_probability_));
-            fakeDetections.push_back(fakeDetection);
+            //fakeDetections.push_back(fakeDetection);
+            detections.push_back(fakeDetection);
+            nMeasurementsFake++;
 
           }
         }
@@ -787,7 +790,7 @@ public:
       }
     }
 
-    int nMeasurementsFake = fakeDetections.size();
+    //int nMeasurementsFake = fakeDetections.size();
     ROS_DEBUG("Fake measurements took %f ms", gnnTimer.getElapsedTimeMs());
 
 
@@ -825,6 +828,7 @@ public:
 
     //// FAKE MEASUREMENTS
     // Iterate the fake measurements
+    /*
     for(size_t col_f = 0; col_f < nMeasurementsFake; col_f++){
 
         // Iterate the tracked legs
@@ -841,6 +845,7 @@ public:
 
            }
     }
+    */
 
     // Store the object indices, this is needed since the Leg Feature IDs will change with time due to creation and deletion of tracks
     Eigen::VectorXi indicesVec = Eigen::VectorXi::Zero(nLegsTracked,1);
@@ -899,12 +904,15 @@ public:
       LegFeaturePtr lt = propagated[r];
       for(int c = 0; c < assignmentMat.cols(); c++){
         if(assignmentMat(r,c) ==  1){
+          std::cout << "Assigning Detection " << c << " numberOfDetections: " << detections.size() << std::endl;
           DetectionPtr dt = detections[c];
 
           associationSet.push_back(new Association(lt,dt,probMAPMat(r,c)));
         }
       }
     }
+
+    std::cout << "Associations created!" << std::endl;
 
     // Print the Associations
     for(int i = 0; i < associationSet.size(); ++i){
@@ -1494,7 +1502,10 @@ public:
 
       // Choose the color
       int r,g,b;
-      getCycledColor((*detectionsIt)->getCluster()->id_,r,g,b);
+      if((*detectionsIt)->isReal()){
+        getCycledColor((*detectionsIt)->getCluster()->id_,r,g,b);
+      }
+
 
       leg_measurement_label_marker.scale.x = .1;
       leg_measurement_label_marker.scale.y = .1;
@@ -2938,6 +2949,8 @@ public:
 
   // Add Labels to the People Trackers
   void publishFakeMeasPos(std::vector<DetectionPtr> fakeDetections, ros::Time time, tf::Stamped<tf::Point> sensorCoord){
+
+    return;
 
     visualization_msgs::MarkerArray markerArray;
 
