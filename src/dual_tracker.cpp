@@ -179,29 +179,7 @@ public:
 
   //GlobalConfig* globalConfig;
 
-  bool publish_leg_measurements_;
-  bool publish_people_;
-  bool publish_leg_markers_;
-  bool publish_people_markers_;
-  bool publish_clusters_;
-  bool publish_particles_;
-  bool publish_matches_;
-  bool publish_leg_history_;
-  bool publish_people_tracker_;
-  bool publish_people_velocity_kalman_; /**< Publish the kalman estimation of the people velocity (used as smoothing filter) */
-  bool publish_people_lines_; /**< Publish the track history of the people track as a line */
-  bool publish_people_3d_;/**< Publish 3d representations of people */
-  bool publish_leg_velocity_; /**< True if the estimation of the leg features are visualized as arrows */
-  bool publish_static_people_trackers_; /**< Set True if also static People Trackers(Trackers that never moved) should be displayed */
-  bool publish_people_history_; /**< Publish the history of the person */
-  bool publish_occlusion_model_; /**< Publish the probabilities of the particles (colorcoded) according to the occlusion model */
-  bool publish_particle_arrows_; /**< Publish the particles as arrows representing the velocity */
-  bool publish_leg_labels_; /**<Publish the leg labels */
-  bool publish_jpda_associations_;/**< Publish the JPDA association probabilities */
-  bool publish_measurement_labels_; /**< Publish labels of measurements */
   bool publish_fake_measurements_; /**< Publish a visualization of the fake measurements */
-  bool publish_predicted_leg_positions_; /**< Publish the estimated position of the legs due to the prediction of the associated people tracker */
-  bool publish_scans_lines_; /**< Publish laserscan as lines */
 
   bool publish_measurements_visualizations_; /**< Publish leg measurements visualizations */
   bool publish_measurements_visualizations_debug_; /**< Publish leg measurements visualizations (debug) */
@@ -1149,22 +1127,18 @@ public:
     ROS_DEBUG("%sPublishing [Cycle %u]", BOLDWHITE, cycle_);
     benchmarking::Timer publishTimer; publishTimer.start();
 
-    // Publish the leg measurements
-    if(publish_measurements_visualizations_){
-      //publishLegMeasurements(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
-    }
 
     //// Measurement related publication
     //publishScanLines(*scan); (Not used anymore)
 
-
     // Publish the clustering
     if(publish_measurements_visualizations_){
       publishClusters(processor.getClusters(), scan->header.stamp, scan->header.frame_id);
+      publishMeasurementsVisualization(detections, scan->header.stamp);
     }
 
-    if(publish_measurements_visualizations_){
-      publishMeasurementsVisualization(detections, scan->header.stamp);
+    if(publish_measurements_visualizations_debug_){
+      publishFakeMeasPos(fakeDetections, scan->header.stamp, sensorCoord);
     }
 
     //// Leg related publication
@@ -1182,31 +1156,19 @@ public:
    //   publishMatches(saved_leg_features, scan->header.stamp);
    // }
 
-    if(publish_leg_visualizations_){
+    //// People related publication
+    if(publish_people_visualizations_){
+      publishPeopleLabels(scan->header.stamp);
+      publishPeople3d(scan->header.stamp);
+      publishPeopleHistory(people_trackers_.getList(), scan->header.stamp);
+      publishLegTracker(saved_leg_features, scan->header.stamp);
       publishLegLabels(saved_leg_features, scan->header.stamp);
     }
 
-    if(publish_leg_visualizations_){
-      publishLegTracker(saved_leg_features, scan->header.stamp);
-    }
-
-    //// People related publication
-    if(publish_people_tracker_){
-      publishPeopleTracker(scan->header.stamp);
-      publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
-      publishPeopleLabels(scan->header.stamp);
-    }
-
-    if(publish_people_visualizations_){
+    if(publish_people_visualizations_debug_){
       publishPeopleVelocityKalman(people_trackers_.getList(), scan->header.stamp);
-    }
-
-    if(publish_people_visualizations_){
-      publishPeople3d(scan->header.stamp);
-    }
-
-    if(publish_people_visualizations_){
-      publishPeopleHistory(people_trackers_.getList(), scan->header.stamp);
+      publishPeopleVelocity(people_trackers_.getList(), scan->header.stamp);
+      publishPeopleTracker(scan->header.stamp);
     }
 
     //// Association related publication
@@ -1222,7 +1184,7 @@ public:
     }
 
     if(publish_fake_measurements_){
-      publishFakeMeasPos(fakeDetections, scan->header.stamp, sensorCoord);
+
     }
 
     // Print all the people trackers
@@ -2599,7 +2561,6 @@ public:
 
       if((*peopleTrackerIt)->isValid() // Tracker must be valid
          && (*peopleTrackerIt)->getTotalProbability() > 0.5 // Tracker must have certain probability
-         && (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()) // Publish static Trackers
          ){
 
         // The geometry message
@@ -2756,8 +2717,7 @@ public:
         peopleTrackerIt != people_trackers_.getList()->end();
         peopleTrackerIt++){
 
-      if((*peopleTrackerIt)->getTotalProbability() > 0.75 &&
-          (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()))
+      if((*peopleTrackerIt)->getTotalProbability() > 0.5)
       {
       visualization_msgs::Marker label;
       label.header.stamp = time;
@@ -2769,7 +2729,7 @@ public:
       label.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
       label.pose.position.z = 0.5;
       label.scale.z = .1;
-      label.color.a = 1;
+      label.color.a = (*peopleTrackerIt)->getTotalProbability();
 
       // Add text
       string state;
@@ -2827,8 +2787,7 @@ public:
         peopleTrackerIt++){
 
       if( (*peopleTrackerIt)->isValid() &&
-          (*peopleTrackerIt)->getTotalProbability() > 0.75 &&
-          (publish_static_people_trackers_ || (*peopleTrackerIt)->isDynamic()))
+          (*peopleTrackerIt)->getTotalProbability() > 0.5)
       {
       visualization_msgs::Marker person3d;
       person3d.header.stamp = time;
@@ -2878,19 +2837,9 @@ public:
       personHead.color.r = (r0+r1)/(2*255.0);
       personHead.color.g = (g0+g1)/(2*255.0);
       personHead.color.b = (b0+b1)/(2*255.0);
-      //personHead.lifetime = ros::Duration(8);
 
-      // Static / Dynamic
-      if((*peopleTrackerIt)->isDynamic()){
-        person3d.color.a = 0.75;
-        personHead.color.a = 0.75;
-
-      }
-      else{
-        person3d.color.a = 0.4;
-        personHead.color.a = 0.4;
-      }
-
+      person3d.color.a = (*peopleTrackerIt)->getTotalProbability();
+      personHead.color.a = (*peopleTrackerIt)->getTotalProbability();
 
       personsArray.markers.push_back(person3d);
       personsArray.markers.push_back(personHead);
@@ -3041,8 +2990,8 @@ public:
         line_list.color.b = 0;
         line_list.color.a = 1.0;
 
-        std::list< people_history_entry >::iterator prevPointIt;
-        std::list< people_history_entry >::iterator nextPointIt;
+        std::list< people_history_entry >::const_iterator prevPointIt;
+        std::list< people_history_entry >::const_iterator nextPointIt;
 
         prevPointIt = (*peopleIt)->getHistory().begin();
         nextPointIt = (*peopleIt)->getHistory().begin();

@@ -200,7 +200,7 @@ class PeopleTracker{
      * Get the history of this people tracker
      * @return Vector of Shared Pointers of Stamped Points
      */
-    std::list< people_history_entry >&  getHistory();
+    const std::list< people_history_entry >&  getHistory() const;
 
     /**
      * Return the hip Vector

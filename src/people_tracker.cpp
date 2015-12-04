@@ -685,7 +685,7 @@ unsigned int PeopleTracker::getHistorySize(){
   return history_.size();
 }
 
-std::list< people_history_entry >&  PeopleTracker::getHistory(){
+const std::list< people_history_entry >&  PeopleTracker::getHistory() const{
   return history_;
 }
 
