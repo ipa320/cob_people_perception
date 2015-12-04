@@ -2482,6 +2482,30 @@ public:
       deletionMarker2.scale.z = 0.1;
 
       markerArray.markers.push_back(deletionMarker2);
+
+      visualization_msgs::Marker deletionMarker3;
+      deletionMarker3.header.stamp = time;
+      deletionMarker3.header.frame_id = fixed_frame;
+      deletionMarker3.id = counter + i;
+      deletionMarker3.ns = "arrow_pred_corr";
+      deletionMarker3.type = visualization_msgs::Marker::DELETE;
+      deletionMarker3.scale.x = 0.1;
+      deletionMarker3.scale.y = 0.1;
+      deletionMarker3.scale.z = 0.1;
+
+      markerArray.markers.push_back(deletionMarker3);
+
+      visualization_msgs::Marker deletionMarker4;
+      deletionMarker4.header.stamp = time;
+      deletionMarker4.header.frame_id = fixed_frame;
+      deletionMarker4.id = counter + i;
+      deletionMarker4.ns = "initial_creation_label";
+      deletionMarker4.type = visualization_msgs::Marker::DELETE;
+      deletionMarker4.scale.x = 0.1;
+      deletionMarker4.scale.y = 0.1;
+      deletionMarker4.scale.z = 0.1;
+
+      markerArray.markers.push_back(deletionMarker4);
     }
 
     n_leg_tracker_last_published_ = counter;
