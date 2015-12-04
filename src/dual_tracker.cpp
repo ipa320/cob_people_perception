@@ -160,6 +160,7 @@ public:
   int n_leg_trackers_last_cycle_;
   int n_people_markers_last_published_;
   int n_people_label_markers_last_published_;
+  int n_people_history_line_lists_last_published_;
   int n_leg_tracker_last_published_;
   int n_associations_last_published_;
 
@@ -264,6 +265,7 @@ public:
     n_leg_trackers_last_cycle_(0),
     n_people_markers_last_published_(0),
     n_people_label_markers_last_published_(0),
+    n_people_history_line_lists_last_published_(0),
     n_leg_tracker_last_published_(0),
     n_associations_last_published_(0)
     //occlusionModel_(new OcclusionModel(tfl_)),
@@ -455,7 +457,7 @@ public:
   {
     if(cycle_>0){
       freeTimer.stop();
-      ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"%sThere where %.2f ms left in the previous cycle(%u)", BOLDCYAN, freeTimer.stopAndGetTimeMs(), cycle_-1);
+      ROS_INFO("%sThere where %.2f ms left in the previous cycle(%u)", BOLDCYAN, freeTimer.stopAndGetTimeMs(), cycle_-1);
     }
     ROS_DEBUG_STREAM(BOLDWHITE << "STARTING [Cycle "  << cycle_ << "] Time: " << scan->header.stamp << std::endl);
     ROS_DEBUG_COND(DUALTRACKER_DEBUG,"LegDetector::%s - Received Laserscan",__func__);
@@ -1295,7 +1297,7 @@ public:
     //// Finalize the Cycle
     //////////////////////////////////////////////////////////////////////////
     cycleTimer.stop();
-    ROS_DEBUG_COND(DUALTRACKER_TIME_DEBUG,"%sCycle %u took %.2f ms to complete", BOLDCYAN, cycle_, cycleTimer.stopAndGetTimeMs());
+    ROS_INFO("%sCycle %u took %.2f ms to complete", BOLDCYAN, cycle_, cycleTimer.stopAndGetTimeMs());
     //assert(cycle_ < 2);
 
     // Iterate the cycle counter
@@ -2953,7 +2955,7 @@ public:
   // Add Labels to the People Trackers
   void publishPeopleHistory(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
 
-    visualization_msgs::MarkerArray msgArray;
+    visualization_msgs::MarkerArray markerArray;
 
     int counter = 0;
     for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
@@ -2972,7 +2974,7 @@ public:
         line_list.type = visualization_msgs::Marker::LINE_LIST;
         line_list.header.frame_id = fixed_frame;
         line_list.header.stamp = time;
-        line_list.id = (*peopleIt)->getLeg0()->getId()* 1000 + (*peopleIt)->getLeg1()->getId();
+        line_list.id = counter;
         line_list.ns = "people_history";
         //line_list.lifetime = ros::Duration(4);
 
@@ -3022,12 +3024,30 @@ public:
         counter++;
 
         // Publish the pointcloud
-        msgArray.markers.push_back(line_list);
+        markerArray.markers.push_back(line_list);
 
       }
     }
 
-    people_visualization_pub_.publish(msgArray);
+    // Publish deletion markers
+    for(int i = 0; i < n_people_history_line_lists_last_published_ - counter; i++){
+      visualization_msgs::Marker deletionMarker0;
+      deletionMarker0.header.stamp = time;
+      deletionMarker0.header.frame_id = fixed_frame;
+      deletionMarker0.id = counter + i;
+      deletionMarker0.ns = "people_history";
+      deletionMarker0.type = visualization_msgs::Marker::DELETE;
+      deletionMarker0.scale.x = 1;
+      deletionMarker0.scale.y = 1;
+      deletionMarker0.scale.z = 1;
+
+      markerArray.markers.push_back(deletionMarker0);
+
+    }
+
+    n_people_history_line_lists_last_published_ = counter;
+
+    people_visualization_pub_.publish(markerArray);
     //leg_features_history_vis_pub_.publish(line_list);
 
     ROS_DEBUG("DualTracker::%s Publishing Leg History on %s", __func__, fixed_frame.c_str());
