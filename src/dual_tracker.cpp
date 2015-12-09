@@ -624,24 +624,22 @@ public:
       (*legIt)->preparePropagation(scan->header.stamp); // Propagate <-> Predict the filters
     }
 
-
-    int nLegs = saved_leg_features.size();
     //for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin(); legIt != saved_leg_features.end(); legIt++)
 
 #pragma omp parallel
 {
     #pragma omp for
-    for(int i = 0; i < nLegs; ++i)
-    {
-      saved_leg_features[i]->getId(); // works
+      for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin(); legIt != saved_leg_features.end(); legIt++)
+      {
+      (*legIt)->getId(); // works
       //saved_leg_features[i]->propagate(scan->header.stamp); // Propagate <-> Predict the filters
 
       //printf("Propagation of loop %i",i);
     }
 }
-    for(int i = 0; i < nLegs; ++i)
+    for (vector<LegFeaturePtr>::iterator legIt = saved_leg_features.begin(); legIt != saved_leg_features.end(); legIt++)
     {
-      saved_leg_features[i]->propagate(scan->header.stamp); // Propagate <-> Predict the filters
+      (*legIt)->propagate(scan->header.stamp); // Propagate <-> Predict the filters
       //printf("Propagation of loop %i",i);
     }
 
