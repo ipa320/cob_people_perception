@@ -103,16 +103,16 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-# add_executable(people_fusion_node_node src/people_fusion_node_node.cpp)
+add_executable(people_fusion_node src/fusion_node_main.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(people_fusion_node_node people_fusion_node_generate_messages_cpp)
+add_dependencies(people_fusion_node people_fusion_node_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(people_fusion_node_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(people_fusion_node
+   ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
