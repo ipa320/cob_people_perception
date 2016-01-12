@@ -3467,6 +3467,8 @@ public:
   void publishCobDetectionMsgs(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
 
     cob_perception_msgs::DetectionArray detectionArray;
+    detectionArray.header.stamp = time;
+    detectionArray.header.frame_id = fixed_frame;
 
     // Iterate the trackers
     for (vector<PeopleTrackerPtr>::iterator peopleIt = peopleTracker->begin();
@@ -3478,13 +3480,21 @@ public:
             BFL::StatePosVel est = (*peopleIt)->getEstimate();
 
             cob_perception_msgs::Detection detection;
+            detection.header.stamp = time;
+            detection.header.frame_id = fixed_frame;
 
-            //detectionArray
+            detection.label = "debug_label";
+
+            // Set the pose
+            detection.pose.pose.position.x = est.pos_.getX();
+            detection.pose.pose.position.y = est.pos_.getY();
+
+            detectionArray.detections.push_back(detection);
 
             //counter++;
           }
         }
-        //people_visualization_pub_.publish(msgArray);
+        people_detection_pub_.publish(detectionArray);
   }
 
 };
