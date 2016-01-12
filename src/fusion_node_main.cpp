@@ -28,8 +28,6 @@ int main(int argc, char **argv)
 
   FusionNode fn(nh);
 
-  cob_perception_msgs::Detection detection;
-
   ROS_INFO("people_fusion_node started!");
 
   ros::spin();

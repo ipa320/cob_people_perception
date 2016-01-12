@@ -2,6 +2,10 @@
 // Own includes
 #include <people_fusion_node/fusion_node.h>
 
+// ROS includes
+#include <ros/ros.h>
+#include <ros/console.h>
+
 // Debug defines
 #define FUSION_NODE_DEBUG 1         // Debug the leg detector
 #define FUSION_NODE_TIME_DEBUG 1    // Debug the calculation time inside the leg_detector
@@ -22,4 +26,10 @@ FusionNode::FusionNode(ros::NodeHandle nh) :
 void FusionNode::detectionCallback(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
 {
   ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
+
+  for(int i = 0; i < detectionArray->detections.size(); i++){
+	  std::cout << "Tracker" << "<" << detectionArray->detections[i].pose.pose.position.x << ", " << detectionArray->detections[i].pose.pose.position.y << ">" << std::endl;
+  }
+
+
 }
