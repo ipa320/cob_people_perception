@@ -105,7 +105,10 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(people_fusion_node 
+                src/state_pos_vel.cpp
+                src/tracker.cpp
                 src/fusion_node.cpp
+                src/visualization/visualization_helper.cpp
                 src/fusion_node_main.cpp
               )
 
