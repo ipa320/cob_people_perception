@@ -309,7 +309,7 @@ public:
     leg_measurements_pub_         = nh_.advertise<people_msgs::PositionMeasurementArray>("leg_tracker_measurements", 0);
     people_measurements_pub_      = nh_.advertise<people_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
 
-    people_detection_pub_         = nh_.advertise<cob_perception_msgs::DetectionArray>("people_detections",0);
+    people_detection_pub_         = nh_.advertise<cob_perception_msgs::DetectionArray>("people_detections/laser_detections",0);
 
     clusters_pub_                 = nh_.advertise<sensor_msgs::PointCloud>("clusters", 0);
     particles_pub_                = nh_.advertise<sensor_msgs::PointCloud>("particles", 0);
