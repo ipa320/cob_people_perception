@@ -19,9 +19,9 @@ FusionNode::FusionNode(ros::NodeHandle nh) :
       topic0_("people_detections"),
       //topic1_("people_detections/pcl_detections"),
       //topic2_("people_detections/face_detections"),
-      detections_sub_0_(nh_, "people_detections/pcl_detections", 10), //Subscriber
+      detections_sub_0_(nh_, "people_detections/body_detections", 10), //Subscriber
       detection_notifier_0_(detections_sub_0_, tfl_, fixed_frame, 10),
-      detections_sub_1_(nh_, "people_detections", 10), //Subscriber
+      detections_sub_1_(nh_, "people_detections/laser_detections", 10), //Subscriber
       detection_notifier_1_(detections_sub_1_, tfl_, fixed_frame, 10),
       detections_sub_2_(nh_, "people_detections/face_detections", 10), //Subscriber
       detection_notifier_2_(detections_sub_2_, tfl_, fixed_frame, 10),
