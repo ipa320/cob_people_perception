@@ -10,6 +10,10 @@
 // Own includes
 #include <people_fusion_node/tracker.h>
 
+// Cob includes
+#include <cob_perception_msgs/Detection.h>
+#include <cob_perception_msgs/DetectionArray.h>
+
 using namespace ros;
 
 class VisualizationHelper{
@@ -18,11 +22,14 @@ class VisualizationHelper{
 
     ros::Publisher visualization_pub_; /**< The visualization publisher */
 
+
   public:
 
     VisualizationHelper(ros::NodeHandle nh);
 
     void publishTracker(std::vector<TrackerPtr> &trackerList);
+
+    void publishDetectionArray(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray, int id);
 };
 
 

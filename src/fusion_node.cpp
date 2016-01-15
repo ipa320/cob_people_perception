@@ -16,18 +16,35 @@
 // Constructor
 FusionNode::FusionNode(ros::NodeHandle nh) :
       nh_(nh),  // Node Handle
-      detections_sub_(nh_, "people_detections", 10), //Subscriber
-      detection_notifier_(detections_sub_, tfl_, fixed_frame, 10),
-	  vh_(nh)
+      topic0_("people_detections"),
+      //topic1_("people_detections/pcl_detections"),
+      //topic2_("people_detections/face_detections"),
+      detections_sub_0_(nh_, "people_detections/pcl_detections", 10), //Subscriber
+      detection_notifier_0_(detections_sub_0_, tfl_, fixed_frame, 10),
+      detections_sub_1_(nh_, "people_detections", 10), //Subscriber
+      detection_notifier_1_(detections_sub_1_, tfl_, fixed_frame, 10),
+      detections_sub_2_(nh_, "people_detections/face_detections", 10), //Subscriber
+      detection_notifier_2_(detections_sub_2_, tfl_, fixed_frame, 10),
+      vh_(nh)
       {
+        std::cout << "Created Fusion Node!" << std::endl;
+
 
         // Set the laserCallback
-        detection_notifier_.registerCallback(boost::bind(&FusionNode::detectionCallback, this, _1));
-        detection_notifier_.setTolerance(ros::Duration(0.01));
+        detection_notifier_0_.registerCallback(boost::bind(&FusionNode::detectionCallback0, this, _1));
+        detection_notifier_0_.setTolerance(ros::Duration(0.01));
+
+        // Set the laserCallback
+        detection_notifier_1_.registerCallback(boost::bind(&FusionNode::detectionCallback1, this, _1));
+        detection_notifier_1_.setTolerance(ros::Duration(0.01));
+
+        // Set the laserCallback
+        detection_notifier_2_.registerCallback(boost::bind(&FusionNode::detectionCallback2, this, _1));
+        detection_notifier_2_.setTolerance(ros::Duration(0.01));
 
       };
 
-void FusionNode::detectionCallback(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
+void FusionNode::detectionCallback0(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
 {
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
 
@@ -52,6 +69,24 @@ void FusionNode::detectionCallback(const cob_perception_msgs::DetectionArray::Co
 	  //std::cout << "Tracker" << "<" << detectionArray->detections[i].pose.pose.position.x << ", " << detectionArray->detections[i].pose.pose.position.y << ">" << std::endl;
   }
 
-  vh_.publishTracker(trackerList_);
+  vh_.publishDetectionArray(detectionArray,0);
+
+}
+
+void FusionNode::detectionCallback1(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
+{
+  //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
+  std::cout << "detectionCallback1" << std::endl;
+
+  vh_.publishDetectionArray(detectionArray,1);
+
+}
+
+void FusionNode::detectionCallback2(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
+{
+  //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
+  std::cout << "detectionCallback2" << std::endl;
+
+  vh_.publishDetectionArray(detectionArray,2);
 
 }

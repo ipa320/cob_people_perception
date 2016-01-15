@@ -34,8 +34,16 @@ class FusionNode{
 
     tf::TransformListener tfl_; /**< The transform listener */
 
-    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_;
-    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_;
+    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_0_;
+    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_0_;
+
+    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_1_;
+    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_1_;
+
+    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_2_;
+    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_2_;
+
+
     //message_filters::Subscriber<sensor_msgs::LaserScan> laser_sub_;
     //tf::MessageFilter<people_msgs::PositionMeasurement> people_notifier_;
 
@@ -44,11 +52,17 @@ class FusionNode{
     // Has own visualizationHelper
     VisualizationHelper vh_;
 
+    const std::string topic0_, topic1_, topic2_;
+
 
   public:
     FusionNode(ros::NodeHandle nh); /**< Constructor */
 
-    void detectionCallback(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray);
+    void detectionCallback0(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray);
+
+    void detectionCallback1(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray);
+
+    void detectionCallback2(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray);
 
 };
 

@@ -1,5 +1,6 @@
 // Own includes
 #include <people_fusion_node/visualization/visualization_helper.h>
+#include <people_fusion_node/visualization/color_gradient.hpp>
 #include <people_fusion_node/fusion_node.h>
 
 // Visualization includes
@@ -10,7 +11,10 @@
 VisualizationHelper::VisualizationHelper(NodeHandle nh):
     nh_(nh)
 {
-  // Set the publisher for the visualization
+  // Set the topic names
+
+  std::cout << "Created VisualizationHelper" << std::endl;
+
   visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("fusion_tracker_visualization", 0);
 };
 
@@ -52,4 +56,47 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
     }
 
     visualization_pub_.publish(markerArray);
+}
+
+void VisualizationHelper::publishDetectionArray(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray, int id){
+
+  // Create a marker Array
+  visualization_msgs::MarkerArray markerArray;
+
+
+  for(int i = 0; i < detectionArray->detections.size(); i++){
+    //// Add a cylinder from the line center to the label
+    visualization_msgs::Marker marker;
+    marker.header = detectionArray->header;
+    std::stringstream sstm;
+    sstm << "tracker" << id;
+    marker.ns = sstm.str();
+    marker.id = i;
+    marker.type = visualization_msgs::Marker::CYLINDER;
+
+
+    // Set the position as center of the line
+    marker.pose.position.x = detectionArray->detections[i].pose.pose.position.x;
+    marker.pose.position.y = detectionArray->detections[i].pose.pose.position.y;
+    marker.pose.position.z = 0;
+
+    int r,g,b;
+    redGreenGradient(id/3.0, r, g, b);
+
+    std::cout << "r: " << r << " g: " << g << " b: " << b << std::endl;
+
+    marker.scale.x = 1;
+    marker.scale.y = 1;
+    marker.scale.z = 1;
+
+    marker.color.r = r/255.0;
+    marker.color.g = g/255.0;
+    marker.color.b = b/255.0;
+    marker.color.a = 0.5;
+
+    markerArray.markers.push_back(marker);
+
+  }
+  visualization_pub_.publish(markerArray);
+
 }
