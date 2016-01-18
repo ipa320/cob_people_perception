@@ -41,7 +41,7 @@ FusionNode::FusionNode(ros::NodeHandle nh) :
         sequencer.registerCallback(boost::bind(&FusionNode::detectionCallbackAll, this, _1));
         //seq.setTolerance(ros::Duration(0.01));
 
-        detection_notifier_0_.registerCallback(boost::bind(&FusionNode::detectionCallback1, this, _1));
+        detection_notifier_0_.registerCallback(boost::bind(&FusionNode::detectionCallback0, this, _1));
         detection_notifier_0_.setTolerance(ros::Duration(0.01));
 
         // Set the laserCallback
@@ -60,7 +60,7 @@ FusionNode::FusionNode(ros::NodeHandle nh) :
 void FusionNode::detectionCallback0(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
 {
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
-  std::cout << "Received on people_detections/body_detections" << std::endl;
+  std::cout << "Received on people_detections/laser_detections" << std::endl;
 
   vh_.publishDetectionArray(detectionArray,0);
   internal_pub_.publish(detectionArray);
@@ -70,7 +70,7 @@ void FusionNode::detectionCallback0(const cob_perception_msgs::DetectionArray::C
 void FusionNode::detectionCallback1(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
 {
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
-  std::cout << "Received on people_detections/face_detections" << std::endl;
+  std::cout << "Received on people_detections/body_detections" << std::endl;
 
   vh_.publishDetectionArray(detectionArray,1);
   internal_pub_.publish(detectionArray);
@@ -173,7 +173,6 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
     trackerList_.push_back(t);
   }
 
-  vh_.publishDetectionArray(detectionArray,1);
   vh_.publishTracker(trackerList_);
 
 }

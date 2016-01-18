@@ -109,18 +109,32 @@ void VisualizationHelper::publishDetectionArray(const cob_perception_msgs::Detec
     marker.pose.position.y = detectionArray->detections[i].pose.pose.position.y;
     marker.pose.position.z = 0;
 
-    int r,g,b;
-    redGreenGradient(id/3.0, r, g, b);
-
-    std::cout << "r: " << r << " g: " << g << " b: " << b << std::endl;
 
     marker.scale.x = 1;
     marker.scale.y = 1;
     marker.scale.z = 1;
 
-    marker.color.r = r/255.0;
-    marker.color.g = g/255.0;
-    marker.color.b = b/255.0;
+    marker.lifetime = ros::Duration(1);
+
+
+    switch(id){
+      case 0:
+        marker.color.r = 255.0;
+        marker.color.g = 0;
+        marker.color.b = 0;
+        break;
+      case 1:
+        marker.color.r = 0;
+        marker.color.g = 255.0;
+        marker.color.b = 0;
+        break;
+      case 2:
+        marker.color.r = 0;
+        marker.color.g = 0;
+        marker.color.b = 255.0;
+        break;
+    }
+
 
 
 
