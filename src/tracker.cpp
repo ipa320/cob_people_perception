@@ -1,24 +1,27 @@
 // Own includes
+#include <people_fusion_node/fusion_node.h>
 #include <people_fusion_node/tracker.h>
 #include <people_fusion_node/state_pos_vel.h>
 
 
 Tracker::Tracker(StatePosVel init, ros::Time initialTime):
-		initiationTime_(initialTime),
-		initialState_(init),
-		currentTime_(initiationTime_),
-		currentState_(initialState_){
+    id_(trackerIdCounter++),
+    initiationTime_(initialTime),
+    initialState_(init),
+    currentTime_(initiationTime_),
+    currentState_(initialState_){
 
 }
 
-void Tracker::update(StatePosVel state, ros::Time updateTime){
-	// TODO implement!
+void Tracker::update(DetectionPtr detection){
+  this->currentState_ = detection->getState();
+  this->currentTime_ = detection->getTime();
 }
 
 void Tracker::predict(ros::Time predictionTime){
-	// TODO implement!
+  // TODO implement!
 }
 
 std::ostream& operator<<(std::ostream &strm, const Tracker &tracker) {
-  return strm << "Tracker" << tracker.currentState_;
+  return strm << "Tracker[" << tracker.id_ << "]" << tracker.currentState_;
 }

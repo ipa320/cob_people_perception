@@ -17,6 +17,7 @@
 #include <tf/transform_listener.h>
 #include <tf/message_filter.h>
 #include <message_filters/subscriber.h>
+#include <message_filters/time_sequencer.h>
 
 // Own includes
 #include <people_fusion_node/tracker.h>
@@ -24,6 +25,8 @@
 
 // Default variables
 static std::string fixed_frame              = "odom_combined";  // The fixed frame
+static unsigned int trackerIdCounter = 0;
+
 
 using namespace ros;
 
@@ -34,15 +37,18 @@ class FusionNode{
 
     tf::TransformListener tfl_; /**< The transform listener */
 
-    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_0_;
-    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_0_;
 
+
+    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_0_;
+    message_filters::TimeSequencer<cob_perception_msgs::DetectionArray> sequencer;
+    //tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_0_;
+    /*
     message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_1_;
     tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_1_;
 
     message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_2_;
     tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_2_;
-
+    */
 
     //message_filters::Subscriber<sensor_msgs::LaserScan> laser_sub_;
     //tf::MessageFilter<people_msgs::PositionMeasurement> people_notifier_;

@@ -4,12 +4,13 @@
 //System includes
 #include <iostream>
 
+#include <tf/tf.h>
+
 class StatePosVel{
-public: // Todo make private!
-	double x_;
-	double y_;
-	double vx_;
-	double vy_;
+private: // Todo make private!
+
+  tf::Vector3 pos_;
+  tf::Vector3 vel_;
 
 private:
 	// For easy outstreaming
@@ -19,6 +20,9 @@ public:
 	StatePosVel(double x, double y);
 
 	StatePosVel(double x, double y, double vx_, double vy_);
+
+	const tf::Vector3 getPos() const { return this->pos_; };
+	const tf::Vector3 getVel() const { return this->vel_; };
 
 
 };

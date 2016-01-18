@@ -17,6 +17,7 @@
 using namespace ros;
 
 class VisualizationHelper{
+
   private:
     NodeHandle nh_; /**< The node handle */
 

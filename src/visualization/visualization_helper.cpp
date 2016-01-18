@@ -34,16 +34,16 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
         marker.header.stamp = (*trackerIt)->getCurrentTime();
         marker.ns = "tracker";
         marker.id = counter;
-        marker.type = visualization_msgs::Marker::CYLINDER;
+        marker.type = visualization_msgs::Marker::CUBE;
 
 
         // Set the position as center of the line
-        marker.pose.position.x = (*trackerIt)->getCurrentState().x_;
-        marker.pose.position.y = (*trackerIt)->getCurrentState().y_;
+        marker.pose.position.x = (*trackerIt)->getCurrentState().getPos().getX();
+        marker.pose.position.y = (*trackerIt)->getCurrentState().getPos().getY();
         marker.pose.position.z = 0;
-        marker.scale.x = 1;
-        marker.scale.y = 1;
-        marker.scale.z = 1;
+        marker.scale.x = 0.2;
+        marker.scale.y = 0.2;
+        marker.scale.z = 1.2;
 
         marker.color.r = 1;
         marker.color.g = 0;
@@ -51,6 +51,35 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
         marker.color.a = 0.5;
 
         markerArray.markers.push_back(marker);
+
+
+        //// Add a cylinder from the line center to the label
+        visualization_msgs::Marker markerLabel;
+        markerLabel.header.frame_id = fixed_frame;
+        markerLabel.header.stamp = (*trackerIt)->getCurrentTime();
+        markerLabel.ns = "tracker_label";
+        markerLabel.id = counter;
+        markerLabel.type = visualization_msgs::Marker::TEXT_VIEW_FACING;;
+
+
+        // Set the position as center of the line
+        markerLabel.pose.position.x = (*trackerIt)->getCurrentState().getPos().getX();
+        markerLabel.pose.position.y = (*trackerIt)->getCurrentState().getPos().getY();
+        markerLabel.pose.position.z = 0;
+        markerLabel.scale.z = 0.2;
+
+        markerLabel.color.r = 0;
+        markerLabel.color.g = 0;
+        markerLabel.color.b = 0;
+        markerLabel.color.a = 0.5;
+
+
+        char buf[100];
+        sprintf(buf, "Tracker[%d]", (*trackerIt)->getId());
+        markerLabel.text = buf;
+
+        markerArray.markers.push_back(markerLabel);
+
 
         counter++;
     }

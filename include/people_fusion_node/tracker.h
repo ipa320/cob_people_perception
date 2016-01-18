@@ -6,11 +6,14 @@
 
 // Own includes
 #include <people_fusion_node/state_pos_vel.h>
+#include <people_fusion_node/detection/detection.h>
 
 
 class Tracker{
 
 	private:
+    unsigned int id_;
+
 		ros::Time initiationTime_;
 		StatePosVel initialState_;
 
@@ -21,8 +24,12 @@ class Tracker{
 		friend std::ostream& operator<<(std::ostream&, const Tracker&);
 
 
+
+
 	public:
 		Tracker(StatePosVel init, ros::Time initialTime);
+
+		unsigned int getId() const { return this->id_; };
 
 		ros::Time getCurrentTime() { return this->currentTime_; };
 
@@ -30,7 +37,9 @@ class Tracker{
 
 		void predict(ros::Time updateTime);
 
-		void update(StatePosVel state, ros::Time time);
+		void update(DetectionPtr detection);
+
+		StatePosVel getCurrentState() const { return this->currentState_; };
 
 };
 
