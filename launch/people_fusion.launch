@@ -4,9 +4,9 @@
   <!-- <remap from="/people_detections/laser_detections" to="/people_detections/all_detections"/> -->
   
   <!-- relay scans -->
-  <node pkg="topic_tools" type="relay" name="laser_relay" args="/people_detections/laser_detections /people_detections/all_detections" />
-  <node pkg="topic_tools" type="relay" name="face_relay" args="/people_detections/face_detections /people_detections/all_detections" />
-  <node pkg="topic_tools" type="relay" name="body_relay" args="/people_detections/body_detections /people_detections/all_detections" />
+  <!-- <node pkg="topic_tools" type="relay" name="laser_relay" args="/people_detections/laser_detections /people_detections/all_detections" /> -->
+  <!-- <node pkg="topic_tools" type="relay" name="face_relay" args="/people_detections/face_detections /people_detections/all_detections" /> -->
+  <!-- <node pkg="topic_tools" type="relay" name="body_relay" args="/people_detections/body_detections /people_detections/all_detections" /> -->
   
 
   <!-- people fusion node -->

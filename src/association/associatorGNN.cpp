@@ -22,7 +22,7 @@ std::vector<AssociationPtr>  AssociatorGNN::associate(std::vector<DetectionPtr>&
       double distance = euclideanDistanceCost(*trackerIt, *detectionIt);
       std::cout << "Distance: " << distance << std::endl;
 
-      if(distance < 0.3){
+      if(distance < 0.4){
         associated = true;
         associations.push_back(AssociationPtr(new Association(*trackerIt, *detectionIt)));
       }

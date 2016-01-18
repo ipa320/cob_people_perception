@@ -121,6 +121,9 @@ void VisualizationHelper::publishDetectionArray(const cob_perception_msgs::Detec
     marker.color.r = r/255.0;
     marker.color.g = g/255.0;
     marker.color.b = b/255.0;
+
+
+
     marker.color.a = 0.5;
 
     markerArray.markers.push_back(marker);
