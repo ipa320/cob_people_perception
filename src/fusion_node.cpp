@@ -64,7 +64,7 @@ void FusionNode::detectionCallback0(const cob_perception_msgs::DetectionArray::C
 void FusionNode::detectionCallback1(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
 {
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
-  std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << " on people_detections/laser_detections" << std::endl;
+  std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << " on people_detections/laser_detections. Time: " << detectionArray->header.stamp << std::endl;
 
   // Development: Clear Tracker list
   //trackerList_.clear();
