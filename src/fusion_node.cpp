@@ -23,16 +23,16 @@ FusionNode::FusionNode(ros::NodeHandle nh) :
       topic0_("people_detections"),
       //topic1_("people_detections/pcl_detections"),
       //topic2_("people_detections/face_detections"),
-      detections_sub_all_(nh_, "people_detections/internal/all_detections", 10), //Subscriber
+      detections_sub_all_(nh_, "people_detections/internal/all_detections", 50), //Subscriber
 
-      detections_sub_0_(nh_, "people_detections/laser_detections", 10), //Subscriber
-      detection_notifier_0_(detections_sub_0_, tfl_, fixed_frame, 10),
-      detections_sub_1_(nh_, "people_detections/body_detections", 10), //Subscriber
-      detection_notifier_1_(detections_sub_1_, tfl_, fixed_frame, 10),
-      detections_sub_2_(nh_, "people_detections/face_detections", 10), //Subscriber
-      detection_notifier_2_(detections_sub_2_, tfl_, fixed_frame, 10),
+      detections_sub_0_(nh_, "people_detections/laser_detections", 25), //Subscriber
+      detection_notifier_0_(detections_sub_0_, tfl_, fixed_frame, 25),
+      detections_sub_1_(nh_, "people_detections/body_detections", 25), //Subscriber
+      detection_notifier_1_(detections_sub_1_, tfl_, fixed_frame, 25),
+      detections_sub_2_(nh_, "people_detections/face_detections", 25), //Subscriber
+      detection_notifier_2_(detections_sub_2_, tfl_, fixed_frame, 25),
       vh_(nh),
-      sequencer(detections_sub_all_, ros::Duration(0.1), ros::Duration(0.01), 10)
+      sequencer(detections_sub_all_, ros::Duration(1), ros::Duration(0.01), 25)
       {
         std::cout << "Created Fusion Node!" << std::endl;
 
@@ -90,7 +90,7 @@ void FusionNode::detectionCallback2(const cob_perception_msgs::DetectionArray::C
 void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
 {
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
-  std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << ". Time: " << detectionArray->header.stamp << std::endl;
+  //std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << ". Time: " << detectionArray->header.stamp << std::endl;
 
   if(detectionArray->detections.size() == 0){
     std::cout << "No detections -> Abort" << std::endl;
@@ -106,12 +106,25 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
     else if(typeString == "body"){detectionTyp = body;}
     else if(typeString == "face"){detectionTyp = face;}
     else {detectionTyp = unkown; }
-    std::cout << "type: " << typeString << std::endl;
+  }
+
+  switch(detectionTyp){
+    case laser:
+      std::cout << BOLDRED << "[" << detectionArray->detections.size() << "]" << " Laser Detections" << RESET << std::endl;
+      break;
+    case body:
+      std::cout << BOLDGREEN << "[" << detectionArray->detections.size() << "]" << " Body Detections" << RESET << std::endl;
+      break;
+    case face:
+      std::cout << BOLDBLUE << "[" << detectionArray->detections.size() << "]" << " Face Detections" << RESET << std::endl;
+      break;
   }
 
   for(size_t i = 0; i < detectionArray->detections.size(); i++){
     std::cout << "\t Detection: " << detectionArray->detections[i].label << std::endl;
   }
+
+
 
   // Development: Clear Tracker list
   //trackerList_.clear();
