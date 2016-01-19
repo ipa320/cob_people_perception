@@ -20,6 +20,10 @@ class Tracker{
 		ros::Time currentTime_;
 		StatePosVel currentState_;
 
+		size_t laser_counter_;
+		size_t body_counter_;
+		size_t face_counter_;
+
 		// For easy outstreaming
 		friend std::ostream& operator<<(std::ostream&, const Tracker&);
 
@@ -38,6 +42,10 @@ class Tracker{
 		void predict(ros::Time updateTime);
 
 		void update(DetectionPtr detection);
+
+		size_t getLaserUpdateCount() const { return this->laser_counter_; };
+		size_t getBodyUpdateCount() const { return this->body_counter_; };
+		size_t getFaceUpdateCount() const { return this->face_counter_; };
 
 		StatePosVel getCurrentState() const { return this->currentState_; };
 

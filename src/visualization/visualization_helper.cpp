@@ -75,7 +75,7 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
 
 
         char buf[100];
-        sprintf(buf, "Tracker[%d]", (*trackerIt)->getId());
+        sprintf(buf, "Tracker[%d]l:%zu b: %zu f:%zu", (*trackerIt)->getId(), (*trackerIt)->getLaserUpdateCount(), (*trackerIt)->getBodyUpdateCount(), (*trackerIt)->getFaceUpdateCount());
         markerLabel.text = buf;
 
         markerArray.markers.push_back(markerLabel);

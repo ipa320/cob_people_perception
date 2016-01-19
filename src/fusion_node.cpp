@@ -164,7 +164,7 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
   for(int i = 0; i < detectionArray->detections.size(); i++){
     // Create temp Tracker for every detection
     cob_perception_msgs::Detection det = detectionArray->detections[i];
-    detections.push_back(DetectionPtr(new Detection(det.pose.pose.position.x, det.pose.pose.position.y, det.header.stamp, i)));
+    detections.push_back(DetectionPtr(new Detection(det.pose.pose.position.x, det.pose.pose.position.y, det.header.stamp, i, detectionTyp)));
   }
 
 

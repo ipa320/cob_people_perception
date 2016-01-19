@@ -22,13 +22,12 @@
 // Own includes
 #include <people_fusion_node/tracker.h>
 #include <people_fusion_node/visualization/visualization_helper.h>
+#include <people_fusion_node/detection_types.h>
 
 // Default variables
 static std::string fixed_frame              = "odom_combined";  // The fixed frame
 static unsigned int trackerIdCounter = 0;
 
-// Type
-enum Type { laser, body, face, unkown };
 
 using namespace ros;
 
