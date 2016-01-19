@@ -3483,7 +3483,7 @@ public:
             detection.header.stamp = time;
             detection.header.frame_id = fixed_frame;
 
-            detection.label = "debug_label";
+            detection.label = (*peopleIt)->getName();
 
             // Set the pose
             detection.pose.pose.position.x = est.pos_.getX();
