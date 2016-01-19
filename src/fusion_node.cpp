@@ -86,7 +86,7 @@ void FusionNode::detectionCallback1(const cob_perception_msgs::DetectionArray::C
   }
 
   vh_.publishDetectionArray(detectionArray,1);
-  internal_pub_.publish(detectionArray);
+  internal_pub_.publish(tempMsg);
 
 }
 void FusionNode::detectionCallback2(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
@@ -101,7 +101,7 @@ void FusionNode::detectionCallback2(const cob_perception_msgs::DetectionArray::C
   }
 
   vh_.publishDetectionArray(detectionArray,2);
-  internal_pub_.publish(detectionArray);
+  internal_pub_.publish(tempMsg);
 
 }
 
@@ -126,11 +126,12 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
       if(type == "laser") {detectionTyp = laser;}
       else if(type == "body"){detectionTyp = body;}
       else if(type == "face"){detectionTyp = face;}
-      else {detectionTyp = unkown;}
+      else {detectionTyp = unkown; }
 
     }
     else{
-
+      type = "unkown";
+      detectionTyp = unkown;
     }
     std::cout << "type: " << type << std::endl;
   }
