@@ -111,7 +111,7 @@ include_directories(
 # )
 
 ## Create the hungarian lib
-add_library(hungarian
+add_library(hungarian_fusion
               libs/libhungarian/hungarian.c
             )
 
@@ -133,7 +133,7 @@ add_dependencies(people_fusion_node people_fusion_node_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(people_fusion_node
-   ${catkin_LIBRARIES} hungarian
+   ${catkin_LIBRARIES} hungarian_fusion
 )
 
 #############

@@ -123,10 +123,10 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
     {
       type = str.substr (0,found);
 
-      if(type == "laser") {type = Type::laser;}
-      else if(type == "body"){type = Type::body;}
-      else if(type == "face"){type = Type::face;}
-      else {type = Type::unkown;}
+      if(type == "laser") {detectionTyp = laser;}
+      else if(type == "body"){detectionTyp = body;}
+      else if(type == "face"){detectionTyp = face;}
+      else {detectionTyp = unkown;}
 
     }
     else{
