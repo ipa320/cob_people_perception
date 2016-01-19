@@ -18,6 +18,9 @@ class Association{
     DetectionPtr detection_;
     double distance_; // For the distance based association
 
+    // For easy outstreaming
+    friend std::ostream& operator<<(std::ostream&, const Association&);
+
   public:
     Association(TrackerPtr tracker, DetectionPtr detection, double distance_);
 

@@ -111,12 +111,9 @@ std::vector<AssociationPtr>  AssociatorGNN::associateGNN(std::vector<DetectionPt
     {
 
       double distance = euclideanDistanceCost(*trackerIt, *detectionIt);
-      std::cout << "Distance: " << distance << std::endl;
-
 
       costMatrix(row, col) = distance;
       costMatrixInt(row, col) = (int) (costMatrix(row, col) * 10000);
-
 
       row++;
     }
@@ -175,6 +172,7 @@ std::vector<AssociationPtr>  AssociatorGNN::associateGNN(std::vector<DetectionPt
 
   // Now iterate the association and filter them.
   std::vector<AssociationPtr> filteredAssociations;
+  std::vector<AssociationPtr> removedAssociations;
   for(std::vector<AssociationPtr>::iterator assoIt = associations.begin();
       assoIt < associations.end();
       assoIt++){
@@ -183,9 +181,30 @@ std::vector<AssociationPtr>  AssociatorGNN::associateGNN(std::vector<DetectionPt
     if((*assoIt)->getDistance() < 0.4){
       filteredAssociations.push_back(*assoIt);
     }else{
+      removedAssociations.push_back(*assoIt);
       notAssociatedDetections.push_back((*assoIt)->getDetection());
     }
   }
+
+
+  // Debug output
+  std::cout << "Used associations:" << std::endl;
+  for(std::vector<AssociationPtr>::iterator assoIt = filteredAssociations.begin();
+      assoIt < filteredAssociations.end();
+      assoIt++){
+    std::cout << "\t" << (**assoIt) << std::endl;
+  }
+
+  // Debug output
+  std::cout << "Removed associations:" << std::endl;
+  for(std::vector<AssociationPtr>::iterator assoIt = removedAssociations.begin();
+      assoIt < removedAssociations.end();
+      assoIt++){
+    std::cout << "\t" << (**assoIt) << std::endl;
+  }
+
+
+
 
   return filteredAssociations;
 }

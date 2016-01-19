@@ -7,5 +7,5 @@ Detection::Detection(double x, double y, ros::Time time, unsigned int id):
 {}
 
 std::ostream& operator<<(std::ostream &strm, const Detection &detection) {
-  return strm << "Detection[" << detection.getId() << "]" << detection.getState();
+  return strm << "Detection[" << detection.getId() << "]";
 }

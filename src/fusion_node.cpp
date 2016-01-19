@@ -62,31 +62,19 @@ void FusionNode::detectionCallback0(const cob_perception_msgs::DetectionArray::C
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   std::cout << "Received on people_detections/laser_detections" << std::endl;
 
-  // Annotate the type
-  cob_perception_msgs::DetectionArray tempMsg(*detectionArray);
-  for(size_t i = 0; i < detectionArray->detections.size(); i++){
-    tempMsg.detections[i].label = "laser_" + tempMsg.detections[i].label;
-  }
 
   vh_.publishDetectionArray(detectionArray,0);
-
-  internal_pub_.publish(tempMsg);
-
-
+  internal_pub_.publish(detectionArray);
 }
+
 void FusionNode::detectionCallback1(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
 {
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   std::cout << "Received on people_detections/body_detections" << std::endl;
 
-  // Annotate the type
-  cob_perception_msgs::DetectionArray tempMsg(*detectionArray);
-  for(size_t i = 0; i < detectionArray->detections.size(); i++){
-    tempMsg.detections[i].label = "body_" + tempMsg.detections[i].label;
-  }
 
   vh_.publishDetectionArray(detectionArray,1);
-  internal_pub_.publish(tempMsg);
+  internal_pub_.publish(detectionArray);
 
 }
 void FusionNode::detectionCallback2(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
@@ -94,14 +82,8 @@ void FusionNode::detectionCallback2(const cob_perception_msgs::DetectionArray::C
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   std::cout << "Received on people_detections/face_detections" << std::endl;
 
-  // Annotate the type
-  cob_perception_msgs::DetectionArray tempMsg(*detectionArray);
-  for(size_t i = 0; i < detectionArray->detections.size(); i++){
-    tempMsg.detections[i].label = "face_" + tempMsg.detections[i].label;
-  }
-
   vh_.publishDetectionArray(detectionArray,2);
-  internal_pub_.publish(tempMsg);
+  internal_pub_.publish(detectionArray);
 
 }
 
@@ -110,30 +92,21 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << ". Time: " << detectionArray->header.stamp << std::endl;
 
+  if(detectionArray->detections.size() == 0){
+    std::cout << "No detections -> Abort" << std::endl;
+    return;
+  }
+
   Type detectionTyp;
 
   // Get the detection type
   if(detectionArray->detections.size() > 0){
-    std::string str = detectionArray->detections[0].label;
-    std::size_t found = str.find_first_of("_");
-    std::string type;
-
-    // if _ is found
-    if (found!=std::string::npos)
-    {
-      type = str.substr (0,found);
-
-      if(type == "laser") {detectionTyp = laser;}
-      else if(type == "body"){detectionTyp = body;}
-      else if(type == "face"){detectionTyp = face;}
-      else {detectionTyp = unkown; }
-
-    }
-    else{
-      type = "unkown";
-      detectionTyp = unkown;
-    }
-    std::cout << "type: " << type << std::endl;
+    std::string typeString = detectionArray->detections[0].detector;
+    if(typeString == "laser") {detectionTyp = laser;}
+    else if(typeString == "body"){detectionTyp = body;}
+    else if(typeString == "face"){detectionTyp = face;}
+    else {detectionTyp = unkown; }
+    std::cout << "type: " << typeString << std::endl;
   }
 
   for(size_t i = 0; i < detectionArray->detections.size(); i++){
@@ -155,11 +128,8 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
   {
     double ageSec = (currentTime - (*trackerIt)->getCurrentTime()).toSec();
 
-    std::cout << **trackerIt;
-
     if(ageSec < 1.5){
       clearedTrackers.push_back(*trackerIt);
-      std::cout << GREEN << " NOT deleted age: " << ageSec << RESET << std::endl;
     }else{
       std::cout << RED << " deleted age: " << ageSec << RESET << std::endl;
     }
@@ -168,16 +138,27 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
   trackerList_ = clearedTrackers;
 
 
+  // Print trackers
+  std::cout << "Remaining trackers:" << std::endl;
+  for(std::vector<TrackerPtr>::iterator trackerIt = trackerList_.begin(); trackerIt < trackerList_.end(); trackerIt++){
+    std::cout << "[" << (*trackerIt)->getId() << "]";
+  }
+  std::cout << std::endl;
+
+
   // Store the detections in a list
   std::vector<DetectionPtr> detections;
   for(int i = 0; i < detectionArray->detections.size(); i++){
-
     // Create temp Tracker for every detection
     cob_perception_msgs::Detection det = detectionArray->detections[i];
-
     detections.push_back(DetectionPtr(new Detection(det.pose.pose.position.x, det.pose.pose.position.y, det.header.stamp, i)));
-
   }
+
+
+  ///////////////////////////////////////////////////////////
+  /// ASSOCIATION
+  ///////////////////////////////////////////////////////////
+  std::cout << BOLDWHITE << "Association" << RESET << std::endl;
 
 
   // Make the associations
@@ -188,20 +169,18 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
 
   associations = associatiorGNN.associateGNN(detections, trackerList_, notAssociatedDetections);
 
-  std::cout << "Made " << associations.size() << " associations" << std::endl;
-  std::cout << notAssociatedDetections.size() << " of " << detections.size() << " where not used! " << std::endl;
 
 
   ///////////////////////////////////////////////////////////
   /// APPLY THE ASSOCIATED DETECTIONS
   ///////////////////////////////////////////////////////////
-  std::cout << BOLDWHITE << "Association" << RESET << std::endl;
+  std::cout << BOLDWHITE << "Update" << RESET << std::endl;
 
   for(std::vector<AssociationPtr>::iterator assoIt = associations.begin();
       assoIt < associations.end();
       assoIt++)
   {
-    std::cout << "Updating " << *((*assoIt)->getTracker()) << " with: " << *((*assoIt)->getDetection()) << std::endl;
+    std::cout << "Updating " << *((*assoIt)->getTracker()) << " with: " << *((*assoIt)->getDetection()) << " Distance: " << (*assoIt)->getDistance() << std::endl;
     (*assoIt)->getTracker()->update((*assoIt)->getDetection());
   }
 
@@ -209,7 +188,7 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
   /// TRACKER CREATION
   ///////////////////////////////////////////////////////////
 
-  std::cout << BOLDWHITE << "Creation" << RESET << std::endl;
+  std::cout << BOLDWHITE << "Creation:" << RESET << std::endl;
 
 
   // Create a tracker for the unused detections
@@ -218,7 +197,7 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
       detectionIt++)
   {
     TrackerPtr t = TrackerPtr(new Tracker((*detectionIt)->getState(), detectionArray->header.stamp));
-    std::cout << "Created Tracker: " << *t << std::endl;
+    std::cout << "\tCreated Tracker: " << *t << std::endl;
     trackerList_.push_back(t);
   }
 

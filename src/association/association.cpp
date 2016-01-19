@@ -7,3 +7,8 @@ Association::Association(TrackerPtr tracker, DetectionPtr detection, double dist
 {
 
 }
+
+std::ostream& operator<<(std::ostream &strm, const Association &association) {
+  return strm << "Association: (Tracker[" << association.getTracker()->getId() << "] <--> Detection[" << association.getDetection()->getId() << "]" << " Distance: " << association.getDistance() << ")";
+}
+

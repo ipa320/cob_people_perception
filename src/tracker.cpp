@@ -23,5 +23,5 @@ void Tracker::predict(ros::Time predictionTime){
 }
 
 std::ostream& operator<<(std::ostream &strm, const Tracker &tracker) {
-  return strm << "Tracker[" << tracker.id_ << "]" << tracker.currentState_;
+  return strm << "Tracker[" << tracker.id_ << "]";
 }
