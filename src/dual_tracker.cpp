@@ -3484,6 +3484,7 @@ public:
             detection.header.frame_id = fixed_frame;
 
             detection.label = (*peopleIt)->getName();
+            detection.detector = "laser";
 
             // Set the pose
             detection.pose.pose.position.x = est.pos_.getX();
