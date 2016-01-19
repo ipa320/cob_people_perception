@@ -16,12 +16,14 @@ class Association{
   private:
     TrackerPtr tracker_;
     DetectionPtr detection_;
+    double distance_; // For the distance based association
 
   public:
-    Association(TrackerPtr tracker, DetectionPtr detection);
+    Association(TrackerPtr tracker, DetectionPtr detection, double distance_);
 
     TrackerPtr getTracker() const { return this->tracker_; };
     DetectionPtr getDetection() const { return this->detection_; };
+    double getDistance() const { return this->distance_; };
 
 };
 

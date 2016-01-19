@@ -27,6 +27,8 @@
 static std::string fixed_frame              = "odom_combined";  // The fixed frame
 static unsigned int trackerIdCounter = 0;
 
+// Type
+enum Type { laser, body, face, unkown };
 
 using namespace ros;
 

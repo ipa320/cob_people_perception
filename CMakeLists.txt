@@ -14,6 +14,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
+find_package(cmake_modules REQUIRED)
+find_package(Eigen REQUIRED)
+
+include_directories(${Eigen_INCLUDE_DIRS})
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -95,13 +99,21 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(include)
 include_directories(
+  include
+  libs
   ${catkin_INCLUDE_DIRS}
+  ${Eigen_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
 # add_library(people_fusion_node
 #   src/${PROJECT_NAME}/people_fusion_node.cpp
 # )
+
+## Create the hungarian lib
+add_library(hungarian
+              libs/libhungarian/hungarian.c
+            )
 
 ## Declare a cpp executable
 add_executable(people_fusion_node 
@@ -121,7 +133,7 @@ add_dependencies(people_fusion_node people_fusion_node_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(people_fusion_node
-   ${catkin_LIBRARIES}
+   ${catkin_LIBRARIES} hungarian
 )
 
 #############

@@ -62,8 +62,15 @@ void FusionNode::detectionCallback0(const cob_perception_msgs::DetectionArray::C
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   std::cout << "Received on people_detections/laser_detections" << std::endl;
 
+  // Annotate the type
+  cob_perception_msgs::DetectionArray tempMsg(*detectionArray);
+  for(size_t i = 0; i < detectionArray->detections.size(); i++){
+    tempMsg.detections[i].label = "laser_" + tempMsg.detections[i].label;
+  }
+
   vh_.publishDetectionArray(detectionArray,0);
-  internal_pub_.publish(detectionArray);
+
+  internal_pub_.publish(tempMsg);
 
 
 }
@@ -71,6 +78,12 @@ void FusionNode::detectionCallback1(const cob_perception_msgs::DetectionArray::C
 {
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   std::cout << "Received on people_detections/body_detections" << std::endl;
+
+  // Annotate the type
+  cob_perception_msgs::DetectionArray tempMsg(*detectionArray);
+  for(size_t i = 0; i < detectionArray->detections.size(); i++){
+    tempMsg.detections[i].label = "body_" + tempMsg.detections[i].label;
+  }
 
   vh_.publishDetectionArray(detectionArray,1);
   internal_pub_.publish(detectionArray);
@@ -81,6 +94,12 @@ void FusionNode::detectionCallback2(const cob_perception_msgs::DetectionArray::C
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   std::cout << "Received on people_detections/face_detections" << std::endl;
 
+  // Annotate the type
+  cob_perception_msgs::DetectionArray tempMsg(*detectionArray);
+  for(size_t i = 0; i < detectionArray->detections.size(); i++){
+    tempMsg.detections[i].label = "face_" + tempMsg.detections[i].label;
+  }
+
   vh_.publishDetectionArray(detectionArray,2);
   internal_pub_.publish(detectionArray);
 
@@ -90,6 +109,35 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
 {
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << ". Time: " << detectionArray->header.stamp << std::endl;
+
+  Type detectionTyp;
+
+  // Get the detection type
+  if(detectionArray->detections.size() > 0){
+    std::string str = detectionArray->detections[0].label;
+    std::size_t found = str.find_first_of("_");
+    std::string type;
+
+    // if _ is found
+    if (found!=std::string::npos)
+    {
+      type = str.substr (0,found);
+
+      if(type == "laser") {type = Type::laser;}
+      else if(type == "body"){type = Type::body;}
+      else if(type == "face"){type = Type::face;}
+      else {type = Type::unkown;}
+
+    }
+    else{
+
+    }
+    std::cout << "type: " << type << std::endl;
+  }
+
+  for(size_t i = 0; i < detectionArray->detections.size(); i++){
+    std::cout << "\t Detection: " << detectionArray->detections[i].label << std::endl;
+  }
 
   // Development: Clear Tracker list
   //trackerList_.clear();
@@ -137,7 +185,7 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
 
   std::vector<DetectionPtr> notAssociatedDetections; // Detections that were not used in the association
 
-  associations = associatiorGNN.associate(detections, trackerList_, notAssociatedDetections);
+  associations = associatiorGNN.associateGNN(detections, trackerList_, notAssociatedDetections);
 
   std::cout << "Made " << associations.size() << " associations" << std::endl;
   std::cout << notAssociatedDetections.size() << " of " << detections.size() << " where not used! " << std::endl;
