@@ -55,6 +55,8 @@ FusionNode::FusionNode(ros::NodeHandle nh) :
 
         internal_pub_= nh_.advertise<cob_perception_msgs::DetectionArray>("people_detections/internal/all_detections", 0);
 
+        people_pub_= nh_.advertise<cob_perception_msgs::DetectionArray>("people_detections/fused_detections", 0);
+
       };
 
 void FusionNode::detectionCallback0(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray)
@@ -104,7 +106,7 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
     std::string typeString = detectionArray->detections[0].detector;
     if(typeString == "laser") {detectionTyp = laser;}
     else if(typeString == "body"){detectionTyp = body;}
-    else if(typeString == "face"){detectionTyp = face;}
+    else if(typeString == "face" || typeString == "head"){detectionTyp = face;}
     else {detectionTyp = unkown; }
   }
 
@@ -182,8 +184,6 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
 
   associations = associatiorGNN.associateGNN(detections, trackerList_, notAssociatedDetections);
 
-
-
   ///////////////////////////////////////////////////////////
   /// APPLY THE ASSOCIATED DETECTIONS
   ///////////////////////////////////////////////////////////
@@ -200,9 +200,7 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
   ///////////////////////////////////////////////////////////
   /// TRACKER CREATION
   ///////////////////////////////////////////////////////////
-
   std::cout << BOLDWHITE << "Creation:" << RESET << std::endl;
-
 
   // Create a tracker for the unused detections
   for(std::vector<DetectionPtr>::iterator detectionIt = notAssociatedDetections.begin();
@@ -215,6 +213,27 @@ void FusionNode::detectionCallbackAll(const cob_perception_msgs::DetectionArray:
   }
 
   vh_.publishTracker(trackerList_);
+
+  ///////////////////////////////////////////////////////////
+  /// Publish results
+  ///////////////////////////////////////////////////////////
+  cob_perception_msgs::DetectionArray resultDetectionArray;
+  resultDetectionArray.header = detectionArray->header;
+  for(std::vector<TrackerPtr>::iterator trackerIt = trackerList_.begin(); trackerIt < trackerList_.end(); trackerIt++){
+    cob_perception_msgs::Detection detection;
+    detection.header = detectionArray->header;
+    detection.pose.pose.position.x = (*trackerIt)->getCurrentState().getPos().getX();
+    detection.pose.pose.position.y = (*trackerIt)->getCurrentState().getPos().getY();
+    detection.pose.pose.position.z = 0;
+    detection.label = (*trackerIt)->getIdStr();
+
+    resultDetectionArray.detections.push_back(detection);
+
+    std::cout << "[" << (*trackerIt)->getId() << "]";
+  }
+
+  people_pub_.publish(resultDetectionArray);
+
 
 }
 

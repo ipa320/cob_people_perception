@@ -53,18 +53,15 @@ class FusionNode{
     message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_2_;
     tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_2_;
 
-
-    //message_filters::Subscriber<sensor_msgs::LaserScan> laser_sub_;
-    //tf::MessageFilter<people_msgs::PositionMeasurement> people_notifier_;
-
     std::vector<TrackerPtr> trackerList_;
 
-    // Has own visualizationHelper
     VisualizationHelper vh_;
 
     const std::string topic0_, topic1_, topic2_;
 
     ros::Publisher internal_pub_; /**< The internal publisher */
+
+    ros::Publisher people_pub_; /**< The people publisher */
 
 
   public:

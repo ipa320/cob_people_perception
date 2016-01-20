@@ -36,6 +36,13 @@ void Tracker::predict(ros::Time predictionTime){
   // TODO implement!
 }
 
+std::string Tracker::getIdStr() const{
+  std::stringstream ss;
+  ss << *this;
+
+  return ss.str();
+}
+
 size_t Tracker::getDiversity() const{
   size_t diversity = 0;
   if(this->getLaserUpdateCount() > 0) diversity++;

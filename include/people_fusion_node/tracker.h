@@ -35,6 +35,8 @@ class Tracker{
 
 		unsigned int getId() const { return this->id_; };
 
+		std::string getIdStr() const;
+
 		ros::Time getCurrentTime() { return this->currentTime_; };
 
 		StatePosVel getCurrentState() { return this->currentState_; };
