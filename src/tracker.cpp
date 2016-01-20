@@ -36,6 +36,15 @@ void Tracker::predict(ros::Time predictionTime){
   // TODO implement!
 }
 
+size_t Tracker::getDiversity() const{
+  size_t diversity = 0;
+  if(this->getLaserUpdateCount() > 0) diversity++;
+  if(this->getBodyUpdateCount()  > 0) diversity++;
+  if(this->getFaceUpdateCount()  > 0) diversity++;
+
+  return diversity;
+}
+
 std::ostream& operator<<(std::ostream &strm, const Tracker &tracker) {
   return strm << "Tracker[" << tracker.id_ << "]";
 }

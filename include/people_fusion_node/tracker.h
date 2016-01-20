@@ -49,6 +49,8 @@ class Tracker{
 
 		StatePosVel getCurrentState() const { return this->currentState_; };
 
+		size_t getDiversity() const;
+
 };
 
 // Define the Share pointer

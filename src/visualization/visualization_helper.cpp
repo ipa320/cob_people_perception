@@ -48,7 +48,11 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
         marker.color.r = 1;
         marker.color.g = 0;
         marker.color.b = 0;
-        marker.color.a = 0.5;
+        marker.color.a = 0.2;
+
+        std::cout << "Tracker: " << (*trackerIt)->getDiversity() << std::endl;
+
+        if((*trackerIt)->getDiversity() > 1) marker.color.a = 0.8;
 
         markerArray.markers.push_back(marker);
 
@@ -66,7 +70,7 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
         markerLabel.pose.position.x = (*trackerIt)->getCurrentState().getPos().getX();
         markerLabel.pose.position.y = (*trackerIt)->getCurrentState().getPos().getY();
         markerLabel.pose.position.z = 0;
-        markerLabel.scale.z = 0.2;
+        markerLabel.scale.z = 0.3;
 
         markerLabel.color.r = 0;
         markerLabel.color.g = 0;
@@ -138,7 +142,7 @@ void VisualizationHelper::publishDetectionArray(const cob_perception_msgs::Detec
 
 
 
-    marker.color.a = 0.5;
+    marker.color.a = 0.25;
 
     markerArray.markers.push_back(marker);
 
