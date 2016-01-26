@@ -50,8 +50,6 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
         marker.color.b = 0;
         marker.color.a = 0.2;
 
-        std::cout << "Tracker: " << (*trackerIt)->getDiversity() << std::endl;
-
         if((*trackerIt)->getDiversity() > 1) marker.color.a = 0.8;
 
         markerArray.markers.push_back(marker);
@@ -78,12 +76,19 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
         markerLabel.color.a = 0.5;
 
 
-        char buf[100];
-        sprintf(buf, "Tracker[%d]l:%zu b: %zu f:%zu", (*trackerIt)->getId(), (*trackerIt)->getLaserUpdateCount(), (*trackerIt)->getBodyUpdateCount(), (*trackerIt)->getFaceUpdateCount());
-        markerLabel.text = buf;
+        std::stringstream label_stream;
+        label_stream << **trackerIt;
+        label_stream.precision(2);
+        std::map<std::string, size_t> updateCounts = (*trackerIt)->getUpdateCounts();
 
+        std::map<std::string, double> updateFrequencies = (*trackerIt)->getUpdateFrequencies();
+
+        for(std::map<std::string, size_t>::iterator mapIt = updateCounts.begin(); mapIt != updateCounts.end(); mapIt++) {
+          label_stream << "|c:" << mapIt->first << ": " << mapIt->second << " f:" << updateFrequencies[mapIt->first] << "|";
+        }
+
+        markerLabel.text = label_stream.str();
         markerArray.markers.push_back(markerLabel);
-
 
         counter++;
     }

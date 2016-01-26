@@ -49,11 +49,10 @@ include_directories(${Eigen_INCLUDE_DIRS})
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+   FILES
+   DetectionExt.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -70,10 +69,11 @@ include_directories(${Eigen_INCLUDE_DIRS})
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+   cob_perception_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -120,6 +120,7 @@ add_executable(people_fusion_node
                 src/association/association.cpp
                 src/association/associatorGNN.cpp
                 src/detection/detection.cpp
+                src/detection/detector.cpp
                 src/state_pos_vel.cpp
                 src/tracker.cpp
                 src/fusion_node.cpp
@@ -133,7 +134,7 @@ add_dependencies(people_fusion_node people_fusion_node_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(people_fusion_node
-   ${catkin_LIBRARIES} hungarian_fusion
+   ${catkin_LIBRARIES} hungarian_fusion yaml-cpp
 )
 
 #############

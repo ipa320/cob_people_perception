@@ -68,7 +68,6 @@ std::vector<AssociationPtr>  AssociatorGNN::associate(std::vector<DetectionPtr>&
     {
 
       double distance = euclideanDistanceCost(*trackerIt, *detectionIt);
-      std::cout << "Distance: " << distance << std::endl;
 
       if(distance < 0.4){
         associated = true;
@@ -121,7 +120,7 @@ std::vector<AssociationPtr>  AssociatorGNN::associateGNN(std::vector<DetectionPt
     col++;
   }
 
-  std::cout << "COSTMATRIX:" << std::endl << costMatrix << std::endl;
+  ROS_DEBUG_STREAM_COND(DEBUG_ASSOCIATOR_GNN, "COSTMATRIX:" << std::endl << costMatrix << std::endl);
 
 
   //Solution solution;
@@ -146,7 +145,7 @@ std::vector<AssociationPtr>  AssociatorGNN::associateGNN(std::vector<DetectionPt
   //solution.assignmentMatrix =
   Eigen::Matrix<int,-1,-1> assignmentMatrix = cmatrix_to_eigenmatrix(p.assignment,nRows,nCols);
 
-  std::cout << "AssignmentMatrix:" << std::endl << assignmentMatrix << std::endl;
+  ROS_DEBUG_STREAM_COND(DEBUG_ASSOCIATOR_GNN, "AssignmentMatrix:" << std::endl << assignmentMatrix << std::endl);
 
   /* free used memory */
   hungarian_free(&p);
@@ -188,23 +187,20 @@ std::vector<AssociationPtr>  AssociatorGNN::associateGNN(std::vector<DetectionPt
 
 
   // Debug output
-  std::cout << "Used associations:" << std::endl;
+  ROS_DEBUG_STREAM_COND(DEBUG_ASSOCIATOR_GNN, "Used associations:" << std::endl);
   for(std::vector<AssociationPtr>::iterator assoIt = filteredAssociations.begin();
       assoIt < filteredAssociations.end();
       assoIt++){
-    std::cout << "\t" << (**assoIt) << std::endl;
+    ROS_DEBUG_STREAM_COND(DEBUG_ASSOCIATOR_GNN, "\t" << (**assoIt) << std::endl);
   }
 
   // Debug output
-  std::cout << "Removed associations:" << std::endl;
+  ROS_DEBUG_STREAM_COND(DEBUG_ASSOCIATOR_GNN, "Removed associations:" << std::endl);
   for(std::vector<AssociationPtr>::iterator assoIt = removedAssociations.begin();
       assoIt < removedAssociations.end();
       assoIt++){
-    std::cout << "\t" << (**assoIt) << std::endl;
+    ROS_DEBUG_STREAM_COND(DEBUG_ASSOCIATOR_GNN, "\t" << (**assoIt) << std::endl);
   }
-
-
-
 
   return filteredAssociations;
 }

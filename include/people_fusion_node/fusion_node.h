@@ -22,11 +22,20 @@
 // Own includes
 #include <people_fusion_node/tracker.h>
 #include <people_fusion_node/visualization/visualization_helper.h>
-#include <people_fusion_node/detection_types.h>
+#include <people_fusion_node/detector_config.h>
+#include <people_fusion_node/detection/detector.h>
+
+
+#include <people_fusion_node/DetectionExt.h>
+#include <people_fusion_node/consts.h>
 
 // Default variables
-static std::string fixed_frame              = "odom_combined";  // The fixed frame
 static unsigned int trackerIdCounter = 0;
+
+struct detection_hist_element{
+    ros::Time time_;
+    std::string type_;
+};
 
 
 using namespace ros;
@@ -40,10 +49,19 @@ class FusionNode{
 
     ros::Publisher pub_internal_; /**< The internal */
 
+    std::vector<detector_config> detector_configs_; /**< Configured detectors */
+    std::vector<Detector*> detectors_;
+    std::map<std::string, Detector*> detectors_map_;
 
-    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_all_;
-    message_filters::TimeSequencer<cob_perception_msgs::DetectionArray> sequencer;
+    message_filters::Subscriber<people_fusion_node::DetectionExt> detections_sub_all_;
+    message_filters::TimeSequencer<people_fusion_node::DetectionExt> sequencer;
 
+    std::vector<detection_hist_element> detectionHistory_;
+    std::map<std::string, size_t> detectionCounts_;
+
+    double totalDetectorWeight_;
+
+    /*
     message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_0_;
     tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_0_;
 
@@ -52,28 +70,27 @@ class FusionNode{
 
     message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_2_;
     tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_2_;
-
+*/
     std::vector<TrackerPtr> trackerList_;
 
     VisualizationHelper vh_;
 
-    const std::string topic0_, topic1_, topic2_;
-
-    ros::Publisher internal_pub_; /**< The internal publisher */
+    //ros::Publisher internal_pub_; /**< The internal publisher */
 
     ros::Publisher people_pub_; /**< The people publisher */
 
 
+
   public:
-    FusionNode(ros::NodeHandle nh); /**< Constructor */
+    FusionNode(ros::NodeHandle nh, std::vector<detector_config> detectors); /**< Constructor */
 
-    void detectionCallback0(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray);
+    ~FusionNode(); /**< Destructor */
 
-    void detectionCallback1(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray);
+    void detectionCallbackAll(const people_fusion_node::DetectionExt::ConstPtr& detectionMsg);
 
-    void detectionCallback2(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray);
+    void updateDetectionsCount();
 
-    void detectionCallbackAll(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray);
+    std::map<std::string, size_t> getDetectionsCounts() const;
 
 };
 

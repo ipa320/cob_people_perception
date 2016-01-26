@@ -1,0 +1,9 @@
+detector_nodes:
+# Keep in mind to tab-align the values!!!!
+# The name of the detector MUST be the same as the field inside the DetectionArray message!
+  - 
+    name:           "laser"
+    min_detections: 1
+    weight:         5
+    min_frequency:  2
+    topic:          "/people_detections/laser_detections"

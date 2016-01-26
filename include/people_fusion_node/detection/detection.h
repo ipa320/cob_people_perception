@@ -3,7 +3,7 @@
 
 // Own includes
 #include <people_fusion_node/state_pos_vel.h>
-#include <people_fusion_node/detection_types.h>
+
 
 class Detection{
 
@@ -12,16 +12,16 @@ class Detection{
     StatePosVel state_;
     ros::Time detectionTime_;
 
-    Type detection_type_;
+    std::string detection_type_;
 
   public:
-    Detection(double x, double y, ros::Time time, unsigned int id, Type type);
+    Detection(double x, double y, ros::Time time, unsigned int id, std::string type);
 
     unsigned int getId() const { return this->id_; };
     StatePosVel getState() const { return this->state_; };
     ros::Time getTime() const { return this->detectionTime_; };
 
-    Type getDetectionType() const { return this->detection_type_; };
+    std::string getDetectionType() const { return this->detection_type_; };
 
     // For easy outstreaming
     friend std::ostream& operator<<(std::ostream&, const Detection&);
