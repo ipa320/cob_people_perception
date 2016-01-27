@@ -11,7 +11,7 @@
 
   <!-- people fusion node -->
 
-  <node pkg="people_fusion_node" type="people_fusion_node" required="true" name="people_fusion_node" output="screen" args="$(find people_fusion_node)/cfg/detector_config_all.yaml">
+  <node pkg="people_fusion_node" type="people_fusion_node" required="true" name="people_fusion_node" output="screen" args="$(find people_fusion_node)/cfg/detector_config_laser_only.yaml">
     
   </node>
 </launch>
