@@ -11,21 +11,39 @@
 #include <people_fusion_node/tracker.h>
 #include <people_fusion_node/detection/detection.h>
 
+/***
+ * This class represents a association between a detection and a tracker
+ */
 class Association{
 
   private:
-    TrackerPtr tracker_;
-    DetectionPtr detection_;
-    double distance_; // For the distance based association
+    TrackerPtr tracker_; /**< The associated tracker */
+    DetectionPtr detection_; /**< The associated detection */
+    double distance_; /**< Euclidean distance between tracker and detection */
 
     // For easy outstreaming
     friend std::ostream& operator<<(std::ostream&, const Association&);
 
   public:
+
     Association(TrackerPtr tracker, DetectionPtr detection, double distance_);
 
+    /**
+     * get the tracker
+     * @return SharedPointer to the tracker
+     */
     TrackerPtr getTracker() const { return this->tracker_; };
+
+    /**
+     * get the detection
+     * @return SharedPointer to the detection
+     */
     DetectionPtr getDetection() const { return this->detection_; };
+
+    /**
+     * get the distance between tracker and detection
+     * @return distance
+     */
     double getDistance() const { return this->distance_; };
 
 };
