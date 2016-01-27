@@ -21,7 +21,7 @@ Detector::Detector(ros::NodeHandle nh, detector_config detector_cfg):
 
 void Detector::detectionCallback(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray){
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
-  //std::cout << "Received on " << this->topic_ << std::endl;
+  std::cout << "Received on " << this->topic_;
 
   // Check if the detector field in the message is correct
   bool detectionError = false;
@@ -40,8 +40,12 @@ void Detector::detectionCallback(const cob_perception_msgs::DetectionArray::Cons
   if(!detectionError){
     vh_.publishDetectionArray(detectionArray,0);
     internal_pub_.publish(detectionMsg);
+
+    std::cout << " forwarded to people_detections/internal/all_detections" << std::endl;
+
   }
   else{
+    std::cout << " due to errors not forwarded!" << std::endl;
     ROS_ERROR("Due to errors no detections are forwarded by %s", this->name_.c_str());
   }
 
