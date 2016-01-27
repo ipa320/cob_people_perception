@@ -21,7 +21,7 @@ Detector::Detector(ros::NodeHandle nh, detector_config detector_cfg):
 
 void Detector::detectionCallback(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray){
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
-  std::cout << "Received on " << this->topic_ << std::endl;
+  //std::cout << "Received on " << this->topic_ << std::endl;
 
   // Check if the detector field in the message is correct
   bool detectionError = false;
