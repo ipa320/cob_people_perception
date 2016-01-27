@@ -9,8 +9,13 @@ In RVIZ the detections are highlighted using cylinders with different colors. Ea
 
 Because the detectors have different detection rates the usage of a timesequencer is indispensable. By nature of this sequencer a delay is introduced into the system.
 
-## Offene Fragestellungen
+## Open Questions
 - Empty detections lack the detector information. Note: Currently fixed by wrapping within own message type
 
-## Bekannte Probleme
+## Known Problems
 - There is a issue with a rotated sensorring when using the kinect. This may be related to a wrong tf transformation. It is recommended to develop with the sensorring facing the front. This bug must be fixed.
+- On occasions it can happen that a person is represented by multiple trackers which update by detections of different detectors. This is caused by a bias of the detections. To tackle this issue trackers which are spatially extreme close should be fused on such conditions.
+
+## Next Todos
+- Currently the fusion node relies on the detections to be in the "odom_combined" frame which is sufficient constant to perform tracking. Here a automatic transformation should take place if the detector uses a different frame.
+- The tracking is only roughly implemented by using a global nearest neightbor association along with a euclidean distance condition. Better tracking performance can be expected if more precise model such as linear velocity is implemented and the tracking is performed using kalman filters.
