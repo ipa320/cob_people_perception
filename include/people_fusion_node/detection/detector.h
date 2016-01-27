@@ -17,6 +17,8 @@ class Detector{
 
   private:
 
+    int id_;
+
     ros::NodeHandle nh_; /**< The node handle */
     ros::Publisher internal_pub_; /**< The internal publisher */
     std::string name_;
@@ -37,7 +39,9 @@ class Detector{
 
   public:
 
-    Detector(ros::NodeHandle nh, detector_config detector_cfg);
+    Detector(ros::NodeHandle nh, detector_config detector_cfg, int id, size_t totalNumberDetectors);
+
+    int getId() const { return this->id_; };
 
     void detectionCallback(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray);
 

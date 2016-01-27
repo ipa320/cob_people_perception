@@ -23,10 +23,12 @@ class VisualizationHelper{
 
     ros::Publisher visualization_pub_; /**< The visualization publisher */
 
+    size_t totalNumberDetectors_; /**< Total number of detectors */
+
 
   public:
 
-    VisualizationHelper(ros::NodeHandle nh);
+    VisualizationHelper(ros::NodeHandle nh, size_t totalNumberDetectors);
 
     void publishTracker(std::vector<TrackerPtr> &trackerList);
 

@@ -1,7 +1,9 @@
 #include <people_fusion_node/detection/detector.h>
+#include <people_fusion_node/visualization/color_definitions.h>
 #include <people_fusion_node/DetectionExt.h>
 
-Detector::Detector(ros::NodeHandle nh, detector_config detector_cfg):
+Detector::Detector(ros::NodeHandle nh, detector_config detector_cfg, int id, size_t totalNumberDetectors):
+  id_(id),
   nh_(nh),
   topic_(detector_cfg.topic),
   name_(detector_cfg.name),
@@ -10,7 +12,7 @@ Detector::Detector(ros::NodeHandle nh, detector_config detector_cfg):
   min_detections_(detector_cfg.min_detections),
   detections_sub_(nh_, topic_, 25), //Subscriber
   detection_notifier_(detections_sub_, tfl_, fixed_frame, 25),
-  vh_(nh)
+  vh_(nh, totalNumberDetectors)
 {
   // Subscribe
   detection_notifier_.registerCallback(boost::bind(&Detector::detectionCallback, this, _1));
@@ -21,7 +23,7 @@ Detector::Detector(ros::NodeHandle nh, detector_config detector_cfg):
 
 void Detector::detectionCallback(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray){
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
-  std::cout << "Received on " << this->topic_;
+
 
   // Check if the detector field in the message is correct
   bool detectionError = false;
@@ -38,15 +40,13 @@ void Detector::detectionCallback(const cob_perception_msgs::DetectionArray::Cons
   detectionMsg.detector = this->name_;
 
   if(!detectionError){
-    vh_.publishDetectionArray(detectionArray,0);
+    vh_.publishDetectionArray(detectionArray, this->getId());
     internal_pub_.publish(detectionMsg);
-
-    std::cout << " forwarded to people_detections/internal/all_detections" << std::endl;
+    ROS_INFO_STREAM(WHITE << "Received on " << this->topic_ << " forwarded to people_detections/internal/all_detections" << RESET);
 
   }
   else{
-    std::cout << " due to errors not forwarded!" << std::endl;
-    ROS_ERROR("Due to errors no detections are forwarded by %s", this->name_.c_str());
+    ROS_INFO_STREAM(WHITE << "Received on " << this->topic_ << RED << " NOT FORWARDED DUE TO ERROR" << RESET);
   }
 
 }

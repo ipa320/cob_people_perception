@@ -8,7 +8,8 @@
 #include <visualization_msgs/MarkerArray.h>
 
 
-VisualizationHelper::VisualizationHelper(NodeHandle nh):
+VisualizationHelper::VisualizationHelper(NodeHandle nh, size_t totalNumberDetectors):
+    totalNumberDetectors_(totalNumberDetectors),
     nh_(nh)
 {
   // Set the topic names
@@ -50,6 +51,8 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
         marker.color.b = 0;
         marker.color.a = 0.2;
 
+        marker.lifetime = ros::Duration(1);
+
         if((*trackerIt)->getDiversity() > 1) marker.color.a = 0.8;
 
         markerArray.markers.push_back(marker);
@@ -74,6 +77,8 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
         markerLabel.color.g = 0;
         markerLabel.color.b = 0;
         markerLabel.color.a = 0.5;
+
+        markerLabel.lifetime = ros::Duration(1);
 
 
         std::stringstream label_stream;
@@ -126,26 +131,13 @@ void VisualizationHelper::publishDetectionArray(const cob_perception_msgs::Detec
 
     marker.lifetime = ros::Duration(1);
 
+    int r,g,b;
+    double value = id/((double) totalNumberDetectors_);
+    redGreenGradient(value, r, g, b);
 
-    switch(id){
-      case 0:
-        marker.color.r = 255.0;
-        marker.color.g = 0;
-        marker.color.b = 0;
-        break;
-      case 1:
-        marker.color.r = 0;
-        marker.color.g = 255.0;
-        marker.color.b = 0;
-        break;
-      case 2:
-        marker.color.r = 0;
-        marker.color.g = 0;
-        marker.color.b = 255.0;
-        break;
-    }
-
-
+    marker.color.r = r;
+    marker.color.g = g;
+    marker.color.b = b;
 
 
     marker.color.a = 0.25;

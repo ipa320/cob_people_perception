@@ -26,7 +26,7 @@ FusionNode::FusionNode(ros::NodeHandle nh, std::vector<detector_config> detector
       nh_(nh),  // Node Handle
       detector_configs_(detector_configs),
       detections_sub_all_(nh_, "people_detections/internal/all_detections", 50), //Subscriber
-      vh_(nh),
+      vh_(nh, detector_configs.size()),
       sequencer(detections_sub_all_, ros::Duration(1), ros::Duration(0.01), 25),
       totalDetectorWeight_(0)
       {
@@ -34,7 +34,7 @@ FusionNode::FusionNode(ros::NodeHandle nh, std::vector<detector_config> detector
 
         // Create detector
         for(size_t i = 0; i < detector_configs_.size(); i++){
-          Detector* detector_ptr = new Detector(nh_, detector_configs[i]);
+          Detector* detector_ptr = new Detector(nh_, detector_configs[i], i, detector_configs.size());
 
           // Insert into vector
           detectors_.push_back(detector_ptr);
@@ -81,7 +81,7 @@ void FusionNode::detectionCallbackAll(const people_fusion_node::DetectionExt::Co
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   //std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << ". Time: " << detectionArray->header.stamp << std::endl;
   std::string detectionTyp = detectionMsg->detector;
-  std::cout << "[" << detectionMsg->header.stamp << "] " << " Received " << detectionMsg->detections.detections.size() << " detections on " << detectionMsg->detector << std::endl;
+  ROS_INFO_STREAM(WHITE << "[" << detectionMsg->header.stamp << "] " << " Received " << detectionMsg->detections.detections.size() << " detections on " << detectionMsg->detector << RESET);
   cob_perception_msgs::DetectionArray::ConstPtr detectionArray(new cob_perception_msgs::DetectionArray(detectionMsg->detections));
 
 
