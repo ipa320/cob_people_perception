@@ -81,7 +81,7 @@ void FusionNode::detectionCallbackAll(const people_fusion_node::DetectionExt::Co
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   //std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << ". Time: " << detectionArray->header.stamp << std::endl;
   std::string detectionTyp = detectionMsg->detector;
-  std::cout << "[" << detectionMsg->header.stamp << "] " << " Received " << detectionArray->detections.size() << " detections on " << detectionMsg->detector << std::endl;
+  std::cout << "[" << detectionMsg->header.stamp << "] " << " Received " << detectionMsg->detections.detections.size() << " detections on " << detectionMsg->detector << std::endl;
   cob_perception_msgs::DetectionArray::ConstPtr detectionArray(new cob_perception_msgs::DetectionArray(detectionMsg->detections));
 
 
