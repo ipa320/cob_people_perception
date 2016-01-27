@@ -19,3 +19,4 @@ Because the detectors have different detection rates the usage of a timesequence
 ## Next Todos
 - Currently the fusion node relies on the detections to be in the "odom_combined" frame which is sufficient constant to perform tracking. Here a automatic transformation should take place if the detector uses a different frame.
 - The tracking is only roughly implemented by using a global nearest neightbor association along with a euclidean distance condition. Better tracking performance can be expected if more precise model such as linear velocity is implemented and the tracking is performed using kalman filters.
+- If a underlying detector allready performs tracking itself this information should be useful. E.g. the association costs should be increased if a label_switch would occur or lower if the label(s) of the underlying detectors would stay the same.
