@@ -94,5 +94,5 @@ size_t Tracker::getDiversity() const{
 }
 
 std::ostream& operator<<(std::ostream &strm, const Tracker &tracker) {
-  return strm << "Tracker[" << tracker.id_ << "score:" << tracker.getScore() << "]";
+  return strm << "Tracker[" << tracker.id_ << " score:" << tracker.getScore() << "]";
 }

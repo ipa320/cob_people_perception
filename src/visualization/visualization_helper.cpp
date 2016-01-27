@@ -77,8 +77,9 @@ void VisualizationHelper::publishTracker(std::vector<TrackerPtr> &trackerList){
 
 
         std::stringstream label_stream;
-        label_stream << **trackerIt;
         label_stream.precision(2);
+        label_stream << **trackerIt;
+
         std::map<std::string, size_t> updateCounts = (*trackerIt)->getUpdateCounts();
 
         std::map<std::string, double> updateFrequencies = (*trackerIt)->getUpdateFrequencies();
