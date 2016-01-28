@@ -6,6 +6,9 @@
 
 #include <tf/tf.h>
 
+/**
+ * Represents a common state consisting of 2d position and velocity
+ */
 class StatePosVel{
 private: // Todo make private!
 

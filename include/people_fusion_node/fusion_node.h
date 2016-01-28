@@ -43,43 +43,36 @@ using namespace ros;
 class FusionNode{
 
   private:
-    NodeHandle nh_; /**< The node handle */
+    NodeHandle nh_;                                 /**< The node handle */
 
-    tf::TransformListener tfl_; /**< The transform listener */
+    tf::TransformListener tfl_;                     /**< The transform listener */
 
-    ros::Publisher pub_internal_; /**< The internal */
+    ros::Publisher pub_internal_;                   /**< The internal */
 
     std::vector<detector_config> detector_configs_; /**< Configured detectors */
-    std::vector<Detector*> detectors_;
-    std::map<std::string, Detector*> detectors_map_;
+    std::vector<Detector*> detectors_;              /**< List of all detectors */
+    std::map<std::string, Detector*> detectors_map_;/**< Mapping from detector names to detectors */
 
-    message_filters::Subscriber<people_fusion_node::DetectionExt> detections_sub_all_;
-    message_filters::TimeSequencer<people_fusion_node::DetectionExt> sequencer;
+    message_filters::Subscriber<people_fusion_node::DetectionExt> detections_sub_all_; /**< Internal subscriber */
+    message_filters::TimeSequencer<people_fusion_node::DetectionExt> sequencer;        /**< Time sequencer needed to keep incoming message in chronological order */
 
-    std::vector<detection_hist_element> detectionHistory_;
-    std::map<std::string, size_t> detectionCounts_;
+    std::vector<detection_hist_element> detectionHistory_; /**< history of incoming detections (trimmed to timeHorizon) */
+    std::map<std::string, size_t> detectionCounts_;        /**< counts the detections of each type */
 
-    double totalDetectorWeight_;
+    double totalDetectorWeight_;                           /**< weight sum of all detectors */
 
-    /*
-    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_0_;
-    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_0_;
+    std::vector<TrackerPtr> trackerList_;                  /**< list of all trackers */
 
-    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_1_;
-    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_1_;
-
-    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_2_;
-    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_2_;
-*/
-    std::vector<TrackerPtr> trackerList_;
-
-    VisualizationHelper vh_;
-
-    //ros::Publisher internal_pub_; /**< The internal publisher */
+    VisualizationHelper vh_;                               /**< Assigned visualization helper */
 
     ros::Publisher people_pub_; /**< The people publisher */
 
 
+  private:
+
+    void updateDetectionsCount(); /**< Recount the detections, needed because of trimming */
+
+    std::map<std::string, size_t> getDetectionsCounts() const;
 
   public:
     FusionNode(ros::NodeHandle nh, std::vector<detector_config> detectors); /**< Constructor */
@@ -87,10 +80,6 @@ class FusionNode{
     ~FusionNode(); /**< Destructor */
 
     void detectionCallbackAll(const people_fusion_node::DetectionExt::ConstPtr& detectionMsg);
-
-    void updateDetectionsCount();
-
-    std::map<std::string, size_t> getDetectionsCounts() const;
 
 };
 

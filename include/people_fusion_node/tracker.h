@@ -9,24 +9,26 @@
 #include <people_fusion_node/detection/detection.h>
 #include <people_fusion_node/detector_config.h>
 
-
+/**
+ * Represents a tracked object/person
+ */
 
 class Tracker{
 
 	private:
-    unsigned int id_;
+    unsigned int id_; /**< assigned id */
 
-    double score_;
+    double score_; /**< score[0..1] corresponding to the reliability in beeing a person */
 
-		ros::Time initiationTime_;
-		StatePosVel initialState_;
+		ros::Time initiationTime_; /**< time this tracker was initialized */
+		StatePosVel initialState_; /**< state on initialization */
 
-		ros::Time currentTime_;
-		StatePosVel currentState_;
+		ros::Time currentTime_; /**< the time of the current state */
+		StatePosVel currentState_; /**< the current state */
 
-		std::vector<DetectionPtr> updates_;
-	  std::map<std::string, size_t> counts_;
-    std::map<std::string, double> frequencies_;
+		std::vector<DetectionPtr> updates_; /**< the updates this tracker received(trimmed to time horizon) */
+	  std::map<std::string, size_t> counts_; /**< mapping from detection type names to number of this detections */
+    std::map<std::string, double> frequencies_; /**< mapping from detection type names to frequency of this detections */
 
 		// For easy outstreaming
 		friend std::ostream& operator<<(std::ostream&, const Tracker&);

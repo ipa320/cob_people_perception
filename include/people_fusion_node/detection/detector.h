@@ -17,25 +17,29 @@ class Detector{
 
   private:
 
-    int id_;
+    int id_; /**< The detector id, needed by visualize helper to ensure different colors for different detection types */
 
     ros::NodeHandle nh_; /**< The node handle */
+
     ros::Publisher internal_pub_; /**< The internal publisher */
-    std::string name_;
 
-    double weight_;
-    double min_frequency_;
+    std::string name_; /**< Name of the detector (laser, 3d, etc...) */
 
-    size_t min_detections_;
+    double weight_; /**< The weight of the detector, set by config, controls its influence on the tracker score */
 
-    const std::string topic_;
+    double min_frequency_; /**< The minimal frequency expected of detections to validate */
 
-    VisualizationHelper vh_;
+    size_t min_detections_; /**< The minimal detections before this detector influences the score */
+
+    const std::string topic_; /**< The topic this detector listens to */
+
+    VisualizationHelper vh_; /**< The visualization helper */
 
     tf::TransformListener tfl_; /**< The transform listener */
 
-    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_;
-    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_;
+    message_filters::Subscriber<cob_perception_msgs::DetectionArray> detections_sub_; /**< The subscriber */
+
+    tf::MessageFilter<cob_perception_msgs::DetectionArray> detection_notifier_; /**< assigned tf message filter */
 
   public:
 

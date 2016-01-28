@@ -5,6 +5,9 @@
 #include <string>
 #include <iostream>
 
+/***
+ * Struct for mapping the detector configurations given in the yaml file
+ */
 struct detector_config {
   std::string name;
   std::string topic;

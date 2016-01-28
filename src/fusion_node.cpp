@@ -267,6 +267,7 @@ void FusionNode::detectionCallbackAll(const people_fusion_node::DetectionExt::Co
 
 }
 
+// TODO would be more efficient to update directly on trimming!
 void FusionNode::updateDetectionsCount(){
 
   // First reset

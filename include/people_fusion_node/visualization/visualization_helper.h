@@ -16,6 +16,9 @@
 
 using namespace ros;
 
+/**
+ * Visualizes existing trackers and detection arrays using markers
+ */
 class VisualizationHelper{
 
   private:
@@ -30,8 +33,17 @@ class VisualizationHelper{
 
     VisualizationHelper(ros::NodeHandle nh, size_t totalNumberDetectors);
 
+    /**
+     * Publish trackers
+     * @param trackerList
+     */
     void publishTracker(std::vector<TrackerPtr> &trackerList);
 
+    /**
+     * Publish detections
+     * @param detectionArray
+     * @param id The detection id - same id same color - different id different color
+     */
     void publishDetectionArray(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray, int id);
 };
 
