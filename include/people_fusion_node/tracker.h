@@ -20,6 +20,8 @@ class Tracker{
 
     double score_; /**< score[0..1] corresponding to the reliability in beeing a person */
 
+    double timeHorizon_;
+
 		ros::Time initiationTime_; /**< time this tracker was initialized */
 		StatePosVel initialState_; /**< state on initialization */
 
@@ -35,7 +37,7 @@ class Tracker{
 
 
 	public:
-		Tracker(StatePosVel init, ros::Time initialTime, std::vector<detector_config> detector_configs);
+		Tracker(StatePosVel init, ros::Time initialTime, std::vector<detector_config> detector_configs, double timeHorizon);
 
 		unsigned int getId() const { return this->id_; };
 

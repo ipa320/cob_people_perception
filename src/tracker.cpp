@@ -5,13 +5,14 @@
 #include <people_fusion_node/consts.h>
 
 
-Tracker::Tracker(StatePosVel init, ros::Time initialTime, std::vector<detector_config> detector_configs):
+Tracker::Tracker(StatePosVel init, ros::Time initialTime, std::vector<detector_config> detector_configs, double timeHorizon):
     id_(trackerIdCounter++),
     initiationTime_(initialTime),
     initialState_(init),
     currentTime_(initiationTime_),
     currentState_(initialState_),
-    score_(0)
+    score_(0),
+    timeHorizon_(timeHorizon)
     {
 
     // Initialize the count maps
@@ -32,7 +33,7 @@ void Tracker::update(DetectionPtr detection){
 
   double currentHorizon = (newestDetection->getTime() - oldestDetection->getTime()).toSec();
 
-  while(currentHorizon > timeHorizon){
+  while(currentHorizon > timeHorizon_){
 
     // Decrease the counter
     counts_[oldestDetection->getDetectionType()]--;

@@ -19,3 +19,4 @@ detector_nodes:
     weight:         1
     min_frequency:  2
     topic:          "/people_detections/laser_detections"
+time_horizon_sec: 5.4

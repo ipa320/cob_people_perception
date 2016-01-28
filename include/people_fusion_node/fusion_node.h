@@ -67,6 +67,8 @@ class FusionNode{
 
     ros::Publisher people_pub_; /**< The people publisher */
 
+    double timeHorizon_;
+
 
   private:
 
@@ -75,7 +77,7 @@ class FusionNode{
     std::map<std::string, size_t> getDetectionsCounts() const;
 
   public:
-    FusionNode(ros::NodeHandle nh, std::vector<detector_config> detectors); /**< Constructor */
+    FusionNode(ros::NodeHandle nh, std::vector<detector_config> detectors, double timeHorizon); /**< Constructor */
 
     ~FusionNode(); /**< Destructor */
 

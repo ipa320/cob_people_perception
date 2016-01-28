@@ -22,15 +22,16 @@
 #define FUSION_NODE_TIME_DEBUG 1    // Debug the calculation time inside the leg_detector
 
 // Constructor
-FusionNode::FusionNode(ros::NodeHandle nh, std::vector<detector_config> detector_configs) :
+FusionNode::FusionNode(ros::NodeHandle nh, std::vector<detector_config> detector_configs, double timeHorizon) :
       nh_(nh),  // Node Handle
       detector_configs_(detector_configs),
       detections_sub_all_(nh_, "people_detections/internal/all_detections", 50), //Subscriber
       vh_(nh, detector_configs.size()),
       sequencer(detections_sub_all_, ros::Duration(1), ros::Duration(0.01), 25),
-      totalDetectorWeight_(0)
+      totalDetectorWeight_(0),
+      timeHorizon_(timeHorizon)
       {
-        std::cout << "Created Fusion Node!" << std::endl;
+        std::cout << "Created Fusion Node! TimeHorizon: " << timeHorizon_ << std::endl;
 
         // Create detector
         for(size_t i = 0; i < detector_configs_.size(); i++){
@@ -99,7 +100,7 @@ void FusionNode::detectionCallbackAll(const people_fusion_node::DetectionExt::Co
 
   double currentHorizon = (newest_hist_el.time_ - oldest_hist_el.time_).toSec();
 
-  while(currentHorizon > timeHorizon){
+  while(currentHorizon > timeHorizon_){
 
       // Remove first element
       this->detectionHistory_.erase( this->detectionHistory_.begin() );
@@ -202,8 +203,8 @@ void FusionNode::detectionCallbackAll(const people_fusion_node::DetectionExt::Co
     // Calculate the time correction factor for tracker existing shorter than timeHorizon
     double timeCorrectionFactor = 1;
     double trackerLifetime = (*trackerIt)->getLifetimeSec(currentTime);
-    if(trackerLifetime < timeHorizon)
-      timeCorrectionFactor = timeHorizon / trackerLifetime;
+    if(trackerLifetime < timeHorizon_)
+      timeCorrectionFactor = timeHorizon_ / trackerLifetime;
 
 
     for(std::map<std::string, Detector*>::iterator mapIt = detectors_map_.begin(); mapIt != detectors_map_.end(); mapIt++) {
@@ -239,7 +240,7 @@ void FusionNode::detectionCallbackAll(const people_fusion_node::DetectionExt::Co
       detectionIt < notAssociatedDetections.end();
       detectionIt++)
   {
-    TrackerPtr t = TrackerPtr(new Tracker((*detectionIt)->getState(), detectionArray->header.stamp, detector_configs_));
+    TrackerPtr t = TrackerPtr(new Tracker((*detectionIt)->getState(), detectionArray->header.stamp, detector_configs_, timeHorizon_));
     trackerList_.push_back(t);
   }
 

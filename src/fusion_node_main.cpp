@@ -8,6 +8,7 @@
 #include <people_fusion_node/fusion_node.h>
 #include <people_fusion_node/detector_config.h>
 #include <people_fusion_node/visualization/color_definitions.h>
+#include <people_fusion_node/consts.h>
 
 // System includes
 #include <iostream>
@@ -111,11 +112,22 @@ int main(int argc, char **argv)
     return -1;
   }
 
+  double timeHorizon;
+  if(config["time_horizon_sec"].Type() == YAML::NodeType::Scalar)
+  {
+    timeHorizon = config["time_horizon_sec"].as<double>();
+  }
+  else
+  {
+    std::cout << "Error parsing the yaml file!" << std::endl;
+    return -1;
+  }
+
 
   // Create the node handle
   ros::NodeHandle nh("people_fusion_node");
 
-  FusionNode fn(nh, detectors);
+  FusionNode fn(nh, detectors, timeHorizon);
 
   ROS_INFO("people_fusion_node started!");
 
