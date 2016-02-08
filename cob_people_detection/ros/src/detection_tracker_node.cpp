@@ -606,7 +606,7 @@ void DetectionTrackerNode::inputCallback(const cob_perception_msgs::DetectionArr
 					std::cout << "\n***** New detection *****\n\n";
 				cob_perception_msgs::Detection det_out;
 				copyDetection(det_in, det_out, false);
-				det_out.pose.header.frame_id = "head_cam3d_link";
+				det_out.pose.header.frame_id = face_position_msg_in->header.frame_id;
 				face_position_accumulator_.push_back(det_out);
 				// remember label history
 				std::map<std::string, double> new_identification_data;
