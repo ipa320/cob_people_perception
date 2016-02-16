@@ -98,7 +98,7 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh) :
 	std::vector < std::string > identification_labels_to_recognize; // a list of labels of persons that shall be recognized
 	std::cout << "\n--------------------------\nFace Recognizer Parameters:\n--------------------------\n";
 	//if(!node_handle_.getParam("~data_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
-	if (!node_handle_.getParam("/cob_people_detection/data_storage_directory", data_directory_))
+	if (!node_handle_.getParam("data_storage_directory", data_directory_))
 		std::cout << "PARAM NOT AVAILABLE" << std::endl;
 	std::cout << "data_directory = " << data_directory_ << "\n";
 	node_handle_.param("enable_face_recognition", enable_face_recognition_, true);
@@ -590,7 +590,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "face_recognizer");
 
 	// Create a handle for this node, initialize node
-	ros::NodeHandle nh;
+	ros::NodeHandle nh("~");
 
 	// Create FaceRecognizerNode class instance
 	FaceRecognizerNode face_recognizer_node(nh);
