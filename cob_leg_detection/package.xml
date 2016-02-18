@@ -1,35 +1,44 @@
-<package format="2">
-	<name>cob_leg_detection</name>
-	<version>1.0.4</version>
-	<description>Leg Detector using a machine learning approach to find leg-like patterns of laser scanner readings.</description>
-	<maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
-	<author>Caroline Pantofaru, Olha Meyer</author>
-	<license>LGPL</license>
-	<!--url>http://ros.org/wiki/leg_detector</url-->
-	<url type="website">http://ros.org/wiki/cob_people_perception</url>
+<package>
+  <name>leg_detector</name>
+  <version>1.0.8</version>
+  <description>Leg Detector using a machine learning approach to find leg-like patterns of laser scanner readings.</description>
+  <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
+  <license>BSD</license>
+  <url>http://ros.org/wiki/leg_detector</url>  
 
-	<buildtool_depend>catkin</buildtool_depend>
-	<!--buildtool_depend>catkin_simple</buildtool_depend-->
+  <buildtool_depend>catkin</buildtool_depend>
 
-	<depend>bfl</depend>
-	<depend>cmake_modules</depend>
-	<depend>cob_people_tracking_filter</depend>
-	<depend>cob_perception_msgs</depend>
-	<depend>dynamic_reconfigure</depend>
-	<depend>eigen</depend>
-	<depend>geometry_msgs</depend>
-	<depend>image_geometry</depend>
-	<depend>laser_geometry</depend>
-	<depend>libopencv-dev</depend>
-	<depend>orocos_kdl</depend>
-	<depend>roscpp</depend>
-	<depend>rospy</depend>
-	<depend>sensor_msgs</depend>
-	<depend>std_msgs</depend>
-	<depend>std_srvs</depend>
-	<depend>tf</depend>
-	<depend>visualization_msgs</depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>laser_geometry</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>bfl</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>cob_perception_msgs</build_depend>
+  <build_depend>cob_people_tracking_filter</build_depend>
+  <build_depend>image_geometry</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>message_generation</build_depend>
 
-	<exec_depend>laser_filters</exec_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>std_srvs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>laser_geometry</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>bfl</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+  <run_depend>cob_perception_msgs</run_depend>
+  <run_depend>cob_people_tracking_filter</run_depend>
+  <run_depend>image_geometry</run_depend>
+  <run_depend>dynamic_reconfigure</run_depend>
+  <run_depend>laser_filters</run_depend>
+  <run_depend>map_laser</run_depend>
+  <run_depend>message_runtime</run_depend>
 
 </package>

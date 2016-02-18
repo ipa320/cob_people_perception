@@ -36,6 +36,10 @@
 
 #include <stdexcept>
 
+#include <iostream>
+#include <fstream>
+#include <string>
+
 using namespace ros;
 using namespace std;
 using namespace laser_processor;
@@ -46,8 +50,8 @@ Sample* Sample::Extract(int ind, const sensor_msgs::LaserScan& scan)
 
   s->index = ind;
   s->range = scan.ranges[ind];
-  s->x = cos( scan.angle_min + ind*scan.angle_increment ) * s->range;
-  s->y = sin( scan.angle_min + ind*scan.angle_increment ) * s->range;
+  s->x = cos(scan.angle_min + ind * scan.angle_increment) * s->range;
+  s->y = sin(scan.angle_min + ind * scan.angle_increment) * s->range;
   if (s->range > scan.range_min && s->range < scan.range_max)
     return s;
   else
@@ -63,7 +67,7 @@ void SampleSet::clear()
        i != end();
        i++)
   {
-    delete (*i);
+    delete(*i);
   }
   set<Sample*, CompareSample>::clear();
 }
@@ -73,7 +77,7 @@ void SampleSet::appendToCloud(sensor_msgs::PointCloud& cloud, int r, int g, int 
   float color_val = 0;
 
   int rgb = (r << 16) | (g << 8) | b;
-  color_val = *(float*)&(rgb);
+  color_val = *(float*) & (rgb);
 
   for (iterator sample_iter = begin();
        sample_iter != end();
@@ -91,6 +95,31 @@ void SampleSet::appendToCloud(sensor_msgs::PointCloud& cloud, int r, int g, int 
   }
 }
 
+void SampleSet::saveAsSVG(const char * file){
+    ofstream myfile (file);
+    if (myfile.is_open())
+    {
+        myfile << "<?xml version='1.0' standalone='no'?>" << endl;
+        myfile << "<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>" << endl;
+        myfile << "<svg width='12cm' height='12cm' viewBox='-3 -3 6 6' xmlns='http://www.w3.org/2000/svg' version='1.1'>" << endl;
+        myfile << "<desc>Example circle01 - circle filled with red and stroked with blue</desc>" << endl;
+
+        myfile << "<!-- Show outline of canvas using 'rect' element -->" << endl;
+        //myfile << "<rect x='1' y='1' width='1198' height='398' fill='none' stroke='blue' stroke-width='2'/>" << endl;
+
+        // Iterate through the points
+        for (iterator sample_iter = begin();
+             sample_iter != end();
+             sample_iter++)
+        {
+            myfile << "<circle cx='"<< (*sample_iter)->x << "' cy='"<< (*sample_iter)->y <<"' r='0.02' fill='red' stroke='blue' stroke-width='0.005'  />" << endl;
+        }
+        myfile << "</svg>" << endl;
+        myfile.close();
+    }
+    else cout << "Unable to open file";
+}
+
 tf::Point SampleSet::center()
 {
   float x_mean = 0.0;
@@ -100,11 +129,11 @@ tf::Point SampleSet::center()
        i++)
 
   {
-    x_mean += ((*i)->x)/size();
-    y_mean += ((*i)->y)/size();
+    x_mean += ((*i)->x) / size();
+    y_mean += ((*i)->y) / size();
   }
 
-  return tf::Point (x_mean, y_mean, 0.0);
+  return tf::Point(x_mean, y_mean, 0.0);
 }
 
 
@@ -116,9 +145,10 @@ void ScanMask::addScan(sensor_msgs::LaserScan& scan)
     angle_max = scan.angle_max;
     size      = scan.ranges.size();
     filled    = true;
-  } else if (angle_min != scan.angle_min     ||
-             angle_max != scan.angle_max     ||
-             size      != scan.ranges.size())
+  }
+  else if (angle_min != scan.angle_min     ||
+           angle_max != scan.angle_max     ||
+           size      != scan.ranges.size())
   {
     throw std::runtime_error("laser_scan::ScanMask::addScan: inconsistantly sized scans added to mask");
   }
@@ -135,10 +165,12 @@ void ScanMask::addScan(sensor_msgs::LaserScan& scan)
       {
         if ((*m)->range > s->range)
         {
-          delete (*m);
+          delete(*m);
           mask_.erase(m);
           mask_.insert(s);
-        } else {
+        }
+        else
+        {
           delete s;
         }
       }
@@ -156,14 +188,29 @@ bool ScanMask::hasSample(Sample* s, float thresh)
   if (s != NULL)
   {
     SampleSet::iterator m = mask_.find(s);
-    if ( m != mask_.end())
+    if (m != mask_.end())
       if (((*m)->range - thresh) < s->range)
         return true;
   }
   return false;
 }
 
+ScanProcessor::ScanProcessor(const sensor_msgs::LaserScan& scan)
+{
+  scan_ = scan;
 
+  SampleSet* cluster = new SampleSet;
+
+  for (uint32_t i = 0; i < scan.ranges.size(); i++)
+  {
+    Sample* s = Sample::Extract(i, scan);
+    if (s != NULL)
+    {
+        cluster->insert(s);
+    }
+  }
+  clusters_.push_back(cluster);
+}
 
 ScanProcessor::ScanProcessor(const sensor_msgs::LaserScan& scan, ScanMask& mask_, float mask_threshold)
 {
@@ -180,7 +227,9 @@ ScanProcessor::ScanProcessor(const sensor_msgs::LaserScan& scan, ScanMask& mask_
       if (!mask_.hasSample(s, mask_threshold))
       {
         cluster->insert(s);
-      } else {
+      }
+      else
+      {
         delete s;
       }
     }
@@ -192,10 +241,10 @@ ScanProcessor::ScanProcessor(const sensor_msgs::LaserScan& scan, ScanMask& mask_
 
 ScanProcessor::~ScanProcessor()
 {
-  for ( list<SampleSet*>::iterator c = clusters_.begin();
-        c != clusters_.end();
-        c++)
-    delete (*c);
+  for (list<SampleSet*>::iterator c = clusters_.begin();
+       c != clusters_.end();
+       c++)
+    delete(*c);
 }
 
 void
@@ -204,17 +253,26 @@ ScanProcessor::removeLessThan(uint32_t num)
   list<SampleSet*>::iterator c_iter = clusters_.begin();
   while (c_iter != clusters_.end())
   {
-    if ( (*c_iter)->size() < num )
+    if ((*c_iter)->size() < num)
     {
-      delete (*c_iter);
+      delete(*c_iter);
       clusters_.erase(c_iter++);
-    } else {
+    }
+    else
+    {
       ++c_iter;
     }
   }
 }
 
 
+/**
+ *  @brief Split the scan into clusters.
+ *
+ *  Splits the scan into clusters.
+ *
+ *  @param thresh Influences the splitting. Increate to get bigger clusters.
+ */
 void
 ScanProcessor::splitConnected(float thresh)
 {
@@ -226,7 +284,7 @@ ScanProcessor::splitConnected(float thresh)
   while (c_iter != clusters_.end())
   {
     // Go through the entire list
-    while ((*c_iter)->size() > 0 )
+    while ((*c_iter)->size() > 0)
     {
       // Take the first element
       SampleSet::iterator s_first = (*c_iter)->begin();
@@ -241,23 +299,25 @@ ScanProcessor::splitConnected(float thresh)
       list<Sample*>::iterator s_q = sample_queue.begin();
       while (s_q != sample_queue.end())
       {
-        int expand = (int)(asin( thresh / (*s_q)->range ) / scan_.angle_increment);
+        int expand = (int)(asin(thresh / (*s_q)->range) / scan_.angle_increment);
 
         SampleSet::iterator s_rest = (*c_iter)->begin();
 
-        while ( (s_rest != (*c_iter)->end() &&
-                 (*s_rest)->index < (*s_q)->index + expand ) )
+        while ((s_rest != (*c_iter)->end() &&
+                (*s_rest)->index < (*s_q)->index + expand))
         {
-          if ( (*s_rest)->range - (*s_q)->range > thresh)
+          if (abs((*s_rest)->range - (*s_q)->range) > thresh)
           {
             break;
           }
-          else if (sqrt( pow( (*s_q)->x - (*s_rest)->x, 2.0f) + pow( (*s_q)->y - (*s_rest)->y, 2.0f)) < thresh)
+          else if (sqrt(pow((*s_q)->x - (*s_rest)->x, 2.0f) + pow((*s_q)->y - (*s_rest)->y, 2.0f)) < thresh)
           {
             sample_queue.push_back(*s_rest);
             (*c_iter)->erase(s_rest++);
             break;
-          } else {
+          }
+          else
+          {
             ++s_rest;
           }
         }
@@ -274,7 +334,104 @@ ScanProcessor::splitConnected(float thresh)
     }
 
     //Now that c_iter is empty, we can delete
-    delete (*c_iter);
+    delete(*c_iter);
+
+    //And remove from the map
+    clusters_.erase(c_iter++);
+  }
+
+  clusters_.insert(clusters_.begin(), tmp_clusters.begin(), tmp_clusters.end());
+}
+
+
+/**
+ *  @brief Split the scan into clusters.
+ *
+ *  Splits the scan into clusters.
+ *
+ *  @param thresh Influences the splitting. Increate to get bigger clusters.
+ */
+void
+ScanProcessor::splitConnectedRangeAware(float thresh)
+{
+  list<SampleSet*> tmp_clusters;
+
+  list<SampleSet*>::iterator c_iter = clusters_.begin();
+
+  // For each cluster
+  while (c_iter != clusters_.end())
+  {
+    // Go through the entire list
+    while ((*c_iter)->size() > 0)
+    {
+      // Take the first element
+      SampleSet::iterator s_first = (*c_iter)->begin();
+
+      // Start a new queue
+      list<Sample*> sample_queue;
+      sample_queue.push_back(*s_first);
+
+      (*c_iter)->erase(s_first);
+
+      // Grow until we get to the end of the queue
+      list<Sample*>::iterator s_q = sample_queue.begin();
+      while (s_q != sample_queue.end())
+      {
+        int expand = (int)(asin(thresh / (*s_q)->range) / scan_.angle_increment);
+    	//int expand = 1;
+
+        //std::cout << "range: " << (*s_q)->range << " expand: " << expand << std::endl;
+
+        double range_thresh = thresh * (*s_q)->range * 0.75;
+        //std::cout << "range_thresh" << range_thresh << std::endl;
+
+        SampleSet::iterator s_rest = (*c_iter)->begin();
+
+        while ((s_rest != (*c_iter)->end()))
+        {
+
+          double range_diff = abs((*s_rest)->range - (*s_q)->range);
+
+
+
+
+          double euclid_dist = sqrt(pow((*s_q)->x - (*s_rest)->x, 2.0f) + pow((*s_q)->y - (*s_rest)->y, 2.0f));
+          //std::cout << "range_diff: " << range_diff << "  euclid_dist" << euclid_dist << std::endl;
+
+          // Precheck thresh on range
+          if (range_diff > range_thresh)
+          {
+        	//std::cout << "Range diff to big!" << std::endl;
+            break;
+          }
+          // Euclidean distance
+          else if (euclid_dist < range_thresh)
+          {
+            sample_queue.push_back(*s_rest);
+            //std::cout << "   Adding i:" << (*s_rest)->index << std::endl;
+            (*c_iter)->erase(s_rest++);
+            break;
+          }
+          else
+          {
+            ++s_rest;
+          }
+        }
+        s_q++;
+      }
+     // std::cout << "New cluster!" << std::endl;
+
+      // Move all the samples into the new cluster
+      SampleSet* c = new SampleSet;
+      for (s_q = sample_queue.begin(); s_q != sample_queue.end(); s_q++)
+        c->insert(*s_q);
+
+      // Store the temporary clusters
+      tmp_clusters.push_back(c);
+    }
+
+    //Now that c_iter is empty, we can delete
+    delete(*c_iter);
 
     //And remove from the map
     clusters_.erase(c_iter++);
