@@ -216,7 +216,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "head_detector");
 
 	// Create a handle for this node, initialize node
-	ros::NodeHandle nh;
+	ros::NodeHandle nh("~");
 
 	// Create HeadDetectorNode class instance
 	HeadDetectorNode head_detector_node(nh);
