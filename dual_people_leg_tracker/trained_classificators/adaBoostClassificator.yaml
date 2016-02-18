@@ -1,0 +1,99 @@
+%YAML:1.0
+my_boost_tree: !!opencv-ml-boost-tree
+   boosting_type: RealAdaboost
+   splitting_criteria: Gini
+   ntrees: 1
+   weight_trimming_rate: 5.0000000000000000e-01
+   is_classifier: 1
+   var_all: 14
+   var_count: 14
+   ord_var_count: 14
+   cat_var_count: 0
+   training_params:
+      use_surrogates: 1
+      max_categories: 10
+      max_depth: 1
+      min_sample_count: 10
+      cross_validation_folds: 0
+      priors: !!opencv-matrix
+         rows: 1
+         cols: 2
+         dt: d
+         data: [ 1., 1. ]
+   var_type: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+   cat_count: !!opencv-matrix
+      rows: 1
+      cols: 1
+      dt: i
+      data: [ 2 ]
+   cat_map: !!opencv-matrix
+      rows: 1
+      cols: 2
+      dt: i
+      data: [ -1, 1 ]
+   trees:
+      -
+         best_tree_idx: -1
+         nodes:
+            -
+               depth: 0
+               sample_count: 38
+               value: -5.1480970859057884e-01
+               norm_class_idx: 0
+               Tn: 0
+               complexity: 0
+               alpha: 0.
+               node_risk: 0.
+               tree_risk: 0.
+               tree_error: 0.
+               splits:
+                  - { var:0, quality:7.8328174352645874e-01,
+                      le:7.1609973907470703e-02 }
+                  - { var:7, quality:7.8328174352645874e-01,
+                      le:1.0215848684310913e-01 }
+                  - { var:4, quality:7.8328174352645874e-01,
+                      le:1.9896897673606873e-01 }
+                  - { var:1, quality:7.8328174352645874e-01,
+                      le:5.9157539159059525e-02 }
+                  - { var:12, quality:7.6266902685165405e-01,
+                      le:1.9901522397994995e+00 }
+                  - { var:8, quality:7.6266902685165405e-01,
+                      le:2.5411707162857056e-01 }
+                  - { var:6, quality:7.0083099603652954e-01,
+                      le:1.5322645194828510e-03 }
+                  - { var:10, quality:6.1838036775588989e-01,
+                      gt:1.1776487350463867e+01 }
+                  - { var:3, quality:5.9776765108108521e-01,
+                      gt:2.8546577692031860e-01 }
+                  - { var:2, quality:5.9776765108108521e-01,
+                      gt:1.3591246306896210e-01 }
+                  - { var:5, quality:5.5654227733612061e-01,
+                      le:1.0416164994239807e-02 }
+                  - { var:9, quality:5.3592962026596069e-01,
+                      le:2.8201994895935059e+00 }
+                  - { var:13, quality:5.1531690359115601e-01,
+                      gt:1.4447859525680542e+00 }
+                  - { var:11, quality:4.9470424652099609e-01,
+                      gt:7.8860558569431305e-03 }
+            -
+               depth: 1
+               sample_count: 17
+               value: 1.7833747196936620e-01
+               norm_class_idx: 1
+               Tn: 0
+               complexity: 0
+               alpha: 0.
+               node_risk: 0.
+               tree_risk: 0.
+               tree_error: 0.
+            -
+               depth: 1
+               sample_count: 21
+               value: -5.7564577324601141e+00
+               norm_class_idx: 0
+               Tn: 0
+               complexity: 0
+               alpha: 0.
+               node_risk: 0.
+               tree_risk: 0.
+               tree_error: 0.
