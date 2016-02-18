@@ -1,3 +1,6 @@
+#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_SYS_MODEL_H_
+#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_SYS_MODEL_H_
+
 /*********************************************************************
 * Software License Agreement (BSD License)
 *
@@ -32,78 +35,74 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen */
 
-#include "cob_people_tracking_filter/measmodel_vector.h"
+#include "state_pos_vel.h"
+#include "gaussian_pos_vel.h"
+#include <model/systemmodel.h>
+#include <pdf/conditionalpdf.h>
+#include <wrappers/matrix/matrix_wrapper.h>
+#include <string>
 
-using namespace std;
-using namespace BFL;
-using namespace tf;
-
-static const unsigned int NUM_MEASMODEL_VECTOR_COND_ARGS  = 1;
-static const unsigned int DIM_MEASMODEL_VECTOR            = 3;
-
-
-// Constructor
-MeasPdfVector::MeasPdfVector(const Vector3& sigma)
-  : ConditionalPdf<Vector3, Vector3>(DIM_MEASMODEL_VECTOR, NUM_MEASMODEL_VECTOR_COND_ARGS),
-    meas_noise_(Vector3(0, 0, 0), sigma)
-{}
-
-
-// Destructor
-MeasPdfVector::~MeasPdfVector()
-{}
-
-
-
-Probability
-MeasPdfVector::ProbabilityGet(const Vector3& measurement) const
+namespace BFL
 {
-  return meas_noise_.ProbabilityGet(measurement - ConditionalArgumentGet(0));
-}
 
-
-
-bool
-MeasPdfVector::SampleFrom(Sample<Vector3>& one_sample, int method, void *args) const
+class DualSysPdfPosVel
+  : public ConditionalPdf<StatePosVel, StatePosVel>
 {
-  cerr << "MeasPdfVector::SampleFrom Method not applicable" << endl;
-  assert(0);
-  return false;
-}
+public:
+
+  /// Constructor
+  DualSysPdfPosVel(const StatePosVel& sigma);
+
+  /// Destructor
+  virtual ~DualSysPdfPosVel();
+
+  // set time
+  void SetDt(double dt)
+  {
+    dt_ = dt;
+  };
+
+  // Redefining pure virtual methods
+  virtual bool SampleFrom(BFL::Sample<StatePosVel>& one_sample, int method, void *args) const;
+  virtual StatePosVel ExpectedValueGet() const; // not applicable
+  virtual Probability ProbabilityGet(const StatePosVel& state) const; // not applicable
+  virtual MatrixWrapper::SymmetricMatrix  CovarianceGet() const; // Not applicable
+
+
+private:
+  GaussianPosVel noise_;
+  double dt_;
+
+}; // class
 
 
 
 
-Vector3
-MeasPdfVector::ExpectedValueGet() const
+class DualSysModelPosVel
+  : public SystemModel<StatePosVel>
 {
-  cerr << "MeasPdfVector::ExpectedValueGet Method not applicable" << endl;
-  Vector3 result;
-  assert(0);
-  return result;
-}
+public:
+    DualSysModelPosVel(const StatePosVel& sigma)
+    : SystemModel<StatePosVel>(new SysPdfPosVel(sigma))
+  {};
+
+  /// destructor
+  ~DualSysModelPosVel()
+  {
+    delete SystemPdfGet();
+  };
+
+  // set time
+  void SetDt(double dt)
+  {
+    ((SysPdfPosVel*)SystemPdfGet())->SetDt(dt);
+  };
+
+}; // class
 
 
 
+} //namespace
 
-SymmetricMatrix
-MeasPdfVector::CovarianceGet() const
-{
-  cerr << "MeasPdfVector::CovarianceGet Method not applicable" << endl;
-  SymmetricMatrix Covar(DIM_MEASMODEL_VECTOR);
-  assert(0);
-  return Covar;
-}
-
-
-void
-MeasPdfVector::CovarianceSet(const MatrixWrapper::SymmetricMatrix& cov)
-{
-  Vector3 cov_vec(sqrt(cov(1, 1)), sqrt(cov(2, 2)), sqrt(cov(3, 3)));
-  meas_noise_.sigmaSet(cov_vec);
-}
-
-
-
+#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_SYS_MODEL_H_ */

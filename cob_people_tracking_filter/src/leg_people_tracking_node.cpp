@@ -1,7 +1,7 @@
 /*********************************************************************
 * Software License Agreement (BSD License)
 *
-*  Copyright (c) 2008, Willow Garage, Inc.
+*  Copyright (c)
 *  All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -32,14 +32,16 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen */
+// ROS includes
 
-#include "cob_people_tracking_filter/people_tracking_node.h"
-#include "cob_people_tracking_filter/tracker_particle.h"
-#include "cob_people_tracking_filter/tracker_kalman.h"
-#include "cob_people_tracking_filter/state_pos_vel.h"
-#include "cob_people_tracking_filter/rgb.h"
-#include <cob_perception_msgs/PositionMeasurement.h>
+#include "people_tracking_filter/leg_people_tracking_node.h"
+#include "people_tracking_filter/tracker_particle.h"
+#include "people_tracking_filter/tracker_kalman.h"
+#include "people_tracking_filter/state_pos_vel.h"
+#include "people_tracking_filter/rgb.h"
+#include <people_msgs/PositionMeasurement.h>
+#include <people_msgs/PositionMeasurementArray.h>
+#include <people_tracking_filter/visualization/conversions.h>
 
 
 using namespace std;
@@ -56,7 +58,7 @@ static const double       tracker_init_dist          = 4.0;
 namespace estimation
 {
 // constructor
-PeopleTrackingNode::PeopleTrackingNode(ros::NodeHandle nh)
+LegPeopleTrackingNode::LegPeopleTrackingNode(ros::NodeHandle nh)
   : nh_(nh),
     robot_state_(),
     tracker_counter_(0)
@@ -67,9 +69,15 @@ PeopleTrackingNode::PeopleTrackingNode(ros::NodeHandle nh)
   meas_cloud_.points[0].y = 0;
   meas_cloud_.points[0].z = 0;
 
+  // initialize leg meas cloud
+  leg_meas_cloud_.points = vector<geometry_msgs::Point32>(1);
+  leg_meas_cloud_.points[0].x = 0;
+  leg_meas_cloud_.points[0].y = 0;
+  leg_meas_cloud_.points[0].z = 0;
+
   // get parameters
   ros::NodeHandle local_nh("~");
-  local_nh.param("fixed_frame", fixed_frame_, string("default"));
+  local_nh.param("fixed_frame", fixed_frame_, string("odom_combined"));
   local_nh.param("freq", freq_, 1.0);
   local_nh.param("start_distance_min", start_distance_min_, 0.0);
   local_nh.param("reliability_threshold", reliability_threshold_, 1.0);
@@ -81,22 +89,24 @@ PeopleTrackingNode::PeopleTrackingNode(ros::NodeHandle nh)
   local_nh.param("sys_sigma_vel_z", sys_sigma_.vel_[2], 0.0);
   local_nh.param("follow_one_person", follow_one_person_, false);
 
-    // advertise filter output
-    people_filter_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurement>("people_tracker_filter",10);
-    // advertise visualization
-    people_filter_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_filter_visualization",10);
-    people_tracker_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_measurements_visualization",10);
+  // advertise filter output
+  people_filter_pub_ = nh_.advertise<people_msgs::PositionMeasurement>("leg_people_tracker_filter", 10);
 
-    // register message sequencer
-    people_meas_sub_ = nh_.subscribe("people_tracker_measurements", 1, &PeopleTrackingNode::callbackRcv, this);
- 
-  }
-  
+  // advertise visualization
+  people_filter_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_filter_visualization", 10);
+  people_tracker_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_measurements_visualization", 10);
+  leg_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("leg_measurements_visualization", 10);
+
+  // register message sequencer
+  leg_meas_sub_ = nh_.subscribe("leg_measurements", 1, &LegPeopleTrackingNode::legMeasCallback, this);
+
+  //people_meas_sub_ = nh_.subscribe("people_tracker_measurements", 1, &PeopleTrackingNode::callbackRcv, this);
+
 }
 
 
 // destructor
-PeopleTrackingNode::~PeopleTrackingNode()
+LegPeopleTrackingNode::~LegPeopleTrackingNode()
 {
   // delete sequencer
   delete message_sequencer_;
@@ -110,14 +120,25 @@ PeopleTrackingNode::~PeopleTrackingNode()
 
 
 // callback for messages
-void PeopleTrackingNode::callbackRcv(const cob_perception_msgs::PositionMeasurement::ConstPtr& message)
+void LegPeopleTrackingNode::legMeasCallback(const people_msgs::PositionMeasurementArray::ConstPtr& message)
 {
-  ROS_DEBUG("Tracking node got a people position measurement (%f,%f,%f)",
-            message->pos.x, message->pos.y, message->pos.z);
+  ROS_DEBUG_COND(DEBUG_LEGPEOPLETRACKINGNODE, "LegPeopleTrackingNode::%s Received Leg Measurements on topic [%s]", __func__, message->header.frame_id.c_str());
+
+  // Iterate the leg measurements
+/*  for(vector<people_msgs::PositionMeasurement>::iterator it = message->people.begin();
+      it != message->people.begin();
+      it++)
+  {
+    // Check for associated leg trackers, if no tracker is associated try to create a new one
+
+  }*/
+
+
+  /*
+
   // get measurement in fixed frame
   Stamped<tf::Vector3> meas_rel, meas;
-  meas_rel.setData(
-    tf::Vector3(message->pos.x, message->pos.y, message->pos.z));
+  meas_rel.setData(tf::Vector3(message->pos.x, message->pos.y, message->pos.z));
   meas_rel.stamp_ = message->header.stamp;
   meas_rel.frame_id_ = message->header.frame_id;
   robot_state_.transformPoint(fixed_frame_, meas_rel, meas);
@@ -166,7 +187,7 @@ void PeopleTrackingNode::callbackRcv(const cob_perception_msgs::PositionMeasurem
       if ((cur_dist = pow(loc[0], 2.0) + pow(loc[1], 2.0)) < tracker_init_dist)
       {
 
-        cout << "Starting new tracker" << endl;
+        cout << "starting new tracker" << endl;
         stringstream tracker_name;
         StatePosVel prior_sigma(tf::Vector3(sqrt(cov(1, 1)), sqrt(cov(
                                               2, 2)), sqrt(cov(3, 3))), tf::Vector3(0.0000001, 0.0000001, 0.0000001));
@@ -187,20 +208,39 @@ void PeopleTrackingNode::callbackRcv(const cob_perception_msgs::PositionMeasurem
   }
   lock.unlock();
   // ------ LOCKED ------
+*/
 
 
-  // visualize measurement
-  meas_cloud_.points[0].x = meas[0];
-  meas_cloud_.points[0].y = meas[1];
-  meas_cloud_.points[0].z = meas[2];
-  meas_cloud_.header.frame_id = meas.frame_id_;
-  people_tracker_vis_pub_.publish(meas_cloud_);
+//  // visualize measurement
+//  meas_cloud_.points[0].x = meas[0];
+//  meas_cloud_.points[0].y = meas[1];
+//  meas_cloud_.points[0].z = meas[2];
+//  meas_cloud_.header.frame_id = meas.frame_id_;
+//  people_tracker_vis_pub_.publish(meas_cloud_);
+
+  // Debug
+  for(int i = 0; i<message->people.size(); i++){
+    std::cout << message->people[i].pos.x << " - " << message->people[i].pos.y << " - " << message->people[i].pos.z << std::endl;
+  }
+
+  // Visualize the leg measurements
+  sensor_msgs::PointCloud::Ptr legCloudMsg(new sensor_msgs::PointCloud);
+  legMeasMsgToPointcloud(legCloudMsg, message);
+  legCloudMsg->header.frame_id = message->header.frame_id;
+  leg_vis_pub_.publish(legCloudMsg);
+
+  ROS_DEBUG_COND(DEBUG_LEGPEOPLETRACKINGNODE,
+      "LegPeopleTrackingNode::%s Publishing %lu Vis(Leg-Meas) on frame[%s]",
+      __func__,
+      message->people.size(),
+      message->header.frame_id.c_str()
+  );
 }
 
 
 
 // callback for dropped messages
-void PeopleTrackingNode::callbackDrop(const people_msgs::PositionMeasurement::ConstPtr& message)
+void LegPeopleTrackingNode::callbackDrop(const people_msgs::PositionMeasurement::ConstPtr& message)
 {
   ROS_INFO("DROPPED PACKAGE for %s from %s with delay %f !!!!!!!!!!!",
            message->object_id.c_str(), message->name.c_str(), (ros::Time::now() - message->header.stamp).toSec());
@@ -211,7 +251,7 @@ void PeopleTrackingNode::callbackDrop(const people_msgs::PositionMeasurement::Co
 
 
 // filter loop
-void PeopleTrackingNode::spin()
+void LegPeopleTrackingNode::spin()
 {
   ROS_INFO("People tracking manager started.");
 
@@ -293,14 +333,15 @@ using namespace estimation;
 int main(int argc, char **argv)
 {
   // Initialize ROS
-  ros::init(argc, argv,"cob_people_tracker");
+  ros::init(argc, argv, "leg_people_tracker");
   ros::NodeHandle(nh);
 
   // create tracker node
-  PeopleTrackingNode my_tracking_node(nh);
+  LegPeopleTrackingNode leg_people_tracking_node(nh);
 
+  ros::spin();
   // wait for filter to finish
-  my_tracking_node.spin();
+  //leg_people_tracking_node.spin();
 
   // Clean up
 

@@ -32,61 +32,91 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen */
+#ifndef __LEG_PEOPLE_TRACKING_NODE__
+#define __LEG_PEOPLE_TRACKING_NODE__
 
-#ifndef __TRACKER__
-#define __TRACKER__
-
-#include "state_pos_vel.h"
-#include <cob_perception_msgs/PositionMeasurement.h>
-#include <wrappers/matrix/matrix_wrapper.h>
 #include <string>
+#include <boost/thread/mutex.hpp>
+
+// ros stuff
+#include <ros/ros.h>
+#include <tf/tf.h>
+#include <tf/transform_listener.h>
+
+// people tracking stuff
+#include "tracker.h"
+#include "detector_particle.h"
+#include "gaussian_vector.h"
+
+// messages
+#include <sensor_msgs/PointCloud.h>
+#include <people_msgs/PositionMeasurement.h>
+#include <people_msgs/PositionMeasurementArray.h>
+#include <message_filters/time_sequencer.h>
+#include <message_filters/subscriber.h>
+
+// log files
+#include <fstream>
+
+#define DEBUG_LEGPEOPLETRACKINGNODE 1
 
 
 namespace estimation
 {
 
-class Tracker
+class LegPeopleTrackingNode
 {
 public:
   /// constructor
-  Tracker(const std::string& name): name_(name) {};
+    LegPeopleTrackingNode(ros::NodeHandle nh);
 
   /// destructor
-  virtual ~Tracker() {};
+  virtual ~LegPeopleTrackingNode();
 
-  /// return the name of the tracker
-  const std::string& getName() const
-  {
-    return name_;
-  };
+  /// callback for leg messages
+  void legMeasCallback(const people_msgs::PositionMeasurementArray::ConstPtr& message);
 
-  /// initialize tracker
-  virtual void initialize(const BFL::StatePosVel& mu, const BFL::StatePosVel& sigma, const double time) = 0;
+  /// callback for dropped messages
+  void callbackDrop(const people_msgs::PositionMeasurement::ConstPtr& message);
 
-  /// return if tracker was initialized
-  virtual bool isInitialized() const = 0;
+  /// tracker loop
+  void spin();
 
-  /// return measure for tracker quality: 0=bad 1=good
-  virtual double getQuality() const = 0;
-
-  /// return the lifetime of the tracker
-  virtual double getLifetime() const = 0;
-
-  /// return the time of the tracker
-  virtual double getTime() const = 0;
-
-  /// update tracker
-  virtual bool updatePrediction(const double time) = 0;
-  virtual bool updateCorrection(const tf::Vector3& meas,
-                                const MatrixWrapper::SymmetricMatrix& cov) = 0;
-
-  /// get filter posterior
-  virtual void getEstimate(BFL::StatePosVel& est) const = 0;
-  virtual void getEstimate(cob_perception_msgs::PositionMeasurement& est) const = 0;
 
 private:
-  std::string name_;
+
+  ros::NodeHandle nh_;
+
+  ros::Publisher people_filter_pub_;
+  ros::Publisher people_filter_vis_pub_;
+  ros::Publisher people_tracker_vis_pub_;
+  ros::Publisher leg_vis_pub_;/**< Publisher for a pointcloud visualizing the leg measurements */
+
+  ros::Subscriber leg_meas_sub_;
+
+  /// message sequencer
+  message_filters::TimeSequencer<people_msgs::PositionMeasurement>*  message_sequencer_;
+
+  /// trackers
+  std::list<Tracker*> trackers_;
+
+  // tf listener
+  tf::TransformListener robot_state_;
+
+  unsigned int tracker_counter_;
+  double freq_, start_distance_min_, reliability_threshold_;
+  BFL::StatePosVel sys_sigma_;
+  std::string fixed_frame_;
+  boost::mutex filter_mutex_;
+
+  sensor_msgs::PointCloud  meas_cloud_;
+  sensor_msgs::PointCloud  leg_meas_cloud_;
+
+  unsigned int meas_visualize_counter_;
+
+  // Track only one person who the robot will follow.
+  bool follow_one_person_;
+
 
 }; // class
 
