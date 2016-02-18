@@ -164,10 +164,12 @@ void HeadDetectorNode::pointcloud_callback(const sensor_msgs::PointCloud2::Const
 		cv_ptr.image = depth_patch;
 		cv_ptr.encoding = sensor_msgs::image_encodings::TYPE_32FC3; // CV32FC3
 		image_array.head_detections[i].depth_image = *(cv_ptr.toImageMsg());
+		image_array.head_detections[i].depth_image.header = pointcloud->header;
 		cv::Mat color_patch = color_image(head_bounding_boxes[i]);
 		cv_ptr.image = color_patch;
 		cv_ptr.encoding = sensor_msgs::image_encodings::BGR8;
 		image_array.head_detections[i].color_image = *(cv_ptr.toImageMsg());
+		image_array.head_detections[i].color_image.header = pointcloud->header;
 	}
 	head_position_publisher_.publish(image_array);
 
