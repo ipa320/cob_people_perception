@@ -9,5 +9,6 @@
     <rosparam command="load" file="$(find cob_people_detection)/ros/launch/detection_tracker_params.yaml"/>
     <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/"/>
     <remap from="~face_position_array_in" to="face_recognizer/face_recognitions"/>
+    <!--remap from="people_segmentation_image" to="/cob_people_detection/people_segmentation/people_segmentation_image"/-->
   </node>
 </launch>
