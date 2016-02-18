@@ -6,6 +6,7 @@
     <rosparam command="load" file="$(find cob_people_detection)/ros/launch/face_recognizer_params.yaml"/>
     <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/"/>
     <remap from="~face_detections" to="face_detector/face_positions"/>
+    <remap from="~color_image" to="sensor_message_gateway/colorimage_out"/>
   </node>
 
 </launch>
