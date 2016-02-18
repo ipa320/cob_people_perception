@@ -5,10 +5,10 @@
 #include <cob_perception_msgs/DetectionArray.h>
 
 // Own
-#include <people_fusion_node/fusion_node.h>
-#include <people_fusion_node/detector_config.h>
-#include <people_fusion_node/visualization/color_definitions.h>
-#include <people_fusion_node/consts.h>
+#include <cob_people_fusion/fusion_node.h>
+#include <cob_people_fusion/detector_config.h>
+#include <cob_people_fusion/visualization/color_definitions.h>
+#include <cob_people_fusion/consts.h>
 
 // System includes
 #include <iostream>
@@ -24,7 +24,7 @@ char** g_argv;
 int main(int argc, char **argv)
 {
 
-  ros::init(argc, argv, "people_fusion_node");
+  ros::init(argc, argv, "cob_people_fusion");
   g_argc = argc;
   g_argv = argv;
 
@@ -125,11 +125,11 @@ int main(int argc, char **argv)
 
 
   // Create the node handle
-  ros::NodeHandle nh("people_fusion_node");
+  ros::NodeHandle nh("cob_people_fusion");
 
   FusionNode fn(nh, detectors, timeHorizon);
 
-  ROS_INFO("people_fusion_node started!");
+  ROS_INFO("cob_people_fusion started!");
 
   ros::spin();
 

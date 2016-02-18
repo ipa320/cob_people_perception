@@ -1,5 +1,5 @@
-#include <people_fusion_node/association/association.h>
-#include <people_fusion_node/association/associatorGNN.h>
+#include <cob_people_fusion/association/association.h>
+#include <cob_people_fusion/association/associatorGNN.h>
 
 
 

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>people_fusion_node</name>
+  <name>cob_people_fusion</name>
   <version>0.0.1</version>
-  <description>The people_fusion_node package</description>
+  <description>The cob_people_fusion package</description>
 
   <maintainer email="frm-ag@ipa.fraunhofer.de">Alexander Gutenkunst</maintainer>
 

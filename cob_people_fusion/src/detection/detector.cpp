@@ -1,6 +1,6 @@
-#include <people_fusion_node/detection/detector.h>
-#include <people_fusion_node/visualization/color_definitions.h>
-#include <people_fusion_node/DetectionExt.h>
+#include <cob_people_fusion/detection/detector.h>
+#include <cob_people_fusion/visualization/color_definitions.h>
+#include <cob_people_fusion/DetectionExt.h>
 
 Detector::Detector(ros::NodeHandle nh, detector_config detector_cfg, int id, size_t totalNumberDetectors):
   id_(id),
@@ -18,7 +18,7 @@ Detector::Detector(ros::NodeHandle nh, detector_config detector_cfg, int id, siz
   detection_notifier_.registerCallback(boost::bind(&Detector::detectionCallback, this, _1));
   detection_notifier_.setTolerance(ros::Duration(0.01));
 
-  internal_pub_= nh_.advertise<people_fusion_node::DetectionExt>("people_detections/internal/all_detections", 0);
+  internal_pub_= nh_.advertise<cob_people_fusion::DetectionExt>("all_detections", 0);
 }
 
 void Detector::detectionCallback(const cob_perception_msgs::DetectionArray::ConstPtr& detectionArray){
@@ -34,7 +34,7 @@ void Detector::detectionCallback(const cob_perception_msgs::DetectionArray::Cons
     }
   }
 
-  people_fusion_node::DetectionExt detectionMsg;
+  cob_people_fusion::DetectionExt detectionMsg;
   detectionMsg.detections = *detectionArray;
   detectionMsg.header = detectionArray->header;
   detectionMsg.detector = this->name_;
@@ -42,7 +42,7 @@ void Detector::detectionCallback(const cob_perception_msgs::DetectionArray::Cons
   if(!detectionError){
     vh_.publishDetectionArray(detectionArray, this->getId());
     internal_pub_.publish(detectionMsg);
-    ROS_INFO_STREAM(WHITE << "Received on " << this->topic_ << " forwarded to people_detections/internal/all_detections" << RESET);
+    ROS_INFO_STREAM(WHITE << "Received on " << this->topic_ << " forwarded to all_detections" << RESET);
 
   }
   else{

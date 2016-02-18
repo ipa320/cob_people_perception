@@ -1,4 +1,4 @@
-#include <people_fusion_node/state_pos_vel.h>
+#include <cob_people_fusion/state_pos_vel.h>
 
 StatePosVel::StatePosVel(double x, double y):
   pos_(x,y,0),

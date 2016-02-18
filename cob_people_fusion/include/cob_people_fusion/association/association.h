@@ -8,8 +8,8 @@
 #ifndef PEOPLE_FUSION_NODE_INCLUDE_PEOPLE_FUSION_NODE_ASSOCIATION_ASSOCIATION_H_
 #define PEOPLE_FUSION_NODE_INCLUDE_PEOPLE_FUSION_NODE_ASSOCIATION_ASSOCIATION_H_
 
-#include <people_fusion_node/tracker.h>
-#include <people_fusion_node/detection/detection.h>
+#include <cob_people_fusion/tracker.h>
+#include <cob_people_fusion/detection/detection.h>
 
 /***
  * This class represents a association between a detection and a tracker

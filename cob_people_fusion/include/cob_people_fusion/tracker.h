@@ -5,9 +5,9 @@
 #include <ros/ros.h>
 
 // Own includes
-#include <people_fusion_node/state_pos_vel.h>
-#include <people_fusion_node/detection/detection.h>
-#include <people_fusion_node/detector_config.h>
+#include <cob_people_fusion/state_pos_vel.h>
+#include <cob_people_fusion/detection/detection.h>
+#include <cob_people_fusion/detector_config.h>
 
 /**
  * Represents a tracked object/person

@@ -3,10 +3,10 @@
 
 #include <ros/ros.h>
 
-#include <people_fusion_node/detector_config.h>
-#include <people_fusion_node/visualization/visualization_helper.h>
+#include <cob_people_fusion/detector_config.h>
+#include <cob_people_fusion/visualization/visualization_helper.h>
 
-#include <people_fusion_node/consts.h>
+#include <cob_people_fusion/consts.h>
 
 // Transforms
 #include <tf/transform_listener.h>

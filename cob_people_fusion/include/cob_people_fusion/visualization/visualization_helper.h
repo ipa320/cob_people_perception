@@ -8,7 +8,7 @@
 #include <ros/ros.h>
 
 // Own includes
-#include <people_fusion_node/tracker.h>
+#include <cob_people_fusion/tracker.h>
 
 // Cob includes
 #include <cob_perception_msgs/Detection.h>

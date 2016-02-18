@@ -1,4 +1,4 @@
-#include <people_fusion_node/association/association.h>
+#include <cob_people_fusion/association/association.h>
 
 Association::Association(TrackerPtr tracker, DetectionPtr detection, double distance):
   tracker_(tracker),

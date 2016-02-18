@@ -1,7 +1,7 @@
 // Own includes
-#include <people_fusion_node/visualization/visualization_helper.h>
-#include <people_fusion_node/visualization/color_gradient.hpp>
-#include <people_fusion_node/fusion_node.h>
+#include <cob_people_fusion/visualization/visualization_helper.h>
+#include <cob_people_fusion/visualization/color_gradient.hpp>
+#include <cob_people_fusion/fusion_node.h>
 
 // Visualization includes
 #include <visualization_msgs/Marker.h>

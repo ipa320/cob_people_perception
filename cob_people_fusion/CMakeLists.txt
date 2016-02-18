@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(people_fusion_node)
+project(cob_people_fusion)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -29,7 +29,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES people_fusion_node
+  LIBRARIES cob_people_fusion
 )
 
 ###########
@@ -51,7 +51,7 @@ add_library(hungarian_fusion
             )
 
 ## Declare a cpp executable
-add_executable(people_fusion_node 
+add_executable(cob_people_fusion 
                 src/association/association.cpp
                 src/association/associatorGNN.cpp
                 src/detection/detection.cpp
@@ -64,9 +64,9 @@ add_executable(people_fusion_node
               )
 
 ## Add cmake target dependencies of the executable/library
-add_dependencies(people_fusion_node people_fusion_node_generate_messages_cpp)
+add_dependencies(cob_people_fusion cob_people_fusion_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(people_fusion_node
+target_link_libraries(cob_people_fusion
    ${catkin_LIBRARIES} hungarian_fusion yaml-cpp
 )

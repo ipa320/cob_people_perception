@@ -2,9 +2,9 @@
 #define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_ASSOCIATION_ASSOCIATORGNN_H_
 
 // Own includes
-#include <people_fusion_node/detection/detection.h>
-#include <people_fusion_node/association/association.h>
-#include <people_fusion_node/tracker.h>
+#include <cob_people_fusion/detection/detection.h>
+#include <cob_people_fusion/association/association.h>
+#include <cob_people_fusion/tracker.h>
 
 
 // Eigen includes

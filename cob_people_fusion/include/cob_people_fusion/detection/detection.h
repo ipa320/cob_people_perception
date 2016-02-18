@@ -2,7 +2,7 @@
 #define PEOPLE_FUSION_NODE_INCLUDE_PEOPLE_FUSION_NODE_DETECTION_DETECTION_H_
 
 // Own includes
-#include <people_fusion_node/state_pos_vel.h>
+#include <cob_people_fusion/state_pos_vel.h>
 
 /**
  * This class represents a single person detection.

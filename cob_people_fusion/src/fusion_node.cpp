@@ -4,16 +4,16 @@
 #include <ros/console.h>
 
 // Own includes
-#include <people_fusion_node/fusion_node.h>
-#include <people_fusion_node/tracker.h>
-#include <people_fusion_node/state_pos_vel.h>
-#include <people_fusion_node/visualization/visualization_helper.h>
-#include <people_fusion_node/visualization/color_definitions.h>
-#include <people_fusion_node/detection/detection.h>
-#include <people_fusion_node/association/association.h>
-#include <people_fusion_node/association/associatorGNN.h>
+#include <cob_people_fusion/fusion_node.h>
+#include <cob_people_fusion/tracker.h>
+#include <cob_people_fusion/state_pos_vel.h>
+#include <cob_people_fusion/visualization/visualization_helper.h>
+#include <cob_people_fusion/visualization/color_definitions.h>
+#include <cob_people_fusion/detection/detection.h>
+#include <cob_people_fusion/association/association.h>
+#include <cob_people_fusion/association/associatorGNN.h>
 
-#include <people_fusion_node/detector_config.h>
+#include <cob_people_fusion/detector_config.h>
 
 
 
@@ -25,7 +25,7 @@
 FusionNode::FusionNode(ros::NodeHandle nh, std::vector<detector_config> detector_configs, double timeHorizon) :
       nh_(nh),  // Node Handle
       detector_configs_(detector_configs),
-      detections_sub_all_(nh_, "people_detections/internal/all_detections", 50), //Subscriber
+      detections_sub_all_(nh_, "all_detections", 50), //Subscriber
       vh_(nh, detector_configs.size()),
       sequencer(detections_sub_all_, ros::Duration(1), ros::Duration(0.01), 25),
       totalDetectorWeight_(0),
@@ -63,7 +63,7 @@ FusionNode::FusionNode(ros::NodeHandle nh, std::vector<detector_config> detector
         sequencer.registerCallback(boost::bind(&FusionNode::detectionCallbackAll, this, _1));
         //seq.setTolerance(ros::Duration(0.01));
 
-        people_pub_= nh_.advertise<cob_perception_msgs::DetectionArray>("people_detections/fused_detections", 0);
+        people_pub_= nh_.advertise<cob_perception_msgs::DetectionArray>("fused_detections", 0);
 
       };
 
@@ -77,7 +77,7 @@ FusionNode::~FusionNode(){
 }
 
 
-void FusionNode::detectionCallbackAll(const people_fusion_node::DetectionExt::ConstPtr& detectionMsg)
+void FusionNode::detectionCallbackAll(const cob_people_fusion::DetectionExt::ConstPtr& detectionMsg)
 {
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   //std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << ". Time: " << detectionArray->header.stamp << std::endl;

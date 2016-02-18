@@ -1,8 +1,8 @@
 // Own includes
-#include <people_fusion_node/fusion_node.h>
-#include <people_fusion_node/tracker.h>
-#include <people_fusion_node/state_pos_vel.h>
-#include <people_fusion_node/consts.h>
+#include <cob_people_fusion/fusion_node.h>
+#include <cob_people_fusion/tracker.h>
+#include <cob_people_fusion/state_pos_vel.h>
+#include <cob_people_fusion/consts.h>
 
 
 Tracker::Tracker(StatePosVel init, ros::Time initialTime, std::vector<detector_config> detector_configs, double timeHorizon):
