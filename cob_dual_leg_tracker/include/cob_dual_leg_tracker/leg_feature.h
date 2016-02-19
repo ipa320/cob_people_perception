@@ -14,12 +14,12 @@
 #include <tf/transform_listener.h>
 
 // Own includes
-#include <dual_people_leg_tracker/advanced_tracker_particle.h>
-#include <dual_people_leg_tracker/visualization/color_definitions.h>
-#include <dual_people_leg_tracker/people_tracker.h>
-#include <dual_people_leg_tracker/detection/detection.h>
-#include <dual_people_leg_tracker/config_struct.h>
-#include <dual_people_leg_tracker/benchmarking/timer.h>
+#include <cob_dual_leg_tracker/advanced_tracker_particle.h>
+#include <cob_dual_leg_tracker/visualization/color_definitions.h>
+#include <cob_dual_leg_tracker/people_tracker.h>
+#include <cob_dual_leg_tracker/detection/detection.h>
+#include <cob_dual_leg_tracker/config_struct.h>
+#include <cob_dual_leg_tracker/benchmarking/timer.h>
 
 // People Stack
 #include <people_tracking_filter/state_pos_vel.h>

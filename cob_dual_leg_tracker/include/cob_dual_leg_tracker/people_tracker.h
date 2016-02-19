@@ -13,9 +13,9 @@
 #include <boost/array.hpp>
 
 // Own includes
-#include <dual_people_leg_tracker/leg_feature.h>
-#include <dual_people_leg_tracker/config_struct.h>
-#include <dual_people_leg_tracker/kalman/kalman_filter.h>
+#include <cob_dual_leg_tracker/leg_feature.h>
+#include <cob_dual_leg_tracker/config_struct.h>
+#include <cob_dual_leg_tracker/kalman/kalman_filter.h>
 
 // Debug Flags
 #define DEBUG_PEOPLE_TRACKER 0

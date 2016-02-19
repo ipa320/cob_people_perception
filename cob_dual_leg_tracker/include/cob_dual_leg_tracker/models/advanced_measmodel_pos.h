@@ -47,7 +47,7 @@
 #include <people_tracking_filter/gaussian_vector.h>
 
 // Own includes
-#include <dual_people_leg_tracker/models/occlusion_model.h>
+#include <cob_dual_leg_tracker/models/occlusion_model.h>
 
 #define DEBUG_ADVANCEDMEASMODELPOS 0
 

@@ -1,5 +1,5 @@
-#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_MATH_MATH_FUNCTIONS_H_
-#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_MATH_MATH_FUNCTIONS_H_
+#ifndef PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_MATH_MATH_FUNCTIONS_H_
+#define PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_MATH_MATH_FUNCTIONS_H_
 
 #include <math.h>
 
@@ -34,4 +34,4 @@ double distance(tf::Vector3 point, tf::Vector3 pointOnLine, tf::Vector3 lineVect
   return distance;
 }
 
-#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_MATH_MATH_FUNCTIONS_H_ */
+#endif /* PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_MATH_MATH_FUNCTIONS_H_ */

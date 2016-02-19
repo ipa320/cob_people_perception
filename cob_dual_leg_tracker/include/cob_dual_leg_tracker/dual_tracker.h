@@ -16,14 +16,14 @@
 #include <message_filters/subscriber.h>
 
 // ROS Messages
-#include <people_msgs/PositionMeasurement.h>
-#include <people_msgs/PositionMeasurementArray.h>
+#include <cob_perception_msgs/PositionMeasurement.h>
+#include <cob_perception_msgs/PositionMeasurementArray.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
 #include <visualization_msgs/Marker.h>
 
 // Own includes
-#include <dual_people_leg_tracker/DualTrackerConfig.h>
+#include <cob_dual_leg_tracker/DualTrackerConfig.h>
 
 // OpenCV includes
 #include <opencv/cxcore.h>
@@ -31,8 +31,8 @@
 #include <opencv/ml.h>
 
 // ROS Messages
-#include <people_msgs/PositionMeasurement.h>
-#include <people_msgs/PositionMeasurementArray.h>
+#include <cob_perception_msgs/PositionMeasurement.h>
+#include <cob_perception_msgs/PositionMeasurementArray.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
 #include <visualization_msgs/Marker.h>

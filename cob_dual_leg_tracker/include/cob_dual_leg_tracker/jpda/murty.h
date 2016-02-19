@@ -1,5 +1,5 @@
-#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_JPDA_MURTY_H_
-#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_JPDA_MURTY_H_
+#ifndef PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_JPDA_MURTY_H_
+#define PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_JPDA_MURTY_H_
 
 // System includes
 #include <cstdio>
@@ -253,4 +253,4 @@ std::vector<Solution> murty(Eigen::Matrix<int, -1, -1> costMat, int nBest){
 
 }
 
-#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_JPDA_MURTY_H_ */
+#endif /* PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_JPDA_MURTY_H_ */

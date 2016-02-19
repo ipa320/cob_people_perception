@@ -5,8 +5,8 @@
  *      Author: frm-ag
  */
 
-#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_CONFIG_STRUCT_H_
-#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_CONFIG_STRUCT_H_
+#ifndef PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_CONFIG_STRUCT_H_
+#define PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_CONFIG_STRUCT_H_
 
 struct config_struct/** < Structure for filter configuration */
 {
@@ -20,4 +20,4 @@ struct config_struct/** < Structure for filter configuration */
     double minUpdateProbability;
 };
 
-#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_CONFIG_STRUCT_H_ */
+#endif /* PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_CONFIG_STRUCT_H_ */

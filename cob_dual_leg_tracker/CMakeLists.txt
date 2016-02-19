@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.4)
-project(dual_people_leg_tracker)
+project(cob_dual_leg_tracker)
 
 # set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 # set(CMAKE_CXX_FLAGS "-march=native -O3 ${CMAKE_CXX_FLAGS}")
@@ -44,13 +44,13 @@ find_package(catkin REQUIRED COMPONENTS
   laser_geometry
   tf
   visualization_msgs
-  people_msgs
+  cob_perception_msgs
   image_geometry
   dynamic_reconfigure
   rosbag
   message_generation
-  leg_detector
-  people_tracking_filter
+  cob_leg_detection
+  cob_people_tracking_filter
 
 )
 
@@ -68,7 +68,7 @@ generate_dynamic_reconfigure_options(
 )
 
 ## Declare a cpp library
-add_library(dual_people_leg_tracker
+add_library(cob_dual_leg_tracker
             src/advanced_tracker_particle.cpp
             src/people_particle_filter.cpp
             src/models/occlusion_model.cpp
@@ -85,15 +85,15 @@ add_library(dual_people_leg_tracker
 catkin_package(INCLUDE_DIRS 
                   include # The exported include paths (i.e. cflags) for the package
                LIBRARIES 
-                dual_people_leg_tracker
+                 cob_dual_leg_tracker
                CATKIN_DEPENDS 
-                 people_msgs 
+                 cob_perception_msgs 
                  sensor_msgs 
                  std_msgs 
                  geometry_msgs 
                  visualization_msgs 
                  message_runtime
-                 leg_detector
+                 cob_leg_detection
                  )
   
 # Demo of the multivariate normal distribution
@@ -105,12 +105,12 @@ add_executable(dual_tracker
                )
 
 ## Add cmake target dependencies of the executable/library
-add_dependencies(dual_tracker people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(dual_tracker cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 message(STATUS "DUAL TRACKER_LIBS" ${catkin_LIBRARIES})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(dual_tracker dual_people_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES} ${OpenMP_CXX_LIBRARIES} hungarian)
+target_link_libraries(dual_tracker cob_dual_leg_tracker ${catkin_LIBRARIES} ${BFL_LIBRARIES} ${BULLET_LIBRARIES} ${OpenMP_CXX_LIBRARIES} hungarian)
 
 ########################################################
 ## Demos

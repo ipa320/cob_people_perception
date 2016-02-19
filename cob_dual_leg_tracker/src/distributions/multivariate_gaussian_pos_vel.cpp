@@ -34,7 +34,7 @@
 
 /* Author: Wim Meeussen */
 
-#include <dual_people_leg_tracker/distributions/multivariate_gaussian_pos_vel.h>
+#include <cob_dual_leg_tracker/distributions/multivariate_gaussian_pos_vel.h>
 #include <wrappers/rng/rng.h>
 #include <cmath>
 #include <cassert>

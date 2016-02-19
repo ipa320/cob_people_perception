@@ -49,8 +49,8 @@
 #include <people_tracking_filter/state_pos_vel.h>
 
 // Own includes
-#include <dual_people_leg_tracker/distributions/gaussian_pos_vel_mod.h>
-#include <dual_people_leg_tracker/distributions/multivariate_gaussian_pos_vel.h>
+#include <cob_dual_leg_tracker/distributions/gaussian_pos_vel_mod.h>
+#include <cob_dual_leg_tracker/distributions/multivariate_gaussian_pos_vel.h>
 
 #define DEBUG_ADVANCEDSYSMODELPOSVEL 0
 

@@ -53,10 +53,10 @@
 #include <people_tracking_filter/mcpdf_pos_vel.h>
 
 // Own includes
-#include <dual_people_leg_tracker/people_particle_filter.h>
-#include <dual_people_leg_tracker/models/advanced_sysmodel_pos_vel.h>
-#include <dual_people_leg_tracker/models/advanced_measmodel_pos.h>
-#include <dual_people_leg_tracker/models/occlusion_model.h>
+#include <cob_dual_leg_tracker/people_particle_filter.h>
+#include <cob_dual_leg_tracker/models/advanced_sysmodel_pos_vel.h>
+#include <cob_dual_leg_tracker/models/advanced_measmodel_pos.h>
+#include <cob_dual_leg_tracker/models/occlusion_model.h>
 
 namespace estimation
 {
@@ -123,7 +123,7 @@ public:
 
   /// get filter posterior
   virtual void getEstimate(BFL::StatePosVel& est) const;
-  virtual void getEstimate(people_msgs::PositionMeasurement& est) const;
+  virtual void getEstimate(cob_perception_msgs::PositionMeasurement& est) const;
 
   // get evenly spaced particle cloud
   void getParticleCloud(const tf::Vector3& step, double threshold, sensor_msgs::PointCloud& cloud) const;

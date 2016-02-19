@@ -5,8 +5,8 @@
  *      Author: frm-ag
  */
 
-#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_JPDA_JPDA_H_
-#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_JPDA_JPDA_H_
+#ifndef PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_JPDA_JPDA_H_
+#define PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_JPDA_JPDA_H_
 
 namespace jpda{
 
@@ -38,4 +38,4 @@ double calculateAssociationProbability(Eigen::Matrix< int,-1,-1> assignmentMatri
 
 
 
-#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_JPDA_JPDA_H_ */
+#endif /* PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_JPDA_JPDA_H_ */

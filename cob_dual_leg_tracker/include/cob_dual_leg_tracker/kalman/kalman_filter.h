@@ -1,5 +1,5 @@
-#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_KALMANFILTER_H_
-#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_KALMANFILTER_H_
+#ifndef PEOPLE_cob_dual_leg_tracker_SRC_MHT_KALMANFILTER_H_
+#define PEOPLE_cob_dual_leg_tracker_SRC_MHT_KALMANFILTER_H_
 
 // Eigen includes
 #include <Eigen/Dense>
@@ -67,4 +67,4 @@ public:
 
 };
 }
-#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_MHT_KALMANFILTER_H_ */
+#endif /* PEOPLE_cob_dual_leg_tracker_SRC_MHT_KALMANFILTER_H_ */

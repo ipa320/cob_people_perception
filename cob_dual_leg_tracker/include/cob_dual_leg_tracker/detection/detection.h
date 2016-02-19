@@ -5,8 +5,8 @@
  *      Author: frm-ag
  */
 
-#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_DETECTION_DETECTION_H_
-#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_DETECTION_DETECTION_H_
+#ifndef PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_DETECTION_DETECTION_H_
+#define PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_DETECTION_DETECTION_H_
 
 #include <tf/transform_datatypes.h>
 #include <leg_detector/laser_processor.h>
@@ -95,4 +95,4 @@ class Detection{
 typedef boost::shared_ptr<Detection> DetectionPtr;
 
 
-#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_INCLUDE_DUAL_PEOPLE_LEG_TRACKER_DETECTION_DETECTION_H_ */
+#endif /* PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_DETECTION_DETECTION_H_ */

@@ -1,5 +1,5 @@
-#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SOCIAL_INTERACTION_FORMULAS_H_
-#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SOCIAL_INTERACTION_FORMULAS_H_
+#ifndef PEOPLE_cob_dual_leg_tracker_SOCIAL_INTERACTION_FORMULAS_H_
+#define PEOPLE_cob_dual_leg_tracker_SOCIAL_INTERACTION_FORMULAS_H_
 
 
 /***
@@ -280,4 +280,4 @@ Eigen::Vector2d E_i_gradient(std::vector<Eigen::Vector2d> positionsOthers,
 }
 
 
-#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SOCIAL_INTERACTION_FORMULAS_H_ */
+#endif /* PEOPLE_cob_dual_leg_tracker_SOCIAL_INTERACTION_FORMULAS_H_ */

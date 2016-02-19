@@ -34,7 +34,7 @@
 
 /* Author: Wim Meeussen */
 
-#include <dual_people_leg_tracker/distributions/gaussian_pos_vel_mod.h>
+#include <cob_dual_leg_tracker/distributions/gaussian_pos_vel_mod.h>
 #include <wrappers/rng/rng.h>
 #include <cmath>
 #include <cassert>

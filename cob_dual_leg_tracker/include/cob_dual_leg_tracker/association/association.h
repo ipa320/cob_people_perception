@@ -5,10 +5,10 @@
  *      Author: frm-ag
  */
 
-#ifndef PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_ASSOCIATION_ASSOCIATION_H_
-#define PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_ASSOCIATION_ASSOCIATION_H_
+#ifndef PEOPLE_cob_dual_leg_tracker_SRC_ASSOCIATION_ASSOCIATION_H_
+#define PEOPLE_cob_dual_leg_tracker_SRC_ASSOCIATION_ASSOCIATION_H_
 
-#include <dual_people_leg_tracker/leg_feature.h>
+#include <cob_dual_leg_tracker/leg_feature.h>
 
 class Association {
 
@@ -45,4 +45,4 @@ class Association {
     }
 };
 
-#endif /* PEOPLE_DUAL_PEOPLE_LEG_TRACKER_SRC_ASSOCIATION_ASSOCIATION_H_ */
+#endif /* PEOPLE_cob_dual_leg_tracker_SRC_ASSOCIATION_ASSOCIATION_H_ */

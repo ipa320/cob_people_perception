@@ -2,9 +2,9 @@
 #define PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_PEOPLE_PARTICLE_FILTER_H_
 
 //Own includes
-#include <dual_people_leg_tracker/models/advanced_sysmodel_pos_vel.h>
-#include <dual_people_leg_tracker/models/advanced_measmodel_pos.h>
-#include <dual_people_leg_tracker/detection/detection.h>
+#include <cob_dual_leg_tracker/models/advanced_sysmodel_pos_vel.h>
+#include <cob_dual_leg_tracker/models/advanced_measmodel_pos.h>
+#include <cob_dual_leg_tracker/detection/detection.h>
 
 // People Stack includes
 #include <filter/particlefilter.h>
