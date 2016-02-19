@@ -47,8 +47,8 @@
 #include <leg_detector/ClusterMsg.h>
 #include <leg_detector/LabeledRangeScanMsg.h>
 
-#include <people_msgs/PositionMeasurement.h>
-#include <people_msgs/PositionMeasurementArray.h>
+#include <cob_perception_msgs/PositionMeasurement.h>
+#include <cob_perception_msgs/PositionMeasurementArray.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
 #include <rosgraph_msgs/Clock.h>

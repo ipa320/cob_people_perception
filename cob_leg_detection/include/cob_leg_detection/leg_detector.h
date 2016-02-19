@@ -11,8 +11,8 @@
 #include <ros/ros.h>
 
 // Own includes
-#include <leg_detector/LegDetectorConfig.h>
-#include <leg_detector/laser_processor.h>
+#include <cob_leg_detection/LegDetectorConfig.h>
+#include <cob_leg_detection/laser_processor.h>
 
 // OpenCV includes
 #include <opencv/cxcore.h>
@@ -20,8 +20,8 @@
 #include <opencv/ml.h>
 
 // Messages
-#include <people_msgs/PositionMeasurement.h>
-#include <people_msgs/PositionMeasurementArray.h>
+#include <cob_perception_msgs/PositionMeasurement.h>
+#include <cob_perception_msgs/PositionMeasurementArray.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
 #include <visualization_msgs/Marker.h>
