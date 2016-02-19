@@ -185,8 +185,8 @@ public:
     nh_.param<bool>("use_seeds", use_seeds_, false); // TODO maybe remove later?
 
     // advertise topics
-    leg_measurements_pub_ = nh_.advertise<people_msgs::PositionMeasurementArray>("leg_tracker_measurements", 0);
-    people_measurements_pub_ = nh_.advertise<people_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
+    leg_measurements_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("leg_tracker_measurements", 0);
+    people_measurements_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
     markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 0);
     clusters_pub_ = nh_.advertise<sensor_msgs::PointCloud>("clusters", 0);
 
@@ -261,7 +261,7 @@ public:
 
   // Find the tracker that is closest to this person message
   // If a tracker was already assigned to a person, keep this assignment when the distance between them is not too large.
-  void peopleCallback(const people_msgs::PositionMeasurement::ConstPtr& people_meas)
+  void peopleCallback(const cob_perception_msgs::PositionMeasurement::ConstPtr& people_meas)
   {
     assert(false);
 
@@ -814,8 +814,8 @@ public:
 
     // Publish Data!
     int i = 0;
-    vector<people_msgs::PositionMeasurement> people;
-    vector<people_msgs::PositionMeasurement> legs;
+    vector<cob_perception_msgs::PositionMeasurement> people;
+    vector<cob_perception_msgs::PositionMeasurement> legs;
 
     // Iterate the features
     for (list<SavedFeature*>::iterator sf_iter = saved_features_.begin();
@@ -827,7 +827,7 @@ public:
 
       if ((*sf_iter)->getReliability() > leg_reliability_limit_ && publish_legs_)
       {
-        people_msgs::PositionMeasurement pos;
+        cob_perception_msgs::PositionMeasurement pos;
         pos.header.stamp = scan->header.stamp;
         pos.header.frame_id = scan->header.frame_id;
         pos.name = "leg_detector";
@@ -883,7 +883,7 @@ public:
           if (publish_people_)
           {
             reliability = reliability * other->reliability;
-            people_msgs::PositionMeasurement pos;
+            cob_perception_msgs::PositionMeasurement pos;
             pos.header.stamp = (*sf_iter)->time_;
             pos.header.frame_id = fixed_frame;
             pos.name = (*sf_iter)->object_id;
@@ -975,7 +975,7 @@ public:
 
 
 
-    people_msgs::PositionMeasurementArray array;
+    cob_perception_msgs::PositionMeasurementArray array;
     array.header.stamp =  scan->header.stamp;
     array.header.frame_id = scan->header.frame_id;
     if (publish_legs_)
