@@ -53,7 +53,7 @@ generate_dynamic_reconfigure_options(
   cfg/TrainingSetCreator.cfg
 )
 
-catkin_package()
+
 
 ## Specify additional locations of header files
 include_directories(
@@ -79,34 +79,35 @@ generate_messages(
    std_msgs
    rosgraph_msgs
    tf2_msgs
+   cob_perception_msgs
 )
 
 catkin_package(INCLUDE_DIRS 
                   include
                CATKIN_DEPENDS 
-                  people_msgs 
+                  cob_perception_msgs 
                   sensor_msgs 
                   std_msgs 
                   geometry_msgs 
                   visualization_msgs 
                   message_runtime
                 LIBRARIES # Libraries exported from this package
-                  leg_detection 
+                  cob_leg_detection 
                   )
 
 ## The leg detector
-add_executable(leg_detection 
+add_executable(cob_leg_detection_ex 
                src/laser_processor.cpp
                src/leg_detector.cpp 
                src/calc_leg_features.cpp
                src/saved_feature.cpp)
 
 ## Add cmake target dependencies of the executable/library
-add_dependencies(leg_detection ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(cob_leg_detection_ex ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(leg_detection
+target_link_libraries(cob_leg_detection_ex
    ${catkin_LIBRARIES}
    ${OpenCV_LIBRARIES}
    ${orocos_kdl_LIBRARIES}
@@ -116,18 +117,21 @@ target_link_libraries(leg_detection
 
 ## Make a library to export stuff
 
-add_library(leg_detection
+add_library(cob_leg_detection
               src/laser_processor.cpp
               src/leg_detector.cpp 
               src/calc_leg_features.cpp
               src/saved_feature.cpp
 )
 
+## Add cmake target dependencies of the executable/library
+add_dependencies(cob_leg_detection ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+
 #############
 ## Install ##
 #############
 ## Mark executables and/or libraries for installation
-install(TARGETS leg_detection
+install(TARGETS cob_leg_detection
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -141,7 +145,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
 
 
 install(TARGETS
-    leg_detector
+    cob_leg_detection
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -167,7 +171,7 @@ add_executable(training_set_creator
                src/calc_leg_features.cpp)
 #               
 ## Add cmake target dependencies of the executable/library
-add_dependencies(training_set_creator people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(training_set_creator cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(training_set_creator
@@ -181,7 +185,7 @@ add_executable(labeled_bag_file_to_svgs
                src/labeled_bag_file_to_svgs.cpp)
                
 ## Add cmake target dependencies of the executable/library
-add_dependencies(labeled_bag_file_to_svgs people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(labeled_bag_file_to_svgs cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(labeled_bag_file_to_svgs
@@ -195,7 +199,7 @@ add_executable(train_leg_detector
                src/calc_leg_features.cpp)
                
 ## Add cmake target dependencies of the executable/library
-add_dependencies(train_leg_detector people_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(train_leg_detector cob_perception_msgs_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(train_leg_detector
