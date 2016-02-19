@@ -7,7 +7,7 @@
 
 
 // Own includes
-#include <leg_detector/saved_feature.h>
+#include <cob_leg_detection/saved_feature.h>
 
 int SavedFeature::nextid = 0;
 

@@ -48,9 +48,9 @@
 #include <filter/bootstrapfilter.h>
 
 // People Stack includes
-#include <people_tracking_filter/tracker.h>
-#include <people_tracking_filter/state_pos_vel.h>
-#include <people_tracking_filter/mcpdf_pos_vel.h>
+#include <cob_people_tracking_filter/tracker.h>
+#include <cob_people_tracking_filter/state_pos_vel.h>
+#include <cob_people_tracking_filter/mcpdf_pos_vel.h>
 
 // Own includes
 #include <cob_dual_leg_tracker/people_particle_filter.h>

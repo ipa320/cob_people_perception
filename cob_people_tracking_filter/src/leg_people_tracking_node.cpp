@@ -34,14 +34,14 @@
 
 // ROS includes
 
-#include "people_tracking_filter/leg_people_tracking_node.h"
-#include "people_tracking_filter/tracker_particle.h"
-#include "people_tracking_filter/tracker_kalman.h"
-#include "people_tracking_filter/state_pos_vel.h"
-#include "people_tracking_filter/rgb.h"
-#include <people_msgs/PositionMeasurement.h>
-#include <people_msgs/PositionMeasurementArray.h>
-#include <people_tracking_filter/visualization/conversions.h>
+#include "cob_people_tracking_filter/leg_people_tracking_node.h"
+#include "cob_people_tracking_filter/tracker_particle.h"
+#include "cob_people_tracking_filter/tracker_kalman.h"
+#include "cob_people_tracking_filter/state_pos_vel.h"
+#include "cob_people_tracking_filter/rgb.h"
+#include <cob_perception_msgs/PositionMeasurement.h>
+#include <cob_perception_msgs/PositionMeasurementArray.h>
+#include <cob_people_tracking_filter/visualization/conversions.h>
 
 
 using namespace std;
@@ -90,7 +90,7 @@ LegPeopleTrackingNode::LegPeopleTrackingNode(ros::NodeHandle nh)
   local_nh.param("follow_one_person", follow_one_person_, false);
 
   // advertise filter output
-  people_filter_pub_ = nh_.advertise<people_msgs::PositionMeasurement>("leg_people_tracker_filter", 10);
+  people_filter_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurement>("leg_people_tracker_filter", 10);
 
   // advertise visualization
   people_filter_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_filter_visualization", 10);
@@ -120,12 +120,12 @@ LegPeopleTrackingNode::~LegPeopleTrackingNode()
 
 
 // callback for messages
-void LegPeopleTrackingNode::legMeasCallback(const people_msgs::PositionMeasurementArray::ConstPtr& message)
+void LegPeopleTrackingNode::legMeasCallback(const cob_perception_msgs::PositionMeasurementArray::ConstPtr& message)
 {
   ROS_DEBUG_COND(DEBUG_LEGPEOPLETRACKINGNODE, "LegPeopleTrackingNode::%s Received Leg Measurements on topic [%s]", __func__, message->header.frame_id.c_str());
 
   // Iterate the leg measurements
-/*  for(vector<people_msgs::PositionMeasurement>::iterator it = message->people.begin();
+/*  for(vector<cob_perception_msgs::PositionMeasurement>::iterator it = message->people.begin();
       it != message->people.begin();
       it++)
   {
@@ -240,7 +240,7 @@ void LegPeopleTrackingNode::legMeasCallback(const people_msgs::PositionMeasureme
 
 
 // callback for dropped messages
-void LegPeopleTrackingNode::callbackDrop(const people_msgs::PositionMeasurement::ConstPtr& message)
+void LegPeopleTrackingNode::callbackDrop(const cob_perception_msgs::PositionMeasurement::ConstPtr& message)
 {
   ROS_INFO("DROPPED PACKAGE for %s from %s with delay %f !!!!!!!!!!!",
            message->object_id.c_str(), message->name.c_str(), (ros::Time::now() - message->header.stamp).toSec());
@@ -274,7 +274,7 @@ void LegPeopleTrackingNode::spin()
       (*it)->updatePrediction(ros::Time::now().toSec() - sequencer_delay);
 
       // publish filter result
-      people_msgs::PositionMeasurement est_pos;
+      cob_perception_msgs::PositionMeasurement est_pos;
       (*it)->getEstimate(est_pos);
       est_pos.header.frame_id = fixed_frame_;
 

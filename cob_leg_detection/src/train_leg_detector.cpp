@@ -51,7 +51,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #define USE_BASH_COLORS
-#include <leg_detector/color_definitions.h>
+#include <cob_leg_detection/color_definitions.h>
 #include <stdlib.h>     /* exit, EXIT_FAILURE */
 
 using namespace std;
@@ -119,7 +119,7 @@ public:
         }
 
         sensor_msgs::LaserScan::Ptr pLaserScan;
-        leg_detector::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg;
+        cob_leg_detection::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg;
 
         // Iterate the messages
         std::vector<std::string> topics;
@@ -135,7 +135,7 @@ public:
 
           // Initiate as
           sensor_msgs::LaserScan::Ptr pLaserScanTemp = m.instantiate<sensor_msgs::LaserScan>();
-          leg_detector::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsgTemp = m.instantiate<leg_detector::LabeledRangeScanMsg>();
+          cob_leg_detection::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsgTemp = m.instantiate<cob_leg_detection::LabeledRangeScanMsg>();
 
           if (pLaserScanTemp != NULL) {
               pLaserScan = pLaserScanTemp;
@@ -166,7 +166,7 @@ public:
       // TODO extract the clusters
 
       // Iterate the clusters inside the message
-      for(leg_detector::LabeledRangeScanMsg::_clusters_type::iterator clusterIt = pLabeledRangeScanMsg->clusters.begin(); clusterIt != pLabeledRangeScanMsg->clusters.end(); clusterIt++){
+      for(cob_leg_detection::LabeledRangeScanMsg::_clusters_type::iterator clusterIt = pLabeledRangeScanMsg->clusters.begin(); clusterIt != pLabeledRangeScanMsg->clusters.end(); clusterIt++){
 
           SampleSet* pCluster = new SampleSet();
           cout << GREEN << pLaserScan->header.stamp << RESET << endl;
@@ -174,7 +174,7 @@ public:
           pCluster->label = clusterIt->label;
 
           // Iterate the indices
-          for(leg_detector::ClusterMsg::_indices_type::iterator indexIt = clusterIt->indices.begin(); indexIt != clusterIt->indices.end(); indexIt++){
+          for(cob_leg_detection::ClusterMsg::_indices_type::iterator indexIt = clusterIt->indices.begin(); indexIt != clusterIt->indices.end(); indexIt++){
               int16_t index = ((int16_t)(*indexIt));
               //cout << "Extracting index " << index << endl;
 

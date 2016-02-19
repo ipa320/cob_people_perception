@@ -39,8 +39,8 @@
 #define GAUSSIAN_POS_VEL_MOD_H
 
 #include <pdf/pdf.h>
-#include <people_tracking_filter/state_pos_vel.h>
-#include <people_tracking_filter/gaussian_vector.h>
+#include <cob_people_tracking_filter/state_pos_vel.h>
+#include <cob_people_tracking_filter/gaussian_vector.h>
 
 namespace BFL
 {

@@ -16,9 +16,9 @@
 #include <tf/transform_listener.h>
 
 // People tracking
-#include <people_tracking_filter/tracker_kalman.h>
-#include <people_tracking_filter/state_pos_vel.h>
-#include <people_tracking_filter/rgb.h>
+#include <cob_people_tracking_filter/tracker_kalman.h>
+#include <cob_people_tracking_filter/state_pos_vel.h>
+#include <cob_people_tracking_filter/rgb.h>
 
 //using namespace std;
 //using namespace ros;

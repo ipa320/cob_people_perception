@@ -22,8 +22,8 @@
 #include <cob_dual_leg_tracker/benchmarking/timer.h>
 
 // People Stack
-#include <people_tracking_filter/state_pos_vel.h>
-#include <people_tracking_filter/rgb.h>
+#include <cob_people_tracking_filter/state_pos_vel.h>
+#include <cob_people_tracking_filter/rgb.h>
 
 // Default variables
 #define DEBUG_LEG_TRACKER 0

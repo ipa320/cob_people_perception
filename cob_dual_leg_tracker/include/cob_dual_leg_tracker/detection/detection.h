@@ -9,7 +9,7 @@
 #define PEOPLE_cob_dual_leg_tracker_INCLUDE_cob_dual_leg_tracker_DETECTION_DETECTION_H_
 
 #include <tf/transform_datatypes.h>
-#include <leg_detector/laser_processor.h>
+#include <cob_leg_detection/laser_processor.h>
 
 class Detection{
   private:

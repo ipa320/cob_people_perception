@@ -200,7 +200,7 @@ public:
     laser_notifier_.registerCallback(boost::bind(&LegDetector::laserCallback, this, _1));
     laser_notifier_.setTolerance(ros::Duration(0.01));
 
-    dynamic_reconfigure::Server<leg_detector::LegDetectorConfig>::CallbackType f;
+    dynamic_reconfigure::Server<cob_leg_detection::LegDetectorConfig>::CallbackType f;
     f = boost::bind(&LegDetector::configure, this, _1, _2);
     server_.setCallback(f);
 

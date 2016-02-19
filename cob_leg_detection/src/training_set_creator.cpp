@@ -41,11 +41,11 @@
 #include <boost/regex.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include <leg_detector/TrainingSetCreatorConfig.h>
-#include <leg_detector/laser_processor.h>
-#include <leg_detector/calc_leg_features.h>
-#include <leg_detector/ClusterMsg.h>
-#include <leg_detector/LabeledRangeScanMsg.h>
+#include <cob_leg_detection/TrainingSetCreatorConfig.h>
+#include <cob_leg_detection/laser_processor.h>
+#include <cob_leg_detection/calc_leg_features.h>
+#include <cob_leg_detection/ClusterMsg.h>
+#include <cob_leg_detection/LabeledRangeScanMsg.h>
 
 #include <cob_perception_msgs/PositionMeasurement.h>
 #include <cob_perception_msgs/PositionMeasurementArray.h>
@@ -58,9 +58,9 @@
 #include <tf/message_filter.h>
 #include <message_filters/subscriber.h>
 
-#include <people_tracking_filter/tracker_kalman.h>
-#include <people_tracking_filter/state_pos_vel.h>
-#include <people_tracking_filter/rgb.h>
+#include <cob_people_tracking_filter/tracker_kalman.h>
+#include <cob_people_tracking_filter/state_pos_vel.h>
+#include <cob_people_tracking_filter/rgb.h>
 #include <visualization_msgs/Marker.h>
 #include <dynamic_reconfigure/server.h>
 
@@ -71,9 +71,9 @@
 
 #define foreach BOOST_FOREACH
 
-#include <leg_detector/color_definitions.h>
+#include <cob_leg_detection/color_definitions.h>
 
-//#include <leg_detector/debug.h>
+//#include <cob_leg_detection/debug.h>
 
 using namespace std;
 using namespace laser_processor;
@@ -140,7 +140,7 @@ public:
     ros::Publisher tf_pub_;
 
     /** The reconfiguration Server */
-    dynamic_reconfigure::Server<leg_detector::TrainingSetCreatorConfig> server_;
+    dynamic_reconfigure::Server<cob_leg_detection::TrainingSetCreatorConfig> server_;
 
     /** Constructor */
     TrainingSetCreator(ros::NodeHandle nh) :
@@ -153,7 +153,7 @@ public:
         clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("clock", 20);
         tf_pub_ = nh_.advertise<tf2_msgs::TFMessage>("tf", 20);
 
-        dynamic_reconfigure::Server<leg_detector::TrainingSetCreatorConfig>::CallbackType f;
+        dynamic_reconfigure::Server<cob_leg_detection::TrainingSetCreatorConfig>::CallbackType f;
         f = boost::bind(&TrainingSetCreator::configure, this, _1, _2);
         server_.setCallback(f);
 
@@ -165,7 +165,7 @@ public:
     }
 
     /** configure callback - Reacts to changes of the configuration by rqt_reconfigure */
-    void configure(leg_detector::TrainingSetCreatorConfig &config, uint32_t level) {
+    void configure(cob_leg_detection::TrainingSetCreatorConfig &config, uint32_t level) {
         connected_thresh_ = config.connection_threshold;
         min_points_per_group_ = config.min_points_per_group;
     }
@@ -421,7 +421,7 @@ public:
                 if (search != timeClusterMap_.end() ) {
 
                     // The Labeled Range Scan Message
-                    leg_detector::LabeledRangeScanMsg rangeScanLabelMsg;
+                    cob_leg_detection::LabeledRangeScanMsg rangeScanLabelMsg;
 
                     // Use the same header as
                     rangeScanLabelMsg.header = s->header;
@@ -440,7 +440,7 @@ public:
                     for(list<SampleSet*>::iterator clusterIt = search->second->begin(); clusterIt != search->second->end(); clusterIt++){
 
                         // A single ClusterMsg
-                        leg_detector::ClusterMsg clusterMsg;
+                        cob_leg_detection::ClusterMsg clusterMsg;
 
                         // If this cluster is labeled
                         if(!(*clusterIt)->label.empty()){

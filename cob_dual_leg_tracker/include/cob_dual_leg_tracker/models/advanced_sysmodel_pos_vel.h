@@ -46,7 +46,7 @@
 #include <wrappers/matrix/matrix_wrapper.h>
 
 // People Stack includes
-#include <people_tracking_filter/state_pos_vel.h>
+#include <cob_people_tracking_filter/state_pos_vel.h>
 
 // Own includes
 #include <cob_dual_leg_tracker/distributions/gaussian_pos_vel_mod.h>

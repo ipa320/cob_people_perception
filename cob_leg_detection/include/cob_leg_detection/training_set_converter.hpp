@@ -8,18 +8,18 @@
 #ifndef PEOPLE_LEG_DETECTOR_INCLUDE_LEG_DETECTOR_TRAINING_SET_CONVERTER_HPP_
 #define PEOPLE_LEG_DETECTOR_INCLUDE_LEG_DETECTOR_TRAINING_SET_CONVERTER_HPP_
 
-#include <leg_detector/ClusterMsg.h>
-#include <leg_detector/LabeledRangeScanMsg.h>
+#include <cob_leg_detection/ClusterMsg.h>
+#include <cob_leg_detection/LabeledRangeScanMsg.h>
 
 #include <sensor_msgs/LaserScan.h>
 
 class LabeledScanData{
 private:
     sensor_msgs::LaserScan::Ptr pLaserScan;
-    leg_detector::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg;
+    cob_leg_detection::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg;
 
 public:
-    LabeledScanData(sensor_msgs::LaserScan::Ptr pLaserScan, leg_detector::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg){
+    LabeledScanData(sensor_msgs::LaserScan::Ptr pLaserScan, cob_leg_detection::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg){
         this->pLaserScan = pLaserScan;
         this->pLabeledRangeScanMsg = pLabeledRangeScanMsg;
     }

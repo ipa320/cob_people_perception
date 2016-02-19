@@ -193,7 +193,7 @@ void TrackerKalman::getEstimate(StatePosVel& est) const
 };
 
 
-void TrackerKalman::getEstimate(people_msgs::PositionMeasurement& est) const
+void TrackerKalman::getEstimate(cob_perception_msgs::PositionMeasurement& est) const
 {
   ColumnVector tmp = filter_->PostGet()->ExpectedValueGet();
 

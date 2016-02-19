@@ -42,21 +42,21 @@
 #include <boost/regex.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include <leg_detector/ClusterMsg.h>
-#include <leg_detector/LabeledRangeScanMsg.h>
-#include <leg_detector/laser_processor.h>
+#include <cob_leg_detection/ClusterMsg.h>
+#include <cob_leg_detection/LabeledRangeScanMsg.h>
+#include <cob_leg_detection/laser_processor.h>
 
 #include <rosgraph_msgs/Clock.h>
 #include <tf2_msgs/TFMessage.h>
 
-#include <leg_detector/training_set_converter.hpp>
+#include <cob_leg_detection/training_set_converter.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <string>
 
 #define USE_BASH_COLORS
-#include <leg_detector/color_definitions.h>
+#include <cob_leg_detection/color_definitions.h>
 
 using namespace std;
 using namespace ros;
@@ -122,7 +122,7 @@ void TrainingSetConverter::convertTrainingSet(const char* input_file) {
 
     // Iterate through the message -> generate the clusters
     sensor_msgs::LaserScan::Ptr pLaserScan;
-    leg_detector::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg;
+    cob_leg_detection::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg;
 
     // Create a sampleSetList
     list<SampleSet*> clusterList;
@@ -137,7 +137,7 @@ void TrainingSetConverter::convertTrainingSet(const char* input_file) {
         //cout << m.getTime() << " " << m.getTopic() << endl;
         // If scan is a LaserScan (to avoid stopping at every tf)
         sensor_msgs::LaserScan::Ptr pLaserScanTemp = m.instantiate<sensor_msgs::LaserScan>();
-        leg_detector::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsgTemp = m.instantiate<leg_detector::LabeledRangeScanMsg>();
+        cob_leg_detection::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsgTemp = m.instantiate<cob_leg_detection::LabeledRangeScanMsg>();
 
         if (pLaserScanTemp != NULL) {
             pLaserScan = pLaserScanTemp;
@@ -155,13 +155,13 @@ void TrainingSetConverter::convertTrainingSet(const char* input_file) {
                 cout << endl;
                 //cout << RED << pLabeledRangeScanMsg->header.stamp <<  "RangeScan" << RESET << endl;
 
-                for(leg_detector::LabeledRangeScanMsg::_clusters_type::iterator clusterIt = pLabeledRangeScanMsg->clusters.begin(); clusterIt != pLabeledRangeScanMsg->clusters.end(); clusterIt++){
+                for(cob_leg_detection::LabeledRangeScanMsg::_clusters_type::iterator clusterIt = pLabeledRangeScanMsg->clusters.begin(); clusterIt != pLabeledRangeScanMsg->clusters.end(); clusterIt++){
                     SampleSet* pCluster = new SampleSet();
                     cout << GREEN << pLaserScan->header.stamp << RESET << endl;
                     cout << "\tLabel:[" << clusterIt->label << "] " << endl;
                     pCluster->label = clusterIt->label;
 
-                    for(leg_detector::ClusterMsg::_indices_type::iterator indexIt = clusterIt->indices.begin(); indexIt != clusterIt->indices.end(); indexIt++){
+                    for(cob_leg_detection::ClusterMsg::_indices_type::iterator indexIt = clusterIt->indices.begin(); indexIt != clusterIt->indices.end(); indexIt++){
                         int16_t index = ((int16_t)(*indexIt));
 
                         // TODO Generate SampleSet here

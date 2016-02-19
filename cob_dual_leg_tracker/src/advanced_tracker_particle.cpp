@@ -34,8 +34,8 @@
 
 #include <cob_dual_leg_tracker/advanced_tracker_particle.h>
 #include <cob_dual_leg_tracker/benchmarking/timer.h>
-//#include <people_tracking_filter/gaussian_pos_vel.h>
-//#include <people_tracking_filter/people_particle_filter.h>
+//#include <cob_people_tracking_filter/gaussian_pos_vel.h>
+//#include <cob_people_tracking_filter/people_particle_filter.h>
 
 
 using namespace MatrixWrapper;

@@ -38,8 +38,8 @@
 #include <visualization_msgs/Marker.h>
 
 // People Stack
-#include <people_tracking_filter/state_pos_vel.h>
-#include <leg_detector/laser_processor.h>
+#include <cob_people_tracking_filter/state_pos_vel.h>
+#include <cob_leg_detection/laser_processor.h>
 
 // OMP
 #include <omp.h>

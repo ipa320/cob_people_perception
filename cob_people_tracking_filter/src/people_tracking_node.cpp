@@ -200,7 +200,7 @@ void PeopleTrackingNode::callbackRcv(const cob_perception_msgs::PositionMeasurem
 
 
 // callback for dropped messages
-void PeopleTrackingNode::callbackDrop(const people_msgs::PositionMeasurement::ConstPtr& message)
+void PeopleTrackingNode::callbackDrop(const cob_perception_msgs::PositionMeasurement::ConstPtr& message)
 {
   ROS_INFO("DROPPED PACKAGE for %s from %s with delay %f !!!!!!!!!!!",
            message->object_id.c_str(), message->name.c_str(), (ros::Time::now() - message->header.stamp).toSec());
@@ -234,7 +234,7 @@ void PeopleTrackingNode::spin()
       (*it)->updatePrediction(ros::Time::now().toSec() - sequencer_delay);
 
       // publish filter result
-      people_msgs::PositionMeasurement est_pos;
+      cob_perception_msgs::PositionMeasurement est_pos;
       (*it)->getEstimate(est_pos);
       est_pos.header.frame_id = fixed_frame_;
 

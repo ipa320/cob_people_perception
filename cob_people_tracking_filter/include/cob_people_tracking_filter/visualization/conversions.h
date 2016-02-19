@@ -8,9 +8,9 @@
 #ifndef PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_VISUALIZATION_CONVERSIONS_H_
 #define PEOPLE_PEOPLE_TRACKING_FILTER_INCLUDE_PEOPLE_TRACKING_FILTER_VISUALIZATION_CONVERSIONS_H_
 
-#include <people_tracking_filter/visualization/colormap.hpp>
+#include <cob_people_tracking_filter/visualization/colormap.hpp>
 
-bool legMeasMsgToPointcloud(sensor_msgs::PointCloud::Ptr &pointCloudMsg, people_msgs::PositionMeasurementArray::ConstPtr message){
+bool legMeasMsgToPointcloud(sensor_msgs::PointCloud::Ptr &pointCloudMsg, cob_perception_msgs::PositionMeasurementArray::ConstPtr message){
 
   sensor_msgs::ChannelFloat32 rgb_channel;
   rgb_channel.name = "rgb";
@@ -19,7 +19,7 @@ bool legMeasMsgToPointcloud(sensor_msgs::PointCloud::Ptr &pointCloudMsg, people_
   unsigned int counter = 0;
   for(int i = 0; i < message->people.size(); i++)
   {
-    people_msgs::PositionMeasurement posMeas = message->people[i];
+    cob_perception_msgs::PositionMeasurement posMeas = message->people[i];
 
       int r, g, b;
       getRGB(posMeas.reliability,r,g,b);

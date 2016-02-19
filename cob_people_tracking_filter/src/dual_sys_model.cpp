@@ -32,7 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <people_tracking_filter/dual_sys_model.h>
+#include <cob_people_tracking_filter/dual_sys_model.h>
 
 
 using namespace std;
