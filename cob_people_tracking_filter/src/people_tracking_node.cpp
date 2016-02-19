@@ -81,19 +81,16 @@ PeopleTrackingNode::PeopleTrackingNode(ros::NodeHandle nh)
   local_nh.param("sys_sigma_vel_z", sys_sigma_.vel_[2], 0.0);
   local_nh.param("follow_one_person", follow_one_person_, false);
 
-    // advertise filter output
-    people_filter_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurement>("people_tracker_filter",10);
-    // advertise visualization
-    people_filter_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_filter_visualization",10);
-    people_tracker_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_measurements_visualization",10);
+  // advertise filter output
+  people_filter_pub_ = nh_.advertise<cob_perception_msgs::PositionMeasurement>("people_tracker_filter",10);
+  // advertise visualization
+  people_filter_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_filter_visualization",10);
+  people_tracker_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud>("people_tracker_measurements_visualization",10);
 
-    // register message sequencer
-    people_meas_sub_ = nh_.subscribe("people_tracker_measurements", 1, &PeopleTrackingNode::callbackRcv, this);
+  // register message sequencer
+  people_meas_sub_ = nh_.subscribe("people_tracker_measurements", 1, &PeopleTrackingNode::callbackRcv, this);
  
-  }
-  
 }
-
 
 // destructor
 PeopleTrackingNode::~PeopleTrackingNode()
