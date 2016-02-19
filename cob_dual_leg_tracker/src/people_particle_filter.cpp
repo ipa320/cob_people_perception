@@ -32,8 +32,8 @@
 #include <filter/particlefilter.h>
 
 // Own includes
-#include <dual_people_leg_tracker/people_particle_filter.h>
-#include <dual_people_leg_tracker/visualization/color_definitions.h>
+#include <cob_dual_leg_tracker/people_particle_filter.h>
+#include <cob_dual_leg_tracker/visualization/color_definitions.h>
 #include <sample/weightedsample.h>
 
 

@@ -3,8 +3,8 @@
 #include <climits>
 
 // Own includes
-#include <dual_people_leg_tracker/jpda/murty.h>
-#include <dual_people_leg_tracker/benchmarking/timer.h>
+#include <cob_dual_leg_tracker/jpda/murty.h>
+#include <cob_dual_leg_tracker/benchmarking/timer.h>
 
 int main(int argc, char **argv)
 {

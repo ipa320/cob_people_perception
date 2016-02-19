@@ -2,7 +2,7 @@
 #include <iomanip>
 #include <Eigen/Dense>
 
-#include <dual_people_leg_tracker/mht/KalmanFilter.h>
+#include <cob_dual_leg_tracker/mht/KalmanFilter.h>
 
 int main(int argc, char **argv)
 {

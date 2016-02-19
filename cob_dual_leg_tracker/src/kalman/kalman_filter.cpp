@@ -2,7 +2,7 @@
 #include <iostream>
 
 // Own includes
-#include <dual_people_leg_tracker/kalman/kalman_filter.h>
+#include <cob_dual_leg_tracker/kalman/kalman_filter.h>
 
 using namespace filter;
 

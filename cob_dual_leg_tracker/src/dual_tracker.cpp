@@ -37,27 +37,27 @@
 #include <algorithm>
 
 // Leg Detector includes
-#include <leg_detector/laser_processor.h>
-#include <leg_detector/calc_leg_features.h>
+#include <cob_leg_detection/laser_processor.h>
+#include <cob_leg_detection/calc_leg_features.h>
 
 // Own includes
-#include <dual_people_leg_tracker/DualTrackerConfig.h>
-#include <dual_people_leg_tracker/dual_tracker.h>
-#include <dual_people_leg_tracker/detection/detection.h>
-#include <dual_people_leg_tracker/math/math_functions.h>
-#include <dual_people_leg_tracker/jpda/murty.h>
-#include <dual_people_leg_tracker/jpda/jpda.h>
-#include <dual_people_leg_tracker/config_struct.h>
-#include <dual_people_leg_tracker/benchmarking/timer.h>
-#include <dual_people_leg_tracker/leg_feature.h>
-#include <dual_people_leg_tracker/people_tracker.h>
-#include <dual_people_leg_tracker/models/occlusion_model.h>
-#include <dual_people_leg_tracker/association/association.h>
+#include <cob_dual_leg_tracker/DualTrackerConfig.h>
+#include <cob_dual_leg_tracker/dual_tracker.h>
+#include <cob_dual_leg_tracker/detection/detection.h>
+#include <cob_dual_leg_tracker/math/math_functions.h>
+#include <cob_dual_leg_tracker/jpda/murty.h>
+#include <cob_dual_leg_tracker/jpda/jpda.h>
+#include <cob_dual_leg_tracker/config_struct.h>
+#include <cob_dual_leg_tracker/benchmarking/timer.h>
+#include <cob_dual_leg_tracker/leg_feature.h>
+#include <cob_dual_leg_tracker/people_tracker.h>
+#include <cob_dual_leg_tracker/models/occlusion_model.h>
+#include <cob_dual_leg_tracker/association/association.h>
 
-#include <dual_people_leg_tracker/visualization/color_functions.h>
-#include <dual_people_leg_tracker/visualization/color_definitions.h>
-#include <dual_people_leg_tracker/visualization/visualization_conversions.h>
-#include <dual_people_leg_tracker/visualization/matrix_cout_helper.h>
+#include <cob_dual_leg_tracker/visualization/color_functions.h>
+#include <cob_dual_leg_tracker/visualization/color_definitions.h>
+#include <cob_dual_leg_tracker/visualization/visualization_conversions.h>
+#include <cob_dual_leg_tracker/visualization/matrix_cout_helper.h>
 
 // OpenCV includes
 #include <opencv/cxcore.h>
@@ -65,8 +65,8 @@
 #include <opencv/ml.h>
 
 // Messages
-#include <people_msgs/PositionMeasurement.h>
-#include <people_msgs/PositionMeasurementArray.h>
+#include <cob_perception_msgs/PositionMeasurement.h>
+#include <cob_perception_msgs/PositionMeasurementArray.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
 #include <visualization_msgs/Marker.h>
@@ -259,11 +259,11 @@ public:
 
 
 
-  dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
+  dynamic_reconfigure::Server<cob_dual_leg_tracker::DualTrackerConfig> server_; /**< The configuration server*/
 
-  message_filters::Subscriber<people_msgs::PositionMeasurement> people_sub_;
+  message_filters::Subscriber<cob_perception_msgs::PositionMeasurement> people_sub_;
   message_filters::Subscriber<sensor_msgs::LaserScan> laser_sub_;
-  tf::MessageFilter<people_msgs::PositionMeasurement> people_notifier_;
+  tf::MessageFilter<cob_perception_msgs::PositionMeasurement> people_notifier_;
   tf::MessageFilter<sensor_msgs::LaserScan> laser_notifier_;
 
   DualTracker(ros::NodeHandle nh) :
@@ -306,8 +306,8 @@ public:
     //nh_.param<bool>("use_seeds", use_seeds_, false); // TODO maybe remove later?
 
     // advertise topics
-    leg_measurements_pub_         = nh_.advertise<people_msgs::PositionMeasurementArray>("leg_tracker_measurements", 0);
-    people_measurements_pub_      = nh_.advertise<people_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
+    leg_measurements_pub_         = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("leg_tracker_measurements", 0);
+    people_measurements_pub_      = nh_.advertise<cob_perception_msgs::PositionMeasurementArray>("people_tracker_measurements", 0);
 
     people_detection_pub_         = nh_.advertise<cob_perception_msgs::DetectionArray>("people_detections/laser_detections",0);
 
@@ -329,7 +329,7 @@ public:
     laser_notifier_.setTolerance(ros::Duration(0.01));
 
     // Configuration server
-    dynamic_reconfigure::Server<dual_people_leg_tracker::DualTrackerConfig>::CallbackType f;
+    dynamic_reconfigure::Server<cob_dual_leg_tracker::DualTrackerConfig>::CallbackType f;
     f = boost::bind(&DualTracker::configure, this, _1, _2);
     server_.setCallback(f);
 
@@ -347,7 +347,7 @@ public:
    *  @brief Handles the configuration of this node
    */
 
-  void configure(dual_people_leg_tracker::DualTrackerConfig &config, uint32_t level)
+  void configure(cob_dual_leg_tracker::DualTrackerConfig &config, uint32_t level)
   {
     // Clustering parameters
     connected_thresh_           = config.connection_threshold;
@@ -1364,7 +1364,7 @@ public:
 
     // Iterator variable
     int i = 0;
-    vector<people_msgs::PositionMeasurement> legs;
+    vector<cob_perception_msgs::PositionMeasurement> legs;
 
     // Iterate the features
     for (vector<LegFeaturePtr>::iterator sf_iter = legFeatures.begin();
@@ -1376,7 +1376,7 @@ public:
 
       if ((*sf_iter)->getReliability() > leg_reliability_limit_ && publish_measurements_visualizations_)
       {
-        people_msgs::PositionMeasurement pos;
+        cob_perception_msgs::PositionMeasurement pos;
         pos.header.stamp = legFeatures.front()->getLastUpdateTime();
         pos.header.frame_id = legFeatures.front()->getFixedFrame();
         pos.name = "leg_detector";
@@ -1400,7 +1400,7 @@ public:
   }
 
   // Create the Position Measurement Array
-  people_msgs::PositionMeasurementArray array;
+  cob_perception_msgs::PositionMeasurementArray array;
   array.header.stamp =  saved_leg_features.front()->getLastScanTime();
   array.header.frame_id = saved_leg_features.front()->getFixedFrame();
 

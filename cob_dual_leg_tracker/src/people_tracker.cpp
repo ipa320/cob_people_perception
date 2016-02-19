@@ -11,10 +11,10 @@
 #include <math.h>
 
 // Own includes
-#include <dual_people_leg_tracker/people_tracker.h>
-#include <dual_people_leg_tracker/math/math_functions.h>
-#include <dual_people_leg_tracker/visualization/color_definitions.h>
-#include <dual_people_leg_tracker/social_interaction/formulas.h>
+#include <cob_dual_leg_tracker/people_tracker.h>
+#include <cob_dual_leg_tracker/math/math_functions.h>
+#include <cob_dual_leg_tracker/visualization/color_definitions.h>
+#include <cob_dual_leg_tracker/social_interaction/formulas.h>
 
 /////////////////////////////////////////////////////////////
 //// PeopleTracker Class Definitions

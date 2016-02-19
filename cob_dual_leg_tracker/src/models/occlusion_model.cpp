@@ -1,4 +1,4 @@
-#include <dual_people_leg_tracker/models/occlusion_model.h>
+#include <cob_dual_leg_tracker/models/occlusion_model.h>
 #include <leg_detector/constants.h>
 #include <cmath>
 

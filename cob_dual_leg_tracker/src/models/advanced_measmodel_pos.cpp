@@ -34,7 +34,7 @@
 
 /* Based on the work of: Wim Meeussen */
 
-#include <dual_people_leg_tracker/models/advanced_measmodel_pos.h>
+#include <cob_dual_leg_tracker/models/advanced_measmodel_pos.h>
 
 using namespace std;
 using namespace BFL;
