@@ -1,5 +1,5 @@
 <package>
-  <name>people_tracking_filter</name>
+  <name>cob_people_tracking_filter</name>
   <version>1.0.8</version>
   <description>
   A collection of filtering tools for tracking people's locations
@@ -26,7 +26,7 @@
   <run_depend>tf</run_depend>
   <run_depend>bfl</run_depend>
   <run_depend>message_filters</run_depend>
-  <run_depend>people_msgs</run_depend>
+  <run_depend>cob_perception_msgs</run_depend>
   <run_depend>sensor_msgs</run_depend>
   
 
