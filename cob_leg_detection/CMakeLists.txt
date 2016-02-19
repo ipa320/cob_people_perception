@@ -15,6 +15,7 @@ set(catkin_RUN_PACKAGES
 	std_srvs
 	tf
 	visualization_msgs
+  rosbag_storage
 )
 
 set(catkin_BUILD_PACKAGES
