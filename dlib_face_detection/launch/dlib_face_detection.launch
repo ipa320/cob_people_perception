@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<rosparam command="load" file="$(find dlib_face_detection)/launch/detection_params.yaml"/>
+	<arg name="camera" default="camera" />
+ 
+	<node name="dlibHeadDetector" pkg="dlib_face_detection" type="head_detector" output="screen">
+		<remap from="pointcloud_in" to="/$(arg camera)/depth_registered/points"/>
+	</node>		
+ 
+	<node name="dlibFaceDetector" pkg="dlib_face_detection" type="dlib_face_detection" output="screen">
+        <remap from="~image_in" to="/$(arg camera)/rgb/image_raw"/>
+	</node>		
+	
+	<node name="dlibFaceDetectionMerge" pkg="dlib_face_detection" type="face_detection_merge" output="screen">
+		<remap from="~pointcloud_in" to="/$(arg camera)/depth_registered/points"/>
+	</node>		
+	
+	<node name="dlibDetectionViewer" pkg="dlib_face_detection" type="viewer" output="screen">
+		<remap from="~image_in" to="/$(arg camera)/rgb/image_raw"/>
+	</node>	
+	
+</launch>
+

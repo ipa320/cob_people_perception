@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>dlib_face_detection</name>
+  <version>0.1.0</version>
+  <description>The dlib_face_detection package</description>
+
+   <maintainer email="lisa-franziska.schaefer@ipa.fraunhofer.de">Lisa-Franziska Schaefer</maintainer>
+
+  <license>private</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+  
+  <depend>cob_perception_msgs</depend>
+  <depend>cob_vision_utils</depend>
+  <depend>cv_bridge</depend>
+  <depend>dlib_lib</depend>
+  <depend>pcl_ros</depend>
+  <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend> 
+  <depend>tf</depend> 
+
+</package>

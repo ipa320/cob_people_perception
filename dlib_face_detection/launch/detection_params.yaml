@@ -1,0 +1,44 @@
+###########################
+# General Parameters	  #
+###########################
+# if enabled, a tf frame will be published for detected heads and faces
+enable_tf: false
+
+
+###########################
+# Face Detector Parameter #
+###########################
+# changes the image size so you can detect smaller faces. A value of 2 means doubled image size. 
+scale_factor: 2.4 
+
+
+###########################
+# Head Detector Parameter #
+###########################
+# this string allows to change the path to the Haar classifier model
+# string
+# data_directory: path_to_data -> please change this parameter in the launch file
+
+# if enabled, invalid pixels of the depth image are interpolated by region growing of their neighbors
+# bool
+fill_unassigned_depth_values: true
+
+# the factor by which the search window is scaled between the subsequent scans (default: 1.1)
+# double
+depth_increase_search_scale: 1.2
+
+# minimum number (minus 1) of neighbor rectangles that makes up an object. (default: 68)
+# int
+depth_drop_groups: 20 
+
+# width of smallest search rectangle (default: 20)
+# int
+depth_min_search_scale_x: 25
+
+# height of smallest search rectangle (default: 20)
+# int
+depth_min_search_scale_y: 25
+
+# display timing information
+# bool
+display_timing: false
