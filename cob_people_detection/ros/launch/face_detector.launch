@@ -2,11 +2,9 @@
 
 <launch>
   <!-- face detection node (detects faces in color image and publishes their positions) -->
-  <rosparam command="load" ns="/cob_people_detection/face_detector" file="$(find cob_people_detection)/ros/launch/face_detector_params.yaml"/>
-  <node name="face_detector" pkg="cob_people_detection" ns="/cob_people_detection/face_detector" type="face_detector_node" output="screen">
-    <remap from="head_positions" to="/cob_people_detection/head_detector/head_positions"/>
-	
+  <node name="face_detector" pkg="cob_people_detection" type="face_detector_node" output="screen">
+    <rosparam command="load" file="$(find cob_people_detection)/ros/launch/face_detector_params.yaml"/>
     <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/"/>
+    <remap from="~head_positions" to="head_detector/head_positions"/>
   </node>
-
 </launch>

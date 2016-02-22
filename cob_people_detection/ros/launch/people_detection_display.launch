@@ -4,18 +4,16 @@
   <arg name="display_results_with_image_view" default="true"/>   <!-- set to false if you do not like to display the camera image with names attached to detected faces within an image_view window -->
 
   <!-- display node for the detections -->
-  <rosparam command="load" ns="cob_people_detection/people_detection_display" file="$(find cob_people_detection)/ros/launch/people_detection_display_params.yaml"/>
-  <node pkg="cob_people_detection" ns="cob_people_detection/people_detection_display" type="people_detection_display_node" name="people_detection_display" output="screen">
-    <remap from="face_position_array" to="/cob_people_detection/detection_tracker/face_position_array"/>
-    <remap from="face_detections" to="/cob_people_detection/face_detector/face_positions"/>
-    <!--remap from="pointcloud_in" to="/cob_people_detection/image_flip/pointcloud_rgb_out"/-->
-    <!--remap from="colorimage_in" to="/cob_people_detection/image_flip/colorimage_out"/--> <!-- only activate on cob3 robots -->
-    <remap from="colorimage_in" to="/cob_people_detection/sensor_message_gateway/colorimage_out"/>
+  <node pkg="cob_people_detection" type="people_detection_display_node" name="people_detection_display" output="screen">
+    <rosparam command="load" file="$(find cob_people_detection)/ros/launch/people_detection_display_params.yaml"/>
+    <remap from="~face_position_array" to="detection_tracker/face_position_array"/>
+    <remap from="~face_detections" to="face_detector/face_positions"/>
+    <remap from="~colorimage_in" to="sensor_message_gateway/colorimage_out"/>
   </node>
 
   <!-- Image viewer display -->
   <node if="$(arg display_results_with_image_view)" name="people_detection_viewer" pkg="image_view" type="image_view" respawn="false" output="screen">
-    <remap from="image" to="/cob_people_detection/people_detection_display/face_position_image"/>
+    <remap from="image" to="people_detection_display/face_position_image"/>
     <param name="autosize" value="true"/>
   </node>
 
