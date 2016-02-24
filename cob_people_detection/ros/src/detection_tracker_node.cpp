@@ -262,7 +262,7 @@ unsigned long DetectionTrackerNode::copyDetection(const cob_perception_msgs::Det
 	// else dest.detector = src.detector;
 	dest.detector = src.detector;
 
-	dest.header = src.header; //ros::Time::now();
+	dest.header = src.header;
 
 	return ipa_Utils::RET_OK;
 }
@@ -350,7 +350,7 @@ unsigned long DetectionTrackerNode::removeMultipleInstancesOfLabel()
 	return ipa_Utils::RET_OK;
 }
 
-unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_perception_msgs::DetectionArray& face_position_msg_out, ros::Time image_recording_time)
+unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_perception_msgs::DetectionArray& face_position_msg_out, ros::Time image_recording_time, std::string frame_id)
 {
 	// publish face positions
 	std::vector < cob_perception_msgs::Detection > faces_to_publish;
@@ -378,7 +378,7 @@ unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_perception_ms
 	//      		  face_position_msg_out.detections[i].label = "0000";
 	//        }
 	face_position_msg_out.header.stamp = image_recording_time;
-
+	face_position_msg_out.header.frame_id = frame_id;
 	return ipa_Utils::RET_OK;
 }
 
@@ -626,8 +626,8 @@ void DetectionTrackerNode::inputCallback(const cob_perception_msgs::DetectionArr
 	// publish face positions
 	ros::Time image_recording_time = (face_position_msg_in->detections.size() > 0 ? face_position_msg_in->detections[0].header.stamp : ros::Time(0));
 	cob_perception_msgs::DetectionArray face_position_msg_out;
-	prepareFacePositionMessage(face_position_msg_out, image_recording_time);
-	face_position_msg_out.header.stamp = face_position_msg_in->header.stamp;
+	prepareFacePositionMessage(face_position_msg_out, image_recording_time, face_position_msg_in->detections[0].header.frame_id);
+	face_position_msg_out.header = face_position_msg_in->header;
 	face_position_publisher_.publish(face_position_msg_out);
 
 	//  // display
