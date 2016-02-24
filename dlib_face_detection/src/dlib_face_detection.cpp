@@ -73,8 +73,8 @@ void FaceDetectorNode::headCallback(const cob_perception_msgs::ColorDepthImageAr
 		// use images from head detector to detect smaller faces
 		for (int j = 0; j < head_img_msg->head_detections.size(); ++j)
 		{
-			if (head_img_msg->head_detections[j].color_image.height > 140 || head_img_msg->head_detections[j].color_image.width > 140)
-				continue;
+			//if (head_img_msg->head_detections[j].color_image.height > 140 || head_img_msg->head_detections[j].color_image.width > 140)
+			//	continue;
 
 			msgPtr = boost::shared_ptr<sensor_msgs::Image const>(&(head_img_msg->head_detections[j].color_image), voidDeleter);
 			color_image_ptr = cv_bridge::toCvShare(msgPtr, sensor_msgs::image_encodings::BGR8);
