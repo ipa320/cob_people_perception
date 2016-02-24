@@ -4,9 +4,10 @@
   <version>0.1.0</version>
   <description>The dlib_face_detection package</description>
 
-   <maintainer email="lisa-franziska.schaefer@ipa.fraunhofer.de">Lisa-Franziska Schaefer</maintainer>
-
-  <license>private</license>
+  <maintainer email="florian.weisshardt@ipa.fraunhofer.de">Florian Weisshardt</maintainer>
+  <author email="lfs.schaefer@gmail.com">Lisa-Franziska Schäfer</author>
+  
+  <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
   

@@ -6,9 +6,10 @@
 		This package wrappes the external c++ library dlib (http://dlib.net/) in a ros package, so other packages can use it. It downloads the source code of it and then builds it, corresponding to the webpage of it, using cmake. The build library is a static library and will be copied to the created common/lib folder. The neccessary header files will be copied to the common/include folder. The include folder needs to exist befor building the package, because in the CMakeLists you have to specify where the headers are and if the folder doesn't exist, catkin won't be able to build the package. For further descriptions and tutorials see the Makefile.tarball and http://dlib.net/ .
 	</description>
 	
-	<maintainer email="lisa-franziska.schaefer@ipa.fraunhofer.de">Lisa-Franziska Schaefer</maintainer>
-	
-	<license>LGPL</license>
+	<maintainer email="florian.weisshardt@ipa.fraunhofer.de">Florian Weisshardt</maintainer>
+	<author email="lfs.schaefer@gmail.com">Lisa-Franziska Schäfer</author>
+
+	<license>BSD</license>
 	
 	<url>http://ros.org/wiki/dlib_lib</url>
 
