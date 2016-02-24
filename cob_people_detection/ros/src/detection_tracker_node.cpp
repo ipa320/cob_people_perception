@@ -262,7 +262,7 @@ unsigned long DetectionTrackerNode::copyDetection(const cob_perception_msgs::Det
 	// else dest.detector = src.detector;
 	dest.detector = src.detector;
 
-	dest.header.stamp = src.header.stamp; //ros::Time::now();
+	dest.header = src.header; //ros::Time::now();
 
 	return ipa_Utils::RET_OK;
 }
@@ -377,7 +377,7 @@ unsigned long DetectionTrackerNode::prepareFacePositionMessage(cob_perception_ms
 	//      	  if (face_position_msg_out.detections[i].label=="Unknown")
 	//      		  face_position_msg_out.detections[i].label = "0000";
 	//        }
-	face_position_msg_out.header.stamp = ros::Time::now();
+	face_position_msg_out.header.stamp = image_recording_time;
 
 	return ipa_Utils::RET_OK;
 }
@@ -606,7 +606,7 @@ void DetectionTrackerNode::inputCallback(const cob_perception_msgs::DetectionArr
 					std::cout << "\n***** New detection *****\n\n";
 				cob_perception_msgs::Detection det_out;
 				copyDetection(det_in, det_out, false);
-				det_out.pose.header.frame_id = face_position_msg_in->header.frame_id;
+				det_out.pose.header = face_position_msg_in->header;
 				face_position_accumulator_.push_back(det_out);
 				// remember label history
 				std::map<std::string, double> new_identification_data;
@@ -624,7 +624,7 @@ void DetectionTrackerNode::inputCallback(const cob_perception_msgs::DetectionArr
 	removeMultipleInstancesOfLabel();
 
 	// publish face positions
-	ros::Time image_recording_time = (face_position_msg_in->detections.size() > 0 ? face_position_msg_in->detections[0].header.stamp : ros::Time::now());
+	ros::Time image_recording_time = (face_position_msg_in->detections.size() > 0 ? face_position_msg_in->detections[0].header.stamp : ros::Time(0));
 	cob_perception_msgs::DetectionArray face_position_msg_out;
 	prepareFacePositionMessage(face_position_msg_out, image_recording_time);
 	face_position_msg_out.header.stamp = face_position_msg_in->header.stamp;

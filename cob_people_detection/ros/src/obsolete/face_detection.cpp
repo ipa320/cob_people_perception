@@ -1276,13 +1276,10 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 	//std::cout << "\t ... Recognize Time: " << (timeGetTime() - start) << std::endl;
 
 	// publish face positions
-	std::stringstream ss;
-	ss << depth_image.rows << " " << depth_image.cols;
 	cob_perception_msgs::DetectionArray facePositionMsg;
 	// image dimensions
-	facePositionMsg.header.frame_id = ss.str();
 	// time stamp
-	facePositionMsg.header.stamp = ros::Time::now(); //color_image_msg->header.stamp;  //
+	facePositionMsg.header.stamp = shared_image_msg->header.stamp;
 	//facePositionMsg.detections.reserve(color_faces_.size());
 	// add all range faces that do not contain a face detection in the color image
 	for (int i = 0; i < (int)range_faces_.size(); i++)
@@ -1294,6 +1291,7 @@ void CobFaceDetectionNodelet::recognizeCallback(const sensor_msgs::PointCloud2::
 
 			// 2D image coordinates
 			cob_perception_msgs::Detection det;
+			det.header = shared_image_msg->header;
 			det.mask.roi.x = face.x;
 			det.mask.roi.y = face.y;
 			det.mask.roi.width = face.width;
