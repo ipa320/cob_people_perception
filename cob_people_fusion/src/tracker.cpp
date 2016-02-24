@@ -22,7 +22,58 @@ Tracker::Tracker(StatePosVel init, ros::Time initialTime, std::vector<detector_c
     }
 }
 
+// Update with out of sequence message -> only update scores, not time and states
+void Tracker::update_with_old_detection(DetectionPtr detection){
+  //this->currentState_ = detection->getState();
+  //this->currentTime_ = detection->getTime();
+  this->updates_.push_back(detection);
+
+  // Trim the detection list from the front to a desired time horizon 
+  // (needed here as well since the new might be too old)
+  DetectionPtr oldestDetection = this->updates_.front();
+  DetectionPtr newestDetection = this->updates_.back();
+
+  double currentHorizon = (newestDetection->getTime() - oldestDetection->getTime()).toSec();
+
+  while(currentHorizon > timeHorizon_){
+
+    // Decrease the counter
+    counts_[oldestDetection->getDetectionType()]--;
+
+    // Remove first element
+    this->updates_.erase( this->updates_.begin() );
+
+    // Set the new oldest element
+    oldestDetection = this->updates_.front();
+
+    currentHorizon = (newestDetection->getTime() - oldestDetection->getTime()).toSec();
+
+  }
+
+  // Update the counter
+  counts_[detection->getDetectionType()]++;
+
+  // Update the frequencies
+  for(std::map<std::string, size_t>::iterator mapIt = counts_.begin(); mapIt != counts_.end(); mapIt++) {
+    if(currentHorizon > 0){
+      frequencies_[detection->getDetectionType()] = counts_[detection->getDetectionType()] / currentHorizon;
+    }
+    else
+    {
+      frequencies_[detection->getDetectionType()] = 0;
+    }
+  }
+
+}
+
 void Tracker::update(DetectionPtr detection){
+
+  if (this->currentTime_ > detection->getTime())
+  {
+    update_with_old_detection(detection);
+    return;
+  }
+  
   this->currentState_ = detection->getState();
   this->currentTime_ = detection->getTime();
   this->updates_.push_back(detection);

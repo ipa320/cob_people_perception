@@ -52,6 +52,7 @@ class Tracker{
 		void predict(ros::Time updateTime);
 
 		void update(DetectionPtr detection);
+		void update_with_old_detection(DetectionPtr detection);
 
 		std::map<std::string, size_t>& getUpdateCounts();
 

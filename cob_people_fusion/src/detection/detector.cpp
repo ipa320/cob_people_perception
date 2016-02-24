@@ -30,7 +30,7 @@ void Detector::detectionCallback(const cob_perception_msgs::DetectionArray::Cons
   for(size_t i = 0; i < detectionArray->detections.size(); i++){
     if(this->name_ != detectionArray->detections[i].detector){
       ROS_ERROR("The name of the detector \"%s\" defined in the message does not match \"%s\" given in the config file", detectionArray->detections[i].detector.c_str(), this->name_.c_str());
-      ROS_BREAK();
+      //ROS_BREAK();
     }
   }
 

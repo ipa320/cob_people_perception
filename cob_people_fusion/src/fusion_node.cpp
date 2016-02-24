@@ -27,7 +27,7 @@ FusionNode::FusionNode(ros::NodeHandle nh, std::vector<detector_config> detector
       detector_configs_(detector_configs),
       detections_sub_all_(nh_, "all_detections", 50), //Subscriber
       vh_(nh, detector_configs.size()),
-      sequencer(detections_sub_all_, ros::Duration(1), ros::Duration(0.01), 25),
+      sequencer(detections_sub_all_, ros::Duration(0.1), ros::Duration(0.01), 125),
       totalDetectorWeight_(0),
       timeHorizon_(timeHorizon)
       {
@@ -60,7 +60,8 @@ FusionNode::FusionNode(ros::NodeHandle nh, std::vector<detector_config> detector
         }
 
         // Set the laserCallback
-        sequencer.registerCallback(boost::bind(&FusionNode::detectionCallbackAll, this, _1));
+        detections_sub_all_.registerCallback(boost::bind(&FusionNode::detectionCallbackAll, this, _1));
+        //sequencer.registerCallback(boost::bind(&FusionNode::detectionCallbackAll, this, _1));
         //seq.setTolerance(ros::Duration(0.01));
 
         people_pub_= nh_.advertise<cob_perception_msgs::DetectionArray>("fused_detections", 0);
@@ -79,6 +80,7 @@ FusionNode::~FusionNode(){
 
 void FusionNode::detectionCallbackAll(const cob_people_fusion::DetectionExt::ConstPtr& detectionMsg)
 {
+  ROS_ERROR_STREAM("Detection callback");
   //ROS_DEBUG_COND(FUSION_NODE_DEBUG, "FusionNode::%s - Number of detections: %i", __func__, (int) detectionArray->detections.size());
   //std::cout << BOLDYELLOW << "Received " << detectionArray->detections.size() << ". Time: " << detectionArray->header.stamp << std::endl;
   std::string detectionTyp = detectionMsg->detector;
@@ -252,15 +254,18 @@ void FusionNode::detectionCallbackAll(const cob_people_fusion::DetectionExt::Con
   cob_perception_msgs::DetectionArray resultDetectionArray;
   resultDetectionArray.header = detectionArray->header;
   for(std::vector<TrackerPtr>::iterator trackerIt = trackerList_.begin(); trackerIt < trackerList_.end(); trackerIt++){
-    cob_perception_msgs::Detection detection;
-    detection.header = detectionArray->header;
-    detection.pose.pose.position.x = (*trackerIt)->getCurrentState().getPos().getX();
-    detection.pose.pose.position.y = (*trackerIt)->getCurrentState().getPos().getY();
-    detection.pose.pose.position.z = 0;
-    detection.label = (*trackerIt)->getIdStr();
-    detection.score = (*trackerIt)->getScore();
+    if((*trackerIt)->getScore() > 0.8)
+    {
+      cob_perception_msgs::Detection detection;
+      detection.header = detectionArray->header;
+      detection.pose.pose.position.x = (*trackerIt)->getCurrentState().getPos().getX();
+      detection.pose.pose.position.y = (*trackerIt)->getCurrentState().getPos().getY();
+      detection.pose.pose.position.z = 0;
+      detection.label = (*trackerIt)->getIdStr();
+      detection.score = (*trackerIt)->getScore();
 
-    resultDetectionArray.detections.push_back(detection);
+      resultDetectionArray.detections.push_back(detection);
+    }
   }
 
   people_pub_.publish(resultDetectionArray);
