@@ -2,20 +2,25 @@ cmake_minimum_required(VERSION 2.8.3)
 project(dlib_face_detection)
 
 find_package(catkin REQUIRED COMPONENTS
+  cob_people_detection
   cob_perception_msgs
   cob_vision_utils
   cv_bridge
   dlib_lib
+  geometry_msgs
+  message_filters
   message_generation
   pcl_ros
   roscpp
+  sensor_msgs
   std_msgs
   tf  
 )
 
+find_package(Boost REQUIRED)
+find_package(BZip2)
 find_package(X11 REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(BZip2)
 
 
 add_message_files(
@@ -46,7 +51,15 @@ add_custom_command(
   COMMENT "Unpacking ${DOWNLOAD_PATH}"
 )
 
-catkin_package(CATKIN_DEPENDS message_runtime sensor_msgs std_msgs)
+catkin_package(
+  INCLUDE_DIRS
+    ../cob_people_detection/common/include
+  CATKIN_DEPENDS 
+    message_runtime
+  DEPENDS 
+    OpenCV 
+    Boost
+)
 
 ###########
 ## Build ##
@@ -57,37 +70,41 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   ${BZIP_INCLUDE_DIRS}
   include
-  
 )
 
 add_library(data_file ${EXTRACTED_FILE})
 set_target_properties(data_file PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(data_file ${BZIP2_LIBRARIES})
 
-add_executable(dlib_face_detection src/dlib_face_detection.cpp include)
-add_executable(head_detector src/head_detector_node.cpp src/head_detector.cpp include)
-add_executable(viewer src/detection_viewer.cpp include)
-add_executable(face_detection_merge src/face_detection_merge.cpp include)
 
+add_executable(dlib_face_detection src/dlib_face_detection.cpp)
 target_link_libraries(dlib_face_detection ${catkin_LIBRARIES} ${OpenCV_LIBS} ${X11_LIBRARIES} dlib data_file)
+add_dependencies(dlib_face_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(head_detector src/head_detector_node.cpp ../cob_people_detection/common/src/head_detector.cpp)
 target_link_libraries(head_detector ${catkin_LIBRARIES} ${OpenCV_LIBS})
-target_link_libraries(viewer ${catkin_LIBRARIES} ${OpenCV_LIBS} ${X11_LIBRARIES})
-target_link_libraries(face_detection_merge ${catkin_LIBRARIES})
- 
+add_dependencies(head_detector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 set_target_properties(head_detector PROPERTIES COMPILE_FLAGS -D__LINUX__)
-add_dependencies(head_detector ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+add_executable(viewer src/detection_viewer.cpp include)
+target_link_libraries(viewer ${catkin_LIBRARIES} ${OpenCV_LIBS} ${X11_LIBRARIES})
+add_dependencies(viewer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(face_detection_merge src/face_detection_merge.cpp include)
+target_link_libraries(face_detection_merge ${catkin_LIBRARIES})
+add_dependencies(face_detection_merge ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 #############
 ## Install ##
 #############
-install(TARGETS dlib_face_detection head_detector viewer face_detection_merge
+install(TARGETS dlib_face_detection head_detector viewer face_detection_merge data_file
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(DIRECTORY include
-	DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+	DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 

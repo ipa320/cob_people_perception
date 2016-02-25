@@ -1,5 +1,7 @@
 #include "dlib_face_detection/head_detector_node.h"
 
+using namespace ipa_PeopleDetector;
+
 HeadDetectorNode::HeadDetectorNode(ros::NodeHandle nh) :
 	node_handle_(nh)
 {

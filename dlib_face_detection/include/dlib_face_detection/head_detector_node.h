@@ -2,11 +2,8 @@
 #ifndef __HEAD_DETECTOR_NODE_H__
 #define __HEAD_DETECTOR_NODE_H__
 
-#ifdef __LINUX__
-#include "dlib_face_detection/head_detector.h"
-#include "cob_vision_utils/GlobalDefines.h"
-#else
-#endif
+#include "cob_people_detection/head_detector.h"
+
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -31,6 +28,8 @@
 #include <opencv/cv.h>
 #include <cv_bridge/cv_bridge.h>
 
+namespace ipa_PeopleDetector
+{
 
 class HeadDetectorNode
 {
@@ -66,4 +65,5 @@ protected:
 
 };
 
+}
 #endif //__HEAD_DETECTOR_NODE_H__

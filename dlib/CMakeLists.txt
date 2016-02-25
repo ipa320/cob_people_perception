@@ -3,21 +3,19 @@ project(dlib_lib)
 
 find_package(catkin REQUIRED)
 
-message(STATUS "Project source dir: ${PROJECT_SOURCE_DIR}")
 add_custom_target(
-    	build_dlib1817 ALL
+    	build_dlib ALL
     		COMMAND  cmake -E chdir ${PROJECT_SOURCE_DIR} make -f Makefile.tarball && touch ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/${PROJECT_NAME}/INSTALLED 
-    )
-message(STATUS "done tarball")
+			COMMENT "Building tarball"
+)
 
-set(libraries "dlib")
-foreach(library ${libraries})
-	add_custom_target(
-		copy_${library} ALL
-		COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/build/dlib-18.17/dlib/build/lib${library}.a ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}
-    	COMMENT "Copying ${PROJECT_SOURCE_DIR}/common/build/lib${library}.a to ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}"
-	)
-endforeach()
+
+add_custom_target(
+	copy_dlib ALL
+	COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/build/dlib-18.17/dlib/build/libdlib.a ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}
+	COMMENT "Copying ${PROJECT_SOURCE_DIR}/build/dlib-18.17/dlib/build/libdlib.a to ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}"
+)
+
 
 catkin_package(
 	INCLUDE_DIRS
@@ -29,17 +27,14 @@ catkin_package(
 )
 
 include_directories(
-	common/include
-	/usr/include
+  ${catkin_INCLUDE_DIRS}
 )
 
-foreach(library ${libraries})
-	add_library(${library} SHARED)
-	add_dependencies(${library} copy_${library})
-	add_dependencies(copy_${library} build_dlib1817)
-	set_target_properties(${library} PROPERTIES LINKER_LANGUAGE CXX)
-endforeach()
-set_target_properties(build_dlib1817 PROPERTIES LINKER_LANGUAGE CXX)
+add_library(dlib SHARED)
+add_dependencies(dlib copy_dlib)
+add_dependencies(copy_dlib build_dlib)
+set_target_properties(dlib PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(build_dlib PROPERTIES LINKER_LANGUAGE CXX)
 
 
 #############
@@ -52,8 +47,5 @@ install(TARGETS dlib
 )
 
 install(DIRECTORY common/include
-	DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
-)
-install(DIRECTORY /usr/include
-	DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+	DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )

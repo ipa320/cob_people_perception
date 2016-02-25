@@ -10,8 +10,8 @@ DetectionViewer::DetectionViewer(ros::NodeHandle nh)
 	sync_ = new message_filters::Synchronizer<SyncPolicy>(SyncPolicy(30), *image_sub_, *head_sub_, *face_sub_);
 	sync_->registerCallback(boost::bind(&DetectionViewer::callback, this, _1, _2, _3));
 
-    cv::namedWindow("dlib Detections", cv::WINDOW_AUTOSIZE );
-    cv::startWindowThread();
+	cv::namedWindow("dlib Detections", cv::WINDOW_AUTOSIZE );
+	cv::startWindowThread();
 }
 
 DetectionViewer::~DetectionViewer()

@@ -14,14 +14,21 @@
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
   
+  <depend>Boost</depend>
+  <depend>BZip2</depend>
+  <depend>cob_people_detection</depend>
   <depend>cob_perception_msgs</depend>
   <depend>cob_vision_utils</depend>
   <depend>cv_bridge</depend>
   <depend>dlib_lib</depend>
+  <depend>geometry_msgs</depend>
+  <depend>message_filters</depend>
+  <depend>OpenCV</depend> 
   <depend>pcl_ros</depend>
   <depend>roscpp</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend> 
   <depend>tf</depend> 
-
+  <depend>X11</depend> 
+  
 </package>

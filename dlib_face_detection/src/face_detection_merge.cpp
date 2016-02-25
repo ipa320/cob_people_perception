@@ -134,43 +134,43 @@ void FaceDetectionMerge::tfpublisher(const cob_perception_msgs::DetectionArray::
 
 	for (int i = 0; i < detArray->detections.size(); i++)
 	{
-			std::stringstream s;
-			k += 1;
-			s << "dlib_face_" << k;
+		std::stringstream s;
+		k += 1;
+		s << "dlib_face_" << k;
 
-			int a = 0;
-			while (a < 5)
+		int a = 0;
+		while (a < 5)
+		{
+			// transform pose to "/odom_combined" (world coordinates)
+			try
 			{
-				// transform pose to "/odom_combined" (world coordinates)
-				try
-				{
-					ros::Time now = ros::Time(0);
-					tfl_.waitForTransform("/odom_combined", detArray->header.frame_id, now, ros::Duration(0.5));
-					tfl_.transformPose("/odom_combined", now, detArray->detections[i].pose, "/odom_combined", pose_world);
-				}
-				catch(tf::TransformException &e)
-				{
-					a++;
-					ROS_ERROR(" %s", e.what());
-					ros::Duration(0.2).sleep();
-					continue;
-				}
-
-				pose_world.pose.orientation.x = 0;
-				pose_world.pose.orientation.y = 0;
-				pose_world.pose.orientation.z = 0;
-				pose_world.pose.orientation.w = 1;
-
-				break;
+				ros::Time now = ros::Time(0);
+				tfl_.waitForTransform("/odom_combined", detArray->header.frame_id, now, ros::Duration(0.5));
+				tfl_.transformPose("/odom_combined", now, detArray->detections[i].pose, "/odom_combined", pose_world);
+			}
+			catch(tf::TransformException &e)
+			{
+				a++;
+				ROS_ERROR(" %s", e.what());
+				ros::Duration(0.2).sleep();
+				continue;
 			}
 
-			 // publish tf
-			 transform_.setOrigin(tf::Vector3(pose_world.pose.position.x, pose_world.pose.position.y, pose_world.pose.position.z));
-			 tf::Quaternion q;
-			 q.setRPY(pose_world.pose.orientation.x, pose_world.pose.orientation.y, pose_world.pose.orientation.z);
-			 transform_.setRotation(q);
+			pose_world.pose.orientation.x = 0;
+			pose_world.pose.orientation.y = 0;
+			pose_world.pose.orientation.z = 0;
+			pose_world.pose.orientation.w = 1;
 
-			 tfb_.sendTransform(tf::StampedTransform(transform_, pose_world.header.stamp, pose_world.header.frame_id, s.str()));
+			break;
+		}
+
+		 // publish tf
+		 transform_.setOrigin(tf::Vector3(pose_world.pose.position.x, pose_world.pose.position.y, pose_world.pose.position.z));
+		 tf::Quaternion q;
+		 q.setRPY(pose_world.pose.orientation.x, pose_world.pose.orientation.y, pose_world.pose.orientation.z);
+		 transform_.setRotation(q);
+
+		 tfb_.sendTransform(tf::StampedTransform(transform_, pose_world.header.stamp, pose_world.header.frame_id, s.str()));
 	}
 
 }
