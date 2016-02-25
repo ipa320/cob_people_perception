@@ -1,6 +1,8 @@
 
 #include <dlib_face_detection/face_detection_merge.h>
 
+using namespace ipa_PeopleDetector;
+
 FaceDetectionMerge::FaceDetectionMerge(ros::NodeHandle nh)
 {
 	node_handle_.param("enable_tf", enable_tf_, false);
@@ -22,8 +24,8 @@ FaceDetectionMerge::~FaceDetectionMerge()
 }
 
 void FaceDetectionMerge::callback(const sensor_msgs::PointCloud2::ConstPtr& cloud_msg,
-								const dlib_face_detection::RectArray::ConstPtr& dFace_msg,
-								const dlib_face_detection::RectArray::ConstPtr& hbFace_msg)
+						const dlib_face_detection::RectArray::ConstPtr& dFace_msg,
+						const dlib_face_detection::RectArray::ConstPtr& hbFace_msg)
 {
 	 // convert cloud_msg to pcl
 	PointCloudT::Ptr cloud(new PointCloudT), cloud_transformed(new PointCloudT);

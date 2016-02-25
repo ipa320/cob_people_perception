@@ -28,6 +28,8 @@
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
+namespace ipa_PeopleDetector
+{
 
 class FaceDetectionMerge
 {
@@ -64,5 +66,7 @@ protected:
 
 	bool enable_tf_;
 };
+
+}
 
 #endif //__FACE_DETECTION_MERGE_H__

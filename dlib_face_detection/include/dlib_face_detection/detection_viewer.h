@@ -25,6 +25,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv/highgui.h>
 
+namespace ipa_PeopleDetector
+{
+
 class DetectionViewer
 {
 public:
@@ -47,5 +50,7 @@ protected:
 	message_filters::Subscriber<det_msgT>* face_sub_;
 	message_filters::Synchronizer<SyncPolicy>* sync_;
 };
+
+}
 
 #endif //__DETECTION_VIEWER_H__

@@ -1,5 +1,6 @@
 #include <dlib_face_detection/detection_viewer.h>
 
+using namespace ipa_PeopleDetector;
 
 DetectionViewer::DetectionViewer(ros::NodeHandle nh)
 {
@@ -19,8 +20,8 @@ DetectionViewer::~DetectionViewer()
 }
 
 void DetectionViewer::callback(const sensor_msgs::Image::ConstPtr &image_msg,
-								const cob_perception_msgs::DetectionArray::ConstPtr& head_msg,
-								const cob_perception_msgs::DetectionArray::ConstPtr& face_msg)
+						const cob_perception_msgs::DetectionArray::ConstPtr& head_msg,
+						const cob_perception_msgs::DetectionArray::ConstPtr& face_msg)
 {
 	cv_bridge::CvImageConstPtr color_image_ptr;
 	cv::Mat color_image;

@@ -16,11 +16,10 @@
   
   <depend>boost</depend>
   <depend>bzip2</depend>
-  <depend>cob_people_detection</depend>
   <depend>cob_perception_msgs</depend>
   <depend>cob_vision_utils</depend>
   <depend>cv_bridge</depend>
-  <depend>dlib_lib</depend>
+  <depend>dlib</depend>
   <depend>geometry_msgs</depend>
   <depend>libopencv-dev</depend>
   <depend>libpcl-all-dev</depend>

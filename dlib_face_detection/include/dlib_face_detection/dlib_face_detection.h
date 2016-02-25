@@ -30,6 +30,8 @@
 #include <opencv/ml.h>
 #include <cv_bridge/cv_bridge.h>
 
+namespace ipa_PeopleDetector
+{
 
 class FaceDetectorNode
 {
@@ -53,5 +55,7 @@ protected:
 
 	double scale_factor_;
 };
+
+}
 
 #endif //__DLIB_FACE_DETECTION_H__
