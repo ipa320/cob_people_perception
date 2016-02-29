@@ -130,49 +130,23 @@ void FaceDetectionMerge::callback(const sensor_msgs::PointCloud2::ConstPtr& clou
 
 void FaceDetectionMerge::tfpublisher(const cob_perception_msgs::DetectionArray::ConstPtr detArray)
 {
-	geometry_msgs::PoseStamped pose_world;
-
 	int k = 0;
 
 	for (int i = 0; i < detArray->detections.size(); i++)
 	{
+		geometry_msgs::PoseStamped pose = detArray->detections[i].pose;
+		
 		std::stringstream s;
 		k += 1;
 		s << "dlib_face_" << k;
 
-		int a = 0;
-		while (a < 5)
-		{
-			// transform pose to "/odom_combined" (world coordinates)
-			try
-			{
-				ros::Time now = ros::Time(0);
-				tfl_.waitForTransform("/odom_combined", detArray->header.frame_id, now, ros::Duration(0.5));
-				tfl_.transformPose("/odom_combined", now, detArray->detections[i].pose, "/odom_combined", pose_world);
-			}
-			catch(tf::TransformException &e)
-			{
-				a++;
-				ROS_ERROR(" %s", e.what());
-				ros::Duration(0.2).sleep();
-				continue;
-			}
-
-			pose_world.pose.orientation.x = 0;
-			pose_world.pose.orientation.y = 0;
-			pose_world.pose.orientation.z = 0;
-			pose_world.pose.orientation.w = 1;
-
-			break;
-		}
-
 		 // publish tf
-		 transform_.setOrigin(tf::Vector3(pose_world.pose.position.x, pose_world.pose.position.y, pose_world.pose.position.z));
+		 transform_.setOrigin(tf::Vector3(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z));
 		 tf::Quaternion q;
-		 q.setRPY(pose_world.pose.orientation.x, pose_world.pose.orientation.y, pose_world.pose.orientation.z);
+		 q.setRPY(pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z);
 		 transform_.setRotation(q);
 
-		 tfb_.sendTransform(tf::StampedTransform(transform_, pose_world.header.stamp, pose_world.header.frame_id, s.str()));
+		 tfb_.sendTransform(tf::StampedTransform(transform_, pose.header.stamp, pose.header.frame_id, s.str()));
 	}
 
 }
