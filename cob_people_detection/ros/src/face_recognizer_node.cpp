@@ -486,7 +486,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_perception_msgs::ColorD
 			// set label
 			det.label = "UnknownHead";
 			// set origin of detection
-			det.detector = ros::this_node::getName();
+			det.detector = "head";
 			// header
 			det.header = face_positions->header;
 			// add to message
@@ -518,7 +518,7 @@ void FaceRecognizerNode::facePositionsCallback(const cob_perception_msgs::ColorD
 				// set label
 				det.label = identification_labels[head][face];
 				// set origin of detection
-				det.detector = ros::this_node::getName();
+				det.detector = "face";
 				// header
 				det.header = face_positions->header;
 				// add to message
