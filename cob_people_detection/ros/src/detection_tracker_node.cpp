@@ -625,8 +625,9 @@ void DetectionTrackerNode::inputCallback(const cob_perception_msgs::DetectionArr
 
 	// publish face positions
 	ros::Time image_recording_time = (face_position_msg_in->detections.size() > 0 ? face_position_msg_in->detections[0].header.stamp : ros::Time(0));
+	std::string frame_id = (face_position_msg_in->detections.size() > 0 ? face_position_msg_in->detections[0].header.frame_id : "");
 	cob_perception_msgs::DetectionArray face_position_msg_out;
-	prepareFacePositionMessage(face_position_msg_out, image_recording_time, face_position_msg_in->detections[0].header.frame_id);
+	prepareFacePositionMessage(face_position_msg_out, image_recording_time, frame_id);
 	face_position_msg_out.header = face_position_msg_in->header;
 	face_position_publisher_.publish(face_position_msg_out);
 
