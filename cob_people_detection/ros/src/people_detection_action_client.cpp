@@ -339,15 +339,15 @@ int main(int argc, char** argv)
 
 	ros::NodeHandle nh;
 
-	AddDataClient add_data_client("/cob_people_detection/face_capture/add_data_server", true); // true -> don't need ros::spin()
-	ros::ServiceClient capture_image_client = nh.serviceClient<cob_people_detection::captureImage>("/cob_people_detection/face_capture/capture_image");
-	ros::ServiceClient finish_recording_client = nh.serviceClient<cob_people_detection::finishRecording>("/cob_people_detection/face_capture/finish_recording");
-	UpdateDataClient update_data_client("/cob_people_detection/face_capture/update_data_server", true);
-	DeleteDataClient delete_data_client("/cob_people_detection/face_capture/delete_data_server", true);
-	LoadModelClient load_model_client("/cob_people_detection/face_recognizer/load_model_server", true);
-	GetDetectionsClient get_detections_client("/cob_people_detection/coordinator/get_detections_server", true);
-	ros::ServiceClient sensor_message_gateway_open_client = nh.serviceClient<cob_people_detection::recognitionTrigger>("/cob_people_detection/coordinator/start_recognition");
-	ros::ServiceClient sensor_message_gateway_close_client = nh.serviceClient<std_srvs::Empty>("/cob_people_detection/coordinator/stop_recognition");
+	AddDataClient add_data_client("/face_capture/add_data_server", true); // true -> don't need ros::spin()
+	ros::ServiceClient capture_image_client = nh.serviceClient<cob_people_detection::captureImage>("/face_capture/capture_image");
+	ros::ServiceClient finish_recording_client = nh.serviceClient<cob_people_detection::finishRecording>("/face_capture/finish_recording");
+	UpdateDataClient update_data_client("/face_capture/update_data_server", true);
+	DeleteDataClient delete_data_client("/face_capture/delete_data_server", true);
+	LoadModelClient load_model_client("/face_recognizer/load_model_server", true);
+	GetDetectionsClient get_detections_client("/coordinator/get_detections_server", true);
+	ros::ServiceClient sensor_message_gateway_open_client = nh.serviceClient<cob_people_detection::recognitionTrigger>("/coordinator/start_recognition");
+	ros::ServiceClient sensor_message_gateway_close_client = nh.serviceClient<std_srvs::Empty>("/coordinator/stop_recognition");
 
 	if (!add_data_client.waitForServer(ros::Duration(2.0)))
 	{
