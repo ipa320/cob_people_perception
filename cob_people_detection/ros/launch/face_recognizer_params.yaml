@@ -4,7 +4,7 @@
 
 # this flag enables or disables the face recognition step
 # bool
-enable_face_recognition: true
+enable_face_recognition: false
 
 # this list specifies the persons who shall be recognized by the face recognizer, comment out this line to avoid any specification at startup
 # string[] e.g. ['albert', 'bernhard', 'caesar']
