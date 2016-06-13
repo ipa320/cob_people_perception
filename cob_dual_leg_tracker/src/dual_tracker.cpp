@@ -214,6 +214,8 @@ public:
 
   double fake_leg_probability_; /**< Probability of fake legs */
 
+  bool use_static_detections_; /** True if people detections that were never dynamic should be classified as persons */
+
   double people_probability_limit_; /**< Min Value for people to be considered true  */
 
   int min_points_per_group_;
@@ -3475,24 +3477,29 @@ public:
             peopleIt != peopleTracker->end();
             peopleIt++)
         {
-          if((*peopleIt)->getTotalProbability() > new_track_min_probability_ ){
+          // only publish static objects upon configuration
+          if(use_static_detections_ || (*peopleIt)->isDynamic())
+          {
+            // only publich tracks with high enough probability
+            if((*peopleIt)->getTotalProbability() > people_probability_limit_){ // new_track_min_probability_ ){
 
-            BFL::StatePosVel est = (*peopleIt)->getEstimate();
+              BFL::StatePosVel est = (*peopleIt)->getEstimate();
 
-            cob_perception_msgs::Detection detection;
-            detection.header.stamp = time;
-            detection.header.frame_id = fixed_frame;
+              cob_perception_msgs::Detection detection;
+              detection.header.stamp = time;
+              detection.header.frame_id = fixed_frame;
 
-            detection.label = (*peopleIt)->getName();
-            detection.detector = "laser";
+              detection.label = (*peopleIt)->getName();
+              detection.detector = "laser";
 
-            // Set the pose
-            detection.pose.pose.position.x = est.pos_.getX();
-            detection.pose.pose.position.y = est.pos_.getY();
+              // Set the pose
+              detection.pose.pose.position.x = est.pos_.getX();
+              detection.pose.pose.position.y = est.pos_.getY();
 
-            detectionArray.detections.push_back(detection);
+              detectionArray.detections.push_back(detection);
 
-            //counter++;
+              //counter++;
+            }
           }
         }
         people_detection_pub_.publish(detectionArray);

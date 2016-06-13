@@ -338,7 +338,11 @@ void PeopleTracker::updateTrackerState(ros::Time time){
   ROS_ASSERT(stepWidthMax_ < 4); // TODO critical remove!
 
   // Update static/dynamic
-  is_static_ = !(getLeg0()->isDynamic() && getLeg1()->isDynamic());
+  if(is_static_)
+  {
+    // static only if the person never moved; once set to dynamic it does not go back.
+    is_static_ = !(getLeg0()->isDynamic() && getLeg1()->isDynamic());
+  }
 
 }
 
