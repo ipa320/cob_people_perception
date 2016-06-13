@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "sensor_message_gateway");
 
 	// Create a handle for this node, initialize node
-	ros::NodeHandle nh;
+	ros::NodeHandle nh("~");
 
 	// Create SensorMessageGatewayNode class instance
 	cob_people_detection::SensorMessageGatewayNode sensor_message_gateway_node(nh);

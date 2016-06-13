@@ -85,7 +85,7 @@ FaceCaptureNode::FaceCaptureNode(ros::NodeHandle nh)
 	int  norm_size;						// Desired width and height of the Eigenfaces (=eigenvectors).
 
 	std::cout << "\n---------------------------\nFace Capture Node Parameters:\n---------------------------\n";
-	if(!node_handle_.getParam("/cob_people_detection/data_storage_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
+	if(!node_handle_.getParam("data_storage_directory", data_directory_)) std::cout<<"PARAM NOT AVAILABLE"<<std::endl;
 	std::cout << "data_directory = " << data_directory_ << "\n";
 	node_handle_.param("norm_size", norm_size, 100);
 	std::cout << "norm_size = " << norm_size << "\n";
@@ -396,7 +396,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "face_capture");
 
 	// Create a handle for this node, initialize node
-	ros::NodeHandle nh;
+	ros::NodeHandle nh("~");
 
 	// Create FaceRecognizerNode class instance
 	FaceCaptureNode face_capture_node(nh);
