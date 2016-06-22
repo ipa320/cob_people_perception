@@ -168,6 +168,7 @@ public:
   int n_people_history_line_lists_last_published_;
   int n_leg_tracker_last_published_;
   int n_associations_last_published_;
+  int n_people_det_markers_last_published_;
 
 
   //bool use_seeds_;
@@ -254,8 +255,9 @@ public:
   ros::Publisher particles_pred_arrow_pub_; /**< Publish the predicted particles as arrows */
 
   // Marker Visualization Publisher
+  ros::Publisher people_detection_visualization_pub_; /**< Publisher for visualization of cb people detections */
   ros::Publisher measurement_visualization_pub_; /**< Publish leg visualizations */
-  ros::Publisher people_visualization_pub_;/**< Visualization of people tracks */
+  ros::Publisher people_visualization_pub_;/**< Visualization of people tracks (all valid tracks in internal list*/
   ros::Publisher leg_visualization_pub_; /**< Publish measurements */
   ros::Publisher association_visualization_pub_; /**< Publish association */
 
@@ -282,6 +284,7 @@ public:
     n_fake_detections_last_cycle_(0),
     n_leg_trackers_last_cycle_(0),
     n_people_markers_last_published_(0),
+    n_people_det_markers_last_published_(0),
     n_people_label_markers_last_published_(0),
     n_people_history_line_lists_last_published_(0),
     n_leg_tracker_last_published_(0),
@@ -317,9 +320,10 @@ public:
     particles_pub_                = nh_.advertise<sensor_msgs::PointCloud>("particles", 0);
     occlusion_model_pub_          = nh_.advertise<sensor_msgs::PointCloud>("occlusion_model", 0);
 
+    people_detection_visualization_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("people_detections_visualization", 0);
     measurement_visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("measurement_visualization", 0);
     leg_visualization_pub_        = nh_.advertise<visualization_msgs::MarkerArray>("leg_visualization", 0);
-    people_visualization_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("people_visualization", 0);
+    people_visualization_pub_     = nh_.advertise<visualization_msgs::MarkerArray>("people_visualization_debug", 0);
     association_visualization_pub_= nh_.advertise<visualization_msgs::MarkerArray>("association_visualization", 0);
     scan_lines_pub_               = nh_.advertise<visualization_msgs::Marker>("scan_lines", 0);
     particles_arrow_pub_          = nh_.advertise<visualization_msgs::MarkerArray>("particle_arrows", 0);
@@ -1204,6 +1208,10 @@ public:
    //   publishMatches(saved_leg_features, scan->header.stamp);
    // }
 
+    // Visualization for the people detection array
+    if (publish_people_visualizations_){
+      publishPeopleDetectionsVisualization(people_trackers_.getList(), scan->header.stamp);
+    }
     //// People related publication
     if(publish_people_visualizations_){
       publishPeopleLabels(scan->header.stamp);
@@ -2781,24 +2789,12 @@ public:
 
   }
 
-  // Add Labels to the People Trackers
-  void publishPeopleLabels(ros::Time time){
-
-    // The marker Array
-    visualization_msgs::MarkerArray markerArray;
-
-    int counter = 0;
-    for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
-        peopleTrackerIt != people_trackers_.getList()->end();
-        peopleTrackerIt++){
-
-      if((*peopleTrackerIt)->getTotalProbability() > 0.5)
-      {
-      visualization_msgs::Marker label;
+  void addLableMarker(visualization_msgs::MarkerArray& markerArray, vector<PeopleTrackerPtr>::iterator& peopleTrackerIt, int marker_id, ros::Time time){
+    visualization_msgs::Marker label;
       label.header.stamp = time;
       label.header.frame_id = fixed_frame;
       label.ns = "people_label";
-      label.id = counter;
+      label.id = marker_id;
       label.type = label.TEXT_VIEW_FACING;
       label.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
       label.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
@@ -2820,17 +2816,13 @@ public:
       label.text = buf;
 
       markerArray.markers.push_back(label);
+  }
 
-      counter++;
-      }
-    }
-
-    // Publish deletion markers
-    for(int i = 0; i < n_people_label_markers_last_published_ - counter; i++){
-      visualization_msgs::Marker deletionMarker0;
+  void addLableDeletionMarker(visualization_msgs::MarkerArray& markerArray, int marker_id, ros::Time time){
+    visualization_msgs::Marker deletionMarker0;
       deletionMarker0.header.stamp = time;
       deletionMarker0.header.frame_id = fixed_frame;
-      deletionMarker0.id = counter + i;
+      deletionMarker0.id = marker_id;
       deletionMarker0.ns = "people_label";
       deletionMarker0.type = visualization_msgs::Marker::DELETE;
       deletionMarker0.scale.x = 1;
@@ -2838,7 +2830,28 @@ public:
       deletionMarker0.scale.z = 1;
 
       markerArray.markers.push_back(deletionMarker0);
+  }
+  // Add Labels to the People Trackers
+  void publishPeopleLabels(ros::Time time){
 
+    // The marker Array
+    visualization_msgs::MarkerArray markerArray;
+
+    int counter = 0;
+    for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
+        peopleTrackerIt != people_trackers_.getList()->end();
+        peopleTrackerIt++){
+
+      if((*peopleTrackerIt)->getTotalProbability() > 0.5)
+      {
+        addLableMarker(markerArray, peopleTrackerIt, counter, time);
+        counter++;
+      }
+    }
+
+    // Publish deletion markers
+    for(int i = 0; i < n_people_label_markers_last_published_ - counter; i++){
+      addLableDeletionMarker(markerArray, counter + i, time);
     }
 
     n_people_label_markers_last_published_ = counter;
@@ -2849,22 +2862,10 @@ public:
 
   }
 
-  // Add Labels to the People Trackers
-  void publishPeople3d(ros::Time time){
-
-    // The marker Array
-    visualization_msgs::MarkerArray personsArray;
-
-    int counter = 0;
-
-    for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
-        peopleTrackerIt != people_trackers_.getList()->end();
-        peopleTrackerIt++){
-
-      if( (*peopleTrackerIt)->isValid() &&
-          (*peopleTrackerIt)->getTotalProbability() > 0.5)
-      {
-      visualization_msgs::Marker person3d;
+  void addPersonMarker(visualization_msgs::MarkerArray& personsArray, vector<PeopleTrackerPtr>::iterator& peopleTrackerIt,
+                       int body_id, int head_id, ros::Time time){
+    // Add person body marker
+    visualization_msgs::Marker person3d;
       person3d.header.stamp = time;
       person3d.header.frame_id = fixed_frame;
 
@@ -2877,7 +2878,7 @@ public:
       double personHeight = 1;
       double personWidth = 0.25;
 
-      person3d.id = counter;
+      person3d.id = body_id;
       person3d.type = visualization_msgs::Marker::CYLINDER;
       person3d.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
       person3d.pose.position.y = (*peopleTrackerIt)->getEstimate().pos_[1];
@@ -2891,16 +2892,12 @@ public:
       person3d.color.g = 0;
       person3d.color.b = 1;
 
-      counter++;
-     // person3d.lifetime = ros::Duration(8);
-
-
-      // Set the color as the mixture of both leg track colors
-
-      visualization_msgs::Marker personHead;
+// Set the color as the mixture of both leg track colors
+    // Add person head
+    visualization_msgs::Marker personHead;
       personHead.header.stamp = time;
       personHead.header.frame_id = fixed_frame;
-      personHead.id = counter;
+      personHead.id = head_id;
       personHead.ns = "person3d";
       personHead.type = visualization_msgs::Marker::CYLINDER;
       personHead.pose.position.x = (*peopleTrackerIt)->getEstimate().pos_[0];
@@ -2916,20 +2913,18 @@ public:
       person3d.color.a = (*peopleTrackerIt)->getTotalProbability();
       personHead.color.a = (*peopleTrackerIt)->getTotalProbability();
 
-      personsArray.markers.push_back(person3d);
-      personsArray.markers.push_back(personHead);
-
-      counter++;
-      }
-    }
+    // Add markers to array
+    personsArray.markers.push_back(person3d);
+    personsArray.markers.push_back(personHead);
 
 
-    // Publish deletion markers
-    for(int i = 0; i < n_people_markers_last_published_ - counter; i++){
-      visualization_msgs::Marker deletionMarker0;
+  }
+
+  void addPersonDeletionMarker(visualization_msgs::MarkerArray& personsArray, int body_id, int head_id, ros::Time time){
+    visualization_msgs::Marker deletionMarker0;
       deletionMarker0.header.stamp = time;
       deletionMarker0.header.frame_id = fixed_frame;
-      deletionMarker0.id = counter + i;
+      deletionMarker0.id = body_id;
       deletionMarker0.ns = "person3d";
       deletionMarker0.type = visualization_msgs::Marker::DELETE;
       deletionMarker0.scale.x = 1;
@@ -2941,7 +2936,7 @@ public:
       visualization_msgs::Marker deletionMarker1;
       deletionMarker1.header.stamp = time;
       deletionMarker1.header.frame_id = fixed_frame;
-      deletionMarker1.id = counter + i + 1;
+      deletionMarker1.id = head_id;
       deletionMarker1.ns = "person3d";
       deletionMarker1.type = visualization_msgs::Marker::DELETE;
       deletionMarker1.scale.x = 1;
@@ -2950,6 +2945,32 @@ public:
 
       personsArray.markers.push_back(deletionMarker1);
 
+  }
+  // Add Labels to the People Trackers
+  void publishPeople3d(ros::Time time){
+
+    // The marker Array
+    visualization_msgs::MarkerArray personsArray;
+
+    int counter = 0;
+
+    for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
+        peopleTrackerIt != people_trackers_.getList()->end();
+        peopleTrackerIt++){
+
+      if( (*peopleTrackerIt)->isValid() &&
+          (*peopleTrackerIt)->getTotalProbability() > 0.5)
+      {
+        addPersonMarker(personsArray, peopleTrackerIt, counter, counter+1, time);
+
+        counter+=2;
+      }
+    }
+
+
+    // Publish deletion markers
+    for(int i = 0; i < n_people_markers_last_published_ - counter; i++){
+      addPersonDeletionMarker(personsArray, counter + i, counter + i + 1, time);
     }
 
     n_people_markers_last_published_ = counter;
@@ -3465,6 +3486,44 @@ public:
 
      ROS_DEBUG("DualTracker::%s Publishing Particles Arrows on %s", __func__, fixed_frame.c_str());
    }
+  void publishPeopleDetectionsVisualization(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
+    // The marker Array
+    visualization_msgs::MarkerArray personsArray;
+    visualization_msgs::MarkerArray lableArray;
+
+    int counter = 0;
+    int lable_counter = 0;
+
+    for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
+        peopleTrackerIt != people_trackers_.getList()->end();
+        peopleTrackerIt++){
+
+      if( (*peopleTrackerIt)->isValid() &&
+          (*peopleTrackerIt)->getTotalProbability() > people_probability_limit_)
+      {
+        addPersonMarker(personsArray, peopleTrackerIt, counter, counter+1, time);
+
+        counter+=2;
+
+        addLableMarker(lableArray, peopleTrackerIt, lable_counter, time);
+        lable_counter++;
+      }
+    }
+
+
+    // Publish deletion markers
+    for(int i = 0; i < n_people_det_markers_last_published_ - counter; i++){
+      addPersonDeletionMarker(personsArray, counter + i, counter + i + 1, time);
+    }
+    for(int i = 0; i < n_people_det_markers_last_published_/2 - lable_counter; i++){
+      addLableDeletionMarker(lableArray, lable_counter, time);
+    }
+
+    n_people_det_markers_last_published_ = counter;
+
+    // Publish
+    people_detection_visualization_pub_.publish(personsArray);
+  }
 
   void publishCobDetectionMsgs(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
 
