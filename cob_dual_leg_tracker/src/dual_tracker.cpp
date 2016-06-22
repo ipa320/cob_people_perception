@@ -424,6 +424,9 @@ public:
     fake_leg_probability_                             = config.fake_leg_probability;
     ROS_PARAM_OUT(fake_leg_probability_);
 
+    use_static_detections_                            = config.use_static_detections;
+    ROS_PARAM_OUT(use_static_detections_);
+
     /*filter_config.fakeLegProb                         = config.fake_leg_probability;
 
     filter_config.minFakeLegPersonProbability         = config.min_fake_leg_person_probability;
@@ -1213,7 +1216,7 @@ public:
       publishPeopleDetectionsVisualization(people_trackers_.getList(), scan->header.stamp);
     }
     //// People related publication
-    if(publish_people_visualizations_){
+    if(publish_people_visualizations_debug_){
       publishPeopleLabels(scan->header.stamp);
       publishPeople3d(scan->header.stamp);
       publishPeopleHistory(people_trackers_.getList(), scan->header.stamp);
@@ -3497,16 +3500,18 @@ public:
     for(vector<PeopleTrackerPtr>::iterator peopleTrackerIt = people_trackers_.getList()->begin();
         peopleTrackerIt != people_trackers_.getList()->end();
         peopleTrackerIt++){
+      // only publish static objects upon configuration
+      if(use_static_detections_ || (*peopleTrackerIt)->isDynamic()){
+      
+        if((*peopleTrackerIt)->getTotalProbability() > people_probability_limit_)
+        {
+          addPersonMarker(personsArray, peopleTrackerIt, counter, counter+1, time);
 
-      if( (*peopleTrackerIt)->isValid() &&
-          (*peopleTrackerIt)->getTotalProbability() > people_probability_limit_)
-      {
-        addPersonMarker(personsArray, peopleTrackerIt, counter, counter+1, time);
+          counter+=2;
 
-        counter+=2;
-
-        addLableMarker(lableArray, peopleTrackerIt, lable_counter, time);
-        lable_counter++;
+          addLableMarker(lableArray, peopleTrackerIt, lable_counter, time);
+          lable_counter++;
+        }
       }
     }
 
@@ -3523,6 +3528,7 @@ public:
 
     // Publish
     people_detection_visualization_pub_.publish(personsArray);
+    people_detection_visualization_pub_.publish(lableArray);
   }
 
   void publishCobDetectionMsgs(boost::shared_ptr<vector<PeopleTrackerPtr> > peopleTracker, ros::Time time){
