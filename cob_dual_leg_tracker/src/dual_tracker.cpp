@@ -427,15 +427,15 @@ public:
     use_static_detections_                            = config.use_static_detections;
     ROS_PARAM_OUT(use_static_detections_);
 
-    /*filter_config.fakeLegProb                         = config.fake_leg_probability;
+    filter_config.fakeLegProb                         = config.fake_leg_probability;
 
-    filter_config.minFakeLegPersonProbability         = config.min_fake_leg_person_probability;
+    //filter_config.minFakeLegPersonProbability         = config.min_fake_leg_person_probability;
     filter_config.fakeLegRealLegDistance              = config.fake_leg_real_leg_distance;
     filter_config.fakeLegRangeThres                   = config.fake_leg_range_thres;
     filter_config.fakeLegMeasurementProbabiltyFactor  = config.fake_leg_measurement_probabilty_factor;
 
     filter_config.minUpdateProbability                = config.min_update_probability; // TODO make cfg editable
-    */
+    
 
     // Leg Feature properties
     leg_feature_update_cov_                           = config.leg_feature_update_cov; // default 0.05;
