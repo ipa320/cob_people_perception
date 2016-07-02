@@ -341,7 +341,10 @@ void PeopleTracker::updateTrackerState(ros::Time time){
   if(is_static_)
   {
     // static only if the person never moved; once set to dynamic it does not go back.
-    is_static_ = !(getLeg0()->isDynamic() && getLeg1()->isDynamic());
+	// a person moves with only one leg at the time
+    is_static_ = (!(getLeg0()->isDynamic() && getLeg1()->isDynamic()) || 
+		  (getLeg0()->isDynamic() && !getLeg1()->isDynamic()));
+    //is_static_ = !(getLeg0()->isDynamic() && getLeg1()->isDynamic());
   }
 
 }
