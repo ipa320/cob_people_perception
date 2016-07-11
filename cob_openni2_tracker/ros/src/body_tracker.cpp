@@ -74,6 +74,7 @@
 #include <inttypes.h>
 #endif
 
+#include "sensor_msgs/PointCloud2.h"
 #include "cob_openni2_tracker/body_tracker.h"
 //#include <GL/glut.h>
 #include <cob_openni2_tracker/NiteSampleUtilities.h>
@@ -152,8 +153,9 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 	std::cout << "poseTimeoutToExit = " << poseTimeoutToExit_ << "\n";
 
 	vis_pub_ = nh_.advertise<visualization_msgs::Marker>( "visualization_marker", 10);
-	pcl_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("body_tracker_filter", 0);
-	people_pub_ = nh_.advertise<cob_perception_msgs::People>("people", 0);
+	if (drawDepth_==true)
+		pcl_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("points_body_tracker", 0);	// original point cloud with all points that belong to one tracked person colored in a individual color
+	people_pub_ = nh_.advertise<cob_perception_msgs::People>("people", 0);		// detections
 
 	ROS_INFO("Create BodyTracker.\n");
 	m_pUserTracker = new nite::UserTracker;
@@ -161,12 +163,12 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 
 	init();
 
+	tracked_users_ = new list<nite::UserData>();
+
 	it_ = new image_transport::ImageTransport(nh_);
 	image_sub_.registerCallback(boost::bind(&BodyTracker::imageCallback, this, _1));
 	image_sub_.subscribe(*it_, "/camera/rgb/image_raw", 1);
 	image_pub_ = it_->advertise("colorimage_out", 1);
-
-	tracked_users_ = new list<nite::UserData>();
 }
 
 
@@ -658,12 +660,15 @@ geometry_msgs::Pose BodyTracker::convertNiteJointToMsgs(nite::SkeletonJoint join
  */
 void BodyTracker::drawPointCloud()
 {
-	ros::Time time = ros::Time::now();
-	uint64_t st = time.toNSec();
-	pcl_cloud_->header.stamp = st;
-	pcl_cloud_->header.frame_id = cam_frame_;
+	sensor_msgs::PointCloud2 pc;
+	pcl::toROSMsg(*pcl_cloud_, pc);
 
-	pcl_pub_.publish(pcl_cloud_);
+	ros::Time time = ros::Time::now();
+	//uint64_t st = time.toNSec();
+	pc.header.stamp = time;
+	pc.header.frame_id = cam_frame_;
+
+	pcl_pub_.publish(pc);
 	pcl_cloud_->points.clear();
 }
 /*

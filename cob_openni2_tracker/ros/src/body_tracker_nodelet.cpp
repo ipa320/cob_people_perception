@@ -67,7 +67,6 @@ PLUGINLIB_EXPORT_CLASS(BodyTrackerNodelet, nodelet::Nodelet)
 BodyTrackerNodelet::BodyTrackerNodelet(): Nodelet(), bt_listener(NULL)
 {
 	ROS_INFO("Init BodyTrackerNodelet.");
-
 }
 
 BodyTrackerNodelet::~BodyTrackerNodelet()
@@ -79,11 +78,12 @@ BodyTrackerNodelet::~BodyTrackerNodelet()
 
 void BodyTrackerNodelet::onInit()
 {
+	ros::spinOnce();
+	ros::Duration(10).sleep();
 	if(bt_listener == 0)
 		bt_listener = new BodyTracker(getPrivateNodeHandle());
+		ros::spinOnce();
+		ros::Duration(2).sleep();
+		ros::spinOnce();
 		bt_listener->runTracker();
 }
-
-
-
-
