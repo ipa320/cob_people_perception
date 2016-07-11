@@ -5,12 +5,10 @@
   <!-- <node pkg="cob_people_detection" ns="cob_people_detection/people_segmentation" type="openni_tracker" name="openniTrackerNode" output="screen"/> -->
 
   <!-- detection tracker node (tracks faces in color and depth image and publishes their positions) -->
-  <rosparam command="load" ns="/cob_people_detection/detection_tracker" file="$(find cob_people_detection)/ros/launch/detection_tracker_params.yaml"/>
-  <node name="detection_tracker" pkg="cob_people_detection" ns="/cob_people_detection/detection_tracker" type="detection_tracker_node" output="screen">
-    <remap from="face_position_array_in" to="/cob_people_detection/face_recognizer/face_recognitions"/>
-    <remap from="people_segmentation_image" to="/cob_people_detection/people_segmentation/people_segmentation_image"/>
-
+  <node name="detection_tracker" pkg="cob_people_detection" type="detection_tracker_node" output="screen">
+    <rosparam command="load" file="$(find cob_people_detection)/ros/launch/detection_tracker_params.yaml"/>
     <param name="data_directory" type="string" value="$(find cob_people_detection)/common/files/"/>
+    <remap from="~face_position_array_in" to="face_recognizer/face_recognitions"/>
+    <!--remap from="people_segmentation_image" to="/cob_people_detection/people_segmentation/people_segmentation_image"/-->
   </node>
-
 </launch>

@@ -217,7 +217,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "people_detection_display");
 
 	// Create a handle for this node, initialize node
-	ros::NodeHandle nh;
+	ros::NodeHandle nh("~");
 
 	// Create FaceRecognizerNode class instance
 	PeopleDetectionDisplayNode people_detection_display_node(nh);
