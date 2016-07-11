@@ -109,7 +109,7 @@ using namespace message_filters;
  * advertises subscribes and publishes.
  */
 BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
-:pcl_cloud_(new pcl::PointCloud<pcl::PointXYZRGB>), m_poseUser(0), br_(), nh_(nh_priv)
+:pcl_cloud_(new pcl::PointCloud<pcl::PointXYZRGB>), tracked_users_(new list<nite::UserData>()), m_poseUser(0), br_(), nh_(nh_priv)
 {
 	marker_id_ = 0;
 
@@ -316,10 +316,6 @@ void BodyTracker::runTracker()
 {
 	while(nh_.ok())
 	{
-		if(tracked_users_ == NULL)
-		{
-			tracked_users_ = new list<nite::UserData>();
-		}
 		nite::UserTrackerFrameRef userTrackerFrame;
 		openni::VideoFrameRef depthFrame;
 
