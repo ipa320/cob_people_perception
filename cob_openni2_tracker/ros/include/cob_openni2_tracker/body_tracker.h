@@ -114,8 +114,10 @@ public:
 	std::string tf_prefix_, rel_frame_, cam_frame_;
 	openni::Device	device_;
 	openni::VideoStream depthSensor_;
-	void Finalize();
+	void finalize();
 	void runTracker();
+
+	bool shutdown_;
 
 private:
 
@@ -126,9 +128,10 @@ private:
 	tf::TransformListener transform_listener_;
 	tf::TransformBroadcaster br_;
 	ros::Publisher vis_pub_, pcl_pub_, skeleton_pub_, people_pub_;
+	ros::Subscriber pcl_sub_;
 	image_transport::ImageTransport* it_;
 	image_transport::SubscriberFilter image_sub_;
-	image_transport::SubscriberFilter pcl_sub_;
+	//image_transport::SubscriberFilter pcl_sub_;
 	image_transport::Publisher image_pub_;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud_;
 	void imgConnectCB(const image_transport::SingleSubscriberPublisher& pub);
@@ -159,11 +162,15 @@ private:
 	bool drawDepth_;
 	bool drawFrames_;
 
+	int init_counter_color_image_;
+	int init_counter_point_cloud_;
+
 	BodyTracker(const BodyTracker&);
 	BodyTracker& operator=(BodyTracker&);
 
 	void init();
 	void imageCallback(const sensor_msgs::ImageConstPtr& rgb_image_msg);
+	void pointcloudCallback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
 	void updateUserState(const nite::UserData& user, uint64_t ts);
 	void publishJoints(ros::NodeHandle& nh, tf::TransformBroadcaster& br, std::string joint_name,
 			nite::SkeletonJoint joint, std::string tf_prefix, std::string rel_frame, int id);

@@ -61,29 +61,51 @@
 #include "nodelet/NodeletList.h"
 #include "nodelet/NodeletLoad.h"
 #include "nodelet/NodeletUnload.h"
+#include <boost/thread.hpp>
 
 PLUGINLIB_EXPORT_CLASS(BodyTrackerNodelet, nodelet::Nodelet)
 
 BodyTrackerNodelet::BodyTrackerNodelet(): Nodelet(), bt_listener(NULL)
 {
-	ROS_INFO("Init BodyTrackerNodelet.");
-
 }
 
 BodyTrackerNodelet::~BodyTrackerNodelet()
 {
-	if (bt_listener != NULL) {
+	if (bt_listener != NULL)
+	{
+		bt_listener->shutdown_ = true;
+		tracker_thread_->join();
 		delete bt_listener;
 	}
 }
 
 void BodyTrackerNodelet::onInit()
 {
+	NODELET_INFO("Init BodyTrackerNodelet.");
+
+	getPrivateNodeHandle().param<std::string>("nodelet_manager", nodelet_manager_, "");
+	std::cout << "nodelet_manager = " << nodelet_manager_ << "\n";
+
 	if(bt_listener == 0)
 		bt_listener = new BodyTracker(getPrivateNodeHandle());
-		bt_listener->runTracker();
+
+	if (bt_listener->shutdown_ == true)
+	{
+		delete bt_listener;
+		bt_listener = 0;
+//		nodelet::NodeletUnload req;
+//		req.request.name = this->getPrivateNodeHandle().getNamespace();
+//		NODELET_INFO("name: %s", this->getPrivateNodeHandle().getNamespace().c_str());
+//		ros::ServiceClient unload = this->getNodeHandle().serviceClient<nodelet::NodeletUnload>(nodelet_manager_ + "/unload_nodelet");
+//		unload.call(req);
+	}
+	else
+	{
+		tracker_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&BodyTrackerNodelet::run, this)));
+	}
 }
 
-
-
-
+void BodyTrackerNodelet::run()
+{
+	bt_listener->runTracker(); // tracking loop is stopped by setting bt_listener->shutdown_ = true;
+}

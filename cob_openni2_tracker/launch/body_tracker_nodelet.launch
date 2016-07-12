@@ -1,21 +1,38 @@
 <launch>
 
- <include file="$(find openni2_launch)/launch/openni2.launch" />
- 
+	<arg name="tracker_name" default="cob_body_tracker" />
+	<arg name="camera_name" default="camera" />		<!-- this is the namespace of your Kinect/Asus camera -->
+	<arg name="color_image_name" default="rgb/image_raw" />		<!-- name of the color image topic (excluding the camera namespace) -->
+	<arg name="point_cloud_name" default="depth_registered/points" />		<!-- name of the point cloud topic (excluding the camera namespace) -->
+	<arg name="standalone_without_camera_driver" default="false" />		<!-- if the camera driver topics (image, point cloud) are not used, activate the standalone version by settign this parameter to true -->
 
 
-<arg name="tracker_name" default="cob_body_tracker" />
-<arg name="camera_name" default="camera" />
+	<!-- the software is more stable if the driver is started separatedly before -->
+	<!--include file="$(find openni2_launch)/launch/openni2.launch">
+		<arg name="depth_registration" value="true"/>
+	</include-->
 
- <node pkg="nodelet" type="nodelet" name="body_tracker" 
- 		args="load cob_openni2_tracker/body_tracker_nodelet /camera/camera_nodelet_manager" output="screen" cwd="ROS_HOME">
- 	 
-	<param name="camera_frame_id" type="str" value="$(arg camera_name)_link" /> <!-- $(arg camera_name)_depth_optical_frame -->
-	<param name="tf_prefix" value="$(arg tracker_name)" />
-	<param name="relative_frame" value="$(arg camera_name)_depth_optical_frame" />
+	<!-- Nodelet manager -->
+	<group if="$(arg standalone_without_camera_driver)">
+		<node pkg="nodelet" type="nodelet" ns="$(arg camera_name)" name="$(arg camera_name)_nodelet_manager" args="manager" output="screen">
+			<param name="num_worker_threads" value="4" />
+		</node>
+	</group>
+
+
+	<node pkg="nodelet" type="nodelet" name="body_tracker" args="load cob_openni2_tracker/body_tracker_nodelet /$(arg camera_name)/$(arg camera_name)_nodelet_manager" output="screen" cwd="ROS_HOME">
+		<param name="camera_frame_id" type="str" value="$(arg camera_name)_link" /> <!-- $(arg camera_name)_depth_optical_frame -->
+		<param name="tf_prefix" value="$(arg tracker_name)" />
+		<param name="relative_frame" value="$(arg camera_name)_depth_optical_frame" />
+		<param name="standalone_without_camera_driver" value="$(arg standalone_without_camera_driver)" />
+		
+		<param name="nodelet_manager" value="/$(arg camera_name)/$(arg camera_name)_nodelet_manager" />
+		
+		<remap from="~color_image_topic" to="$(arg camera_name)/$(arg color_image_name)" />
+		<remap from="~point_cloud_topic" to="$(arg camera_name)/$(arg point_cloud_name)" />
 	
-	<rosparam file="$(find cob_openni2_tracker)/launch/body_tracker_params.yaml"/>
+		<rosparam file="$(find cob_openni2_tracker)/launch/body_tracker_params.yaml"/>
 	
- </node>  
- 
+	</node>
+
 </launch>

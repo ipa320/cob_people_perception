@@ -74,6 +74,7 @@
 #include <inttypes.h>
 #endif
 
+#include "sensor_msgs/PointCloud2.h"
 #include "cob_openni2_tracker/body_tracker.h"
 //#include <GL/glut.h>
 #include <cob_openni2_tracker/NiteSampleUtilities.h>
@@ -111,25 +112,32 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 :pcl_cloud_(new pcl::PointCloud<pcl::PointXYZRGB>), tracked_users_(new list<nite::UserData>()), m_poseUser(0), br_(), nh_(nh_priv)
 {
 	marker_id_ = 0;
+	init_counter_color_image_ = 0;
+	init_counter_point_cloud_ = 0;
+	shutdown_ = false;
+
+	it_ = 0;
+	m_pTexMap_ = 0;
+	m_pUserTracker = 0;
 
 	//nh_ = nh_priv;
 	// Get Tracker Parameters
 	if(!nh_.getParam("camera_frame_id", cam_frame_)){
 		ROS_WARN("tf_prefix was not found on Param Server! See your launch file!");
 		nh_.shutdown();
-		Finalize();
+		finalize();
 	}
 
 	if(!nh_.getParam("tf_prefix", tf_prefix_)){
 		ROS_WARN("tf_prefix was not found on Param Server! See your launch file!");
 		nh_.shutdown();
-		Finalize();
+		finalize();
 	}
 
 	if(!nh_.getParam("relative_frame", rel_frame_)){
 		ROS_WARN("relative_frame was not found on Param Server! See your launch file!");
 		nh_.shutdown();
-		Finalize();
+		finalize();
 	}
 
 	std::cout << "\n---------------------------\nPeople Tracker Detection Parameters (CAMERA):\n---------------------------\n";
@@ -150,21 +158,44 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 	std::cout << "drawFrames = " << drawFrames_ << "\n";
 	nh_.param("poseTimeoutToExit", poseTimeoutToExit_, 2000);
 	std::cout << "poseTimeoutToExit = " << poseTimeoutToExit_ << "\n";
+	bool standalone_without_camera_driver = false;
+	nh_.param("standalone_without_camera_driver", standalone_without_camera_driver, false);
+	std::cout << "standalone_without_camera_driver = " << standalone_without_camera_driver << "\n";
+
+	tracked_users_ = new list<nite::UserData>();
+
+	it_ = new image_transport::ImageTransport(nh_);
+	image_sub_.registerCallback(boost::bind(&BodyTracker::imageCallback, this, _1));
+	image_sub_.subscribe(*it_, "color_image_topic", 1);
+	image_pub_ = it_->advertise("colorimage_out", 1);
+
+	pcl_sub_ = nh_.subscribe("point_cloud_topic", 1, &BodyTracker::pointcloudCallback, this);
+
+	ros::Time start_time = ros::Time::now();
+	while(standalone_without_camera_driver==false)
+	{
+		if (init_counter_color_image_>3 && init_counter_point_cloud_>3)
+			break;
+		if ((ros::Time::now()-start_time).sec > 300)
+		{
+			ROS_ERROR("The camera driver does not seem to work properly, not enough image and point cloud messages received during the last 300s.");
+			shutdown_ = true;
+			return;
+		}
+	}
+
+	pcl_sub_.shutdown();
 
 	vis_pub_ = nh_.advertise<visualization_msgs::Marker>( "visualization_marker", 10);
-	pcl_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("body_tracker_filter", 0);
-	people_pub_ = nh_.advertise<cob_perception_msgs::People>("people", 0);
+	if (drawDepth_==true)
+		pcl_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("points_body_tracker", 0);	// original point cloud with all points that belong to one tracked person colored in a individual color
+	people_pub_ = nh_.advertise<cob_perception_msgs::People>("people", 0);		// detections
 
 	ROS_INFO("Create BodyTracker.\n");
 	m_pUserTracker = new nite::UserTracker;
 	pcl_cloud_->points.clear();
 
 	init();
-
-	it_ = new image_transport::ImageTransport(nh_);
-	image_sub_.registerCallback(boost::bind(&BodyTracker::imageCallback, this, _1));
-	image_sub_.subscribe(*it_, "/camera/rgb/image_raw", 1);
-	image_pub_ = it_->advertise("colorimage_out", 1);
 }
 
 
@@ -176,6 +207,8 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
  */
 void BodyTracker::imageCallback(const sensor_msgs::ImageConstPtr& color_image_msg)
 {
+	init_counter_color_image_++;
+
 	cv_bridge::CvImageConstPtr cv_ptr;
 
 	try
@@ -206,15 +239,13 @@ void BodyTracker::imageCallback(const sensor_msgs::ImageConstPtr& color_image_ms
 				double center_x = (*iter_).getCenterOfMass().x;
 				double center_y = (*iter_).getCenterOfMass().y;
 
-
 				int r = 255*Colors[(*iter_).getId() % colorCount][0];
 				int g = 255*Colors[(*iter_).getId() % colorCount][1];
 				int b = 255*Colors[(*iter_).getId() % colorCount][2];
 
 				if(drawBoundingBox_)
 				{
-					cv::rectangle(color_image_, cv::Point(min_x, min_y), cv::Point(max_x, max_y) ,
-							CV_RGB(r, g, b), 2);
+					cv::rectangle(color_image_, cv::Point(min_x, min_y), cv::Point(max_x, max_y), CV_RGB(r, g, b), 2);
 				}
 
 				if(drawCenterOfMass_)
@@ -233,18 +264,29 @@ void BodyTracker::imageCallback(const sensor_msgs::ImageConstPtr& color_image_ms
 	image_pub_.publish(cv_ptr->toImageMsg());
 }
 
+void BodyTracker::pointcloudCallback(const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
+{
+	// dummy function
+	init_counter_point_cloud_++;
+}
+
 BodyTracker::~BodyTracker()
 {
 	//shutdown node
-	Finalize();
+	finalize();
 }
 
-void BodyTracker::Finalize()
+void BodyTracker::finalize()
 {
 	ros::spinOnce();
-	delete[] m_pTexMap_;
-	delete m_pUserTracker;
-	device_.close();
+	if (it_ != 0)
+		delete it_;
+	if (m_pTexMap_ != 0)
+		delete[] m_pTexMap_;
+	if (m_pUserTracker)
+		delete m_pUserTracker;
+	if (device_.isValid() == true)
+		device_.close();
 	nite::NiTE::shutdown();
 	openni::OpenNI::shutdown();
 }
@@ -310,7 +352,7 @@ void BodyTracker::init()
  */
 void BodyTracker::runTracker()
 {
-	while(nh_.ok())
+	while(shutdown_ ==false && nh_.ok() && ros::ok())
 	{
 		nite::UserTrackerFrameRef userTrackerFrame;
 		openni::VideoFrameRef depthFrame;
@@ -652,12 +694,15 @@ geometry_msgs::Pose BodyTracker::convertNiteJointToMsgs(nite::SkeletonJoint join
  */
 void BodyTracker::drawPointCloud()
 {
-	ros::Time time = ros::Time::now();
-	uint64_t st = time.toNSec();
-	pcl_cloud_->header.stamp = st;
-	pcl_cloud_->header.frame_id = cam_frame_;
+	sensor_msgs::PointCloud2 pc;
+	pcl::toROSMsg(*pcl_cloud_, pc);
 
-	pcl_pub_.publish(pcl_cloud_);
+	ros::Time time = ros::Time::now();
+	//uint64_t st = time.toNSec();
+	pc.header.stamp = time;
+	pc.header.frame_id = cam_frame_;
+
+	pcl_pub_.publish(pc);
 	pcl_cloud_->points.clear();
 }
 /*

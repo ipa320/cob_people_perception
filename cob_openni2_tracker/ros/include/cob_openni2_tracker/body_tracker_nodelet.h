@@ -74,10 +74,14 @@ public:
 	BodyTrackerNodelet();
 	virtual ~BodyTrackerNodelet();
 	virtual void onInit();
-    boost::shared_ptr<BodyTracker> inst_;
+	void run();
+	//boost::shared_ptr<BodyTracker> inst_;
 
 protected:
 	BodyTracker *bt_listener;
+	boost::shared_ptr<boost::thread> tracker_thread_;
+	volatile bool running_;
+	std::string nodelet_manager_;
 };
 
 #endif /* BODY_TRACKER_NODELET_H_ */

@@ -7,12 +7,12 @@ Installation
 
    $ git clone https://github.com/ros-drivers/cob_openni2_tracker.git
 
-2. Install ros packages and dependencies:
+2. Install ros packages and dependencies (or replace indigo by your favorite ROS version):
 
-	ros-hydro-openni2-camera
-	ros-hydro-openni2-launch
-	ros-hydro-rgbd-launch
-	ros-hydro-nodelet 
+	ros-indigo-openni2-camera
+	ros-indigo-openni2-launch
+	ros-indigo-rgbd-launch
+	ros-indigo-nodelet 
 
 or clone the git repositories:
 

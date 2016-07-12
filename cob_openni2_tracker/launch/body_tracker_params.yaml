@@ -23,7 +23,7 @@
 #bool 
  drawBackground: true
 
-#sets the visibility parameter for a detected depth data
+#sets the visibility parameter for a detected depth data (if true, if publishes the original point cloud with all points that belong to one tracked person colored in a individual color on topic "points_body_tracker")
 #bool 
  drawDepth: true
 
