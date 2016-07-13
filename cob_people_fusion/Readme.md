@@ -1,13 +1,18 @@
 # People Fusion Node
-This node is designed to fuse multiple nodes publishing people_detections messages(cob_perception_msgs::DetectionArray) and fuse these detections together.
+This node is designed to fuse multiple nodes publishing people_detections messages(cob_perception_msgs::DetectionArray) and fuse these detections together. The current implementation associates the detections to each other (ignoring the timestamp difference) and increases the detection score when the detection is seen by multiple sensors and at multiple time steps. The state information is currently not fused; saved state information ist replaced by newer state information. State information from past times is not taken into account.
 
 The used detectors need to be defined within /cfg/detector_config.yaml with to following rules:
 - Every parameters has to be defined since there are no default parameters.
 - Each detector needs a unique name which needs to be identical with the detector field of the cob_perception_msgs::Detection message
 
-In RVIZ the detections are highlighted using cylinders with different colors. Each color represents a detection type.
+Quick Start
+-----------
+make sure that the topics listed in cfg detector_config_all.yaml are being published and that the above mention rules are taken into consideration.
 
-Because the detectors have different detection rates the usage of a timesequencer is indispensable. By nature of this sequencer a delay is introduced into the system.
+Start the fusion with: roslaunch cob_people_fusion people_fusion.launch
+
+
+In RVIZ the detections are highlighted using cylinders with different colors. Each color represents a detection type.
 
 ## Open Questions
 - Empty detections lack the detector information. Note: Currently fixed by wrapping within own message type

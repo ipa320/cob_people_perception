@@ -1,0 +1,11 @@
+
+Quick Start
+-----------
+
+start laserscanners
+
+start dual tracker: roslaunch cob_dual_leg_tracker dual_tracker_cob.launch
+
+Which also maps the scans base_laser_front/scan, /base_laser_right/scan, and /base_laser_left/scan to /scan The tracking is then subscribing to the /scan topic.
+
+
