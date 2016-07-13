@@ -126,7 +126,7 @@ add_library(cob_leg_detection
 )
 
 ## Add cmake target dependencies of the executable/library
-add_dependencies(cob_leg_detection ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(cob_leg_detection ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 #############
 ## Install ##
