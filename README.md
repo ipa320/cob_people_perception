@@ -3,7 +3,7 @@ Travic-CI: [![Build Status](https://travis-ci.org/ipa320/cob_people_perception.s
 Collection of packages for detecting and identifying faces, detecting and tracking humans with RGB-D sensors or laser scanners, and fusing detections.
 
 Following functionalities are found in the packages:
-cob_people_perception: 
+
 cob_people_detection: Detects persons through head and face detection and identifies the detected faces. The results are tracked over time to increase confidence. The system is optimized to be used with a Microsoft Kinect or Asus Xtion Pro Live sensor but could also handle different sensors as long as depth and color images are provided. See http://wiki.ros.org/cob_people_detection for details
 
 
@@ -13,14 +13,15 @@ cob_people_tracking_filter: tracking of detections (used by cob_leg_detection an
 
 cob_people_fusion: fuse people deections from various sources 
 
-cob_openni2_tracker: Unused??
-libnite2: Unused??
+cob_openni2_tracker: wrapper for the openni2_tracker that detects humans in the Kinect point cloud and tracks their skeleton.
 
-Please also have a look at our more detailed documentation at http://wiki.ros.org/cob_people_detection .
+libnite2: Helper library for cob_openni2_tracker, wrapper for downloading and compiling the NiTE library.
+
+Please also have a look at our more detailed documentation at http://wiki.ros.org/cob_people_perception .
 
 Quick Start
 -----------
-Kinnect detections: see cob_people_detection/readme
+Kinect detections: see cob_people_detection/readme
 
 Laser scan based detection: see cob_dual_leg_tracker/readme
 
