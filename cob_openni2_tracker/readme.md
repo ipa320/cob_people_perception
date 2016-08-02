@@ -5,7 +5,7 @@ Installation
 
 1. Clone cob_openni2_tracker in catkin workspace:
 
-   $ git clone https://github.com/ros-drivers/cob_openni2_tracker.git
+	git clone https://github.com/ros-drivers/cob_openni2_tracker.git
 
 2. Install ros packages and dependencies (or replace indigo by your favorite ROS version):
 
@@ -16,11 +16,11 @@ Installation
 
 or clone the git repositories:
 
-   $ git clone https://github.com/ros-drivers/openni2_camera.git
-   $ git clone https://github.com/ros-drivers/openni2_launch.git
-   $ git clone https://github.com/ros-drivers/rgbd_launch.git
+	git clone https://github.com/ros-drivers/openni2_camera.git
+	git clone https://github.com/ros-drivers/openni2_launch.git
+	git clone https://github.com/ros-drivers/rgbd_launch.git
 
-3. Download and install OpenNI 2.2.
+3. Download and install libopenni2.
 
 4. Run catkin_make
 
