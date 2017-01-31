@@ -80,7 +80,7 @@ target_link_libraries(cob_people_tracking_filter
    ${Boost_LIBRARIES}
    ${BFL_LIBRARIES}
 )
-add_dependencies(cob_people_tracking_filter ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(cob_people_tracking_filter ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a cpp executable
 add_executable(cob_people_tracker src/people_tracking_node.cpp)
@@ -90,7 +90,7 @@ target_link_libraries(cob_people_tracker
    ${Boost_LIBRARIES}
    ${BFL_LIBRARIES}
 )
-add_dependencies(cob_people_tracker ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)     #add_dependencies(cob_people_tracker cob_perception_msgs_gencpp cob_people_tracking_filter)
+add_dependencies(cob_people_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 #############
@@ -102,8 +102,8 @@ install(TARGETS cob_people_tracker cob_people_tracking_filter
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(DIRECTORY include/  # ${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+install(DIRECTORY include/${PROJECT_NAME}/
+	DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
 install(DIRECTORY launch
