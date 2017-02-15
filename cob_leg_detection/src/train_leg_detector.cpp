@@ -34,6 +34,8 @@
 
 #include "cob_leg_detection/laser_processor.h"
 #include "cob_leg_detection/calc_leg_features.h"
+#include "cob_leg_detection/ClusterMsg.h"
+#include "cob_leg_detection/LabeledRangeScanMsg.h"
 
 #include "opencv/cxcore.h"
 #include "opencv/cv.h"
@@ -42,11 +44,29 @@
 #include "cob_perception_msgs/PositionMeasurement.h"
 #include "sensor_msgs/LaserScan.h"
 
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+
+#include <boost/foreach.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
+#define USE_BASH_COLORS
+#include <cob_leg_detection/color_definitions.h>
+#include <stdlib.h>     /* exit, EXIT_FAILURE */
+
 using namespace std;
 using namespace laser_processor;
 using namespace ros;
 
-enum LoadType {LOADING_NONE, LOADING_POS, LOADING_NEG, LOADING_TEST};
+enum LoadType {LOADING_NONE, LOADING_TRAIN, LOADING_TEST};
+
+enum ClassificatorType {CVBOOST, CVRTREES};
+
+struct classificator {
+  ClassificatorType type;
+  string desc;
+  CvStatModel* pClassificator;
+};
 
 class TrainLegDetector
 {
@@ -58,7 +78,13 @@ public:
   vector< vector<float> > neg_data_;
   vector< vector<float> > test_data_;
 
-  CvRTrees forest;
+  vector< vector<float> > test_pos_data_;  //Positiv test data
+  vector< vector<float> > test_neg_data_;  //Negative test data
+
+  vector<classificator> classificators;
+
+  //CvRTrees forest;
+  //CvBoost adaBoost;
 
   float connected_thresh_;
 
@@ -72,65 +98,118 @@ public:
   {
     if (load != LOADING_NONE)
     {
-      switch (load)
-      {
-      case LOADING_POS:
-        printf("Loading positive training data from file: %s\n",file); break;
-      case LOADING_NEG:
-        printf("Loading negative training data from file: %s\n",file); break;
-      case LOADING_TEST:
-        printf("Loading test data from file: %s\n",file); break;
-      default:
-        break;
-      }
+        switch (load)
+        {
+        case LOADING_TRAIN:
+            printf("Loading training data from file: %s\n",file); break;
+        case LOADING_TEST:
+            printf("Loading test data from file: %s\n",file); break;
+        default:
+            break;
+        }
 
-      ros::record::Player p;
-      if (p.open(file, ros::Time()))
-      {
-        mask_.clear();
-        mask_count_ = 0;    
+        // Open the bagfile
+        rosbag::Bag bag;
+        try {
+          bag.open(file, rosbag::bagmode::Read);
+          cout << "File open" << endl;
+        } catch (const rosbag::BagException& e) {
+          cout << RED << "Error opening the file: " << file << RESET << endl;
+          exit (EXIT_FAILURE);
+        }
 
-      switch (load)
-      {
-      case LOADING_POS:
-        p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, &pos_data_);
-        break;
-      case LOADING_NEG:
-        mask_count_ = 1000; // effectively disable masking
-        p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, &neg_data_);
-        break;
-      case LOADING_TEST:
-        p.addHandler<sensor_msgs::LaserScan>(string("*"), &TrainLegDetector::loadCb, this, &test_data_);
-        break;
-      default:
-        break;
-      }
-    
-        while (p.nextMsg())
-        {}
-    } 
+        sensor_msgs::LaserScan::Ptr pLaserScan;
+        cob_leg_detection::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg;
+
+        // Iterate the messages
+        std::vector<std::string> topics;
+        topics.push_back(std::string("/scan_front"));   // TODO make this more general
+        topics.push_back(std::string("/scan_back"));   // TODO make this more general
+        topics.push_back(std::string("/labels"));       // TODO make this more general
+        //topics.push_back(std::string("/tf"));
+
+        // Create the view
+        rosbag::View view(bag, rosbag::TopicQuery(topics));
+        BOOST_FOREACH(rosbag::MessageInstance const m, view) // Iterate through the messages
+        {
+
+          // Initiate as
+          sensor_msgs::LaserScan::Ptr pLaserScanTemp = m.instantiate<sensor_msgs::LaserScan>();
+          cob_leg_detection::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsgTemp = m.instantiate<cob_leg_detection::LabeledRangeScanMsg>();
+
+          if (pLaserScanTemp != NULL) {
+              pLaserScan = pLaserScanTemp;
+          }
+          if (pLabeledRangeScanMsgTemp != NULL) {
+              pLabeledRangeScanMsg = pLabeledRangeScanMsgTemp;
+          }
+
+          // Check if both messages are defined and have the 'same' timestamp -> At this point the laserscan and its associated labels
+          if (pLaserScan != NULL && pLabeledRangeScanMsg != NULL &&
+              abs(pLaserScan->header.stamp.nsec - pLabeledRangeScanMsg->header.stamp.nsec) < (uint32_t) 1){
+
+              if(pLabeledRangeScanMsg->clusters.size() > 0){ //If there are clusters
+                  this->loadCb(pLaserScan,pLabeledRangeScanMsg,load);
+              }
+              pLaserScan == NULL;
+              pLabeledRangeScanMsg == NULL;
+
+          }
+        }//end BOOST_FOREACH
+
     }
   }
 
-  void loadCb(string name, sensor_msgs::LaserScan* scan, ros::Time t, ros::Time t_no_use, void* n)
+  //void loadCb(string name, sensor_msgs::LaserScan* scan, ros::Time t, ros::Time t_no_use, vector< vector<float> >& data) //TODO Remove first parameter
+  void loadCb(sensor_msgs::LaserScan::Ptr pLaserScan, cob_leg_detection::LabeledRangeScanMsg::Ptr pLabeledRangeScanMsg, LoadType load)
   {
-    vector< vector<float> >* data = (vector< vector<float> >*)(n);
+      // TODO extract the clusters
 
-    if (mask_count_++ < 20)
-    {
-      mask_.addScan(*scan);
-    }
-    else
-    {
-      ScanProcessor processor(*scan,mask_);
-      processor.splitConnected(connected_thresh_);
-      processor.removeLessThan(5);
-    
-      for (list<SampleSet*>::iterator i = processor.getClusters().begin();
-           i != processor.getClusters().end();
-           i++)
-        data->push_back( calcLegFeatures(*i, *scan));
-    }
+      // Iterate the clusters inside the message
+      for(cob_leg_detection::LabeledRangeScanMsg::_clusters_type::iterator clusterIt = pLabeledRangeScanMsg->clusters.begin(); clusterIt != pLabeledRangeScanMsg->clusters.end(); clusterIt++){
+
+          SampleSet* pCluster = new SampleSet();
+          cout << GREEN << pLaserScan->header.stamp << RESET << endl;
+          cout << "\tLabel:[" << clusterIt->label << "] " << endl;
+          pCluster->label = clusterIt->label;
+
+          // Iterate the indices
+          for(cob_leg_detection::ClusterMsg::_indices_type::iterator indexIt = clusterIt->indices.begin(); indexIt != clusterIt->indices.end(); indexIt++){
+              int16_t index = ((int16_t)(*indexIt));
+              //cout << "Extracting index " << index << endl;
+
+              // TODO Generate SampleSet here
+              Sample* s = Sample::Extract(index, *pLaserScan);
+              pCluster->insert(s);
+
+              //cout << "\t\t" << YELLOW << index <<  " " << RED << "x: " << s->x << " y: " << s->y << BLUE << " range: " << s->range << RESET << endl;
+          }
+
+          switch (load)
+          {
+          case LOADING_TRAIN:
+              // Input into the relevant data set
+              if(pCluster->label == "LEG"){
+                  cout << "Pushing pos data into pos_data_" << endl;
+                  pos_data_.push_back( calcLegFeatures(pCluster, *pLaserScan));
+              }else if(pCluster->label == "NOLEG"){
+                  cout << "Pushing neg data into neg_data_" << endl;
+                  neg_data_.push_back( calcLegFeatures(pCluster, *pLaserScan));
+              }
+              break;
+          case LOADING_TEST:
+              if(pCluster->label == "LEG"){
+                  cout << "Pushing test data into test_pos_data_" << endl;
+                  test_pos_data_.push_back( calcLegFeatures(pCluster, *pLaserScan));
+              }else if(pCluster->label == "NOLEG"){
+                  cout << "Pushing neg data into test_neg_data_" << endl;
+                  test_neg_data_.push_back( calcLegFeatures(pCluster, *pLaserScan));
+              }
+              break;
+          default:
+              break;
+          }
+      }
   }
 
   void train()
@@ -174,12 +253,59 @@ public:
     
     float priors[] = {1.0, 1.0};
     
-    CvRTParams fparam(8,20,0,false,10,priors,false,5,50,0.001f,CV_TERMCRIT_ITER);
+    CvRTParams fparam(8, // Maximal tree depth
+                      20,
+                      0,
+                      false,
+                      10,
+                      priors,
+                      false,
+                      5,
+                      50,
+                      0.001f,
+                      CV_TERMCRIT_ITER);
     fparam.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100, 0.1);
     
-    forest.train( cv_data, CV_ROW_SAMPLE, cv_resp, 0, 0, var_type, 0,
-                  fparam);
+    CvRTrees* forest = new CvRTrees();
+    forest->train(cv_data, //Training Data
+                 CV_ROW_SAMPLE, // each row is a sample
+                 cv_resp, // The response that is expected
+                 0, // Can be used to choose as subset of the features
+                 0, // Can be used to choose as subset of the samples
+                 var_type, // ???
+                 0, // Can be used to mark missing values
+                 fparam);
 
+    CvBoostParams boostParams;
+        boostParams.boost_type = CvBoost::REAL;
+        boostParams.weak_count = feat_count_;
+        boostParams.weight_trim_rate = 0.5; //A threshold between 0 and 1 used to save computational time. Samples with summary weight \leq 1 - weight\_trim\_rate do not participate in the next iteration of training. Set this parameter to 0 to turn off this functionality.
+        boostParams.max_depth = 1;
+        boostParams.cv_folds = 0;
+        //boostParams.priors = priors;
+
+    CvBoost* adaBoost = new CvBoost();
+    adaBoost->train(cv_data, //Training Data
+                   CV_ROW_SAMPLE, // each row is a sample
+                   cv_resp, // The response that is expected
+                   0, // Can be used to choose as subset of the features
+                   0, // Can be used to choose as subset of the samples
+                   var_type, // ???
+                   0, // Can be used to mark missing values
+                   boostParams);
+
+    // Store the forestClassificator
+    classificator forestClassificator;
+    forestClassificator.desc = "forestClassificator";
+    forestClassificator.pClassificator = forest;
+    forestClassificator.type = CVRTREES;
+    classificators.push_back(forestClassificator);
+
+    classificator adaBoostClassificator;
+    adaBoostClassificator.desc = "adaBoostClassificator";
+    adaBoostClassificator.pClassificator = adaBoost;
+    adaBoostClassificator.type = CVBOOST;
+    classificators.push_back(adaBoostClassificator);
 
     cvReleaseMat(&cv_data);
     cvReleaseMat(&cv_resp);
@@ -188,58 +314,166 @@ public:
 
   void test()
   {
-    CvMat* tmp_mat = cvCreateMat(1,feat_count_,CV_32FC1);
+    // Test every iterator there is
+    for(vector<classificator>::iterator classificatorIt = classificators.begin(); classificatorIt != classificators.end(); classificatorIt++){
+        cout << BOLDMAGENTA << classificatorIt->desc << RESET << endl;
 
-    int pos_right = 0;
-    int pos_total = 0;    
-    for (vector< vector<float> >::iterator i = pos_data_.begin();
-         i != pos_data_.end();
-         i++)
-    {
-      for (int k = 0; k < feat_count_; k++)
-        tmp_mat->data.fl[k] = (float)((*i)[k]);
-      if (forest.predict( tmp_mat) > 0)
-        pos_right++;
-      pos_total++;
+        CvMat* tmp_mat = cvCreateMat(1,feat_count_,CV_32FC1);
+
+        int pos_right = 0;
+        int pos_total = 0;
+        for (vector< vector<float> >::iterator i = pos_data_.begin();
+             i != pos_data_.end();
+             i++)
+        {
+          for (int k = 0; k < feat_count_; k++)
+            tmp_mat->data.fl[k] = (float)((*i)[k]);
+
+          float prediction = 0;
+          boost::posix_time::ptime time_start; // TODO use the timer class
+          boost::posix_time::ptime time_end;
+          time_start = boost::posix_time::microsec_clock::local_time();
+          switch(classificatorIt->type){
+              case CVRTREES:
+                  prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+              case CVBOOST:
+                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+          }
+          time_end = boost::posix_time::microsec_clock::local_time();
+          boost::posix_time::time_duration duration(time_end - time_start);
+          //cout << "Duration: " << duration.total_microseconds() << '\n';
+
+          if (prediction > 0){
+              pos_right++;
+              //cout << "Positiv with " << prediction << endl;
+          }
+          pos_total++;
+        }
+
+        int neg_right = 0;
+        int neg_total = 0;
+        for (vector< vector<float> >::iterator i = neg_data_.begin();
+             i != neg_data_.end();
+             i++)
+        {
+          for (int k = 0; k < feat_count_; k++)
+            tmp_mat->data.fl[k] = (float)((*i)[k]);
+          float prediction = 0;
+          switch(classificatorIt->type){
+              case CVBOOST:
+                  //prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat, 0,0,CV_WHOLE_SEQ, true,false);
+                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+              case CVRTREES:
+                  prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+          }
+          if (prediction < 0){
+              neg_right++;
+              //cout << "Negative with " << prediction << endl;
+          }
+
+          neg_total++;
+        }
+
+        // Test for positive data (no legs)
+        int test_pos_right = 0;
+        int test_pos_total = 0;
+        double prob = 0;
+
+        for (vector< vector<float> >::iterator i = test_pos_data_.begin();
+             i != test_pos_data_.end();
+             i++)
+        {
+          for (int k = 0; k < feat_count_; k++)
+            tmp_mat->data.fl[k] = (float)((*i)[k]);
+          float prediction = 0;
+          switch(classificatorIt->type){
+              case CVBOOST:
+                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+              case CVRTREES:
+                  prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  prob = ((CvRTrees *)classificatorIt->pClassificator)->predict_prob(tmp_mat);
+                  break;
+          }
+          if (prediction > 0){
+              test_pos_right++;
+              //std::cout << "prob: " << prob << "->" << prediction << std::endl;
+              //cout << "Positiv with " << prediction << endl;
+          }
+          test_pos_total++;
+        }
+
+        // Test for negative data (no legs)
+        int test_neg_right = 0;
+        int test_neg_total = 0;
+        for (vector< vector<float> >::iterator i = test_neg_data_.begin();
+             i != test_neg_data_.end();
+             i++)
+        {
+          for (int k = 0; k < feat_count_; k++)
+            tmp_mat->data.fl[k] = (float)((*i)[k]);
+          float prediction = 0;
+          switch(classificatorIt->type){
+              case CVBOOST:
+                  prediction = ((CvBoost *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+              case CVRTREES:
+                  prediction = ((CvRTrees *)classificatorIt->pClassificator)->predict(tmp_mat);
+                  break;
+          }
+          if (prediction < 0){
+              test_neg_right++;
+              //cout << "Negative with " << prediction;
+          }
+          test_neg_total++;
+        }
+
+
+        // Test for negative data
+
+        printf("\t----- Training Set -----(N=%lu)\n", neg_data_.size()+pos_data_.size());
+        printf("\t True positives: %d\n",pos_right);
+        printf("\t False positives: %d\n",pos_total-pos_right);
+
+        printf("\t True negatives: %d\n",neg_right);
+        printf("\t False negatives: %d\n\n",neg_total-neg_right);
+
+        printf("\t True positives Rate(Sensitivity): %g %%\n",(float)(pos_right)/pos_total * 100);
+        printf("\t True negatives Rate(Specificity): %g %%\n\n",(float) (neg_right)/neg_total * 100);
+
+        printf("\t-----   Test Set   -----(N=%lu)\n", test_neg_data_.size()+test_pos_data_.size());
+
+        printf("\t True positives: %d\n",test_pos_right);
+        printf("\t False positives: %d\n",test_pos_total-test_pos_right);
+
+        printf("\t True negatives: %d\n",test_neg_right);
+        printf("\t False negatives: %d\n\n",test_neg_total-test_neg_right);
+
+        printf("\t True positives Rate(Sensitivity): %g %% \n",(float) (test_pos_right)/test_pos_total * 100);
+        printf("\t True negatives Rate(Specificity): %g %% \n\n",(float) (test_neg_right)/test_neg_total * 100);
+
+        cvReleaseMat(&tmp_mat);
     }
-
-    int neg_right = 0;
-    int neg_total = 0;
-    for (vector< vector<float> >::iterator i = neg_data_.begin();
-         i != neg_data_.end();
-         i++)
-    {
-      for (int k = 0; k < feat_count_; k++)
-        tmp_mat->data.fl[k] = (float)((*i)[k]);
-      if (forest.predict( tmp_mat ) < 0)
-        neg_right++;
-      neg_total++;
-    }
-
-    int test_right = 0;
-    int test_total = 0;
-    for (vector< vector<float> >::iterator i = test_data_.begin();
-         i != test_data_.end();
-         i++)
-    {
-      for (int k = 0; k < feat_count_; k++)
-        tmp_mat->data.fl[k] = (float)((*i)[k]);
-      if (forest.predict( tmp_mat ) > 0)
-        test_right++;
-      test_total++;
-    }
-
-    printf(" Pos train set: %d/%d %g\n",pos_right, pos_total, (float)(pos_right)/pos_total);
-    printf(" Neg train set: %d/%d %g\n",neg_right, neg_total, (float)(neg_right)/neg_total);
-    printf(" Test set:      %d/%d %g\n",test_right, test_total, (float)(test_right)/test_total);
-
-    cvReleaseMat(&tmp_mat);
 
   }
 
-  void save(char* file)
+  void save(char* outputfile_prefix)
   {
-    forest.save(file);
+      cout << "Save called!" << endl;
+      for(vector<classificator>::iterator classificatorIt = classificators.begin(); classificatorIt != classificators.end(); classificatorIt++){
+          char outputfile[1000];
+          outputfile[0] = 0;
+          strcpy(outputfile,outputfile_prefix);
+          strncat(outputfile,(("_" + classificatorIt->desc + ".yaml").c_str()),100);
+          cout << "Saving: " << outputfile << endl;
+
+          classificatorIt->pClassificator->save(outputfile);
+      }
+    //forest.save(file);
   }
 };
 
@@ -249,37 +483,43 @@ int main(int argc, char **argv)
 
   LoadType loading = LOADING_NONE;
 
-  char save_file[100];
-  save_file[0] = 0;
+  char outputfile_prefix[100];
+  outputfile_prefix[0] = 0;
 
   printf("Loading data...\n");
   for (int i = 1; i < argc; i++)
   {
     if (!strcmp(argv[i],"--train"))
-      loading = LOADING_POS;
-    else if (!strcmp(argv[i],"--neg"))
-      loading = LOADING_NEG;
+      loading = LOADING_TRAIN;
     else if (!strcmp(argv[i],"--test"))
       loading = LOADING_TEST;
-    else if (!strcmp(argv[i],"--save"))
+    else if (!strcmp(argv[i],"--outputfileprefix"))
     {
       if (++i < argc)
-        strncpy(save_file,argv[i],100);
+        strncpy(outputfile_prefix,argv[i],100);
+
+        // TODO Check existenz of the file
+
       continue;
     }
+    else if (!strcmp(argv[i],"--help"))
+      cout << "help" << endl;
     else
       tld.loadData(loading, argv[i]);
   }
+  printf("Positive Dataset %lu entries\n",tld.pos_data_.size());
+  printf("Negativ Dataset %lu entries\n",tld.neg_data_.size());
+  printf("Test Dataset %lu entries\n",tld.test_data_.size());
 
   printf("Training classifier...\n");
   tld.train();
 
-  printf("Evlauating classifier...\n");
+  printf("Evaluating classifier...\n");
   tld.test();
   
-  if (strlen(save_file) > 0)
+  if (strlen(outputfile_prefix) > 0)
   {
-    printf("Saving classifier as: %s\n", save_file);
-    tld.save(save_file);
+    //printf("Saving classifier as: %s\n", outputfile_prefix);
+    tld.save(outputfile_prefix);
   }
 }

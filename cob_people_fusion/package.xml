@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package>
+  <name>cob_people_fusion</name>
+  <version>0.0.1</version>
+  <description>The cob_people_fusion package</description>
+
+  <maintainer email="frm-ag@ipa.fraunhofer.de">Alexander Gutenkunst</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>cob_perception_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>yaml-cpp</build_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>cob_perception_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>yaml-cpp</run_depend>
+
+</package>

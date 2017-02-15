@@ -1,0 +1,18 @@
+<launch>
+
+  <!-- Remap -->
+  <!-- <remap from="/people_detections/laser_detections" to="/people_detections/all_detections"/> -->
+  
+  <!-- relay scans -->
+  <!-- <node pkg="topic_tools" type="relay" name="laser_relay" args="/people_detections/laser_detections /people_detections/all_detections" /> -->
+  <!-- <node pkg="topic_tools" type="relay" name="face_relay" args="/people_detections/face_detections /people_detections/all_detections" /> -->
+  <!-- <node pkg="topic_tools" type="relay" name="body_relay" args="/people_detections/body_detections /people_detections/all_detections" /> -->
+  
+
+  <!-- people fusion node -->
+
+  <node pkg="cob_people_fusion" type="cob_people_fusion" required="true" name="cob_people_fusion" output="screen" args="$(find cob_people_fusion)/cfg/detector_config_laser_only.yaml">
+    
+  </node>
+</launch>
+

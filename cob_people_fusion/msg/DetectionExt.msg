@@ -1,0 +1,3 @@
+Header header
+cob_perception_msgs/DetectionArray detections
+string detector

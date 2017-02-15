@@ -1,0 +1,9 @@
+<launch>
+  <!-- dual tracker node -->
+  <node pkg="cob_dual_leg_tracker" type="dual_tracker" required="true" name="dual_tracker" args=" $(find cob_dual_leg_tracker)/trained_classificators/forestClassificator.yaml" output="screen"/>
+
+  <!-- relay scans -->
+  <node pkg="topic_tools" type="relay" name="relay_front" args="/scan_front /scan" />
+  
+</launch>
+

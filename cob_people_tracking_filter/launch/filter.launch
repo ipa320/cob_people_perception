@@ -1,6 +1,6 @@
 <launch>
-<!--param name="cob_people_tracker/fixed_frame" type="string" value="base_link"/-->
-<param name="cob_people_tracker/fixed_frame" type="string" value="base_link"/>
+<!--param name="cob_people_tracker/fixed_frame" type="string" value="odom_combined"/-->
+<param name="cob_people_tracker/fixed_frame" type="string" value="odom_combined"/>
 <param name="cob_people_tracker/freq" value="10.0"/>
 <param name="cob_people_tracker/start_distance_min" value="0.5"/>
 <param name="cob_people_tracker/reliability_threshold" value="0.75"/>
