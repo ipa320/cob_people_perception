@@ -1,4 +1,8 @@
 libnite2/common
 build/
+data/
+dlib/common/include/dlib/
+dlib/common/lib/
+dlib/installed
 *~
 *.pyc
