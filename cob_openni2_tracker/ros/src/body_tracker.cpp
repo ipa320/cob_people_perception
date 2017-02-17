@@ -231,9 +231,9 @@ void BodyTracker::imageCallback(const sensor_msgs::ImageConstPtr& color_image_ms
 		{
 			if((*iter_).getCenterOfMass().x != 0 && (*iter_).getCenterOfMass().y != 0 && (*iter_).getCenterOfMass().z != 0)
 			{
-				int max_x = width - (*iter_).getBoundingBox().max.x;
+				int max_x = /*width - */(*iter_).getBoundingBox().max.x;
 				int max_y = (*iter_).getBoundingBox().max.y;
-				int min_x = width - (*iter_).getBoundingBox().min.x;
+				int min_x = /*width - */(*iter_).getBoundingBox().min.x;
 				int min_y = (*iter_).getBoundingBox().min.y;
 
 				double center_x = (*iter_).getCenterOfMass().x;
@@ -663,8 +663,8 @@ void BodyTracker::publishJoints(ros::NodeHandle& nh, tf::TransformBroadcaster& b
 		transform.setRotation(frame_rotation);
 		std::stringstream frame_id_stream;
 		std::string frame_id;
-		//frame_id_stream << "/" << tf_prefix << "/user_" << id << "/" << joint_name;
-		frame_id_stream << "user_" << id << "-" << joint_name;
+		frame_id_stream << "/" << tf_prefix << "/user_" << id << "/" << joint_name;
+		//frame_id_stream << "user_" << id << "-" << joint_name;
 		frame_id = frame_id_stream.str();
 		// std::cout << frame_id << std::endl;
 		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), rel_frame, frame_id));
