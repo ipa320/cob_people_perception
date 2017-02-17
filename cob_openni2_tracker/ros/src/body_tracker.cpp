@@ -188,8 +188,8 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 
 	vis_pub_ = nh_.advertise<visualization_msgs::Marker>( "visualization_marker", 10);
 	if (drawDepth_==true)
-		pcl_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("points_body_tracker", 0);	// original point cloud with all points that belong to one tracked person colored in a individual color
-	people_pub_ = nh_.advertise<cob_perception_msgs::People>("people", 0);		// detections
+		pcl_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("points_body_tracker", 1);	// original point cloud with all points that belong to one tracked person colored in a individual color
+	people_pub_ = nh_.advertise<cob_perception_msgs::People>("people", 1);		// detections
 
 	ROS_INFO("Create BodyTracker.\n");
 	m_pUserTracker = new nite::UserTracker;
