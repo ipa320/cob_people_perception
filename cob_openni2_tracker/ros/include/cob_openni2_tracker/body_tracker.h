@@ -126,7 +126,7 @@ private:
 
 	//TF ELEMENTS
 	tf::TransformListener transform_listener_;
-	tf::TransformBroadcaster br_;
+	tf::TransformBroadcaster transform_broadcaster_;
 	ros::Publisher vis_pub_, pcl_pub_, skeleton_pub_, people_pub_;
 	ros::Subscriber pcl_sub_;
 	image_transport::ImageTransport* it_;
