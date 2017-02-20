@@ -111,7 +111,7 @@ public:
 	BodyTracker(ros::NodeHandle nh);
 	virtual ~BodyTracker();
 	//PARAMS
-	std::string tf_prefix_, rel_frame_, cam_frame_;
+	std::string tf_prefix_, rel_frame_, depth_optical_frame_;
 	openni::Device	device_;
 	openni::VideoStream depthSensor_;
 	void finalize();

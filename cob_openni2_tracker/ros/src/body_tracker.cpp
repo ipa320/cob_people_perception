@@ -122,8 +122,8 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 
 	//nh_ = nh_priv;
 	// Get Tracker Parameters
-	if(!nh_.getParam("camera_frame_id", cam_frame_)){
-		ROS_WARN("tf_prefix was not found on Param Server! See your launch file!");
+	if(!nh_.getParam("depth_optical_frame_id", depth_optical_frame_)){
+		ROS_WARN("depth_optical_frame_id was not found on Param Server! See your launch file!");
 		nh_.shutdown();
 		finalize();
 	}
@@ -134,11 +134,11 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 		finalize();
 	}
 
-	if(!nh_.getParam("relative_frame", rel_frame_)){
-		ROS_WARN("relative_frame was not found on Param Server! See your launch file!");
-		nh_.shutdown();
-		finalize();
-	}
+//	if(!nh_.getParam("relative_frame", rel_frame_)){
+//		ROS_WARN("relative_frame was not found on Param Server! See your launch file!");
+//		nh_.shutdown();
+//		finalize();
+//	}
 
 	std::cout << "\n---------------------------\nPeople Tracker Detection Parameters (CAMERA):\n---------------------------\n";
 	//parameters from a YAML File
@@ -418,7 +418,7 @@ void BodyTracker::runTracker()
 					}
 					else
 					{
-						//determin color for users
+						//determine color for users
 						factor[0] = Colors[*pLabels % colorCount][0];
 						factor[1] = Colors[*pLabels % colorCount][1];
 						factor[2] = Colors[*pLabels % colorCount][2];
@@ -432,9 +432,12 @@ void BodyTracker::runTracker()
 					point.r = 255*factor[0];
 					point.g = 255*factor[1];
 					point.b = 255*factor[2];
-					point.x = dZ/1000;
-					point.y = -dX/1000;
-					point.z = dY/1000;
+//					point.x = dZ/1000;		// todo: Kinect might be different from Asus?
+//					point.y = -dX/1000;
+//					point.z = dY/1000;
+					point.x = dX/1000.0;
+					point.y = -dY/1000.0;
+					point.z = dZ/1000.0;
 
 					if (*pDepth != 0)
 					{
@@ -599,7 +602,7 @@ void BodyTracker::publishTrackedUserMsg()
 	}
 	cob_perception_msgs::People array;
 	array.header.stamp = ros::Time::now();
-	array.header.frame_id = rel_frame_;
+	array.header.frame_id = depth_optical_frame_;
 	array.people = detected_people;
 	people_pub_.publish(array);
 
@@ -702,7 +705,7 @@ void BodyTracker::drawPointCloud()
 	ros::Time time = ros::Time::now();
 	//uint64_t st = time.toNSec();
 	pc.header.stamp = time;
-	pc.header.frame_id = cam_frame_;
+	pc.header.frame_id = depth_optical_frame_;
 
 	pcl_pub_.publish(pc);
 	pcl_cloud_->points.clear();
@@ -777,7 +780,7 @@ void BodyTracker::drawFrames(const nite::UserData& user)
 	joints["right_foot"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT));
 
 	for (JointMap::iterator it=joints.begin(); it!=joints.end(); ++it){
-		publishJoints(nh_, transform_broadcaster_, it->first, it->second, tf_prefix_, rel_frame_, user.getId());
+		publishJoints(nh_, transform_broadcaster_, it->first, it->second, tf_prefix_, depth_optical_frame_, user.getId());
 	}
 
 	drawCircle(r, g, b, joints["head"].getPosition());
@@ -810,7 +813,7 @@ void BodyTracker::drawLine (const double r, const double g, const double b,
 		const nite::Point3f& pose_start, const nite::Point3f& pose_end )
 {
 	visualization_msgs::Marker marker;
-	marker.header.frame_id = rel_frame_;
+	marker.header.frame_id = depth_optical_frame_;
 	marker.header.stamp = ros::Time::now();
 	marker.action = visualization_msgs::Marker::ADD;
 	marker.type = visualization_msgs::Marker::LINE_STRIP;
