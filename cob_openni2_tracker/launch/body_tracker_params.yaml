@@ -27,6 +27,6 @@
 #bool 
  drawDepth: true
 
-#sets the visibility parameter for skeleton frames of the tracked users
+# publishes the detected frames on tf and some Rviz markers for display (sets the visibility parameter for skeleton frames of the tracked users)
 #bool 
- drawFrames: false
+ drawFrames: true

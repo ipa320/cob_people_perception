@@ -109,7 +109,7 @@ using namespace message_filters;
  * advertises subscribes and publishes.
  */
 BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
-:pcl_cloud_(new pcl::PointCloud<pcl::PointXYZRGB>), tracked_users_(new list<nite::UserData>()), m_poseUser(0), br_(), nh_(nh_priv)
+:pcl_cloud_(new pcl::PointCloud<pcl::PointXYZRGB>), tracked_users_(new list<nite::UserData>()), m_poseUser(0), transform_broadcaster_(), nh_(nh_priv)
 {
 	marker_id_ = 0;
 	init_counter_color_image_ = 0;
@@ -122,8 +122,8 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 
 	//nh_ = nh_priv;
 	// Get Tracker Parameters
-	if(!nh_.getParam("camera_frame_id", cam_frame_)){
-		ROS_WARN("tf_prefix was not found on Param Server! See your launch file!");
+	if(!nh_.getParam("depth_optical_frame_id", depth_optical_frame_)){
+		ROS_WARN("depth_optical_frame_id was not found on Param Server! See your launch file!");
 		nh_.shutdown();
 		finalize();
 	}
@@ -134,11 +134,11 @@ BodyTracker::BodyTracker(ros::NodeHandle nh_priv)
 		finalize();
 	}
 
-	if(!nh_.getParam("relative_frame", rel_frame_)){
-		ROS_WARN("relative_frame was not found on Param Server! See your launch file!");
-		nh_.shutdown();
-		finalize();
-	}
+//	if(!nh_.getParam("relative_frame", rel_frame_)){
+//		ROS_WARN("relative_frame was not found on Param Server! See your launch file!");
+//		nh_.shutdown();
+//		finalize();
+//	}
 
 	std::cout << "\n---------------------------\nPeople Tracker Detection Parameters (CAMERA):\n---------------------------\n";
 	//parameters from a YAML File
@@ -231,9 +231,9 @@ void BodyTracker::imageCallback(const sensor_msgs::ImageConstPtr& color_image_ms
 		{
 			if((*iter_).getCenterOfMass().x != 0 && (*iter_).getCenterOfMass().y != 0 && (*iter_).getCenterOfMass().z != 0)
 			{
-				int max_x = width - (*iter_).getBoundingBox().max.x;
+				int max_x = /*width - */(*iter_).getBoundingBox().max.x;
 				int max_y = (*iter_).getBoundingBox().max.y;
-				int min_x = width - (*iter_).getBoundingBox().min.x;
+				int min_x = /*width - */(*iter_).getBoundingBox().min.x;
 				int min_y = (*iter_).getBoundingBox().min.y;
 
 				double center_x = (*iter_).getCenterOfMass().x;
@@ -418,7 +418,7 @@ void BodyTracker::runTracker()
 					}
 					else
 					{
-						//determin color for users
+						//determine color for users
 						factor[0] = Colors[*pLabels % colorCount][0];
 						factor[1] = Colors[*pLabels % colorCount][1];
 						factor[2] = Colors[*pLabels % colorCount][2];
@@ -432,9 +432,12 @@ void BodyTracker::runTracker()
 					point.r = 255*factor[0];
 					point.g = 255*factor[1];
 					point.b = 255*factor[2];
-					point.x = dZ/1000;
-					point.y = -dX/1000;
-					point.z = dY/1000;
+//					point.x = dZ/1000;		// todo: Kinect might be different from Asus?
+//					point.y = -dX/1000;
+//					point.z = dY/1000;
+					point.x = dX/1000.0;
+					point.y = -dY/1000.0;
+					point.z = dZ/1000.0;
 
 					if (*pDepth != 0)
 					{
@@ -467,7 +470,8 @@ void BodyTracker::runTracker()
 			}
 			else if(!user.isLost() && users[i].getSkeleton().getState() == nite::SKELETON_TRACKED)
 			{
-				//drawSkeleton(m_pUserTracker, user);
+				if (drawSkeleton_)
+					drawSkeleton(m_pUserTracker, user);
 
 				if(drawFrames_)
 				{
@@ -598,7 +602,7 @@ void BodyTracker::publishTrackedUserMsg()
 	}
 	cob_perception_msgs::People array;
 	array.header.stamp = ros::Time::now();
-	array.header.frame_id = rel_frame_;
+	array.header.frame_id = depth_optical_frame_;
 	array.people = detected_people;
 	people_pub_.publish(array);
 
@@ -663,6 +667,7 @@ void BodyTracker::publishJoints(ros::NodeHandle& nh, tf::TransformBroadcaster& b
 		std::stringstream frame_id_stream;
 		std::string frame_id;
 		frame_id_stream << "/" << tf_prefix << "/user_" << id << "/" << joint_name;
+		//frame_id_stream << "user_" << id << "-" << joint_name;
 		frame_id = frame_id_stream.str();
 		// std::cout << frame_id << std::endl;
 		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), rel_frame, frame_id));
@@ -700,7 +705,7 @@ void BodyTracker::drawPointCloud()
 	ros::Time time = ros::Time::now();
 	//uint64_t st = time.toNSec();
 	pc.header.stamp = time;
-	pc.header.frame_id = cam_frame_;
+	pc.header.frame_id = depth_optical_frame_;
 
 	pcl_pub_.publish(pc);
 	pcl_cloud_->points.clear();
@@ -717,23 +722,22 @@ void BodyTracker::drawLimb(nite::UserTracker* pUserTracker, const nite::Skeleton
  */
 void BodyTracker::drawSkeleton(nite::UserTracker* pUserTracker, const nite::UserData& userData)
 {
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_HEAD), userData.getSkeleton().getJoint(nite::JOINT_NECK), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HAND), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getId() % colorCount);
-	//	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT), userData.getId() % colorCount);
-
 	//TO DO: draw skeleton on image view
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_HEAD), userData.getSkeleton().getJoint(nite::JOINT_NECK), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HAND), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER), userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_TORSO), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_HIP), userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getId() % colorCount);
+	drawLimb(pUserTracker, userData.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE), userData.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT), userData.getId() % colorCount);
 }
 
 /*
@@ -776,7 +780,7 @@ void BodyTracker::drawFrames(const nite::UserData& user)
 	joints["right_foot"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT));
 
 	for (JointMap::iterator it=joints.begin(); it!=joints.end(); ++it){
-		publishJoints(nh_, br_, it->first, it->second, tf_prefix_, rel_frame_, user.getId());
+		publishJoints(nh_, transform_broadcaster_, it->first, it->second, tf_prefix_, depth_optical_frame_, user.getId());
 	}
 
 	drawCircle(r, g, b, joints["head"].getPosition());
@@ -809,7 +813,7 @@ void BodyTracker::drawLine (const double r, const double g, const double b,
 		const nite::Point3f& pose_start, const nite::Point3f& pose_end )
 {
 	visualization_msgs::Marker marker;
-	marker.header.frame_id = rel_frame_;
+	marker.header.frame_id = depth_optical_frame_;
 	marker.header.stamp = ros::Time::now();
 	marker.action = visualization_msgs::Marker::ADD;
 	marker.type = visualization_msgs::Marker::LINE_STRIP;

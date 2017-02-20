@@ -21,9 +21,9 @@
 
 
 	<node pkg="nodelet" type="nodelet" name="body_tracker" args="load cob_openni2_tracker/body_tracker_nodelet /$(arg camera_name)/$(arg camera_name)_nodelet_manager" output="screen" cwd="ROS_HOME">
-		<param name="camera_frame_id" type="str" value="$(arg camera_name)_rgb_frame" />   <!-- "$(arg camera_name)_link" -->
+		<param name="depth_optical_frame_id" type="str" value="$(arg camera_name)_depth_optical_frame" />
 		<param name="tf_prefix" value="$(arg tracker_name)" />
-		<param name="relative_frame" value="$(arg camera_name)_depth_optical_frame" />
+		<!--param name="relative_frame" value="$(arg camera_name)_depth_optical_frame" /-->
 		<param name="standalone_without_camera_driver" value="$(arg standalone_without_camera_driver)" />
 		
 		<param name="nodelet_manager" value="/$(arg camera_name)/$(arg camera_name)_nodelet_manager" />
