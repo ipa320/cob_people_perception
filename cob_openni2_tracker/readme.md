@@ -32,3 +32,16 @@ Run the launch file:
 
 	roslaunch cob_openni2_tracker body_tracker_nodelet.launch
 
+Alternative if you wish to have tf published for skeleton tracker:  
+
+Ensure than the file: `cob_people_perception/cob_openni2_tracker/launch/body_tracker_params.yaml` has the `drawFrames` to true.  
+
+Run the `openni2_launch`:  
+```
+roslaunch openni2_launch openni2.launch depth_registration:=true
+```  
+
+Run the `cob_openni2_tracker`:  
+```
+roslaunch cob_openni2_tracker body_tracker_nodelet.launch
+```
