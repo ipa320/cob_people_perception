@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cob_people_tracking_filter)
 
 set(catkin_RUN_PACKAGES
-  cob_perception_msgs
-  geometry_msgs
-  message_filters
-  roscpp
-  sensor_msgs
-  std_msgs
-  tf
+	cob_perception_msgs
+	geometry_msgs
+	message_filters
+	roscpp
+	sensor_msgs
+	std_msgs
+	tf
 )
 
 set(catkin_BUILD_PACKAGES
@@ -46,16 +46,16 @@ catkin_package(
 INCLUDE_DIRS
 	include
 CATKIN_DEPENDS
-    ${catkin_RUN_PACKAGES}
+	${catkin_RUN_PACKAGES}
 LIBRARIES
 	cob_people_tracking_filter
 )
 
 ## Specify additional locations of header files
 include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-  ${BFL_INCLUDE_DIRS}
+	include
+	${catkin_INCLUDE_DIRS}
+	${BFL_INCLUDE_DIRS}
 )
 
 link_directories(${BFL_LIBRARY_DIRS})
@@ -76,30 +76,30 @@ add_library(cob_people_tracking_filter
 	src/detector_particle.cpp 
 )
 target_link_libraries(cob_people_tracking_filter
-   ${catkin_LIBRARIES}
-   ${Boost_LIBRARIES}
-   ${BFL_LIBRARIES}
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
+	${BFL_LIBRARIES}
 )
-add_dependencies(cob_people_tracking_filter ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(cob_people_tracking_filter ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a cpp executable
 add_executable(cob_people_tracker src/people_tracking_node.cpp)
 target_link_libraries(cob_people_tracker
-   cob_people_tracking_filter
-   ${catkin_LIBRARIES}
-   ${Boost_LIBRARIES}
-   ${BFL_LIBRARIES}
+	cob_people_tracking_filter
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
+	${BFL_LIBRARIES}
 )
-add_dependencies(cob_people_tracker ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)     #add_dependencies(cob_people_tracker cob_perception_msgs_gencpp cob_people_tracking_filter)
+add_dependencies(cob_people_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 #############
 ## Install ##
 #############
 install(TARGETS cob_people_tracker cob_people_tracking_filter
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(DIRECTORY include/${PROJECT_NAME}/
@@ -109,5 +109,5 @@ install(DIRECTORY include/${PROJECT_NAME}/
 )
 
 install(DIRECTORY launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
