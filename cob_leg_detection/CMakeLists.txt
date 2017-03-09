@@ -27,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 	${catkin_BUILD_PACKAGES}
 )
 
-find_package(OpenCV REQUIRED)	
+find_package(OpenCV REQUIRED)
 find_package(orocos_kdl REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(PkgConfig)
@@ -61,7 +61,7 @@ add_executable(leg_detection
                src/calc_leg_features.cpp)
                
 ## Add cmake target dependencies of the executable/library
-add_dependencies(leg_detection ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(leg_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 ## Specify libraries to link a library or executable target against
