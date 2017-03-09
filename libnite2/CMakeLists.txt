@@ -15,8 +15,8 @@ set(catkin_BUILD_PACKAGES
 find_package(catkin REQUIRED COMPONENTS mk roslib rospack)
 
 add_custom_target(
-    build_libnite2 ALL
-    COMMAND test -e ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/${PROJECT_NAME}/INSTALLED || (cmake -E chdir ${PROJECT_SOURCE_DIR} make -f Makefile.tarball && touch ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/${PROJECT_NAME}/INSTALLED)
+	build_libnite2 ALL
+	COMMAND test -e ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/${PROJECT_NAME}/INSTALLED || (cmake -E chdir ${PROJECT_SOURCE_DIR} make -f Makefile.tarball && touch ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/${PROJECT_NAME}/INSTALLED)
 )
 
 set(libraries "NiTE2")
@@ -24,7 +24,7 @@ foreach(library ${libraries})
 	add_custom_target(
 		copy_${library} ALL
 		COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/common/lib/ ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}
-    	COMMENT "Copying ${PROJECT_SOURCE_DIR}/common/lib/lib${library}.so to ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}"
+		COMMENT "Copying ${PROJECT_SOURCE_DIR}/common/lib/lib${library}.so to ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}"
 	)
 endforeach()
 
@@ -42,8 +42,8 @@ catkin_package(
 		common/include
 	LIBRARIES
 		NiTE2
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+#	CATKIN_DEPENDS other_catkin_pkg
+#	DEPENDS system_lib
 )
 
 ###########
