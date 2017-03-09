@@ -58,7 +58,7 @@ include_directories(
 
 foreach(library ${libraries})
 	add_library(${library} SHARED)
-	add_dependencies(${library} copy_${library})
+	add_dependencies(${library} copy_${library} ${catkin_EXPORTED_TARGETS})
 	add_dependencies(copy_${library} build_libnite2)
 	set_target_properties(${library} PROPERTIES LINKER_LANGUAGE CXX)
 endforeach()
@@ -75,8 +75,13 @@ install(TARGETS NiTE2
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(DIRECTORY common/include
-	DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+#install(DIRECTORY common/include
+#	DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+#)
+install(DIRECTORY common/include/${PROJECT_NAME}/
+	DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+	FILES_MATCHING PATTERN "*.h"
+	PATTERN ".svn" EXCLUDE
 )
 
 install(DIRECTORY common/lib
