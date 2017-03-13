@@ -2,25 +2,25 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cob_people_detection)
 
 set(catkin_RUN_PACKAGES
-  actionlib
-  actionlib_msgs
-  cv_bridge
-  cob_image_flip
-  cob_perception_msgs
-  cob_vision_utils
-  dynamic_reconfigure
-  geometry_msgs
-  image_transport
-  image_geometry
-  #kdl_parser
-  nodelet
-  pcl_ros
-  roscpp
-  sensor_msgs
-  std_msgs
-  std_srvs
-  stereo_msgs
-  tf
+	actionlib
+	actionlib_msgs
+	cv_bridge
+	cob_image_flip
+	cob_perception_msgs
+	cob_vision_utils
+	dynamic_reconfigure
+	geometry_msgs
+	image_transport
+	image_geometry
+	#kdl_parser
+	nodelet
+	pcl_ros
+	roscpp
+	sensor_msgs
+	std_msgs
+	std_srvs
+	stereo_msgs
+	tf
 )
 
 set(catkin_BUILD_PACKAGES
@@ -51,32 +51,32 @@ find_package(OpenCV REQUIRED)
 
 ## Generate actions in the 'action' folder
 add_action_files(
-  DIRECTORY
-    action
-  FILES
-    addData.action
-    deleteData.action
-    getDetections.action
-    loadModel.action
-    updateData.action
+	DIRECTORY
+		action
+	FILES
+		addData.action
+		deleteData.action
+		getDetections.action
+		loadModel.action
+		updateData.action
 )
 
 ## Generate messages in the 'msg' folder
 #add_message_files(
-#  DIRECTORY
-#    msg
-#  FILES
-#    PositionMeasurement.msg
+#	DIRECTORY
+#		msg
+#	FILES
+#		PositionMeasurement.msg
 #)
 
 ## Generate services in the 'srv' folder
 add_service_files(
-  DIRECTORY
-    srv
-  FILES
-    captureImage.srv
-    finishRecording.srv
-    recognitionTrigger.srv
+	DIRECTORY
+		srv
+	FILES
+		captureImage.srv
+		finishRecording.srv
+		recognitionTrigger.srv
 )
 
 ## Generate configurations for dynamic_reconfigure
@@ -84,14 +84,14 @@ generate_dynamic_reconfigure_options(cfg/sensor_message_gateway.cfg)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
-  DEPENDENCIES
-    std_msgs
-    std_srvs
-    sensor_msgs
-    actionlib_msgs
-    geometry_msgs
-    stereo_msgs
-    cob_perception_msgs
+	DEPENDENCIES
+		std_msgs
+		std_srvs
+		sensor_msgs
+		actionlib_msgs
+		geometry_msgs
+		stereo_msgs
+		cob_perception_msgs
 )
 
 ###################################
@@ -104,23 +104,23 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS
-    ros/include
-    common/include
-  LIBRARIES
-    subspace_analysis
-    decomposition
-    face_normalizer
-    face_recognizer_algorithms
-    sensor_message_gateway_nodelet
-  CATKIN_DEPENDS
-    ${catkin_RUN_PACKAGES}
-    message_runtime
-  DEPENDS
-    #PCL
-    OpenCV
-    Boost
-    #orocos_kdl
+	INCLUDE_DIRS
+		ros/include
+		common/include
+	LIBRARIES
+		subspace_analysis
+		decomposition
+		face_normalizer
+		face_recognizer_algorithms
+		sensor_message_gateway_nodelet
+	CATKIN_DEPENDS
+		${catkin_RUN_PACKAGES}
+		message_runtime
+	DEPENDS
+		#PCL
+		OpenCV
+		Boost
+		#orocos_kdl
 )
 
 ###########
@@ -131,186 +131,186 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 include_directories(
-  ros/include
-  common/include
-  ${catkin_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
+	ros/include
+	common/include
+	${catkin_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS}
 )
 
 #library for eigenvalue decomposition of asymmetric matrices
 add_library(decomposition
-  common/src/decomposition.cpp
+	common/src/decomposition.cpp
 )
 
 add_library(subspace_analysis
-  common/src/subspace_analysis.cpp
+	common/src/subspace_analysis.cpp
 )
 target_link_libraries(subspace_analysis
-  decomposition
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-#  ${PCL_LIBRARIES}
+	decomposition
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
+	${OpenCV_LIBRARIES}
+#	${PCL_LIBRARIES}
 )
 
 add_library(face_normalizer
-  common/src/face_normalizer.cpp
+	common/src/face_normalizer.cpp
 )
 target_link_libraries(face_normalizer
-  ${catkin_LIBRARIES}
-#  ${Boost_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-#  ${PCL_LIBRARIES}
+	${catkin_LIBRARIES}
+#	${Boost_LIBRARIES}
+	${OpenCV_LIBRARIES}
+#	${PCL_LIBRARIES}
 )
 
 add_library(face_recognizer_algorithms
-  common/src/face_recognizer_algorithms.cpp
+	common/src/face_recognizer_algorithms.cpp
 )
 target_link_libraries(face_recognizer_algorithms
-  subspace_analysis
+	subspace_analysis
 )
 
 add_executable(face_rec_alg_test
-  common/src/face_recognizer_algorithms_test.cpp
+	common/src/face_recognizer_algorithms_test.cpp
 )
 target_link_libraries(face_rec_alg_test
-  face_recognizer_algorithms
-  face_normalizer
+	face_recognizer_algorithms
+	face_normalizer
 )
 
 add_executable(face_norm_test
-  common/src/face_normalizer_test.cpp
+	common/src/face_normalizer_test.cpp
 )
 target_link_libraries(face_norm_test
-  face_normalizer
+	face_normalizer
 )
 
 add_executable(face_align_test
-  common/src/face_align_test.cpp
+	common/src/face_align_test.cpp
 )
 target_link_libraries(face_align_test
-  face_normalizer
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
+	face_normalizer
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
 )
 
 #add_executable(synth_face_test
-#  common/src/synth_face_test.cpp
+#	common/src/synth_face_test.cpp
 #)
 #target_link_libraries(synth_face_test
-#  face_normalizer
-#  face_recognizer_algorithms
+#	face_normalizer
+#	face_recognizer_algorithms
 #)
 
 add_executable(tracking_evaluator
-  ros/src/tracking_eval_node.cpp
+	ros/src/tracking_eval_node.cpp
 )
 target_link_libraries(tracking_evaluator
-  ${catkin_LIBRARIES}
-  #${Boost_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  #${orocos_kdl_LIBRARIES}
+	${catkin_LIBRARIES}
+	#${Boost_LIBRARIES}
+	${OpenCV_LIBRARIES}
+	#${orocos_kdl_LIBRARIES}
 )
 
 add_executable(people_detection_client
-  ros/src/people_detection_action_client.cpp
+	ros/src/people_detection_action_client.cpp
 )
 target_link_libraries(people_detection_client
-  ${catkin_LIBRARIES}
+	${catkin_LIBRARIES}
 )
-   
+
 add_executable(head_detector_node
-  common/src/head_detector.cpp
-  ros/src/head_detector_node.cpp
+	common/src/head_detector.cpp
+	ros/src/head_detector_node.cpp
 )
 target_link_libraries(head_detector_node
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
 )
-    
+
 add_executable(face_detector_node
-  common/src/face_detector.cpp
-  ros/src/face_detector_node.cpp
+	common/src/face_detector.cpp
+	ros/src/face_detector_node.cpp
 )
 target_link_libraries(face_detector_node
-  ${catkin_LIBRARIES}
-#  ${Boost_LIBRARIES}
-  ${OpenCV_LIBS}
-#  ${PCL_LIBRARIES}
+	${catkin_LIBRARIES}
+#	${Boost_LIBRARIES}
+	${OpenCV_LIBS}
+#	${PCL_LIBRARIES}
 )
 
 add_executable(face_recognizer_node
-  common/src/abstract_face_recognizer.cpp
-  common/src/face_recognizer.cpp
-  ros/src/face_recognizer_node.cpp
+	common/src/abstract_face_recognizer.cpp
+	common/src/face_recognizer.cpp
+	ros/src/face_recognizer_node.cpp
 )
 target_link_libraries(face_recognizer_node
-  face_normalizer
-  face_recognizer_algorithms
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-)    
+	face_normalizer
+	face_recognizer_algorithms
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
+)
 add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 add_executable(detection_tracker_node
-  ros/src/detection_tracker_node.cpp
-  common/src/munkres/munkres.cpp
+	ros/src/detection_tracker_node.cpp
+	common/src/munkres/munkres.cpp
 )
 target_link_libraries(detection_tracker_node
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
 )
 
 add_executable(people_detection_display_node
-  ros/src/people_detection_display_node.cpp
+	ros/src/people_detection_display_node.cpp
 )
 target_link_libraries(people_detection_display_node
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
 )
 
 add_executable(face_capture_node
-  common/src/abstract_face_recognizer.cpp
-  common/src/face_recognizer.cpp
-  ros/src/face_capture_node.cpp
+	common/src/abstract_face_recognizer.cpp
+	common/src/face_recognizer.cpp
+	ros/src/face_capture_node.cpp
 )
 target_link_libraries(face_capture_node
-  face_normalizer
-  face_recognizer_algorithms
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
+	face_normalizer
+	face_recognizer_algorithms
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
 )
 
 add_executable(sensor_message_gateway_node
-  ros/src/sensor_message_gateway_node.cpp
-  ros/src/sensor_message_gateway_main.cpp
+	ros/src/sensor_message_gateway_node.cpp
+	ros/src/sensor_message_gateway_main.cpp
 )
 target_link_libraries(sensor_message_gateway_node
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
 )
 
 add_library(sensor_message_gateway_nodelet
-  ros/src/sensor_message_gateway_node.cpp
-  ros/src/sensor_message_gateway_nodelet.cpp
+	ros/src/sensor_message_gateway_node.cpp
+	ros/src/sensor_message_gateway_nodelet.cpp
 )
 target_link_libraries(sensor_message_gateway_nodelet
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
 )
 
 add_executable(coordinator_node
-  ros/src/coordinator_node.cpp
+	ros/src/coordinator_node.cpp
 )
 target_link_libraries(coordinator_node
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
+	${catkin_LIBRARIES}
+	${Boost_LIBRARIES}
 )
 
 # modified openni tracker
 #add_executable(openni_tracker
-#  ros/src/openni_tracker.cpp
-#  ros/src/SceneDrawer.cpp
+#	ros/src/openni_tracker.cpp
+#	ros/src/SceneDrawer.cpp
 #)
 
 

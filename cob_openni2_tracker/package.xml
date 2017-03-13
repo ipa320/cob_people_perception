@@ -25,10 +25,12 @@
 	<depend>orocos_kdl</depend>
 	<depend>libnite2</depend>
 	<depend>libopencv-dev</depend>
-	<!--	<depend>libopenni-nite-dev</depend> -->
-	<!--	<depend>libopenni-sensor-primesense-dev</depend> -->
+	<!-- <depend>libopenni-nite-dev</depend> -->
+	<!-- <depend>libopenni-sensor-primesense-dev</depend> -->
 	<depend>libopenni2-dev</depend>
 	<depend>libusb-1.0-dev</depend>
+	<depend>libxi-dev</depend>
+	<depend>libxmu-dev</depend>
 	<depend>roscpp</depend>
 	<depend>roslib</depend>
 	<depend>sensor_msgs</depend>

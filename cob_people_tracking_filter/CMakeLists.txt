@@ -32,7 +32,7 @@ find_package(Boost REQUIRED COMPONENTS thread)
 #find_library(BFL_LIBRARIES REQUIRED
 #	NAMES orocos-bfl
 #	HINTS /opt/ros/indigo/lib)
-#message(STATUS "BFL_LIBRARIES: ${BFL_LIBRARIES},  BFL_INCLUDE_DIRS: ${BFL_INCLUDE_DIRS},  BFL_LIBRARY_DIRS: ${BFL_LIBRARY_DIRS}")
+#message(STATUS "BFL_LIBRARIES: ${BFL_LIBRARIES}, BFL_INCLUDE_DIRS: ${BFL_INCLUDE_DIRS}, BFL_LIBRARY_DIRS: ${BFL_LIBRARY_DIRS}")
 
 # this way is recommended by the package (even though link_directories is not encouraged by catkin_lint)
 find_package(PkgConfig)

@@ -42,12 +42,12 @@ catkin_package()
 
 ## Specify additional locations of header files
 include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
-  ${orocos_kdl_INCLUDE_DIRS}
-  ${BFL_INCLUDE_DIRS}
-  ${EIGEN_INCLUDE_DIRS}
+	include
+	${catkin_INCLUDE_DIRS}
+	${OpenCV_INCLUDE_DIRS}
+	${orocos_kdl_INCLUDE_DIRS}
+	${BFL_INCLUDE_DIRS}
+	${EIGEN_INCLUDE_DIRS}
 )
 
 link_directories(${BFL_LIBRARY_DIRS})
@@ -55,21 +55,22 @@ link_directories(${BFL_LIBRARY_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
 ## Declare a cpp executable
-add_executable(leg_detection               
-               src/laser_processor.cpp
-               src/leg_detector.cpp 
-               src/calc_leg_features.cpp)
-               
+add_executable(leg_detection
+	src/laser_processor.cpp
+	src/leg_detector.cpp 
+	src/calc_leg_features.cpp
+)
+
 ## Add cmake target dependencies of the executable/library
 add_dependencies(leg_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(leg_detection
-   ${catkin_LIBRARIES}
-   ${OpenCV_LIBRARIES}
-   ${orocos_kdl_LIBRARIES}
-   ${BFL_LIBRARIES}
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
+	${orocos_kdl_LIBRARIES}
+	${BFL_LIBRARIES}
 )
 
 #############
@@ -89,9 +90,9 @@ install(DIRECTORY include/${PROJECT_NAME}/
 )
 
 install(FILES config/trained_leg_detector.yaml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
 )
 
 install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
