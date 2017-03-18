@@ -250,7 +250,7 @@ target_link_libraries(face_recognizer_node
 	${catkin_LIBRARIES}
 	${Boost_LIBRARIES}
 )
-add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
+#add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 add_executable(detection_tracker_node
 	ros/src/detection_tracker_node.cpp
