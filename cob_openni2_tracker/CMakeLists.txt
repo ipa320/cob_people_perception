@@ -43,13 +43,13 @@ add_definitions(${PCL_DEFINITIONS})
 # Find OpenNI2 (installed)
 ########################################################
 find_path(OpenNI2_INCLUDE_DIRS
-	  NAMES OpenNI.h
-	  HINTS /usr/include/openni2)
-	  
+	NAMES OpenNI.h
+	HINTS /usr/include/openni2)
+
 find_library(OpenNI2_LIBRARIES
-	     NAMES OpenNI2 DummyDevice OniFile PS1090
-	     HINTS /usr/lib/ /usr/lib/OpenNI2/Drivers
-	     PATH_SUFFIXES lib) 
+	NAMES OpenNI2 DummyDevice OniFile PS1090
+	HINTS /usr/lib/ /usr/lib/OpenNI2/Drivers
+	PATH_SUFFIXES lib) 
 message(STATUS ${OpenNI2_LIBRARIES})
 
 #########################################################
@@ -59,7 +59,7 @@ find_package(GLUT REQUIRED)
 
 add_definitions(${GLUT_DEFINITIONS})
 if(NOT GLUT_FOUND)
-    message(ERROR " GLUT was not found!")
+	message(ERROR " GLUT was not found!")
 endif(NOT GLUT_FOUND)
 
 
@@ -69,7 +69,7 @@ endif(NOT GLUT_FOUND)
 find_package(OpenGL REQUIRED)
 add_definitions(${OpenGL_DEFINITIONS})
 if(NOT OPENGL_FOUND)
-    message(ERROR " OPENGL was not found!")
+	message(ERROR " OPENGL was not found!")
 endif(NOT OPENGL_FOUND)
 
 
@@ -107,9 +107,8 @@ include_directories(
 )
 
 
-add_executable(cob_body_tracker
-	ros/src/body_tracker.cpp
-)
+add_executable(cob_body_tracker ros/src/body_tracker.cpp)
+add_dependencies(cob_body_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(cob_body_tracker
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
@@ -117,30 +116,23 @@ target_link_libraries(cob_body_tracker
 	${OpenNI2_LIBRARIES}
 	${OPENGL_LIBRARIES}
 	${GLUT_LIBRARIES}
-    ${PCL_COMMON_LIBRARIES}
-    ${PCL_IO_LIBRARIES}
+	${PCL_COMMON_LIBRARIES}
+	${PCL_IO_LIBRARIES}
 )
-add_dependencies(cob_body_tracker ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 add_library(body_tracker_nodelet ros/src/body_tracker.cpp ros/src/body_tracker_nodelet.cpp )
-target_link_libraries(body_tracker_nodelet 
-	${catkin_LIBRARIES} 
-	${OpenNI2_LIBRARIES} 
+add_dependencies(body_tracker_nodelet ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(body_tracker_nodelet
+	${catkin_LIBRARIES}
+	${OpenNI2_LIBRARIES}
 	${GLUT_LIBRARIES}
-)
-add_dependencies(body_tracker_nodelet ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
-
-add_custom_command(
-    TARGET cob_body_tracker
-    POST_BUILD
-    COMMAND ${PROJECT_SOURCE_DIR}/launch/create_nite2_link.bash
 )
 
 #############
 ## Install ##
 #############
 ## Mark executables and/or libraries for installation
-install(TARGETS cob_body_tracker
+install(TARGETS cob_body_tracker body_tracker_nodelet
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -159,17 +151,4 @@ install(DIRECTORY launch
 
 install(FILES nodelet.xml
 	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-set(LINK_NAME $ENV{HOME}/.ros/NiTE2)
-set(NITE_DIR ${CMAKE_INSTALL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/libnite2/lib/NiTE2/)
-install(CODE "
-		if(EXISTS ${LINK_NAME})
-			message(\"Link ${LINK_NAME} to ${NITE_DIR} already exists. Re-linking ...\")
-			execute_process(COMMAND rm ${LINK_NAME})
-			execute_process(COMMAND ECHO Test = ${LINK_NAME})
-		endif()
-		execute_process(COMMAND ln -s ${NITE_DIR} ${LINK_NAME})
-		message(\"Created link ${LINK_NAME} to ${NITE_DIR}.\")
-	"
 )
