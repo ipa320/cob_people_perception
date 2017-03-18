@@ -1,85 +1,35 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(libnite2)
 
-set(catkin_RUN_PACKAGES
+find_package(catkin REQUIRED COMPONENTS)
+
+catkin_destinations() # set-up destination variables
+file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+
+include(ExternalProject)
+ExternalProject_Add(EP_${PROJECT_NAME}
+    URL https://github.com/ipa320/thirdparty/raw/master/NiTE-Linux-x64-2.2.tar.bz2
+    URL_MD5 5160387adbfb19830cfb61d26ba7d56d
+    
+    CONFIGURE_COMMAND ""
+    SOURCE_DIR ${PROJECT_BINARY_DIR}/${PROJECT_NAME}-src
+    BUILD_COMMAND ""
+        # copy headers to devel space (catkin does not like headers in source space)
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_BINARY_DIR}/${PROJECT_NAME}-src/Include ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+        ## copy libs, set-up soname chain
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PROJECT_BINARY_DIR}/${PROJECT_NAME}-src/Redist/libNiTE2.so ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+    INSTALL_COMMAND ""
 )
 
-set(catkin_BUILD_PACKAGES 
-	${catkin_RUN_PACKAGES}
-	#cmake_modules
-)
-
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS mk roslib rospack)
-
-add_custom_target(
-    build_libnite2 ALL
-    COMMAND test -e ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/${PROJECT_NAME}/INSTALLED || (cmake -E chdir ${PROJECT_SOURCE_DIR} make -f Makefile.tarball && touch ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_SHARE_DESTINATION}/${PROJECT_NAME}/INSTALLED)
-)
-
-set(libraries "NiTE2")
-foreach(library ${libraries})
-	add_custom_target(
-		copy_${library} ALL
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/common/lib/ ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}
-    	COMMENT "Copying ${PROJECT_SOURCE_DIR}/common/lib/lib${library}.so to ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}"
-	)
-endforeach()
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-	INCLUDE_DIRS
-		common/include
-	LIBRARIES
-		NiTE2
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+    CFG_EXTRAS libnite2-extras.cmake # catkin_package does not support artifacts in devel space
+    EXPORTED_TARGETS EP_${PROJECT_NAME}
 )
 
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(
-	common/include
+install(DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_INCLUDE_DESTINATION}/
+    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
-foreach(library ${libraries})
-	add_library(${library} SHARED)
-	add_dependencies(${library} copy_${library})
-	add_dependencies(copy_${library} build_libnite2)
-	set_target_properties(${library} PROPERTIES LINKER_LANGUAGE CXX)
-endforeach()
-set_target_properties(build_libnite2 PROPERTIES LINKER_LANGUAGE CXX)
-
-#############
-## Install ##
-#############
-
-## Mark executables and/or libraries for installation
-install(TARGETS NiTE2
-	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(DIRECTORY common/include
-	DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
-)
-
-install(DIRECTORY common/lib
-DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-PATTERN ".svn|.so" EXCLUDE
+install(PROGRAMS ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libNiTE2.so
+    DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
