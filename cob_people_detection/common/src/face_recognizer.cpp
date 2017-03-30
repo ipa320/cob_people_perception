@@ -162,12 +162,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::init(std::string data_director
 	face_normalizer_.init(classifier_directory, storage_directory, fn_cfg, 0, false, false);
 
 	// load model
-	unsigned long return_value = loadRecognitionModel(identification_labels_to_recognize);
-	if (return_value == ipa_Utils::RET_FAILED)
-	{
-		return ipa_Utils::RET_FAILED;
-	}
-	return ipa_Utils::RET_OK;
+	return loadRecognitionModel(identification_labels_to_recognize);
 }
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_directory, int norm_size, bool norm_illumination, bool norm_align, bool norm_extreme_illumination,
@@ -194,9 +189,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::initTraining(std::string data_
 	face_normalizer_.init(classifier_directory, storage_directory, fn_cfg, 0, false, false);
 	// load model
 	m_current_label_set.clear(); // keep empty to load all available data
-	loadTrainingData(face_images, m_current_label_set);
-
-	return ipa_Utils::RET_OK;
+	return loadTrainingData(face_images, m_current_label_set);
 }
 
 unsigned long ipa_PeopleDetector::FaceRecognizer::addFace(cv::Mat& color_image, cv::Mat& depth_image, cv::Rect& face_bounding_box, cv::Rect& head_bounding_box, std::string label,
@@ -292,7 +285,9 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	// load necessary data
 
 	std::vector<cv::Mat> face_images;
-	loadTrainingData(face_images, identification_labels_to_train);
+	unsigned long return_value = loadTrainingData(face_images, identification_labels_to_train);
+	if (return_value == ipa_Utils::RET_FAILED)
+			return ipa_Utils::RET_FAILED;
 
 	m_current_label_set = identification_labels_to_train;
 
@@ -309,7 +304,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::trainRecognitionModel(std::vec
 	boost::filesystem::path path = m_data_directory;
 	boost::filesystem::path path_color = path / "rdata_color.xml";
 
-	unsigned long trained;
+	unsigned long trained = ipa_Utils::RET_FAILED;
 	if (face_images.size() > 0)
 	{
 		trained = trainFaceRecognition(eff_color, face_images, m_label_num);
@@ -725,7 +720,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 		if (!fileStorage.isOpened())
 		{
 			std::cout << "Error: FaceRecognizer::loadTrainingData: Can't open " << complete.string() << ".\n" << std::endl;
-			return ipa_Utils::RET_OK;
+			return ipa_Utils::RET_FAILED;
 		}
 
 		// labels
@@ -821,7 +816,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadTrainingData(std::vector<c
 		if (!fileStorage.isOpened())
 		{
 			std::cout << "Error: FaceRecognizer::loadTrainingData: Can't open " << complete.string() << ".\n" << std::endl;
-			return ipa_Utils::RET_OK;
+			return ipa_Utils::RET_FAILED;
 		}
 
 		// labels
