@@ -10,6 +10,14 @@
   <arg name="nodelet_manager" default="/$(arg camera_namespace)/$(arg camera_namespace)_nodelet_manager"/>    <!-- name of the nodelet manager started by the openni driver, default for the openni driver is camera_nodelet_manager, 
 for Care-O-bot default is cam3d_nodelet_manager -->
   <arg name="start_manager" default="false"/>     <!-- if you do not like to use the nodelet manager provided by the openni driver, specify your own by setting this parameter to true and providing the name of your manager with argument nodelet_manager-->
+
+  <!-- launch file args toggling whether to start parts of the pipeline or not -->
+  <arg name="launch_head_detector" default="true"/>
+  <arg name="launch_face_detector" default="true"/>
+  <arg name="launch_face_recognizer" default="true"/>
+  <arg name="launch_detection_tracker" default="true"/>
+  <arg name="launch_face_capture" default="true"/>
+  <arg name="launch_coordinator" default="true"/>
   <arg name="display_results_with_image_view" default="true"/>		<!-- set to false if you do not like to display the camera image with names attached to detected faces within an image_view window --> 
 
   <!-- nodelet or non-nodelet specific launch files -->
@@ -34,15 +42,13 @@ for Care-O-bot default is cam3d_nodelet_manager -->
   <!-- remaining launch files -->
   <param name="data_storage_directory" type="string" value="$(env HOME)/.ros/cob_people_detection/files/"/>
 
-  <include file="$(find cob_people_detection)/ros/launch/head_detector.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/face_detector.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/face_recognizer.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/detection_tracker.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/people_detection_display.launch">
-    <arg name="display_results_with_image_view" value="$(arg display_results_with_image_view)"/>
-  </include>
-  <include file="$(find cob_people_detection)/ros/launch/face_capture.launch"/>
-  <include file="$(find cob_people_detection)/ros/launch/coordinator.launch">
+  <include if="$(arg launch_head_detector)" file="$(find cob_people_detection)/ros/launch/head_detector.launch"/>
+  <include if="$(arg launch_face_detector)" file="$(find cob_people_detection)/ros/launch/face_detector.launch"/>
+  <include if="$(arg launch_face_recognizer)" file="$(find cob_people_detection)/ros/launch/face_recognizer.launch"/>
+  <include if="$(arg launch_detection_tracker)" file="$(find cob_people_detection)/ros/launch/detection_tracker.launch"/>
+  <include if="$(arg display_results_with_image_view)" file="$(find cob_people_detection)/ros/launch/people_detection_display.launch"/>
+  <include if="$(arg launch_face_capture)" file="$(find cob_people_detection)/ros/launch/face_capture.launch"/>
+  <include if="$(arg launch_coordinator)" file="$(find cob_people_detection)/ros/launch/coordinator.launch">
     <arg name="using_nodelets" value="$(arg using_nodelets)"/>
   </include>
 </launch>

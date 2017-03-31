@@ -61,6 +61,7 @@
 #ifdef __LINUX__
 #include "cob_people_detection/face_recognizer_node.h"
 #include "cob_vision_utils/GlobalDefines.h"
+#include "cob_people_detection/face_detection_message_helper.h"
 #else
 #endif
 
@@ -374,14 +375,10 @@ void FaceRecognizerNode::facePositionsCallback(const cob_perception_msgs::ColorD
 
 	// --- convert color image patches of head regions and contained face bounding boxes ---
 	cv_bridge::CvImageConstPtr cv_ptr;
-	std::vector<cv::Mat> heads_color_images;
-	heads_color_images.resize(face_positions->head_detections.size());
-	std::vector<cv::Mat> heads_depth_images;
-	heads_depth_images.resize(face_positions->head_detections.size());
-	std::vector<std::vector<cv::Rect> > face_bounding_boxes;
-	face_bounding_boxes.resize(face_positions->head_detections.size());
-	std::vector<cv::Rect> head_bounding_boxes;
-	head_bounding_boxes.resize(face_positions->head_detections.size());
+	std::vector<cv::Mat> heads_color_images(face_positions->head_detections.size());
+	std::vector<cv::Mat> heads_depth_images(face_positions->head_detections.size());
+	std::vector<std::vector<cv::Rect> > face_bounding_boxes(face_positions->head_detections.size());
+	std::vector<cv::Rect> head_bounding_boxes(face_positions->head_detections.size());
 	for (unsigned int i = 0; i < face_positions->head_detections.size(); i++)
 	{
 		// color image
@@ -458,75 +455,10 @@ void FaceRecognizerNode::facePositionsCallback(const cob_perception_msgs::ColorD
 	}
 
 	// --- publish detection message ---
+	FaceDetectionMessageHelper face_detection_message_helper;
 	cob_perception_msgs::DetectionArray detection_msg;
-	detection_msg.header = face_positions->header;
-
-	// prepare message
-	for (int head = 0; head < (int)head_bounding_boxes.size(); head++)
-	{
-		if (face_bounding_boxes[head].size() == 0)
-		{
-			// no faces detected in head region -> publish head position
-			cob_perception_msgs::Detection det;
-			cv::Rect& head_bb = head_bounding_boxes[head];
-			// set 3d position of head's center
-			bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], 0.5 * (float)head_bb.width, 0.5 * (float)head_bb.height, det.pose.pose.position, 6);
-			if (valid_3d_position == false)
-				continue;
-			det.pose.header = face_positions->header;
-			det.pose.pose.orientation.x = 0.;
-			det.pose.pose.orientation.y = 0.;
-			det.pose.pose.orientation.z = 0.;
-			det.pose.pose.orientation.w = 1.;
-			// write bounding box
-			det.mask.roi.x = head_bb.x;
-			det.mask.roi.y = head_bb.y;
-			det.mask.roi.width = head_bb.width;
-			det.mask.roi.height = head_bb.height;
-			// set label
-			det.label = "UnknownHead";
-			// set origin of detection
-			det.detector = "head";
-			// header
-			det.header = face_positions->header;
-			// add to message
-			detection_msg.detections.push_back(det);
-		}
-		else
-		{
-			// process all faces in head region
-			for (int face = 0; face < (int)face_bounding_boxes[head].size(); face++)
-			{
-				cob_perception_msgs::Detection det;
-				cv::Rect& head_bb = head_bounding_boxes[head];
-				cv::Rect& face_bb = face_bounding_boxes[head][face];
-				// set 3d position of head's center
-				bool valid_3d_position = determine3DFaceCoordinates(heads_depth_images[head], face_bb.x + 0.5 * (float)face_bb.width, face_bb.y + 0.5 * (float)face_bb.height,
-						det.pose.pose.position, 6);
-				if (valid_3d_position == false)
-					continue;
-				det.pose.header = face_positions->header;
-				det.pose.pose.orientation.x = 0.;
-				det.pose.pose.orientation.y = 0.;
-				det.pose.pose.orientation.z = 0.;
-				det.pose.pose.orientation.w = 1.;
-				// write bounding box
-				det.mask.roi.x = head_bb.x + face_bb.x;
-				det.mask.roi.y = head_bb.y + face_bb.y;
-				det.mask.roi.width = face_bb.width;
-				det.mask.roi.height = face_bb.height;
-				// set label
-				det.label = identification_labels[head][face];
-				// set origin of detection
-				det.detector = "face";
-				// header
-				det.header = face_positions->header;
-				// add to message
-				detection_msg.detections.push_back(det);
-			}
-		}
-	}
-
+	face_detection_message_helper.prepareCartesionDetectionMessage(detection_msg, face_positions->header, heads_depth_images, head_bounding_boxes,
+			face_bounding_boxes, &identification_labels);
 	// publish message
 	face_recognition_publisher_.publish(detection_msg);
 

@@ -97,6 +97,8 @@ protected:
 
 	ros::Publisher face_position_publisher_; ///< publisher for the positions of the detected faces
 
+	ros::Publisher face_position_publisher_cartesian_; ///< publisher for the cartesian positions of the detected faces
+
 	FaceDetector face_detector_; ///< implementation of the face detector
 
 	// parameters

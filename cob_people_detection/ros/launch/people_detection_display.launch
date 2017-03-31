@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 
 <launch>
-  <arg name="display_results_with_image_view" default="true"/>   <!-- set to false if you do not like to display the camera image with names attached to detected faces within an image_view window -->
 
   <!-- display node for the detections -->
   <node pkg="cob_people_detection" type="people_detection_display_node" name="people_detection_display" output="screen">
@@ -12,7 +11,7 @@
   </node>
 
   <!-- Image viewer display -->
-  <node if="$(arg display_results_with_image_view)" name="people_detection_viewer" pkg="image_view" type="image_view" respawn="false" output="screen">
+  <node name="people_detection_viewer" pkg="image_view" type="image_view" respawn="false" output="screen">
     <remap from="image" to="people_detection_display/face_position_image"/>
     <param name="autosize" value="true"/>
   </node>

@@ -69,6 +69,7 @@
 
 #include <opencv/cv.h>
 #include <opencv/cvaux.h>
+#include <opencv/highgui.h>
 
 using namespace ipa_PeopleDetector;
 
@@ -108,8 +109,7 @@ HeadDetector::~HeadDetector(void)
 
 unsigned long HeadDetector::interpolateUnassignedPixels(cv::Mat& img)
 {
-	CV_Assert( img.type() == CV_8UC3 )
-		;
+	CV_Assert(img.type() == CV_8UC3);
 
 	cv::Mat temp = img.clone();
 
@@ -164,9 +164,9 @@ unsigned long HeadDetector::detectRangeFace(cv::Mat& depth_image, std::vector<cv
 	ipa_Utils::ConvertToShowImage(depth_image, depth_image_8U3, 3);
 	if (fillUnassignedDepthValues)
 		interpolateUnassignedPixels(depth_image_8U3);
-	//cv::namedWindow("depth image");
-	//cv::imshow("depth image", depth_image);
-	//cv::waitKey(10);
+//	cv::namedWindow("depth image filled");
+//	cv::imshow("depth image filled", depth_image_8U3);
+//	cv::waitKey(10);
 	IplImage imgPtr = (IplImage)depth_image_8U3;
 	CvSeq* rangeFaces = cvHaarDetectObjects(&imgPtr, m_range_cascade, m_storage, m_depth_increase_search_scale, m_depth_drop_groups, CV_HAAR_DO_CANNY_PRUNING,
 			cvSize(m_depth_min_search_scale_x, m_depth_min_search_scale_y));
