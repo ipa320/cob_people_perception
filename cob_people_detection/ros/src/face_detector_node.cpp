@@ -61,6 +61,7 @@
 #ifdef __LINUX__
 #include "cob_people_detection/face_detector_node.h"
 #include "cob_vision_utils/GlobalDefines.h"
+#include "cob_people_detection/face_detection_message_helper.h"
 #else
 #endif
 
@@ -122,6 +123,7 @@ FaceDetectorNode::FaceDetectorNode(ros::NodeHandle nh) :
 
 	// advertise topics
 	face_position_publisher_ = node_handle_.advertise<cob_perception_msgs::ColorDepthImageArray>("face_positions", 1);
+	face_position_publisher_cartesian_ = node_handle_.advertise<cob_perception_msgs::DetectionArray>("face_detections_cartesian", 1);
 
 	// subscribe to head detection topic
 	head_position_subscriber_ = nh.subscribe("head_positions", 1, &FaceDetectorNode::head_positions_callback, this);
@@ -146,9 +148,9 @@ void FaceDetectorNode::head_positions_callback(const cob_perception_msgs::ColorD
 	// receive head positions and detect faces in the head region, finally publish detected faces
 
 	// convert color and depth image patches of head regions
-	std::vector<cv::Mat> heads_color_images, heads_depth_images;
-	heads_color_images.resize(head_positions->head_detections.size());
-	heads_depth_images.resize(head_positions->head_detections.size());
+	std::vector<cv::Mat> heads_color_images(head_positions->head_detections.size());
+	std::vector<cv::Mat> heads_depth_images(head_positions->head_detections.size());
+	std::vector<cv::Rect> head_bounding_boxes(head_positions->head_detections.size());
 	cv_bridge::CvImageConstPtr cv_cptr;
 	cv_bridge::CvImagePtr cv_ptr(new cv_bridge::CvImage);
 	for (unsigned int i = 0; i < head_positions->head_detections.size(); i++)
@@ -176,24 +178,29 @@ void FaceDetectorNode::head_positions_callback(const cob_perception_msgs::ColorD
 			return;
 		}
 		heads_depth_images[i] = cv_cptr->image;
+
+		// head bounding box
+		const cob_perception_msgs::Rect& source_rect = head_positions->head_detections[i].head_detection;
+		cv::Rect rect(source_rect.x, source_rect.y, source_rect.width, source_rect.height);
+		head_bounding_boxes[i] = rect;
 	}
-	std::vector < std::vector<cv::Rect> > face_coordinates;
-	face_detector_.detectColorFaces(heads_color_images, heads_depth_images, face_coordinates);
+	std::vector < std::vector<cv::Rect> > face_bounding_boxes;
+	face_detector_.detectColorFaces(heads_color_images, heads_depth_images, face_bounding_boxes);
 	// face_normalizer_.normalizeFaces(heads_color_images, heads_depth_images, face_coordinates);
 
 	// prepare the message for publication
 	cob_perception_msgs::ColorDepthImageArray image_array;
 	image_array = *head_positions;
-	for (unsigned int i = 0; i < face_coordinates.size(); i++)
+	for (unsigned int i = 0; i < face_bounding_boxes.size(); i++)
 	{
-		for (unsigned int j = 0; j < face_coordinates[i].size(); j++)
+		for (unsigned int j = 0; j < face_bounding_boxes[i].size(); j++)
 		{
 			// face rectangle
 			cob_perception_msgs::Rect rect;
-			rect.x = face_coordinates[i][j].x;
-			rect.y = face_coordinates[i][j].y;
-			rect.width = face_coordinates[i][j].width;
-			rect.height = face_coordinates[i][j].height;
+			rect.x = face_bounding_boxes[i][j].x;
+			rect.y = face_bounding_boxes[i][j].y;
+			rect.width = face_bounding_boxes[i][j].width;
+			rect.height = face_bounding_boxes[i][j].height;
 			image_array.head_detections[i].face_detections.push_back(rect);
 		}
 		// processed color image
@@ -202,8 +209,17 @@ void FaceDetectorNode::head_positions_callback(const cob_perception_msgs::ColorD
 		cv_ptr->toImageMsg(image_array.head_detections[i].color_image);
 		image_array.head_detections[i].color_image.header = head_positions->head_detections[i].color_image.header;
 	}
-
 	face_position_publisher_.publish(image_array);
+
+	// todo: make dependent on subscribers
+	if (true)
+	{
+		// publish message
+		FaceDetectionMessageHelper face_detection_message_helper;
+		cob_perception_msgs::DetectionArray detection_msg;
+		face_detection_message_helper.prepareCartesionDetectionMessage(detection_msg, head_positions->header, heads_depth_images, head_bounding_boxes, face_bounding_boxes, 0);
+		face_position_publisher_cartesian_.publish(detection_msg);
+	}
 
 	if (display_timing_ == true)
 		ROS_INFO("%d FaceDetection: Time stamp of pointcloud message: %f. Delay: %f.", head_positions->header.seq, head_positions->header.stamp.toSec(),
