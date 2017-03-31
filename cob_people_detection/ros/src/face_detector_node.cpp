@@ -188,33 +188,35 @@ void FaceDetectorNode::head_positions_callback(const cob_perception_msgs::ColorD
 	face_detector_.detectColorFaces(heads_color_images, heads_depth_images, face_bounding_boxes);
 	// face_normalizer_.normalizeFaces(heads_color_images, heads_depth_images, face_coordinates);
 
-	// prepare the message for publication
-	cob_perception_msgs::ColorDepthImageArray image_array;
-	image_array = *head_positions;
-	for (unsigned int i = 0; i < face_bounding_boxes.size(); i++)
+	// prepare the face position message for publication
+	if (face_position_publisher_.getNumSubscribers() > 0)
 	{
-		for (unsigned int j = 0; j < face_bounding_boxes[i].size(); j++)
+		cob_perception_msgs::ColorDepthImageArray image_array;
+		image_array = *head_positions;
+		for (unsigned int i = 0; i < face_bounding_boxes.size(); i++)
 		{
-			// face rectangle
-			cob_perception_msgs::Rect rect;
-			rect.x = face_bounding_boxes[i][j].x;
-			rect.y = face_bounding_boxes[i][j].y;
-			rect.width = face_bounding_boxes[i][j].width;
-			rect.height = face_bounding_boxes[i][j].height;
-			image_array.head_detections[i].face_detections.push_back(rect);
+			for (unsigned int j = 0; j < face_bounding_boxes[i].size(); j++)
+			{
+				// face rectangle
+				cob_perception_msgs::Rect rect;
+				rect.x = face_bounding_boxes[i][j].x;
+				rect.y = face_bounding_boxes[i][j].y;
+				rect.width = face_bounding_boxes[i][j].width;
+				rect.height = face_bounding_boxes[i][j].height;
+				image_array.head_detections[i].face_detections.push_back(rect);
+			}
+			// processed color image
+			cv_ptr->encoding = sensor_msgs::image_encodings::RGB8;
+			cv_ptr->image = heads_color_images[i];
+			cv_ptr->toImageMsg(image_array.head_detections[i].color_image);
+			image_array.head_detections[i].color_image.header = head_positions->head_detections[i].color_image.header;
 		}
-		// processed color image
-		cv_ptr->encoding = sensor_msgs::image_encodings::RGB8;
-		cv_ptr->image = heads_color_images[i];
-		cv_ptr->toImageMsg(image_array.head_detections[i].color_image);
-		image_array.head_detections[i].color_image.header = head_positions->head_detections[i].color_image.header;
+		face_position_publisher_.publish(image_array);
 	}
-	face_position_publisher_.publish(image_array);
-
-	// todo: make dependent on subscribers
-	if (true)
+	
+	// prepare the cartesian face detection message for publication
+	if (face_position_publisher_cartesian_.getNumSubscribers() > 0)
 	{
-		// publish message
 		FaceDetectionMessageHelper face_detection_message_helper;
 		cob_perception_msgs::DetectionArray detection_msg;
 		face_detection_message_helper.prepareCartesionDetectionMessage(detection_msg, head_positions->header, heads_depth_images, head_bounding_boxes, face_bounding_boxes, 0);
