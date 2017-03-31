@@ -153,7 +153,7 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh) :
 			identification_labels_to_recognize, recognition_method, feature_dimension, use_unknown_thresh, use_depth);
 	if (return_value == ipa_Utils::RET_FAILED)
 	{
-		ROS_ERROR("Recognition model not trained");
+		ROS_ERROR("Recognition model not trained.");
 	}
 	else if (return_value == ipa_Utils::RET_OK)
 	{
@@ -161,18 +161,18 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh) :
 		for (unsigned int i = 0; i < identification_labels_to_recognize.size(); i++)
 			std::cout << "   - " << identification_labels_to_recognize[i] << std::endl;
 
-		// advertise topics
-		face_recognition_publisher_ = node_handle_.advertise<cob_perception_msgs::DetectionArray>("face_recognitions", 1);
-
-		// subscribe to head detection topic
-		face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceRecognizerNode::facePositionsCallback, this);
-
 		// launch LoadModel server
 		load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
 		load_model_server_->start();
 
 		ROS_INFO("FaceRecognizerNode initialized.");
 	}
+
+	// advertise topics
+	face_recognition_publisher_ = node_handle_.advertise<cob_perception_msgs::DetectionArray>("face_recognitions", 1);
+
+	// subscribe to head detection topic
+	face_position_subscriber_ = nh.subscribe("face_positions", 1, &FaceRecognizerNode::facePositionsCallback, this);
 }
 
 FaceRecognizerNode::~FaceRecognizerNode(void)
@@ -573,7 +573,7 @@ void FaceRecognizerNode::loadModelServerCallback(const cob_people_detection::loa
 		identification_labels_to_recognize[i] = goal->labels[i];
 
 	// load the corresponding recognition model
-	bool result_state = face_recognizer_.loadRecognitionModel(identification_labels_to_recognize);
+	unsigned long result_state = face_recognizer_.loadRecognitionModel(identification_labels_to_recognize);
 
 	cob_people_detection::loadModelResult result;
 	if (result_state == ipa_Utils::RET_OK)
