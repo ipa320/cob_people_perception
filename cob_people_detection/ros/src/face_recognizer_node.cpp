@@ -153,8 +153,7 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh) :
 			identification_labels_to_recognize, recognition_method, feature_dimension, use_unknown_thresh, use_depth);
 	if (return_value == ipa_Utils::RET_FAILED)
 	{
-		ROS_ERROR("Recognition model not trained. Face recognition not possible.");
-		enable_face_recognition_ = false;
+		ROS_ERROR("Recognition model not trained.");
 	}
 	else if (return_value == ipa_Utils::RET_OK)
 	{
