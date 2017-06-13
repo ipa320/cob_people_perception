@@ -333,7 +333,7 @@ unsigned long PeopleDetector::PCA(int* nEigens, std::vector<cv::Mat>& eigenVecto
 }
 
 unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv::Rect>& colorFaceCoordinates, int* nEigens, std::vector<cv::Mat>& eigenVectors, cv::Mat& avgImage,
-		cv::Mat& faceClassAvgProjections, std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat, cv::SVM* personClassifier)
+		cv::Mat& faceClassAvgProjections, std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat, cv::ml::SVM* personClassifier)
 {
 	float* eigenVectorWeights = 0;
 
@@ -411,7 +411,7 @@ unsigned long PeopleDetector::RecognizeFace(cv::Mat& colorImage, std::vector<cv:
 }
 
 unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *nearest, int *nEigens, cv::Mat& faceClassAvgProjections, int *threshold, cv::Mat& eigenValMat,
-		cv::SVM* personClassifier)
+		cv::ml::SVM* personClassifier)
 {
 	double leastDistSq = DBL_MAX;
 	//todo:
@@ -479,7 +479,7 @@ unsigned long PeopleDetector::ClassifyFace(float *eigenVectorWeights, int *neare
 }
 
 unsigned long PeopleDetector::CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections,
-		std::vector<std::string>& idUnique, cv::SVM* personClassifier)
+		std::vector<std::string>& idUnique, cv::ml::SVM* personClassifier)
 {
 	std::cout << "PeopleDetector::CalculateFaceClasses ... ";
 
@@ -582,10 +582,10 @@ unsigned long PeopleDetector::CalculateFaceClasses(cv::Mat& projectedTrainFaceMa
 		fout.close();
 
 		// train the classifier
-		cv::SVMParams svmParams(CvSVM::NU_SVC, CvSVM::RBF, 0.0, 0.001953125, 0.0, 0.0, 0.8, 0.0, 0, cv::TermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 100, FLT_EPSILON));
-		//personClassifier->train_auto(data, labels, cv::Mat(), cv::Mat(), svmParams, 10, cv::SVM::get_default_grid(CvSVM::C), CvParamGrid(0.001953125, 2.01, 2.0), cv::SVM::get_default_grid(CvSVM::P), CvParamGrid(0.0125, 1.0, 2.0));
+		cv::ml::SVMParams svmParams(CvSVM::NU_SVC, CvSVM::RBF, 0.0, 0.001953125, 0.0, 0.0, 0.8, 0.0, 0, cv::TermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 100, FLT_EPSILON));
+		//personClassifier->train_auto(data, labels, cv::Mat(), cv::Mat(), svmParams, 10, cv::ml::SVM::get_default_grid(CvSVM::C), CvParamGrid(0.001953125, 2.01, 2.0), cv::ml::SVM::get_default_grid(CvSVM::P), CvParamGrid(0.0125, 1.0, 2.0));
 		personClassifier->train(data, labels, cv::Mat(), cv::Mat(), svmParams);
-		cv::SVMParams svmParamsOptimal = personClassifier->get_params();
+		cv::ml::SVMParams svmParamsOptimal = personClassifier->get_params();
 		std::cout << "Optimal SVM params: gamma=" << svmParamsOptimal.gamma << "  nu=" << svmParamsOptimal.nu << "\n";
 	}
 

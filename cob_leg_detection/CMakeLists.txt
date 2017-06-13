@@ -47,6 +47,7 @@ include_directories(
 	${OpenCV_INCLUDE_DIRS}
 	${orocos_kdl_INCLUDE_DIRS}
 	${BFL_INCLUDE_DIRS}
+	${BFL_INCLUDE_DIRS}/bfl
 	${EIGEN_INCLUDE_DIRS}
 )
 

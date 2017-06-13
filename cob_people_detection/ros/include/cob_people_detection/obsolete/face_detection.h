@@ -174,7 +174,7 @@ protected:
 	cv::Mat avg_image_; ///< Trained average Image
 	cv::Mat projected_train_face_mat_; ///< Projected training faces (coefficients for the eigenvectors of the face subspace)
 	cv::Mat face_class_avg_projections_; ///< The average factors of the eigenvector decomposition from each face class
-	cv::SVM person_classifier_; ///< classifier for the identity of a person
+	cv::ml::SVM person_classifier_; ///< classifier for the identity of a person
 
 	PeopleDetector* people_detector_; ///< People detector core code
 	int threshold_; ///< Threshold to detect unknown faces

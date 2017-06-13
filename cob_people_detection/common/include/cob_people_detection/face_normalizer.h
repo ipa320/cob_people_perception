@@ -1,5 +1,5 @@
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
+#include <opencv/cv.hpp>
+#include <opencv/cvaux.hpp>
 #include <opencv/highgui.h>
 #include <opencv/ml.h>
 
