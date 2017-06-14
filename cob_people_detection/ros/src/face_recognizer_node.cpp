@@ -161,13 +161,12 @@ FaceRecognizerNode::FaceRecognizerNode(ros::NodeHandle nh) :
 		std::cout << "Recognition model trained or loaded for:\n";
 		for (unsigned int i = 0; i < identification_labels_to_recognize.size(); i++)
 			std::cout << "   - " << identification_labels_to_recognize[i] << std::endl;
-
-		// launch LoadModel server
-		load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
-		load_model_server_->start();
-
-		ROS_INFO("FaceRecognizerNode initialized.");
 	}
+	// launch LoadModel server
+	load_model_server_ = new LoadModelServer(node_handle_, "load_model_server", boost::bind(&FaceRecognizerNode::loadModelServerCallback, this, _1), false);
+	load_model_server_->start();
+	ROS_INFO("FaceRecognizerNode initialized.");
+
 
 	// advertise topics
 	face_recognition_publisher_ = node_handle_.advertise<cob_perception_msgs::DetectionArray>("face_recognitions", 1);
