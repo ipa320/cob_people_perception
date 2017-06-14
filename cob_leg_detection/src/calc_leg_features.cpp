@@ -34,8 +34,7 @@
 
 #include <cob_leg_detection/calc_leg_features.h>
 
-#include "opencv/cxcore.h"
-#include "opencv/cv.h"
+#include <opencv2/opencv.hpp>
 
 using namespace laser_processor;
 using namespace std;

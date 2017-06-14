@@ -69,8 +69,7 @@
 #include <fstream>
 
 // opencv
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
+#include <opencv2/opencv.hpp>
 
 using namespace ipa_PeopleDetector;
 

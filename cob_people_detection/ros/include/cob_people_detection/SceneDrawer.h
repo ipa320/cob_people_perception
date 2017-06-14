@@ -27,9 +27,7 @@
 
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
-#include <opencv/cv.h>
-#include <opencv/cvwimage.h>
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
 #include <cv_bridge/CvBridge.h>
 
 void PublishPeopleImage(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd, image_transport::Publisher& pub);

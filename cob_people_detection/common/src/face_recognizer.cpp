@@ -70,9 +70,7 @@
 #include <fstream>
 
 // opencv
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
 
 // boost
 #include "boost/filesystem/operations.hpp"

@@ -94,8 +94,7 @@
 #include <cob_people_detection/ShowAction.h>
 
 // opencv
-#include <opencv/cv.h>
-#include <opencv/ml.h>
+#include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -174,7 +173,7 @@ protected:
 	cv::Mat avg_image_; ///< Trained average Image
 	cv::Mat projected_train_face_mat_; ///< Projected training faces (coefficients for the eigenvectors of the face subspace)
 	cv::Mat face_class_avg_projections_; ///< The average factors of the eigenvector decomposition from each face class
-#if OPENCV_MAJOR_VERSION == 2
+#if CV_MAJOR_VERSION == 2
 	cv::SVM person_classifier_; ///< classifier for the identity of a person
 #else
 // OpenCV 3

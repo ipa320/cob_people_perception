@@ -1,9 +1,8 @@
-#include<cob_people_detection/face_recognizer_algorithms.h>
-#include<cob_people_detection/face_normalizer.h>
-#include<opencv/cv.h>
-#include<opencv/highgui.h>
-#include<iostream>
-#include<fstream>
+#include <cob_people_detection/face_recognizer_algorithms.h>
+#include <cob_people_detection/face_normalizer.h>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <fstream>
 #include <sys/time.h>
 #include <boost/timer.hpp>
 #include <boost/filesystem.hpp>
