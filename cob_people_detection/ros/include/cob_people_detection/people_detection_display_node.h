@@ -83,13 +83,7 @@
 #include <image_transport/subscriber_filter.h>
 
 // opencv
-#if OPENCV_MAJOR_VERSION == 2
-#include <opencv/cv.h>
-#else
-// OpenCV 3
-#include <opencv/cv.hpp>
-#endif
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
