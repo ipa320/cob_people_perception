@@ -63,7 +63,7 @@
 #include "cob_common/cob_vision_utils/common/include/cob_vision_utils/VisionUtils.h"
 #endif
 
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
 
 PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, CobFaceDetectionNodelet, ipa_PeopleDetector::CobFaceDetectionNodelet, nodelet::Nodelet)
 ;

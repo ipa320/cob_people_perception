@@ -1,15 +1,13 @@
 #ifndef SSA_H_
 #define SSA_H_
 
-#include<opencv/cv.h>
-#include<iostream>
-#include<opencv/highgui.h>
-#include<opencv/ml.h>
-#include<fstream>
-#include<ostream>
-#include<limits>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <fstream>
+#include <ostream>
+#include <limits>
+#include <math.h>
 
-#include<math.h>
 namespace SubspaceAnalysis
 {
 

@@ -102,9 +102,7 @@
 #include <cob_leg_detection/laser_processor.h>
 #include <cob_leg_detection/calc_leg_features.h>
 
-#include <opencv/cxcore.h>
-#include <opencv/cv.h>
-#include <opencv/ml.h>
+#include <opencv2/opencv.hpp>
 
 #include <cob_perception_msgs/PositionMeasurement.h>
 #include <cob_perception_msgs/PositionMeasurementArray.h>
@@ -452,7 +450,7 @@ public:
 	//TransformListener tflp_;
 	ScanMask mask_;
 	int mask_count_;
-#if OPENCV_MAJOR_VERSION == 2
+#if CV_MAJOR_VERSION == 2
 	CvRTrees forest;
 #else
 	// OpenCV 3
@@ -497,7 +495,7 @@ public:
 	{
 
 		if (g_argc > 1) {
-#if OPENCV_MAJOR_VERSION == 2
+#if CV_MAJOR_VERSION == 2
 			forest.load(g_argv[1]);
 			feat_count_ = forest.get_active_var_mask()->cols;
 #else
@@ -721,7 +719,7 @@ public:
 		ScanProcessor processor(*scan, mask_);
 		processor.splitConnected(connected_thresh_);
 		processor.removeLessThan(5);
-#if OPENCV_MAJOR_VERSION == 2
+#if CV_MAJOR_VERSION == 2
 		CvMat* tmp_mat = cvCreateMat(1,feat_count_,CV_32FC1);
 #else
 // OpenCV 3
@@ -760,14 +758,14 @@ public:
 			vector<float> f = calcLegFeatures(*i, *scan);
 
 			for (int k = 0; k < feat_count_; k++)
-#if OPENCV_MAJOR_VERSION == 2
+#if CV_MAJOR_VERSION == 2
 				tmp_mat->data.fl[k] = (float)(f[k]);
 #else
 // OpenCV 3
 				tmp_mat.data[k] = (float)(f[k]);
 #endif
 
-#if OPENCV_MAJOR_VERSION == 2
+#if CV_MAJOR_VERSION == 2
 			float probability = forest.predict_prob( tmp_mat );
 #else
 // OpenCV 3
@@ -865,7 +863,7 @@ public:
 			}
 		}
 
-#if OPENCV_MAJOR_VERSION == 2
+#if CV_MAJOR_VERSION == 2
 		cvReleaseMat(&tmp_mat); tmp_mat = 0;
 #endif
 		// if(!use_seeds_)

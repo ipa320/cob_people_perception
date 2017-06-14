@@ -66,9 +66,7 @@
 #include "cob_common/cob_vision_utils/common/include/cob_vision_utils/GlobalDefines.h"
 #endif
 
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
 
 using namespace ipa_PeopleDetector;
 

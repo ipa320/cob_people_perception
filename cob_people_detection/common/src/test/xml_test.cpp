@@ -1,8 +1,7 @@
-#include<cob_people_detection/subspace_analysis.h>
-#include<opencv/cv.h>
-#include<opencv/highgui.h>
-#include<iostream>
-#include<fstream>
+#include <cob_people_detection/subspace_analysis.h>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <fstream>
 
 int main(int argc, const char *argv[])
 {

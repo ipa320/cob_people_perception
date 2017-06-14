@@ -35,9 +35,7 @@
 #include "cob_leg_detection/laser_processor.h"
 #include "cob_leg_detection/calc_leg_features.h"
 
-#include "opencv/cxcore.h"
-#include "opencv/cv.h"
-#include "opencv/ml.h"
+#include <opencv2/opencv.hpp>
 
 #include "cob_perception_msgs/PositionMeasurement.h"
 #include "sensor_msgs/LaserScan.h"
