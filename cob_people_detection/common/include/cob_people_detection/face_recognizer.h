@@ -226,7 +226,12 @@ protected:
 	std::vector<std::string> m_face_labels; ///< A vector containing the corresponding labels to each face image projection in m_projected_training_faces (m_face_labels[i] stores the corresponding name to the face representation in the face subspace in m_projected_training_faces.rows(i))
 	cv::Mat m_face_class_average_projections; ///< The average factors of the eigenvector decomposition from each face class; The average factors from each face class originating from the eigenvector decomposition.
 	std::vector<std::string> m_current_label_set; ///< A vector containing all different labels from the training session exactly once, order of appearance matters! (m_current_label_set[i] stores the corresponding name to the average face coordinates in the face subspace in m_face_class_average_projections.rows(i))
+#if OPENCV_MAJOR_VERSION == 2
+	cv::SVM m_face_classifier; ///< classifier for the identity of a person
+#else
+// OpenCV 3
 	cv::Ptr<cv::ml::SVM> m_face_classifier; ///< classifier for the identity of a person
+#endif
 	boost::filesystem::path m_data_directory; ///< folder that contains the training data
 
 	// mutex

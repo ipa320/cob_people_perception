@@ -1,5 +1,12 @@
+#if OPENCV_MAJOR_VERSION == 2
+#include <opencv/cv.h>
+#include <opencv/cvaux.h>
+#else
+// OpenCV 3
 #include <opencv/cv.hpp>
 #include <opencv/cvaux.hpp>
+#endif
+
 #include <opencv/highgui.h>
 #include <opencv/ml.h>
 
