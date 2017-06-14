@@ -109,8 +109,14 @@ public:
 	/// @param eigenValMat Eigenvalues
 	/// @param personClassifier A classifier for person identification. It is trained in this function. Can be left out if a simpler identification method is used.
 	/// @return Return code
+#if OPENCV_MAJOR_VERSION == 2
 	virtual unsigned long RecognizeFace(cv::Mat& colorImage, std::vector<cv::Rect>& colorFaces, int* nEigens, std::vector<cv::Mat>& eigenVectArr, cv::Mat& avgImage, cv::Mat& projectedTrainFaceMat,
 																			std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat, cv::SVM* personClassifier = 0);
+#else
+// OpenCV 3
+	virtual unsigned long RecognizeFace(cv::Mat& colorImage, std::vector<cv::Rect>& colorFaces, int* nEigens, std::vector<cv::Mat>& eigenVectArr, cv::Mat& avgImage, cv::Mat& projectedTrainFaceMat,
+																			std::vector<int>& index, int *threshold, int *threshold_FS, cv::Mat& eigenValMat, cv::ml::SVM* personClassifier = 0);
+#endif
 
 	/// Function to find the closest face class
 	/// The function calculates the distance of each sample image to the trained face class
@@ -122,7 +128,12 @@ public:
 	/// @param eigenValMat Eigenvalues
 	/// @param personClassifier A classifier for person identification. It is trained in this function. Can be left out if a simpler identification method is used.
 	/// @return Return code
+#if OPENCV_MAJOR_VERSION == 2
 	virtual unsigned long ClassifyFace(float *projectedTestFace, int *nearest, int *nEigens, cv::Mat& projectedTrainFaceMat, int *threshold, cv::Mat& eigenValMat, cv::SVM* personClassifier = 0);
+#else
+// OpenCV 3
+	virtual unsigned long ClassifyFace(float *projectedTestFace, int *nearest, int *nEigens, cv::Mat& projectedTrainFaceMat, int *threshold, cv::Mat& eigenValMat, cv::ml::SVM* personClassifier = 0);
+#endif
 
 	/// Function to calculate the FaceClasses
 	/// The function calculates the average eigenvector decomposition factors for each face classes.
@@ -133,7 +144,12 @@ public:
 	/// @param idUnique A vector containing all different Ids from the training session exactly once (idUnique[i] stores the corresponding id to the average face coordinates in the face subspace in faceClassAvgProjections.row(i))
 	/// @param personClassifier A classifier for person identification. It is trained in this function. Can be left out if a simpler identification method is used.
 	/// @return Return code
+#if OPENCV_MAJOR_VERSION == 2
 	virtual unsigned long CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections, std::vector<std::string>& idUnique, cv::SVM* personClassifier = 0);
+#else
+// OpenCV 3
+	virtual unsigned long CalculateFaceClasses(cv::Mat& projectedTrainFaceMat, std::vector<std::string>& id, int *nEigens, cv::Mat& faceClassAvgProjections, std::vector<std::string>& idUnique, cv::ml::SVM* personClassifier = 0);
+#endif
 
 	double m_faces_increase_search_scale;		///< The factor by which the search window is scaled between the subsequent scans
 	int m_faces_drop_groups;					///< Minimum number (minus 1) of neighbor rectangles that makes up an object.

@@ -452,7 +452,12 @@ public:
 	//TransformListener tflp_;
 	ScanMask mask_;
 	int mask_count_;
+#if OPENCV_MAJOR_VERSION == 2
 	CvRTrees forest;
+#else
+	// OpenCV 3
+	cv::Ptr<cv::ml::RTrees> forest;
+#endif
 	float connected_thresh_;
 	int feat_count_;
 	char save_[100];
@@ -492,8 +497,16 @@ public:
 	{
 
 		if (g_argc > 1) {
+#if OPENCV_MAJOR_VERSION == 2
 			forest.load(g_argv[1]);
 			feat_count_ = forest.get_active_var_mask()->cols;
+#else
+			// OpenCV 3
+			forest = cv::ml::RTrees::create();
+			cv::String feature_file = cv::String(g_argv[1]);
+			forest = cv::ml::StatModel::load<cv::ml::RTrees>(feature_file);
+			feat_count_ = forest->getVarCount();
+#endif
 			printf("Loaded forest with %d features: %s\n", feat_count_, g_argv[1]);
 		} else {
 			printf("Please provide a trained random forests classifier as an input.\n");
@@ -708,7 +721,12 @@ public:
 		ScanProcessor processor(*scan, mask_);
 		processor.splitConnected(connected_thresh_);
 		processor.removeLessThan(5);
+#if OPENCV_MAJOR_VERSION == 2
 		CvMat* tmp_mat = cvCreateMat(1,feat_count_,CV_32FC1);
+#else
+// OpenCV 3
+		cv::Mat tmp_mat = cv::Mat(1, feat_count_, CV_32FC1);
+#endif
 
 		// if no measurement matches to a tracker in the last <no_observation_timeout>  seconds: erase tracker
 		ros::Time purge = scan->header.stamp + ros::Duration().fromSec(-no_observation_timeout_s);
@@ -742,9 +760,24 @@ public:
 			vector<float> f = calcLegFeatures(*i, *scan);
 
 			for (int k = 0; k < feat_count_; k++)
+#if OPENCV_MAJOR_VERSION == 2
 				tmp_mat->data.fl[k] = (float)(f[k]);
+#else
+// OpenCV 3
+				tmp_mat.data[k] = (float)(f[k]);
+#endif
 
+#if OPENCV_MAJOR_VERSION == 2
 			float probability = forest.predict_prob( tmp_mat );
+#else
+// OpenCV 3
+			// Probability is the fuzzy measure of the probability that the second element should be chosen,
+			// in opencv2 RTrees had a method predict_prob, but that disapeared in opencv3, this is the
+			// substitute.
+			float probability = 0.5 -
+				forest->predict(tmp_mat, cv::noArray(), cv::ml::RTrees::PREDICT_SUM) /
+				forest->getRoots().size();
+#endif
 			Stamped<Point> loc((*i)->center(), scan->header.stamp, scan->header.frame_id);
 			try {
 				tfl_.transformPoint(fixed_frame, loc, loc);
@@ -832,7 +865,9 @@ public:
 			}
 		}
 
+#if OPENCV_MAJOR_VERSION == 2
 		cvReleaseMat(&tmp_mat); tmp_mat = 0;
+#endif
 		// if(!use_seeds_)
 		pairLegs();
 
