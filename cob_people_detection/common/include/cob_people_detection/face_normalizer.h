@@ -1,7 +1,4 @@
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
-#include <opencv/highgui.h>
-#include <opencv/ml.h>
+#include <opencv2/opencv.hpp>
 
 #include <iostream>
 #include <boost/lexical_cast.hpp>

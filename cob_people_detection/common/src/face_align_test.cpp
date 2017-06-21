@@ -1,7 +1,7 @@
-#include"cob_people_detection/face_normalizer.h"
-#include<iostream>
-#include<opencv/cv.h>
-#include<opencv/highgui.h>
+#include "cob_people_detection/face_normalizer.h"
+#include <iostream>
+#include <opencv2/opencv.hpp>
+
 int main(int argc, const char *argv[])
 {
 

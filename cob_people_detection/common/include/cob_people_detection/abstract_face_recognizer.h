@@ -67,7 +67,7 @@
 #endif
 
 // opencv
-#include <opencv/cv.h>
+#include <opencv2/opencv.hpp>
 
 namespace ipa_PeopleDetector
 {

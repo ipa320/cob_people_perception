@@ -1,18 +1,18 @@
-#include<iostream>
-#include<iomanip>
-#include<fstream>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 
-#include<opencv/cv.h>
-#include<opencv/highgui.h>
+#include <opencv2/opencv.hpp>
 
-#include<pcl/common/transform.h>
-#include<pcl/point_types.h>
+#include <pcl/common/transform.h>
+#include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 
-#include<sensor_msgs/PointCloud2.h>
-#include<sensor_msgs/Image.h>
-#include<sensor_msgs/image_encodings.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
 #include <cv_bridge/cv_bridge.h>
+
 class scene_publisher
 {
 public:

@@ -91,8 +91,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-//#include <opencv/cv.h>
-//#include <opencv/highgui.h>
 #include <cv_bridge/cv_bridge.h>
 //boost
 #include <boost/thread/mutex.hpp>

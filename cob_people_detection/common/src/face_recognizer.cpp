@@ -70,9 +70,7 @@
 #include <fstream>
 
 // opencv
-#include <opencv/cv.h>
-#include <opencv/cvaux.h>
-#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
 
 // boost
 #include "boost/filesystem/operations.hpp"
@@ -370,7 +368,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::loadRecognitionModel(std::vect
 	boost::filesystem::path complete = path / "rdata_color.xml";
 
 	bool training_necessary = false;
-	std::vector<string> temp_face_labels;
+	std::vector<std::string> temp_face_labels;
 	if (fs::is_directory(path.string()))
 	{
 		cv::FileStorage fileStorage(complete.string(), cv::FileStorage::READ);
@@ -615,7 +613,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 			fileStorage << tag.str().c_str() << m_face_labels[i].c_str();
 
 			// face images
-			boost::filesystem::path img_path = path / "img" / (boost::lexical_cast<string>(i) + img_ext);
+			boost::filesystem::path img_path = path / "img" / (boost::lexical_cast<std::string>(i) + img_ext);
 			std::ostringstream img, shortname;
 			shortname << "img/" << i << img_ext;
 			std::ostringstream tag2;
@@ -663,7 +661,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 			fileStorage << tag.str().c_str() << m_face_labels[i].c_str();
 
 			// face images
-			boost::filesystem::path img_path = path / "img" / (boost::lexical_cast<string>(i) + img_ext);
+			boost::filesystem::path img_path = path / "img" / (boost::lexical_cast<std::string>(i) + img_ext);
 			std::ostringstream img, shortname_img, shortname_depth;
 			shortname_img << "img/" << i << img_ext;
 			std::ostringstream tag2, tag3;
@@ -687,7 +685,7 @@ unsigned long ipa_PeopleDetector::FaceRecognizer::saveTrainingData(std::vector<c
 			if (dm_exist[i])
 			{
 				// depth maps
-				boost::filesystem::path dm_path = path / "depth" / (boost::lexical_cast<string>(i) + ".xml");
+				boost::filesystem::path dm_path = path / "depth" / (boost::lexical_cast<std::string>(i) + ".xml");
 				cv::FileStorage fs(dm_path.string(), FileStorage::WRITE);
 				fs << "depthmap" << face_depthmaps[j];
 				fs.release();

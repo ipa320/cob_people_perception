@@ -1,13 +1,11 @@
-#include<cob_people_detection/subspace_analysis_fuerte.h>
+#include <cob_people_detection/subspace_analysis_fuerte.h>
 
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/convenience.hpp"
 #include "boost/filesystem/path.hpp"
 #include <boost/thread/mutex.hpp>
-#include<opencv/cv.h>
-#include <opencv/cvaux.h>
-#include <opencv/highgui.h>
-#include <opencv/ml.h>
+#include <opencv2/opencv.hpp>
+
 void SubspaceAnalysis::error_prompt(std::string fct, std::string desc)
 {
 	std::cerr << "ERROR\n";
