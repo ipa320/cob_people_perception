@@ -14,7 +14,7 @@
 
 	<buildtool_depend>catkin</buildtool_depend>
 
-	<depend>cmake_modules</depend>
+	<depend>boost</depend>
 	<depend>cob_perception_msgs</depend> 
 	<depend>cv_bridge</depend>
 	<depend>geometry_msgs</depend>
@@ -40,7 +40,6 @@
 	<depend>pcl_ros</depend>
 	<depend>visualization_msgs</depend>
 
-	<exec_depend>boost</exec_depend>
 	<!--exec_depend>libopenni-nite-dev</exec_depend> -->
 	<!--exec_depend>libopenni-sensor-primesense-dev</exec_depend-->
 	<exec_depend>message_runtime</exec_depend>

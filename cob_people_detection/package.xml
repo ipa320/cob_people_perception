@@ -19,7 +19,6 @@
 	<depend>actionlib</depend>
 	<depend>actionlib_msgs</depend>
 	<depend>boost</depend>
-	<depend>cmake_modules</depend>
 	<depend>cob_image_flip</depend>
 	<depend>cob_perception_msgs</depend>
 	<depend>cob_vision_utils</depend>
