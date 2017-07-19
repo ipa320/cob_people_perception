@@ -19,7 +19,6 @@ set(catkin_RUN_PACKAGES
 
 set(catkin_BUILD_PACKAGES
 	${catkin_RUN_PACKAGES}
-	cmake_modules
 )
 
 ## Find catkin macros and libraries
@@ -29,7 +28,6 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV REQUIRED)
 find_package(orocos_kdl REQUIRED)
-find_package(Eigen REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED bfl)
 
@@ -48,12 +46,9 @@ include_directories(
 	${orocos_kdl_INCLUDE_DIRS}
 	${BFL_INCLUDE_DIRS}
 	${BFL_INCLUDE_DIRS}/bfl
-	${EIGEN_INCLUDE_DIRS}
 )
 
 link_directories(${BFL_LIBRARY_DIRS})
-
-add_definitions(${EIGEN_DEFINITIONS})
 
 ## Declare a cpp executable
 add_executable(leg_detection

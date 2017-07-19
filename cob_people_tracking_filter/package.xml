@@ -11,18 +11,16 @@
 	<url type="website">http://ros.org/wiki/cob_people_perception</url>
 
 	<buildtool_depend>catkin</buildtool_depend>
-	
-	<depend>cmake_modules</depend>
-	<depend>roscpp</depend>
-	<depend>std_msgs</depend>
-	<depend>geometry_msgs</depend>
-	<depend>tf</depend>
-	<depend>message_filters</depend>
-	<depend>cob_perception_msgs</depend>
-	<depend>sensor_msgs</depend>
-	
+
 	<depend>bfl</depend>
 	<depend>boost</depend>
+	<depend>cob_perception_msgs</depend>
+	<depend>geometry_msgs</depend>
+	<depend>message_filters</depend>
+	<depend>roscpp</depend>
+	<depend>sensor_msgs</depend>
+	<depend>std_msgs</depend>
+	<depend>tf</depend>
 
 </package>
 
