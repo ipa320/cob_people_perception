@@ -702,7 +702,6 @@ public:
 }
 ;
 
-PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, CobPeopleDetectionNodelet, ipa_PeopleDetector::CobPeopleDetectionNodelet, nodelet::Nodelet)
-;
+PLUGINLIB_EXPORT_CLASS(ipa_PeopleDetector::CobPeopleDetectionNodelet, nodelet::Nodelet);
 
 #endif // _PEOPLE_DETECTION_

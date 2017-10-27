@@ -67,7 +67,7 @@
 #include "cob_openni2_tracker/body_tracker.h"
 #include "openni2_camera/openni2_device_manager.h"
 
-//PLUGINLIB_DECLARE_CLASS(cob_openni2_tracker, body_tracker_nodelet, body_tracker_nodelet, nodelet::Nodelet)
+//PLUGINLIB_EXPORT_CLASS(body_tracker_nodelet, nodelet::Nodelet);
 class BodyTrackerNodelet : public nodelet::Nodelet
 {
 public:

@@ -103,4 +103,5 @@ public:
 
 }
 // watch the capitalization carefully
-PLUGINLIB_DECLARE_CLASS(cob_people_detection, SensorMessageGatewayNodelet, cob_people_detection::SensorMessageGatewayNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(cob_people_detection::SensorMessageGatewayNodelet, nodelet::Nodelet);
+
