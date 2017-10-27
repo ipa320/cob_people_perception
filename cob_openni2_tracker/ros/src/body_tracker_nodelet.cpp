@@ -63,7 +63,7 @@
 #include "nodelet/NodeletUnload.h"
 #include <boost/thread.hpp>
 
-PLUGINLIB_EXPORT_CLASS(BodyTrackerNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(BodyTrackerNodelet, nodelet::Nodelet);
 
 BodyTrackerNodelet::BodyTrackerNodelet(): Nodelet(), bt_listener(NULL)
 {

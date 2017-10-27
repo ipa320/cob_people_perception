@@ -65,8 +65,7 @@
 
 #include <opencv2/opencv.hpp>
 
-PLUGINLIB_DECLARE_CLASS(ipa_PeopleDetector, CobFaceDetectionNodelet, ipa_PeopleDetector::CobFaceDetectionNodelet, nodelet::Nodelet)
-;
+PLUGINLIB_EXPORT_CLASS(ipa_PeopleDetector::CobFaceDetectionNodelet, nodelet::Nodelet);
 
 using namespace ipa_PeopleDetector;
 
