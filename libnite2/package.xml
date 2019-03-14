@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
 	<name>libnite2</name>
-	<version>0.0.1</version>
+	<version>1.0.4</version>
 	<description>Wrapper for the NiTE2 library</description>
 
 	<maintainer email="richard.bormann@ipa.fraunhofer.de">Richard Bormann</maintainer>
