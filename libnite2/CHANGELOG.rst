@@ -2,8 +2,8 @@
 Changelog for package libnite2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.5 (2019-03-14)
+------------------
 * Merge branch 'indigo_dev' of github.com:ipa320/cob_people_perception into merge
 * Merge pull request `#63 <https://github.com/ipa320/cob_people_perception/issues/63>`_ from ipa-fxm/use_external_project
   Multi distro travis indigo

@@ -2,8 +2,8 @@
 Changelog for package cob_leg_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.5 (2019-03-14)
+------------------
 * Merge pull request `#75 <https://github.com/ipa320/cob_people_perception/issues/75>`_ from ipa320/remove_obsolete_cmake_modules
   remove obsolete dependencies to cmake_modules
 * remove obsolete dependencies to cmake_modules

@@ -2,8 +2,8 @@
 Changelog for package cob_people_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.5 (2019-03-14)
+------------------
 * Merge pull request `#78 <https://github.com/ipa320/cob_people_perception/issues/78>`_ from ipa-fxm/fix/pluginlib_macro
   update to use non deprecated pluginlib macro
 * update to use non deprecated pluginlib macro
