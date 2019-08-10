@@ -2,8 +2,13 @@
 Changelog for package cob_people_perception
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.5 (2019-03-14)
 ------------------
+* fix versions
+* update changelogs
 * Merge pull request `#62 <https://github.com/ipa320/cob_people_perception/issues/62>`_ from ipa-rmb/indigo_dev
   added libxi and libxmu as dependencies for ros build farm
 * cleaned up spaces/tabs
@@ -29,4 +34,4 @@ Changelog for package cob_people_perception
   package now transferred to groovy catkin: build and function tested successfully
 * catkinizing cob_people_perception
 * catkinizing cob_people_perception
-* Contributors: Florian Weisshardt, Richard Bormann, ipa-rmb, rmb-om
+* Contributors: Florian Weisshardt, Richard Bormann, fmessmer, ipa-rmb, rmb-om

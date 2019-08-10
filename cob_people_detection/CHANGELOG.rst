@@ -2,8 +2,17 @@
 Changelog for package cob_people_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#86 <https://github.com/ipa320/cob_people_perception/issues/86>`_ from ipa320/ipa-rmb-patch-1
+  [Melodic] add melodic checks
+* bugfix
+* Contributors: Felix Messmer, Richard Bormann
+
 1.0.5 (2019-03-14)
 ------------------
+* fix versions
+* update changelogs
 * Merge pull request `#78 <https://github.com/ipa320/cob_people_perception/issues/78>`_ from ipa-fxm/fix/pluginlib_macro
   update to use non deprecated pluginlib macro
 * update to use non deprecated pluginlib macro
@@ -448,4 +457,4 @@ Changelog for package cob_people_detection
 * removed several dependencies, test of function succesful
 * Merge branch 'master' of github.com:ipa-rmb/cob_people_perception
 * moved to new repo
-* Contributors: Felix Messmer, Florian Weisshardt, Florian Weißhardt, Martin Günther, Pierre Killy, Richard Bormann, Seanny123, Thomas Zwoelfer, Thomas Zwölfer, accompany-cob3-6, ipa-fmw, ipa-fxm, ipa-goa-tz, ipa-jsf, ipa-rmb, max90727, rmb-om, rmb-tz, tom
+* Contributors: Felix Messmer, Florian Weisshardt, Florian Weißhardt, Martin Günther, Pierre Killy, Richard Bormann, Seanny123, Thomas Zwoelfer, Thomas Zwölfer, accompany-cob3-6, fmessmer, ipa-fmw, ipa-fxm, ipa-goa-tz, ipa-jsf, ipa-rmb, max90727, rmb-om, rmb-tz, tom

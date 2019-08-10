@@ -2,8 +2,17 @@
 Changelog for package cob_openni2_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#86 <https://github.com/ipa320/cob_people_perception/issues/86>`_ from ipa320/ipa-rmb-patch-1
+  [Melodic] add melodic checks
+* consider deprecation warning
+* Contributors: Felix Messmer, fmessmer
+
 1.0.5 (2019-03-14)
 ------------------
+* fix versions
+* update changelogs
 * Merge pull request `#78 <https://github.com/ipa320/cob_people_perception/issues/78>`_ from ipa-fxm/fix/pluginlib_macro
   update to use non deprecated pluginlib macro
 * update to use non deprecated pluginlib macro
@@ -103,4 +112,4 @@ Changelog for package cob_openni2_tracker
 * fixed dependencies
 * merge with rmb-om
 * added openni2_tracker
-* Contributors: Felix Messmer, Florian Weisshardt, Martin Guenther, Pierre Killy, Rafael, Richard Bormann, ipa-fmw, ipa-fxm, ipa-rmb, rmb-om
+* Contributors: Felix Messmer, Florian Weisshardt, Martin Guenther, Pierre Killy, Rafael, Richard Bormann, fmessmer, ipa-fmw, ipa-fxm, ipa-rmb, rmb-om

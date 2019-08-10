@@ -2,8 +2,13 @@
 Changelog for package libnite2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.5 (2019-03-14)
 ------------------
+* fix versions
+* update changelogs
 * Merge branch 'indigo_dev' of github.com:ipa320/cob_people_perception into merge
 * Merge pull request `#63 <https://github.com/ipa320/cob_people_perception/issues/63>`_ from ipa-fxm/use_external_project
   Multi distro travis indigo
@@ -40,4 +45,4 @@ Changelog for package libnite2
 * tarball md5sum added and link points to ipa320
 * merge with rmb/indigo_dev
 * bugfixing cob_people_perception
-* Contributors: Felix Messmer, Florian Weisshardt, Richard Bormann, ipa-fmw, ipa-fxm, ipa-rmb, rmb-om
+* Contributors: Felix Messmer, Florian Weisshardt, Richard Bormann, fmessmer, ipa-fmw, ipa-fxm, ipa-rmb, rmb-om

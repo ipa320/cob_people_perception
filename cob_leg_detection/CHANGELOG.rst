@@ -2,8 +2,16 @@
 Changelog for package cob_leg_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#86 <https://github.com/ipa320/cob_people_perception/issues/86>`_ from ipa320/ipa-rmb-patch-1
+  [Melodic] add melodic checks
+* use bfl according to wiki
+* Contributors: Felix Messmer, fmessmer
+
 1.0.5 (2019-03-14)
 ------------------
+* update changelogs
 * Merge pull request `#75 <https://github.com/ipa320/cob_people_perception/issues/75>`_ from ipa320/remove_obsolete_cmake_modules
   remove obsolete dependencies to cmake_modules
 * remove obsolete dependencies to cmake_modules
@@ -56,4 +64,4 @@ Changelog for package cob_leg_detection
 * added scan_unified to launch file
 * added cob_people_tracking_filter and cob_leg_detection packages
 * updated names and messages
-* Contributors: Florian Weisshardt, Pierre Killy, Richard Bormann, ipa-fmw, ipa-fxm, ipa-rmb, rmb-om
+* Contributors: Florian Weisshardt, Pierre Killy, Richard Bormann, fmessmer, ipa-fmw, ipa-fxm, ipa-rmb, rmb-om
