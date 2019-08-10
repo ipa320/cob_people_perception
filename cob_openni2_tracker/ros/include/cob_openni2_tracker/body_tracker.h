@@ -76,7 +76,7 @@
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
 //point cloud includes
-#include <pcl/ros/conversions.h>
+#include <pcl/conversions.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 //Messages
