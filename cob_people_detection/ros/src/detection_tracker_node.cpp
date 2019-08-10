@@ -266,10 +266,6 @@ unsigned long DetectionTrackerNode::copyDetection(const cob_perception_msgs::Det
 	return ipa_Utils::RET_OK;
 }
 
-inline double abs(double x)
-{
-	return ((x < 0) ? -x : x);
-}
 
 /// Computes the Euclidean distance of a recent faces detection to a current face detection.
 /// If the current face detection is outside the neighborhood of the previous detection, DBL_MAX is returned.
@@ -280,9 +276,9 @@ double DetectionTrackerNode::computeFacePositionDistanceTrackingRange(const cob_
 	const geometry_msgs::Point* point_1 = &(previous_detection.pose.pose.position);
 	const geometry_msgs::Point* point_2 = &(current_detection.pose.pose.position);
 
-	double dx = abs(point_1->x - point_2->x);
-	double dy = abs(point_1->y - point_2->y);
-	double dz = abs(point_1->z - point_2->z);
+	double dx = abs((double)(point_1->x - point_2->x));
+	double dy = abs((double)(point_1->y - point_2->y));
+	double dz = abs((double)(point_1->z - point_2->z));
 
 	// return a huge distance if the current face position is too far away from the recent
 	if (dx > tracking_range_m_ || dy > tracking_range_m_ || dz > tracking_range_m_)
