@@ -2,8 +2,8 @@
 Changelog for package cob_openni2_tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.6 (2019-08-10)
+------------------
 * Merge pull request `#86 <https://github.com/ipa320/cob_people_perception/issues/86>`_ from ipa320/ipa-rmb-patch-1
   [Melodic] add melodic checks
 * consider deprecation warning
