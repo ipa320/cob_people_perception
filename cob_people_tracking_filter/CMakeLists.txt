@@ -24,15 +24,6 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED COMPONENTS thread)
 
 
-# Look for bfl (Bayesian Filtering Library)
-#find_path(BFL_INCLUDE_DIRS REQUIRED
-#	NAMES bfl_constants.h
-#	HINTS /opt/ros/indigo/include/bfl)
-#find_library(BFL_LIBRARIES REQUIRED
-#	NAMES orocos-bfl
-#	HINTS /opt/ros/indigo/lib)
-#message(STATUS "BFL_LIBRARIES: ${BFL_LIBRARIES}, BFL_INCLUDE_DIRS: ${BFL_INCLUDE_DIRS}, BFL_LIBRARY_DIRS: ${BFL_LIBRARY_DIRS}")
-
 # this way is recommended by the package (even though link_directories is not encouraged by catkin_lint)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
