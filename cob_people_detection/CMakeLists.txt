@@ -36,7 +36,7 @@ find_package(catkin REQUIRED COMPONENTS
 	${catkin_BUILD_PACKAGES}
 )
 
-find_package(Boost REQUIRED COMPONENTS signals system filesystem)
+find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_package(OpenCV REQUIRED)
 #find_package(orocos_kdl REQUIRED)
 #find_package(PCL REQUIRED)
