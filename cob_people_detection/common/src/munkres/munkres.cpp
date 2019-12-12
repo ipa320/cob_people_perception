@@ -572,12 +572,8 @@ bool munkres::step5(int r, int c)
 	//create our sequence
 	while (!done)
 	{
-		switch (looking_for_star)
+		if (looking_for_star)
 		{
-
-		//if we're looking for a star
-		case true:
-
 			//special case protection
 			a = r;
 
@@ -611,11 +607,9 @@ bool munkres::step5(int r, int c)
 			//we can't do this earlier due to needing to check for stars in the column
 			//mark the column as starred
 			column_starred[c] = true;
-			break;
-
-			//if we're looking for a prime
-		case false:
-
+		}
+		else
+		{
 			//prime current index
 			cell_array[r][c].primed = false;
 			//unstar current index
@@ -630,7 +624,6 @@ bool munkres::step5(int r, int c)
 
 			//set case to look for star next
 			looking_for_star = true;
-			break;
 		}
 	}
 
