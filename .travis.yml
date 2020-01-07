@@ -13,6 +13,8 @@ env:
     - VERBOSE_TESTS=false
     - NOT_TEST_DOWNSTREAM=true
     - CMAKE_ARGS=-DCMAKE_BUILD_TYPE=Release
+    - CATKIN_LINT=pedantic
+    - CATKIN_LINT_ARGS='--ignore description_boilerplate --ignore target_name_collision --skip-pkg cob_leg_detection --skip-pkg cob_openni2_tracker --skip-pkg cob_people_tracking_filter --skip-pkg libnite2'
   matrix:
     - ROS_DISTRO=indigo
     - ROS_DISTRO=kinetic
