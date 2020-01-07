@@ -25,8 +25,8 @@
 	<depend>cv_bridge</depend>
 	<depend>dynamic_reconfigure</depend>
 	<depend>geometry_msgs</depend>
-	<depend>image_transport</depend>
 	<depend>image_geometry</depend>
+	<depend>image_transport</depend>
 	<!--depend>kdl_parser</depend-->
 	<depend>libopencv-dev</depend>
 	<depend>libpcl-all-dev</depend>

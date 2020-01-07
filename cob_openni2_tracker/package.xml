@@ -20,9 +20,6 @@
 	<depend>geometry_msgs</depend>
 	<depend>glut</depend>
 	<depend>image_transport</depend>
-	<depend>opengl</depend>
-	<depend>openni2_camera</depend>
-	<depend>orocos_kdl</depend>
 	<depend>libnite2</depend>
 	<depend>libopencv-dev</depend>
 	<!-- <depend>libopenni-nite-dev</depend> -->
@@ -31,18 +28,20 @@
 	<depend>libusb-1.0-dev</depend>
 	<depend>libxi-dev</depend>
 	<depend>libxmu-dev</depend>
+	<depend>nodelet</depend>
+	<depend>opengl</depend>
+	<depend>openni2_camera</depend>
+	<depend>orocos_kdl</depend>
+	<depend>pcl_ros</depend>
 	<depend>roscpp</depend>
 	<depend>roslib</depend>
 	<depend>sensor_msgs</depend>
 	<depend>std_msgs</depend>
 	<depend>tf</depend>
-	<depend>nodelet</depend>
-	<depend>pcl_ros</depend>
 	<depend>visualization_msgs</depend>
 
 	<!--exec_depend>libopenni-nite-dev</exec_depend> -->
 	<!--exec_depend>libopenni-sensor-primesense-dev</exec_depend-->
-	<exec_depend>message_runtime</exec_depend>
 	
 	<export>
 		<nodelet plugin="${prefix}/nodelet.xml" />	

@@ -1,33 +1,25 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(cob_openni2_tracker)
 
-set(catkin_RUN_PACKAGES
-	cob_perception_msgs
-	cv_bridge
-	geometry_msgs
-	image_transport
-	libnite2
-	roscpp
-	roslib
-	sensor_msgs
-	std_msgs
-	tf
-	nodelet
-	pcl_ros
-	visualization_msgs
-)
-
-set(catkin_BUILD_PACKAGES
-	${catkin_RUN_PACKAGES}
-)
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 ## Creates a bunch of environment variables that may be used later in the script
 ## e.g. catkin_INCLUDE_DIRS
 find_package(catkin REQUIRED COMPONENTS
-	${catkin_BUILD_PACKAGES}
+	cob_perception_msgs
+	cv_bridge
+	geometry_msgs
+	image_transport
+	libnite2
+	nodelet
+	pcl_ros
+	roscpp
+	roslib
+	sensor_msgs
+	std_msgs
+	tf
+	visualization_msgs
 )
 
 find_package(OpenCV REQUIRED)
@@ -59,7 +51,7 @@ find_package(GLUT REQUIRED)
 add_definitions(${GLUT_DEFINITIONS})
 if(NOT GLUT_FOUND)
 	message(ERROR " GLUT was not found!")
-endif(NOT GLUT_FOUND)
+endif()
 
 
 #########################################################
@@ -69,7 +61,7 @@ find_package(OpenGL REQUIRED)
 add_definitions(${OpenGL_DEFINITIONS})
 if(NOT OPENGL_FOUND)
 	message(ERROR " OPENGL was not found!")
-endif(NOT OPENGL_FOUND)
+endif()
 
 
 ###################################
@@ -86,10 +78,19 @@ INCLUDE_DIRS
 	ros/include
 LIBRARIES
 CATKIN_DEPENDS
-	${catkin_RUN_PACKAGES}
-	message_runtime
+	cob_perception_msgs
+	cv_bridge
+	geometry_msgs
+	image_transport
+	libnite2
 	nodelet
 	pcl_ros
+	roscpp
+	roslib
+	sensor_msgs
+	std_msgs
+	tf
+	visualization_msgs
 DEPENDS
 	OpenCV
 	orocos_kdl
@@ -131,7 +132,7 @@ target_link_libraries(body_tracker_nodelet
 ## Install ##
 #############
 ## Mark executables and/or libraries for installation
-install(TARGETS cob_body_tracker body_tracker_nodelet
+install(TARGETS body_tracker_nodelet cob_body_tracker
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

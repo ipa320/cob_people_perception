@@ -39,7 +39,9 @@ generate_dynamic_reconfigure_options(
   cfg/LegDetection.cfg
 )
 
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS cob_perception_msgs geometry_msgs sensor_msgs std_msgs visualization_msgs
+)
 
 ## Specify additional locations of header files
 include_directories(
@@ -55,9 +57,9 @@ link_directories(${BFL_LIBRARY_DIRS})
 
 ## Declare a cpp executable
 add_executable(leg_detection
+	src/calc_leg_features.cpp
 	src/laser_processor.cpp
 	src/leg_detector.cpp 
-	src/calc_leg_features.cpp
 )
 
 ## Add cmake target dependencies of the executable/library
