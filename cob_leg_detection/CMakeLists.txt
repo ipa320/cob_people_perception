@@ -31,9 +31,6 @@ find_package(orocos_kdl REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
 
-message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
-message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
-
 ## dynamic reconfigure config
 generate_dynamic_reconfigure_options(
   cfg/LegDetection.cfg

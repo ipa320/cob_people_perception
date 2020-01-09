@@ -28,9 +28,6 @@ find_package(Boost REQUIRED COMPONENTS thread)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
 
-message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
-message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
-
 ## Declare things to be passed to dependent projects
 catkin_package(
 INCLUDE_DIRS
