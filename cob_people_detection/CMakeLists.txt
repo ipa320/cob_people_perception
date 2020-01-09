@@ -1,18 +1,22 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(cob_people_detection)
 
-set(catkin_RUN_PACKAGES
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS
 	actionlib
 	actionlib_msgs
-	cv_bridge
 	cob_image_flip
 	cob_perception_msgs
 	cob_vision_utils
+	cv_bridge
 	dynamic_reconfigure
 	geometry_msgs
-	image_transport
 	image_geometry
+	image_transport
 	#kdl_parser
+	message_generation
 	nodelet
 	pcl_ros
 	roscpp
@@ -21,19 +25,6 @@ set(catkin_RUN_PACKAGES
 	std_srvs
 	stereo_msgs
 	tf
-)
-
-set(catkin_BUILD_PACKAGES
-	${catkin_RUN_PACKAGES}
-	message_generation
-)
-
-
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-	${catkin_BUILD_PACKAGES}
 )
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
@@ -84,13 +75,13 @@ generate_dynamic_reconfigure_options(cfg/sensor_message_gateway.cfg)
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
 	DEPENDENCIES
+		actionlib_msgs
+		cob_perception_msgs
+		geometry_msgs
+		sensor_msgs
 		std_msgs
 		std_srvs
-		sensor_msgs
-		actionlib_msgs
-		geometry_msgs
 		stereo_msgs
-		cob_perception_msgs
 )
 
 ###################################
@@ -113,13 +104,31 @@ catkin_package(
 		face_recognizer_algorithms
 		sensor_message_gateway_nodelet
 	CATKIN_DEPENDS
-		${catkin_RUN_PACKAGES}
+		actionlib
+		actionlib_msgs
+		cob_image_flip
+		cob_perception_msgs
+		cob_vision_utils
+		cv_bridge
+		dynamic_reconfigure
+		geometry_msgs
+		image_geometry
+		image_transport
+		#kdl_parser
 		message_runtime
+		nodelet
+		pcl_ros
+		roscpp
+		sensor_msgs
+		std_msgs
+		std_srvs
+		stereo_msgs
+		tf
 	DEPENDS
-		#PCL
-		OpenCV
 		Boost
+		OpenCV
 		#orocos_kdl
+		#PCL
 )
 
 ###########
@@ -252,8 +261,8 @@ target_link_libraries(face_recognizer_node
 #add_custom_command(TARGET face_recognizer_node POST_BUILD COMMAND mkdir -p ${PROJECT_SOURCE_DIR}/common/files/training_data)
 
 add_executable(detection_tracker_node
-	ros/src/detection_tracker_node.cpp
 	common/src/munkres/munkres.cpp
+	ros/src/detection_tracker_node.cpp
 )
 target_link_libraries(detection_tracker_node
 	${catkin_LIBRARIES}
@@ -281,8 +290,8 @@ target_link_libraries(face_capture_node
 )
 
 add_executable(sensor_message_gateway_node
-	ros/src/sensor_message_gateway_node.cpp
 	ros/src/sensor_message_gateway_main.cpp
+	ros/src/sensor_message_gateway_node.cpp
 )
 target_link_libraries(sensor_message_gateway_node
 	${catkin_LIBRARIES}
@@ -361,9 +370,7 @@ add_dependencies(tracking_evaluator ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}
 ## Install ##
 #############
 ## Mark executables and/or libraries for installation
-install(TARGETS people_detection_client head_detector_node face_detector_node face_recognizer_node detection_tracker_node people_detection_display_node
-		face_capture_node sensor_message_gateway_node sensor_message_gateway_nodelet coordinator_node decomposition subspace_analysis face_normalizer
-		face_recognizer_algorithms tracking_evaluator
+install(TARGETS coordinator_node decomposition detection_tracker_node face_capture_node face_detector_node face_normalizer face_recognizer_algorithms face_recognizer_node head_detector_node people_detection_client people_detection_display_node sensor_message_gateway_node sensor_message_gateway_nodelet subspace_analysis tracking_evaluator
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

@@ -28,9 +28,6 @@ find_package(Boost REQUIRED COMPONENTS thread)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
 
-message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
-message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
-
 ## Declare things to be passed to dependent projects
 catkin_package(
 INCLUDE_DIRS
@@ -38,7 +35,7 @@ INCLUDE_DIRS
 CATKIN_DEPENDS
 	${catkin_RUN_PACKAGES}
 LIBRARIES
-	cob_people_tracking_filter
+	${PROJECT_NAME}
 )
 
 ## Specify additional locations of header files
@@ -52,31 +49,31 @@ include_directories(
 link_directories(${BFL_LIBRARY_DIRS})
 
 ## Declare a cpp library
-add_library(cob_people_tracking_filter 
-	src/uniform_vector.cpp 
-	src/gaussian_vector.cpp 
-	src/gaussian_pos_vel.cpp 
+add_library(${PROJECT_NAME}
+	src/detector_particle.cpp
+	src/gaussian_pos_vel.cpp
+	src/gaussian_vector.cpp
 	src/mcpdf_pos_vel.cpp
 	src/mcpdf_vector.cpp
-	src/sysmodel_pos_vel.cpp
-	src/sysmodel_vector.cpp
 	src/measmodel_pos.cpp
 	src/measmodel_vector.cpp
-	src/tracker_particle.cpp 
-	src/tracker_kalman.cpp 
-	src/detector_particle.cpp 
+	src/sysmodel_pos_vel.cpp
+	src/sysmodel_vector.cpp
+	src/tracker_kalman.cpp
+	src/tracker_particle.cpp
+	src/uniform_vector.cpp
 )
-target_link_libraries(cob_people_tracking_filter
+target_link_libraries(${PROJECT_NAME}
 	${catkin_LIBRARIES}
 	${Boost_LIBRARIES}
 	${BFL_LIBRARIES}
 )
-add_dependencies(cob_people_tracking_filter ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a cpp executable
 add_executable(cob_people_tracker src/people_tracking_node.cpp)
 target_link_libraries(cob_people_tracker
-	cob_people_tracking_filter
+	${PROJECT_NAME}
 	${catkin_LIBRARIES}
 	${Boost_LIBRARIES}
 	${BFL_LIBRARIES}
@@ -87,7 +84,7 @@ add_dependencies(cob_people_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 #############
 ## Install ##
 #############
-install(TARGETS cob_people_tracker cob_people_tracking_filter
+install(TARGETS cob_people_tracker ${PROJECT_NAME}
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
