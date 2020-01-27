@@ -20,7 +20,7 @@ env:
     - VERBOSE_OUTPUT=false
     - VERBOSE_TESTS=false
   matrix:
-    - ROS_DISTRO=indigo
+    #- ROS_DISTRO=indigo
     - ROS_DISTRO=kinetic
     - ROS_DISTRO=melodic
 install:
