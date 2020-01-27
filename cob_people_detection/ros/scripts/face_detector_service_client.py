@@ -12,8 +12,8 @@ def recognition_service_client(running, doRecognition, display):
         recognition_service = rospy.ServiceProxy('/cob_people_detection/face_detection/recognize_service_server', Recognition)
         res = recognition_service(running, doRecognition, display)
         return res
-    except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
 
 def usage():
     return "%s [running, doRecognition, display]"%sys.argv[0]
@@ -24,7 +24,7 @@ if __name__ == "__main__":
         doRecognition = bool(sys.argv[2])
         display = bool(sys.argv[2])
     else:
-        print usage()
+        print(usage())
         sys.exit(1)
-    print recognition_service_client(True, True, True)
+    print(recognition_service_client(True, True, True))
 

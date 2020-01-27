@@ -24,8 +24,8 @@ class dlg(wx.Frame):
     #self.bin_name="face_rec_alg_test"
 
 
-    print "Database Evaluation GUI 2013 - ipa-goa-tz"
-    print "running with binary: %s"%os.path.join(self.bin_path,self.bin_name)
+    print("Database Evaluation GUI 2013 - ipa-goa-tz")
+    print("running with binary: %s"%os.path.join(self.bin_path,self.bin_name))
 
     #self.Evaluator=Evaluator()
     self.Evaluator=Evaluator(invalid_list=self.invalid_file_path)
@@ -50,8 +50,8 @@ class dlg(wx.Frame):
     if os.path.isfile(self.invalid_file_path):
       with open(self.invalid_file_path,"r") as input_stream:
         self.invalid_list=input_stream.read().splitlines()
-      print "invalid list loaded"
-      print self.invalid_list
+      print("invalid list loaded")
+      print(self.invalid_list)
 
 
     self.makeLayout(self.f)
@@ -258,7 +258,7 @@ class dlg(wx.Frame):
     # if lists are supposed to be updated
     #if self.upd_checkbox.GetValue()==True:
     prot_choice=self.protocol_choice.GetCurrentSelection()
-    for i in xrange(self.spin_rep.GetValue()):
+    for i in range(self.spin_rep.GetValue()):
       output_file=os.path.join(self.output_path,"eval_file")
       if len(self.ts_dir_list)>0:
         if(self.protocol_choice.GetCurrentSelection()==0):
@@ -270,7 +270,7 @@ class dlg(wx.Frame):
           #self.process_protocol(self.process_leave_half_out,method,classifier)
 
         elif(self.protocol_choice.GetCurrentSelection()==2):
-          print "manual selection not suitable for cross validation"
+          print("manual selection not suitable for cross validation")
           return
         elif(self.protocol_choice.GetCurrentSelection()==3):
           self.process_protocol(self.process_unknown,method)
@@ -307,7 +307,7 @@ class dlg(wx.Frame):
         os.chdir(self.cwd)
         self.evaluate()
         os.rename(output_file,output_file+str(i))
-    print self.Evaluator.calc_stats()
+    print(self.Evaluator.calc_stats())
     self.Evaluator.reset()
 
 
@@ -402,7 +402,7 @@ class dlg(wx.Frame):
     os.chdir(self.cwd)
     self.evaluate()
 
-    print self.Evaluator.calc_stats()
+    print(self.Evaluator.calc_stats())
     self.Evaluator.reset()
 
   def OnReset(self,e):
@@ -437,9 +437,9 @@ class dlg(wx.Frame):
     #print self.cl_list
     protocol_fn()
     self.sync_lists()
-    print self.ts_list
-    print "--------------------------------------------------------"
-    print self.pf_list
+    print(self.ts_list)
+    print("--------------------------------------------------------")
+    print(self.pf_list)
     self.print_lists()
 
 
@@ -487,7 +487,7 @@ class dlg(wx.Frame):
       lines=input_stream.read().splitlines()
       for line in lines:
         if "$$" in line:
-          print line
+          print(line)
           cl_ctr+=1
           self.cl_list.append(cl_ctr)
           self.pf_list.append(curr_files)
@@ -585,8 +585,8 @@ class dlg(wx.Frame):
 
 
   def pf_list_format(self,file_list):
-    for cl in xrange(len(self.ts_list)):
-        for i in reversed(xrange(len(file_list))):
+    for cl in range(len(self.ts_list)):
+        for i in reversed(range(len(file_list))):
           if file_list[i] in self.ts_list[cl]:
             self.pf_list[cl].append(file_list[i])
             file_list.remove(file_list[i])
@@ -755,14 +755,14 @@ class dlg(wx.Frame):
 
   def sync_lists(self):
     if  self.synch_lists_switch ==True:
-      for c in xrange(len(self.ts_list)):
+      for c in range(len(self.ts_list)):
         for s in self.ts_list[c]:
           if len(s) >0:
             for ts in self.pf_list:
               if s in ts:
                 ts.remove(s)
     else:
-      for c in xrange(len(self.pf_list)):
+      for c in range(len(self.pf_list)):
         for s in self.pf_list[c]:
           if len(s) >0:
             for ts in self.ts_list:
@@ -786,7 +786,7 @@ class dlg(wx.Frame):
 
     with open(eval_file_path,"w") as eval_file_stream:
       cont_ctr=0
-      for pf_l in xrange(len(self.cl_list)):
+      for pf_l in range(len(self.cl_list)):
         for pf in self.pf_list[pf_l]:
           o_str = pf+" "+str(pf_l)+" "+str(classified_list[cont_ctr])+"\n"
           eval_file_stream.write(o_str)
@@ -806,7 +806,7 @@ class dlg(wx.Frame):
             cont_ctr+=1
 
     self.Evaluator.add_epoch(groundtruth,results,files)
-    print "error rate = %f"%self.Evaluator.show_last()
+    print("error rate = %f"%self.Evaluator.show_last())
 
 
   def print_lists(self):
@@ -829,7 +829,7 @@ class dlg(wx.Frame):
 
     # make lists with depth
     if self.use_xyz_data.Value:
-      for c in xrange(len(self.ts_list)):
+      for c in range(len(self.ts_list)):
         if len(self.ts_list[c])>0:
           for s in self.ts_list[c]:
               if os.path.split(s)[1] not in self.invalid_list:
@@ -839,14 +839,14 @@ class dlg(wx.Frame):
           training_set_file_xyz_stream.write("$$\n")
 
 
-      for c in xrange(len(self.pf_list)):
+      for c in range(len(self.pf_list)):
         for s in self.pf_list[c]:
           if os.path.split(s)[1] not in self.invalid_list:
             s_mod=os.path.splitext(s)[0]+".xml"
             probe_file_xyz_stream.write(s_mod)
             probe_file_xyz_stream.write("\n")
 
-    for c in xrange(len(self.ts_list)):
+    for c in range(len(self.ts_list)):
       if len(self.ts_list[c])>0:
         for s in self.ts_list[c]:
             if os.path.split(s)[1] not in self.invalid_list:
@@ -854,13 +854,13 @@ class dlg(wx.Frame):
               training_set_file_stream.write("\n")
         training_set_file_stream.write("$$\n")
 
-    for c in xrange(len(self.pf_list)):
+    for c in range(len(self.pf_list)):
       for s in self.pf_list[c]:
         if os.path.split(s)[1] not in self.invalid_list:
           probe_file_stream.write(s)
           probe_file_stream.write("\n")
 
-    for c in xrange(len(self.cl_list)):
+    for c in range(len(self.cl_list)):
       o_str=str(c)+" - "+str(self.cl_list[c])+"\n"
       class_overview_stream.write(o_str)
 
@@ -895,7 +895,7 @@ class epoch():
     fn_list=list()
     #false id
     self.fi_list=list()
-    for i in xrange(len(self.gt)):
+    for i in range(len(self.gt)):
         if (int(self.gt[i]) == int(self.res[i])):
           error_list.append(0)
           if int(self.gt[i]) >-1:
@@ -970,7 +970,7 @@ class Evaluator():
     mean_error_rate=0.0
     for e in self.epochs:
       if e.desc in self.invalid_files:
-        print "invalid file is excluded from statistical calculations"
+        print("invalid file is excluded from statistical calculations")
         continue
       err+=e.error_rate
     mean_error_rate=err/n
@@ -1018,11 +1018,11 @@ class Evaluator():
     ave_fn/=len(l)
     ave_fi/=len(l)
 
-    print "True positives:   %f"%   ave_tp
-    print "True negatives:   %f"%   ave_tn
-    print "False positives:  %f"%  ave_fp
-    print "False negatives:  %f"%  ave_fn
-    print "False identities: %f"% ave_fi
+    print("True positives:   %f"%   ave_tp)
+    print("True negatives:   %f"%   ave_tn)
+    print("False positives:  %f"%  ave_fp)
+    print("False negatives:  %f"%  ave_fn)
+    print("False identities: %f"% ave_fi)
 
   def show_last(self):
     err=self.epochs[-1].error_rate

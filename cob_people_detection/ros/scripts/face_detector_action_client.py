@@ -36,6 +36,6 @@ if __name__ == '__main__':
         # publish and subscribe over ROS.
         rospy.init_node('face_detector_action_client')
         result = face_detector_client()
-        print "Done action"
+        print("Done action")
     except rospy.ROSInterruptException:
-        print "Program interrupted before completion"
+        print("Program interrupted before completion")

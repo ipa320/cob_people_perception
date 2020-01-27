@@ -38,7 +38,7 @@ def convert_dat(path):
 
     cv.Save(o_path,cv_mat,"depthmap")
     o_str= "processed file "+str(file_ctr)+ " of "+ str(filerange)
-    print o_str
+    print(o_str)
     file_ctr+=1
 
 
@@ -49,7 +49,7 @@ if __name__=="__main__":
 
   folder=sys.argv[1]
   i_path=path+folder
-  print i_path
+  print(i_path)
   #src_dir="/share/goa-tz/people_detection/eval/Kinect3D_tar/"
   #os.chdir(path)
   #src_list=os.listdir(src_dir)
