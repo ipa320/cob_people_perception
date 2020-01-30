@@ -13,14 +13,17 @@ env:
     - CATKIN_LINT_ARGS='--ignore description_boilerplate --ignore target_name_collision --skip-pkg cob_leg_detection --skip-pkg cob_openni2_tracker --skip-pkg cob_people_tracking_filter --skip-pkg libnite2'
     - CMAKE_ARGS=-DCMAKE_BUILD_TYPE=Release
     - NOT_TEST_DOWNSTREAM=true
+    - PYLINT_ARGS="--output-format=parseable --errors-only --ignored-modules=cv,numpy"
+    - PYLINT2_CHECK=true
+    - PYLINT3_CHECK=true
     - ROS_REPO=ros
     - VERBOSE_OUTPUT=false
     - VERBOSE_TESTS=false
   matrix:
-    - ROS_DISTRO=indigo
+    #- ROS_DISTRO=indigo
     - ROS_DISTRO=kinetic
     - ROS_DISTRO=melodic
 install:
-  - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
+  - git clone --quiet --depth 1 https://github.com/fmessmer/industrial_ci.git .industrial_ci -b master_pylint
 script:
   - .industrial_ci/travis.sh
