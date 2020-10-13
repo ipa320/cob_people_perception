@@ -17,6 +17,7 @@ env:
     - PYLINT2_CHECK=true
     - PYLINT3_CHECK=true
     - ROS_REPO=ros
+    - UPSTREAM_WORKSPACE=file
     - VERBOSE_OUTPUT=false
     - VERBOSE_TESTS=false
   matrix:
