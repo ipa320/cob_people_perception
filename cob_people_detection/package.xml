@@ -41,8 +41,11 @@
 	<depend>stereo_msgs</depend>
 	<depend>tf</depend>
 
-	<exec_depend>message_runtime</exec_depend>
+	<exec_depend>face_detector</exec_depend>
 	<exec_depend>image_view</exec_depend>
+	<exec_depend>message_runtime</exec_depend>
+	<exec_depend>openni_launch</exec_depend>
+	<exec_depend>stereo_image_proc</exec_depend>
 
 	<export>
 		<nodelet plugin="${prefix}/nodelet_plugins.xml" />
