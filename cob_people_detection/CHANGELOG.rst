@@ -2,6 +2,24 @@
 Changelog for package cob_people_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#91 <https://github.com/ipa320/cob_people_perception/issues/91>`_ from fmessmer/fix_catkin_lint
+  fix catkin_lint
+* fix catkin_lint
+* Merge pull request `#89 <https://github.com/ipa320/cob_people_perception/issues/89>`_ from fmessmer/feature/python3_compatibility
+  [ci_updates] pylint + Python3 compatibility
+* remove everything marked obsolete
+* python3 compatibility via 2to3
+* Merge pull request `#88 <https://github.com/ipa320/cob_people_perception/issues/88>`_ from fmessmer/ci_updates
+  [travis] ci updates
+* catkin_lint fixes
+* Merge pull request `#87 <https://github.com/ipa320/cob_people_perception/issues/87>`_ from fmessmer/fixes
+  various fixes
+* fix -Wswitch-bool warning
+* removed unused Boost signals dependency
+* Contributors: Felix Messmer, fmessmer
+
 1.0.6 (2019-08-10)
 ------------------
 * Merge pull request `#86 <https://github.com/ipa320/cob_people_perception/issues/86>`_ from ipa320/ipa-rmb-patch-1

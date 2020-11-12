@@ -2,6 +2,9 @@
 Changelog for package cob_people_perception
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.6 (2019-08-10)
 ------------------
 

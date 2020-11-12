@@ -2,6 +2,14 @@
 Changelog for package cob_leg_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#88 <https://github.com/ipa320/cob_people_perception/issues/88>`_ from fmessmer/ci_updates
+  [travis] ci updates
+* reduce warnings
+* catkin_lint fixes
+* Contributors: Felix Messmer, fmessmer
+
 1.0.6 (2019-08-10)
 ------------------
 * Merge pull request `#86 <https://github.com/ipa320/cob_people_perception/issues/86>`_ from ipa320/ipa-rmb-patch-1
