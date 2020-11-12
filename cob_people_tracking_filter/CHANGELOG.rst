@@ -2,8 +2,8 @@
 Changelog for package cob_people_tracking_filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.7 (2020-11-12)
+------------------
 * Merge pull request `#88 <https://github.com/ipa320/cob_people_perception/issues/88>`_ from fmessmer/ci_updates
   [travis] ci updates
 * reduce warnings
