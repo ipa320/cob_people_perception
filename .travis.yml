@@ -17,8 +17,6 @@ env:
     - ROS_REPO=main
     - UPSTREAM_WORKSPACE=file
   matrix:
-    #- ROS_DISTRO=indigo
-    - ROS_DISTRO=kinetic
     - ROS_DISTRO=melodic
 install:
   - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
